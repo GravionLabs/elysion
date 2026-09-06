@@ -1,0 +1,22 @@
+name: Feature
+description: A user-facing or system capability, part of an Epic.
+title: "[Feature] "
+labels: ["feature"]
+body:
+  - type: input
+    id: epic
+    attributes:
+      label: Parent Epic
+      description: "#<issue number>"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+    validations:
+      required: true
+  - type: textarea
+    id: pbis
+    attributes:
+      label: PBI breakdown

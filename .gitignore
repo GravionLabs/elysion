@@ -1,0 +1,31 @@
+# Node / pnpm
+node_modules/
+dist/
+.pnpm-store/
+*.log
+npm-debug.log*
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# Angular / React build output
+.angular/
+build/
+
+# Docker / infra volumes
+infra/docker/data/
+*.pem
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

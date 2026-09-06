@@ -1,0 +1,16 @@
+name: Task
+description: A concrete, implementable unit of work under a PBI (or a Bug).
+title: "[Task] "
+labels: ["task"]
+body:
+  - type: input
+    id: parent
+    attributes:
+      label: Parent PBI or Bug
+      description: "#<issue number>"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Implementation notes

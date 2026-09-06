@@ -1,0 +1,24 @@
+name: Epic
+description: A large body of work spanning multiple features, tied to a spec/ADR.
+title: "[Epic] "
+labels: ["epic"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What outcome does this epic deliver?
+    validations:
+      required: true
+  - type: input
+    id: spec
+    attributes:
+      label: Related spec/ADR
+      description: Link to the doc under docs/specs/ or docs/adr/
+    validations:
+      required: true
+  - type: textarea
+    id: features
+    attributes:
+      label: Feature breakdown
+      description: Checklist of Feature sub-issues (fill in as they're created)
