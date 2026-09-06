@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Elysion.BusinessBackend.Api/Elysion.BusinessBackend.Api.csproj" />
+  </Folder>
+</Solution>
