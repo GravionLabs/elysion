@@ -1,4 +1,4 @@
-# BFF spec (NestJS, TypeScript 7)
+# BFF spec (NestJS, TypeScript 6)
 
 ## Owner
 Backend

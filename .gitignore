@@ -4,6 +4,7 @@ dist/
 .pnpm-store/
 *.log
 npm-debug.log*
+*.tsbuildinfo
 
 # .NET
 bin/

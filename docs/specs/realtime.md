@@ -1,4 +1,4 @@
-# Realtime backend spec (NestJS, TypeScript 7)
+# Realtime backend spec (NestJS, TypeScript 6)
 
 ## Owner
 Backend
