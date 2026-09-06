@@ -2,17 +2,15 @@ name: elysion
 
 services:
   traefik:
-    image: traefik:v3.1
+    image: traefik:v3.7.13
     command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
+      - "--configFile=/etc/traefik/traefik.yml"
     ports:
       - "80:80"
       - "8080:8080" # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ../traefik/traefik.yml:/etc/traefik/traefik.yml:ro
     networks:
       - elysion
 
@@ -49,6 +47,32 @@ services:
       - "9001:9001" # MinIO console
     volumes:
       - minio-data:/data
+    networks:
+      - elysion
+
+  # --- Routing placeholders (remove once the real services below are wired in) ---
+
+  whoami-api:
+    image: traefik/whoami
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami-api.rule=PathPrefix(`/api`)"
+    networks:
+      - elysion
+
+  whoami-realtime:
+    image: traefik/whoami
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami-realtime.rule=PathPrefix(`/realtime`)"
+    networks:
+      - elysion
+
+  whoami-internal:
+    image: traefik/whoami
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami-internal.rule=PathPrefix(`/internal`)"
     networks:
       - elysion
 
