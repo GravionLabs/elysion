@@ -1,6 +1,7 @@
 # Node / pnpm
 node_modules/
 dist/
+dist-element/
 .pnpm-store/
 *.log
 npm-debug.log*
