@@ -1,3 +1,6 @@
-<section class="board-placeholder">
-  <p>Board canvas placeholder — React/tldraw embed lands here.</p>
-</section>
+<elysion-canvas
+  class="board-canvas"
+  [attr.board-id]="boardId()"
+  (ready)="onCanvasReady()"
+  (error)="onCanvasError()"
+></elysion-canvas>
