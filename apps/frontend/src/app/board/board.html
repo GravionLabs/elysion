@@ -1,1 +1,6 @@
-<elysion-canvas class="board-canvas"></elysion-canvas>
+<elysion-canvas
+  class="board-canvas"
+  [attr.board-id]="boardId()"
+  (ready)="onCanvasReady()"
+  (error)="onCanvasError()"
+></elysion-canvas>

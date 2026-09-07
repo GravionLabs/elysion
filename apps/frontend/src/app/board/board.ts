@@ -1,5 +1,7 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, Component, inject, input, signal } from '@angular/core';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
+
+export type CanvasStatus = 'loading' | 'ready' | 'error';
 
 @Component({
   imports: [],
@@ -12,7 +14,20 @@ export class Board {
   readonly #loader = inject(CanvasElementLoader);
   readonly #canvasElementSrc = inject(CANVAS_ELEMENT_SRC);
 
+  /** Passed to <elysion-canvas> as the `board-id` attribute. */
+  readonly boardId = input('default');
+
+  readonly status = signal<CanvasStatus>('loading');
+
   constructor() {
-    void this.#loader.load(this.#canvasElementSrc);
+    this.#loader.load(this.#canvasElementSrc).catch(() => this.status.set('error'));
+  }
+
+  onCanvasReady(): void {
+    this.status.set('ready');
+  }
+
+  onCanvasError(): void {
+    this.status.set('error');
   }
 }
