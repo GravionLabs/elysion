@@ -5,8 +5,9 @@ FROM base AS build
 WORKDIR /workspace
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/frontend apps/frontend
-RUN pnpm install --frozen-lockfile --filter @elysion/frontend...
-RUN pnpm --filter @elysion/frontend exec ng build
+COPY apps/frontend-canvas apps/frontend-canvas
+RUN pnpm install --frozen-lockfile --filter @elysion/frontend... --filter @elysion/frontend-canvas...
+RUN pnpm --filter @elysion/frontend build
 
 FROM nginx:alpine AS runtime
 COPY apps/frontend/nginx.conf /etc/nginx/conf.d/default.conf
