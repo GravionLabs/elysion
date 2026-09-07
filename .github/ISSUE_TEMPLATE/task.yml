@@ -14,3 +14,7 @@ body:
     id: details
     attributes:
       label: Implementation notes
+  - type: markdown
+    attributes:
+      value: |
+        Set this issue's **Parent** to the PBI or Bug above via GitHub's native sub-issues panel, so the hierarchy is linked both ways.

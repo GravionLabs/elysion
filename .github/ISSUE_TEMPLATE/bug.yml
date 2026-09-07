@@ -20,3 +20,7 @@ body:
     attributes:
       label: Area
       description: frontend / gateway / bff / realtime / business-backend / infra
+  - type: markdown
+    attributes:
+      value: |
+        If this bug needs to be broken into multiple Tasks, add them as children via GitHub's native **sub-issues** panel on this issue.
