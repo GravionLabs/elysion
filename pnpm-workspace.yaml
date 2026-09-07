@@ -1,5 +1,6 @@
 packages:
   - "apps/frontend"
+  - "apps/frontend-canvas"
   - "apps/bff"
   - "apps/realtime"
   - "packages/*"

@@ -1,0 +1,31 @@
+{
+  "name": "@elysion/frontend-canvas",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "build:element": "tsc -p tsconfig.json --noEmit && vite build --config vite.element.config.ts",
+    "test": "vitest run",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tldraw": "^5.4.0"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19.2.6",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^5.0.4",
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "^28.0.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2",
+    "vite-plugin-css-injected-by-js": "^5.0.2",
+    "vitest": "^4.0.8"
+  }
+}
