@@ -2,6 +2,7 @@
 node_modules/
 dist/
 dist-element/
+apps/frontend/public/canvas/
 .pnpm-store/
 *.log
 npm-debug.log*

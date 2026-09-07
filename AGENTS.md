@@ -7,6 +7,7 @@ Each `apps/*` subdirectory has its own `AGENTS.md` with service-specific detail 
 ## Layout
 
 - `apps/frontend` — Angular, TypeScript 6
+- `apps/frontend-canvas` — React/tldraw canvas, TypeScript 6; built as a custom element (`<elysion-canvas>`) and embedded into `apps/frontend` — see `docs/specs/frontend.md`
 - `apps/gateway` — no code yet; Traefik config lives in `infra/traefik/` and `infra/docker/docker-compose.yml`
 - `apps/bff` — NestJS BFF, TypeScript 6
 - `apps/realtime` — NestJS WebSocket gateway (Yjs sync, presence), TypeScript 6
