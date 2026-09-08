@@ -8,6 +8,14 @@ import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 // CSS so any host page (Angular or otherwise) can load it with one <script>.
 export default defineConfig({
   plugins: [react(), cssInjectedByJsPlugin()],
+  // React/ReactDOM's CJS entry points branch on `process.env.NODE_ENV` to
+  // pick their dev/production build; in app builds Vite's dep pre-bundling
+  // replaces that for free, but this standalone iife build doesn't go
+  // through that step, so `process` is otherwise left as a bare, undefined
+  // global at runtime.
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
+  },
   build: {
     outDir: 'dist-element',
     emptyOutDir: true,
