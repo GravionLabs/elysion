@@ -8,5 +8,16 @@ export default defineConfig({
     globals: true,
     include: ['src/**/*.spec.{ts,tsx}'],
     setupFiles: ['src/test-setup.ts'],
+    server: {
+      deps: {
+        // @excalidraw/excalidraw is otherwise treated as an external CJS/ESM
+        // dep and executed directly by Node, which then hits its own nested
+        // `import ... from "open-color"` (a bare specifier whose package
+        // "main" is a plain .json file, no import attribute) — Node's
+        // native loader rejects that. Inlining forces the whole graph
+        // through Vite's transform instead, which handles JSON imports.
+        inline: [/@excalidraw\/excalidraw/, 'open-color'],
+      },
+    },
   },
 });

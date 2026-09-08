@@ -15,7 +15,7 @@ describe('elysion-canvas custom element', () => {
     document.body.appendChild(el);
 
     expect(readyHandler).toHaveBeenCalledOnce();
-    await waitFor(() => expect(el.querySelector('[role="application"]')).toBeTruthy());
+    await waitFor(() => expect(el.querySelector('[data-testid="toolbar-rectangle"]')).toBeTruthy());
 
     document.body.removeChild(el);
   });

@@ -1,11 +1,13 @@
 # apps/frontend-canvas — Agent Instructions
 
-React + tldraw canvas, TypeScript 6. Ships two ways from the same source:
+React + Excalidraw canvas, TypeScript 6. Ships two ways from the same source:
 
 - as a standalone Vite dev app (`src/main.tsx`) for iterating on the canvas in isolation
 - as an embeddable custom element bundle (`src/element.tsx`, `<elysion-canvas>`) consumed by `apps/frontend` (Angular)
 
-See `docs/specs/frontend.md` and the parent issue tracking this: GitHub Feature #25.
+See `docs/specs/frontend.md` and the parent issue tracking this: GitHub Feature #68 (originally built on tldraw under #25 — see the spec's "Why Excalidraw, not tldraw" section).
+
+The element bundle builds as an **ES module** (not iife) so Excalidraw's optional heavy features (mermaid/cytoscape/katex diagram import, image resizing) stay as separate lazy chunks — `dist-element/` therefore has many files, not just `elysion-canvas.js`; copy the whole directory, not one file.
 
 ## Commands
 

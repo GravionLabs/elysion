@@ -1,14 +1,15 @@
-import { Tldraw } from 'tldraw';
-import 'tldraw/tldraw.css';
+import { Excalidraw } from '@excalidraw/excalidraw';
+import '@excalidraw/excalidraw/index.css';
 
 export interface CanvasAppProps {
+  /** Reserved for the Yjs-backed board persistence wired up in a later feature. */
   boardId?: string;
 }
 
-export function CanvasApp({ boardId }: CanvasAppProps) {
+export function CanvasApp(props: CanvasAppProps) {
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
-      <Tldraw persistenceKey={boardId} />
+      <Excalidraw />
     </div>
   );
 }

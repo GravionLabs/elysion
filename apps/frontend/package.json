@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "prebuild": "pnpm --filter @elysion/frontend-canvas build:element && mkdir -p public/canvas && cp ../frontend-canvas/dist-element/elysion-canvas.js public/canvas/elysion-canvas.js",
+    "prebuild": "pnpm --filter @elysion/frontend-canvas build:element && rm -rf public/canvas && mkdir -p public/canvas && cp -r ../frontend-canvas/dist-element/. public/canvas/",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
