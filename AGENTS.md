@@ -1,13 +1,13 @@
 # Elysion — Agent Instructions
 
-Open-source Mural alternative. Monorepo: Angular + React/tldraw frontend, two NestJS services (BFF, realtime/Yjs), a .NET 10 business backend, Traefik gateway, Postgres/Redis/MinIO.
+Open-source Mural alternative. Monorepo: Angular + React/Excalidraw frontend, two NestJS services (BFF, realtime/Yjs), a .NET 10 business backend, Traefik gateway, Postgres/Redis/MinIO.
 
 Each `apps/*` subdirectory has its own `AGENTS.md` with service-specific detail — read it before working in that app. This file covers repo-wide conventions.
 
 ## Layout
 
 - `apps/frontend` — Angular, TypeScript 6
-- `apps/frontend-canvas` — React/tldraw canvas, TypeScript 6; built as a custom element (`<elysion-canvas>`) and embedded into `apps/frontend` — see `docs/specs/frontend.md`
+- `apps/frontend-canvas` — React/Excalidraw canvas, TypeScript 6; built as a custom element (`<elysion-canvas>`) and embedded into `apps/frontend` — see `docs/specs/frontend.md`
 - `apps/gateway` — no code yet; Traefik config lives in `infra/traefik/` and `infra/docker/docker-compose.yml`
 - `apps/bff` — NestJS BFF, TypeScript 6
 - `apps/realtime` — NestJS WebSocket gateway (Yjs sync, presence), TypeScript 6

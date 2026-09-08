@@ -1,6 +1,6 @@
 # apps/frontend — Agent Instructions
 
-Angular 22 app, TypeScript 6. Will embed a React/tldraw canvas and a Yjs client — not yet wired in; currently a shell (`App` component, header + `router-outlet`) with a single placeholder route rendering `Board` (`src/app/board/`), the eventual canvas embed point.
+Angular 22 app, TypeScript 6. Embeds a React/Excalidraw canvas via a custom element (see `board/`); a Yjs client is not yet wired in. The shell (`App` component, header + `router-outlet`) has a single route rendering `Board` (`src/app/board/`).
 
 See `docs/specs/frontend.md` and `docs/adr/0002-typescript-version-split.md`.
 
