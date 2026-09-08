@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { CanvasApp } from './CanvasApp';
 
 describe('CanvasApp', () => {
-  it('renders the tldraw canvas', async () => {
+  it('renders the Excalidraw canvas', async () => {
     render(<CanvasApp boardId="test-board" />);
 
-    expect(await screen.findByRole('application')).toBeTruthy();
+    expect(await screen.findByTestId('toolbar-rectangle')).toBeTruthy();
   });
 });
