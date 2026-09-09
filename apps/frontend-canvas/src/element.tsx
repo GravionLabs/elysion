@@ -3,7 +3,7 @@ import { CanvasApp } from './CanvasApp';
 
 export const ELEMENT_TAG_NAME = 'elysion-canvas';
 
-const OBSERVED_ATTRIBUTES = ['board-id'] as const;
+const OBSERVED_ATTRIBUTES = ['board-id', 'yjs-server-url'] as const;
 
 class ElysionCanvasElement extends HTMLElement {
   static get observedAttributes(): readonly string[] {
@@ -28,7 +28,12 @@ class ElysionCanvasElement extends HTMLElement {
   }
 
   #render(): void {
-    this.#root?.render(<CanvasApp boardId={this.getAttribute('board-id') ?? undefined} />);
+    this.#root?.render(
+      <CanvasApp
+        boardId={this.getAttribute('board-id') ?? undefined}
+        yjsServerUrl={this.getAttribute('yjs-server-url') ?? undefined}
+      />,
+    );
   }
 }
 

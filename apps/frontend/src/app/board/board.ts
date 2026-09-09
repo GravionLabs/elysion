@@ -17,6 +17,9 @@ export class Board {
   /** Passed to <elysion-canvas> as the `board-id` attribute. */
   readonly boardId = input('default');
 
+  /** Passed to <elysion-canvas> as the `yjs-server-url` attribute; omitted (element uses its own same-origin default) when not set. */
+  readonly yjsServerUrl = input<string>();
+
   readonly status = signal<CanvasStatus>('loading');
 
   constructor() {

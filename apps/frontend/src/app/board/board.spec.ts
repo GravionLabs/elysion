@@ -38,6 +38,19 @@ describe('Board', () => {
     expect(el.getAttribute('board-id')).toBe('board-42');
   });
 
+  it('renders an elysion-canvas element with the yjs server url attribute when set', () => {
+    fixture.componentRef.setInput('yjsServerUrl', 'ws://localhost:3000/yjs');
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement.querySelector('elysion-canvas');
+    expect(el.getAttribute('yjs-server-url')).toBe('ws://localhost:3000/yjs');
+  });
+
+  it('omits the yjs server url attribute when not set', () => {
+    const el = fixture.nativeElement.querySelector('elysion-canvas');
+    expect(el.hasAttribute('yjs-server-url')).toBe(false);
+  });
+
   it('moves to ready status when the element dispatches ready', () => {
     expect(component.status()).toBe('loading');
 
