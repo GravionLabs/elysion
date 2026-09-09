@@ -227,12 +227,21 @@ importers:
       '@excalidraw/excalidraw':
         specifier: ^0.18.1
         version: 0.18.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      lib0:
+        specifier: ^0.2.117
+        version: 0.2.117
       react:
         specifier: ^19.2.8
         version: 19.2.8
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
+      y-protocols:
+        specifier: ^1.0.7
+        version: 1.0.7(yjs@13.6.32)
+      yjs:
+        specifier: ^13.6.32
+        version: 13.6.32
     devDependencies:
       '@testing-library/dom':
         specifier: ^10.4.1
@@ -246,6 +255,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.4
         version: 19.2.7(@types/react@19.2.18)
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       '@vitejs/plugin-react':
         specifier: ^5.0.4
         version: 5.2.0(supports-color@7.2.0)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0))
@@ -267,6 +279,9 @@ importers:
       vitest-canvas-mock:
         specifier: ^1.2.0
         version: 1.2.0(vitest@4.1.11)
+      ws:
+        specifier: ^8.21.3
+        version: 8.21.3
 
   apps/realtime:
     dependencies:
