@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { WsAdapter } from '@nestjs/platform-ws';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module.js';
@@ -13,6 +14,10 @@ describe('AppController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    // AppModule always registers a WS gateway (YjsGateway); Nest tries to
+    // load its default socket.io adapter on init() unless one is set
+    // explicitly, same as main.ts does for the real app.
+    app.useWebSocketAdapter(new WsAdapter(app));
     await app.init();
   });
 
