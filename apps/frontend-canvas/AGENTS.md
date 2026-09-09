@@ -24,7 +24,8 @@ pnpm --filter @elysion/frontend-canvas test               # vitest
 - TypeScript stays on 6.x, matching `apps/frontend` — see the root `AGENTS.md`.
 - `CanvasApp` is the shared React root; `main.tsx` mounts it directly for dev, `element.tsx` mounts it inside a custom element for embedding. Keep canvas logic in `CanvasApp` (or components it owns), not duplicated across the two entry points.
 - The custom element bundle bundles its own React/ReactDOM runtime so the Angular host doesn't need to provide one.
+- `yjs/` wires the scene to `apps/realtime`'s sync gateway — see `docs/specs/frontend.md`'s "Yjs client integration" section before touching it; the two bugs fixed there (initial-sync-to-late-joiner, in-place-mutation aliasing) are exactly the kind that pass unit tests against fresh/empty rooms but break in a real two-tab session, so verify any change against a real running `apps/realtime` and two browser tabs, not just `vitest`.
 
 ## Verifying changes
 
-`pnpm --filter @elysion/frontend-canvas test` must pass, then `pnpm --filter @elysion/frontend-canvas build` and `build:element` must both succeed.
+`pnpm --filter @elysion/frontend-canvas test` must pass, then `pnpm --filter @elysion/frontend-canvas build` and `build:element` must both succeed. For anything touching `yjs/`, also manually verify: run `apps/realtime` for real (`node dist/main.js`), point two browser tabs/instances at the canvas with the same board id (e.g. via `main.tsx`'s dev entry, temporarily setting `yjsServerUrl`), and confirm an edit in one appears in the other — unit tests alone missed both real bugs found here because they used fresh/empty rooms, not a room with pre-existing history from a late-joining peer.

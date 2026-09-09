@@ -8,6 +8,7 @@ describe('elysion-canvas custom element', () => {
 
     const el = document.createElement(ELEMENT_TAG_NAME);
     el.setAttribute('board-id', 'test-board');
+    el.setAttribute('yjs-server-url', 'ws://localhost:9999/yjs');
 
     const readyHandler = vi.fn();
     el.addEventListener('ready', readyHandler);

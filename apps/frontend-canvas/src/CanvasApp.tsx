@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
+import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
 import { YjsWebsocketClient } from './yjs/YjsWebsocketClient.js';
@@ -22,34 +23,44 @@ function defaultYjsServerUrl(): string {
 }
 
 export function CanvasApp({ boardId = 'default', yjsServerUrl }: CanvasAppProps) {
+  const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
-  const clientRef = useRef<YjsWebsocketClient | null>(null);
 
-  // Created once per mount, deliberately not re-run if boardId/yjsServerUrl
-  // change later — matches how this component previously treated boardId
-  // for tldraw's persistenceKey.
-  if (!bindingRef.current) {
+  // Connection setup lives in the effect, not render, and is re-created (not
+  // just torn down) on cleanup: React StrictMode's dev-only
+  // mount→cleanup→mount for effects means a render-time "create once" ref
+  // guard would leave bindingRef null forever after the simulated
+  // cleanup — nothing re-populates it since no second render follows.
+  // boardId/yjsServerUrl deliberately aren't dependencies: connect once per
+  // mount, matching how this component previously treated boardId for
+  // tldraw's persistenceKey.
+  useEffect(() => {
     const doc = new Y.Doc();
-    bindingRef.current = new ExcalidrawYjsBinding(doc);
+    const binding = new ExcalidrawYjsBinding(doc);
+    bindingRef.current = binding;
+    if (apiRef.current) {
+      binding.attach(apiRef.current);
+    }
 
     const url = new URL(yjsServerUrl ?? defaultYjsServerUrl());
     url.searchParams.set('board', boardId);
-    clientRef.current = new YjsWebsocketClient(url.toString(), doc);
-  }
+    const client = new YjsWebsocketClient(url.toString(), doc);
 
-  useEffect(() => {
     return () => {
-      clientRef.current?.destroy();
-      clientRef.current = null;
-      bindingRef.current?.destroy();
+      client.destroy();
+      binding.destroy();
       bindingRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
       <Excalidraw
-        excalidrawAPI={(api) => bindingRef.current?.attach(api)}
+        excalidrawAPI={(api) => {
+          apiRef.current = api;
+          bindingRef.current?.attach(api);
+        }}
         onChange={(elements) => bindingRef.current?.onLocalChange(elements)}
       />
     </div>

@@ -44,7 +44,14 @@ export class ExcalidrawYjsBinding {
       for (const element of elements) {
         const existing = this.#elements.get(element.id);
         if (!existing || existing.version < element.version) {
-          this.#elements.set(element.id, element);
+          // Excalidraw mutates its element objects in place; Y.Map.get()
+          // returns the exact reference passed to .set(), so storing
+          // `element` directly would make `existing` and `element` alias
+          // the same object — the version comparison above would then
+          // always read as "equal" (both sides mutate together) after the
+          // first write, silently dropping every later update. Clone to
+          // freeze a snapshot of this version.
+          this.#elements.set(element.id, structuredClone(element));
         }
       }
     });

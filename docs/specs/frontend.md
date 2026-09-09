@@ -21,4 +21,13 @@ This was chosen over Angular Elements (which wraps an *Angular* component as a c
 
 The canvas was originally built on tldraw (see GitHub Feature #25), but tldraw's SDK is source-available, not open source: its license prohibits use in a "Production Environment" without a paid or non-commercial License Key, and enforces this with a "Get a license for production" watermark. Elysion is meant to be a genuinely open-source Mural alternative, so the canvas was swapped to [Excalidraw](https://github.com/excalidraw/excalidraw) (`@excalidraw/excalidraw`), which is MIT-licensed (see GitHub Feature #68). The embedding architecture above is unaffected by that swap — it only changed what renders inside `CanvasApp`.
 
-Note: Excalidraw has no built-in local-persistence equivalent to tldraw's `persistenceKey`; `CanvasApp`'s `boardId` prop is currently unused internally and is kept only for the Angular↔React contract, pending the Yjs-backed persistence work in Feature #26.
+## Yjs client integration
+
+`apps/frontend-canvas` connects the Excalidraw scene to `apps/realtime`'s Yjs sync gateway (Feature #16):
+
+- `yjs/YjsWebsocketClient.ts` speaks the same sync sub-protocol as the gateway over a plain WebSocket — not `y-websocket`'s `WebsocketProvider`, whose room-in-path URL convention the gateway can't route (see the gateway's own doc comment for why). On open, it sends its own sync-step-1 in addition to replying to the server's — without that, a client joining a board with existing history never asks for it and stays empty.
+- `yjs/excalidraw-binding.ts`'s `ExcalidrawYjsBinding` keeps a `Y.Map<elementId, element>` in sync with the scene: local `onChange` writes changed elements in (compared by `version`, cloned via `structuredClone` before storing — Excalidraw mutates its element objects in place, so storing the live reference would alias `Y.Map.get()`'s result with the object Excalidraw keeps mutating, permanently freezing the version comparison after the first write), and remote map changes are merged back via Excalidraw's own `reconcileElements` + `updateScene(captureUpdate: NEVER)`.
+- `CanvasApp` wires a `Y.Doc` + client + binding together in a `useEffect` (not render-body lazy-init): React StrictMode's dev-only mount→cleanup→mount for effects means a "create once in render, null out in cleanup" pattern leaves the binding permanently `null` after the simulated cleanup, since nothing re-populates it without a following render.
+- The Yjs server URL is a `yjsServerUrl` prop on `CanvasApp`, threaded out as the `yjs-server-url` attribute on `<elysion-canvas>` (mirroring `board-id`) and a matching Angular input on `Board`; defaults to a same-origin `/yjs` path when unset (production routing through Traefik isn't settled yet — Feature #28).
+
+Presence/cursors (Feature #27) and WS auth (Feature #18) aren't wired in yet.

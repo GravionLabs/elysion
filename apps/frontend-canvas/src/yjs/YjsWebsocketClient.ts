@@ -73,7 +73,18 @@ export class YjsWebsocketClient {
     socket.binaryType = 'arraybuffer';
     this.#socket = socket;
 
-    socket.addEventListener('open', () => this.#onStatusChange?.('connected'));
+    socket.addEventListener('open', () => {
+      this.#onStatusChange?.('connected');
+      // The server sends its own sync-step-1 on connect too (see
+      // YjsGateway), but that only tells it what WE'RE missing. Send ours
+      // so it can compute and send back what IT has that we don't — without
+      // this, a client joining a room with existing history never
+      // receives it.
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, MESSAGE_SYNC);
+      syncProtocol.writeSyncStep1(encoder, this.doc);
+      this.#send(encoding.toUint8Array(encoder));
+    });
     socket.addEventListener('message', (event) => this.#handleMessage(new Uint8Array(event.data as ArrayBuffer)));
     socket.addEventListener('close', () => {
       this.#onStatusChange?.('disconnected');

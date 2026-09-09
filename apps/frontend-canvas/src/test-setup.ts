@@ -2,6 +2,14 @@
 // scene (and does canvas feature-detection at import time) via one.
 import 'vitest-canvas-mock';
 
+// Node's native WebSocket (undici) has a dispatchEvent/realm mismatch with
+// jsdom's swapped-in Event/EventTarget globals that throws on close (a
+// known undici+jsdom interop issue, not a bug in our code). Any component
+// that opens a real WebSocket (e.g. CanvasApp's Yjs client) hits this on
+// unmount; `ws`'s WebSocket class doesn't have the same issue.
+import { WebSocket as NodeWebSocket } from 'ws';
+globalThis.WebSocket = NodeWebSocket as unknown as typeof WebSocket;
+
 // jsdom doesn't implement the Font Loading API; Excalidraw registers its
 // bundled fonts with document.fonts on mount. Stub both so that succeeds
 // as a no-op — we don't care about actual font rendering in tests.
