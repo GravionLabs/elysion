@@ -16,7 +16,7 @@ pnpm --filter @elysion/realtime test
 
 Uses `@nestjs/platform-ws` (plain `ws`), **not** `@nestjs/platform-socket.io` — the real client will be a plain Yjs WebSocket connection, not a Socket.IO client. The adapter is wired explicitly in `src/main.ts` via `app.useWebSocketAdapter(new WsAdapter(app))`; new gateways don't need to repeat this, it's app-wide.
 
-`src/echo.gateway.ts` is a placeholder (`@SubscribeMessage('echo')` round-trips the payload) standing in for the future Yjs sync gateway — replace it, don't build alongside it, when Yjs integration lands (Feature: "Yjs sync protocol integration").
+`src/yjs/yjs.gateway.ts` is the Yjs CRDT sync gateway (Feature #16) — one `Y.Doc` per board id (`YjsRoomRegistry`), joined via `ws://.../yjs?board=<board-id>` (query param, not a path segment — see `docs/specs/realtime.md` for why). Presence (#17) and WS auth (#18) are separate, not-yet-implemented features that plug into this gateway later.
 
 ## Conventions
 
@@ -29,4 +29,4 @@ Build from the repo root: `docker build -f apps/realtime/Dockerfile -t elysion-r
 
 ## Verifying changes
 
-Build and run (`node dist/main.js`), then connect with a real WebSocket client (not just curl) and confirm the message round-trips — see the `ws`-based test script used when this was scaffolded for the pattern. For Dockerfile changes, do a real `docker build` + `docker run` + WS round-trip against the container.
+`pnpm --filter @elysion/realtime run test:e2e` boots the real Nest app (with `WsAdapter`, actually listening) and drives it with real WebSocket clients — `test/yjs.e2e-spec.ts` is the pattern to extend for new gateway behavior, not mocks. For anything WS-related, also build and run (`node dist/main.js`) and connect with a real WebSocket client by hand at least once — an e2e test proves the protocol works, not that the process actually boots standalone. For Dockerfile changes, do a real `docker build` + `docker run` + WS round-trip against the container.
