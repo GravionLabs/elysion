@@ -30,4 +30,4 @@ The canvas was originally built on tldraw (see GitHub Feature #25), but tldraw's
 - `CanvasApp` wires a `Y.Doc` + client + binding together in a `useEffect` (not render-body lazy-init): React StrictMode's dev-only mount→cleanup→mount for effects means a "create once in render, null out in cleanup" pattern leaves the binding permanently `null` after the simulated cleanup, since nothing re-populates it without a following render.
 - The Yjs server URL is a `yjsServerUrl` prop on `CanvasApp`, threaded out as the `yjs-server-url` attribute on `<elysion-canvas>` (mirroring `board-id`) and a matching Angular input on `Board`; defaults to a same-origin `/yjs` path when unset (production routing through Traefik isn't settled yet — Feature #28).
 
-Presence/cursors (Feature #27) and WS auth (Feature #18) aren't wired in yet.
+Presence/cursors (Feature #27) and WS auth (Feature #18) aren't wired in on the frontend yet — the realtime backend now broadcasts awareness cross-instance via Redis (see docs/specs/realtime.md), waiting on a frontend client to actually send/render it.
