@@ -5,6 +5,7 @@ import * as encoding from 'lib0/encoding';
 import * as syncProtocol from 'y-protocols/sync';
 import type { IncomingMessage } from 'node:http';
 import type { RawData, WebSocket } from 'ws';
+import { PresenceRelay } from '../presence/presence-relay.js';
 import { MESSAGE_AWARENESS, MESSAGE_SYNC } from './protocol.js';
 import { YjsRoom, YjsRoomRegistry } from './yjs-room-registry.js';
 
@@ -22,9 +23,9 @@ function toUint8Array(data: RawData): Uint8Array {
  * Yjs CRDT sync over a plain WebSocket, one room per board id (passed as a
  * `?board=` query param — the gateway's ws path match is exact, so it can't
  * route on a dynamic path segment). Presence/awareness messages are relayed
- * to other clients in the room verbatim, unread — interpreting them is
- * Feature #17's job, this gateway only keeps the wire protocol working for
- * clients that send them.
+ * verbatim, unread, to every other client in the room — both local (via
+ * in-memory broadcast) and on other `realtime` instances (via
+ * {@link PresenceRelay}'s Redis pub/sub).
  */
 @Injectable()
 @WebSocketGateway({ path: '/yjs' })
@@ -32,7 +33,10 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(YjsGateway.name);
   private readonly roomByClient = new WeakMap<WebSocket, YjsRoom>();
 
-  constructor(private readonly registry: YjsRoomRegistry) {}
+  constructor(
+    private readonly registry: YjsRoomRegistry,
+    private readonly presence: PresenceRelay,
+  ) {}
 
   handleConnection(client: WebSocket, request: IncomingMessage): void {
     const boardId = this.readBoardId(request);
@@ -44,6 +48,9 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const room = this.registry.getOrCreate(boardId);
     room.clients.add(client);
     this.roomByClient.set(client, room);
+
+    // Idempotent per board id — a no-op for every connection after the room's first.
+    void this.presence.subscribe(boardId, (message) => this.broadcastToRoom(room, message));
 
     client.on('message', (data: RawData) => this.handleMessage(client, room, data));
 
@@ -85,7 +92,9 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         break;
       }
       case MESSAGE_AWARENESS: {
-        this.broadcast(room, toUint8Array(data), client);
+        const bytes = toUint8Array(data);
+        this.broadcast(room, bytes, client);
+        void this.presence.publish(room.boardId, bytes);
         break;
       }
       default:
@@ -104,6 +113,13 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (client !== exclude) {
         this.send(client, message);
       }
+    }
+  }
+
+  /** Like {@link broadcast}, but with no local exclusion — used for messages relayed in from another instance via Redis. */
+  private broadcastToRoom(room: YjsRoom, message: Uint8Array): void {
+    for (const client of room.clients) {
+      this.send(client, message);
     }
   }
 }
