@@ -6,6 +6,7 @@ import { REDIS_PUB_CLIENT, REDIS_SUB_CLIENT } from '../redis/redis.provider.js';
 export type PresenceHandler = (message: Uint8Array) => void;
 
 const CHANNEL_PREFIX = 'presence:';
+const STATE_KEY_PREFIX = 'presence:state:';
 
 /**
  * Relays Yjs awareness (presence) messages between `realtime` instances via
@@ -45,6 +46,22 @@ export class PresenceRelay implements OnModuleDestroy {
     }
   }
 
+  /** Persists one client's current awareness state, keyed by board id + client id, so a client joining on any instance can be caught up. */
+  async recordState(boardId: string, clientId: number, update: Uint8Array): Promise<void> {
+    await this.pub.hset(this.stateKeyFor(boardId), String(clientId), Buffer.from(update).toString('base64'));
+  }
+
+  /** Drops a client's persisted state — call when that client goes offline (its awareness state is set to `null`). */
+  async removeState(boardId: string, clientId: number): Promise<void> {
+    await this.pub.hdel(this.stateKeyFor(boardId), String(clientId));
+  }
+
+  /** All persisted per-client awareness updates for a board, each independently decodable via `applyAwarenessUpdate`. */
+  async snapshot(boardId: string): Promise<Uint8Array[]> {
+    const raw = await this.pub.hgetall(this.stateKeyFor(boardId));
+    return Object.values(raw).map((base64) => new Uint8Array(Buffer.from(base64, 'base64')));
+  }
+
   async onModuleDestroy(): Promise<void> {
     this.pub.disconnect();
     this.sub.disconnect();
@@ -69,5 +86,9 @@ export class PresenceRelay implements OnModuleDestroy {
 
   private channelFor(boardId: string): string {
     return `${CHANNEL_PREFIX}${boardId}`;
+  }
+
+  private stateKeyFor(boardId: string): string {
+    return `${STATE_KEY_PREFIX}${boardId}`;
   }
 }

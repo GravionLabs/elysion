@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway } from '@nestjs/websockets';
 import * as decoding from 'lib0/decoding';
 import * as encoding from 'lib0/encoding';
+import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import type { IncomingMessage } from 'node:http';
 import type { RawData, WebSocket } from 'ws';
@@ -50,11 +51,16 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.roomByClient.set(client, room);
 
     // Idempotent per board id — a no-op for every connection after the room's first.
-    void this.presence.subscribe(boardId, (message) => this.broadcastToRoom(room, message));
+    this.presence
+      .subscribe(boardId, (message) => this.broadcastToRoom(room, message))
+      .catch((error: unknown) => this.logger.warn(`Presence subscribe failed for board ${boardId}: ${String(error)}`));
 
     client.on('message', (data: RawData) => this.handleMessage(client, room, data));
 
     this.sendSyncStep1(client, room);
+    this.sendPresenceSnapshot(client, room).catch((error: unknown) =>
+      this.logger.warn(`Presence snapshot failed for board ${boardId}: ${String(error)}`),
+    );
   }
 
   handleDisconnect(client: WebSocket): void {
@@ -93,12 +99,27 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       case MESSAGE_AWARENESS: {
         const bytes = toUint8Array(data);
+        const update = decoding.readVarUint8Array(decoder);
+        awarenessProtocol.applyAwarenessUpdate(room.awareness, update, client);
         this.broadcast(room, bytes, client);
-        void this.presence.publish(room.boardId, bytes);
+        this.presence
+          .publish(room.boardId, bytes)
+          .catch((error: unknown) => this.logger.warn(`Presence publish failed for board ${room.boardId}: ${String(error)}`));
         break;
       }
       default:
         this.logger.warn(`Unknown Yjs message type ${messageType}`);
+    }
+  }
+
+  /** Catches a newly-connected client up on every other client's current presence, persisted in Redis by {@link YjsRoomRegistry}. */
+  private async sendPresenceSnapshot(client: WebSocket, room: YjsRoom): Promise<void> {
+    const updates = await this.presence.snapshot(room.boardId);
+    for (const update of updates) {
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, MESSAGE_AWARENESS);
+      encoding.writeVarUint8Array(encoder, update);
+      this.send(client, encoding.toUint8Array(encoder));
     }
   }
 
