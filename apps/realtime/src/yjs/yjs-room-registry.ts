@@ -1,13 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as encoding from 'lib0/encoding';
+import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
 import type { WebSocket } from 'ws';
+import { PresenceRelay } from '../presence/presence-relay.js';
 import { MESSAGE_SYNC } from './protocol.js';
 
 export interface YjsRoom {
   readonly boardId: string;
   readonly doc: Y.Doc;
+  readonly awareness: awarenessProtocol.Awareness;
   readonly clients: Set<WebSocket>;
 }
 
@@ -20,7 +23,10 @@ export interface YjsRoom {
  */
 @Injectable()
 export class YjsRoomRegistry {
+  private readonly logger = new Logger(YjsRoomRegistry.name);
   private readonly rooms = new Map<string, YjsRoom>();
+
+  constructor(private readonly presence: PresenceRelay) {}
 
   getOrCreate(boardId: string): YjsRoom {
     const existing = this.rooms.get(boardId);
@@ -29,7 +35,8 @@ export class YjsRoomRegistry {
     }
 
     const doc = new Y.Doc();
-    const room: YjsRoom = { boardId, doc, clients: new Set() };
+    const awareness = new awarenessProtocol.Awareness(doc);
+    const room: YjsRoom = { boardId, doc, awareness, clients: new Set() };
 
     doc.on('update', (update: Uint8Array, origin: unknown) => {
       const encoder = encoding.createEncoder();
@@ -43,6 +50,30 @@ export class YjsRoomRegistry {
         }
       }
     });
+
+    // Persists every local awareness change to Redis (keyed by board + client
+    // id) so a client joining any instance — including one seeing this board
+    // for the first time — can be caught up with a snapshot. Fires both for
+    // locally-received client updates and for this instance's own removals.
+    awareness.on(
+      'update',
+      ({ added, updated, removed }: { added: number[]; updated: number[]; removed: number[] }) => {
+        for (const clientId of [...added, ...updated]) {
+          this.presence
+            .recordState(boardId, clientId, awarenessProtocol.encodeAwarenessUpdate(awareness, [clientId]))
+            .catch((error: unknown) =>
+              this.logger.warn(`Presence recordState failed for board ${boardId} client ${clientId}: ${String(error)}`),
+            );
+        }
+        for (const clientId of removed) {
+          this.presence
+            .removeState(boardId, clientId)
+            .catch((error: unknown) =>
+              this.logger.warn(`Presence removeState failed for board ${boardId} client ${clientId}: ${String(error)}`),
+            );
+        }
+      },
+    );
 
     this.rooms.set(boardId, room);
     return room;

@@ -2,9 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway } from '@nestjs/websockets';
 import * as decoding from 'lib0/decoding';
 import * as encoding from 'lib0/encoding';
+import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import type { IncomingMessage } from 'node:http';
 import type { RawData, WebSocket } from 'ws';
+import { PresenceRelay } from '../presence/presence-relay.js';
 import { MESSAGE_AWARENESS, MESSAGE_SYNC } from './protocol.js';
 import { YjsRoom, YjsRoomRegistry } from './yjs-room-registry.js';
 
@@ -22,9 +24,9 @@ function toUint8Array(data: RawData): Uint8Array {
  * Yjs CRDT sync over a plain WebSocket, one room per board id (passed as a
  * `?board=` query param — the gateway's ws path match is exact, so it can't
  * route on a dynamic path segment). Presence/awareness messages are relayed
- * to other clients in the room verbatim, unread — interpreting them is
- * Feature #17's job, this gateway only keeps the wire protocol working for
- * clients that send them.
+ * verbatim, unread, to every other client in the room — both local (via
+ * in-memory broadcast) and on other `realtime` instances (via
+ * {@link PresenceRelay}'s Redis pub/sub).
  */
 @Injectable()
 @WebSocketGateway({ path: '/yjs' })
@@ -32,7 +34,10 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(YjsGateway.name);
   private readonly roomByClient = new WeakMap<WebSocket, YjsRoom>();
 
-  constructor(private readonly registry: YjsRoomRegistry) {}
+  constructor(
+    private readonly registry: YjsRoomRegistry,
+    private readonly presence: PresenceRelay,
+  ) {}
 
   handleConnection(client: WebSocket, request: IncomingMessage): void {
     const boardId = this.readBoardId(request);
@@ -45,9 +50,17 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     room.clients.add(client);
     this.roomByClient.set(client, room);
 
+    // Idempotent per board id — a no-op for every connection after the room's first.
+    this.presence
+      .subscribe(boardId, (message) => this.broadcastToRoom(room, message))
+      .catch((error: unknown) => this.logger.warn(`Presence subscribe failed for board ${boardId}: ${String(error)}`));
+
     client.on('message', (data: RawData) => this.handleMessage(client, room, data));
 
     this.sendSyncStep1(client, room);
+    this.sendPresenceSnapshot(client, room).catch((error: unknown) =>
+      this.logger.warn(`Presence snapshot failed for board ${boardId}: ${String(error)}`),
+    );
   }
 
   handleDisconnect(client: WebSocket): void {
@@ -85,11 +98,28 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         break;
       }
       case MESSAGE_AWARENESS: {
-        this.broadcast(room, toUint8Array(data), client);
+        const bytes = toUint8Array(data);
+        const update = decoding.readVarUint8Array(decoder);
+        awarenessProtocol.applyAwarenessUpdate(room.awareness, update, client);
+        this.broadcast(room, bytes, client);
+        this.presence
+          .publish(room.boardId, bytes)
+          .catch((error: unknown) => this.logger.warn(`Presence publish failed for board ${room.boardId}: ${String(error)}`));
         break;
       }
       default:
         this.logger.warn(`Unknown Yjs message type ${messageType}`);
+    }
+  }
+
+  /** Catches a newly-connected client up on every other client's current presence, persisted in Redis by {@link YjsRoomRegistry}. */
+  private async sendPresenceSnapshot(client: WebSocket, room: YjsRoom): Promise<void> {
+    const updates = await this.presence.snapshot(room.boardId);
+    for (const update of updates) {
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, MESSAGE_AWARENESS);
+      encoding.writeVarUint8Array(encoder, update);
+      this.send(client, encoding.toUint8Array(encoder));
     }
   }
 
@@ -104,6 +134,13 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (client !== exclude) {
         this.send(client, message);
       }
+    }
+  }
+
+  /** Like {@link broadcast}, but with no local exclusion — used for messages relayed in from another instance via Redis. */
+  private broadcastToRoom(room: YjsRoom, message: Uint8Array): void {
+    for (const client of room.clients) {
+      this.send(client, message);
     }
   }
 }
