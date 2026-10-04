@@ -24,9 +24,25 @@
       "problemMatcher": []
     },
     {
+      "label": "canvas: watch element",
+      "detail": "Rebuilds <elysion-canvas> on every change and refreshes apps/frontend/public/canvas",
+      "type": "shell",
+      "command": "pnpm --filter @elysion/frontend-canvas build:element:watch",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite-canvas",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "build started",
+          "endsPattern": "built in"
+        }
+      }
+    },
+    {
       "label": "frontend: serve",
-      "detail": "ng serve on http://localhost:4200",
-      "dependsOn": ["canvas: build element"],
+      "detail": "ng serve on http://localhost:4200; the canvas bundle is rebuilt while it runs",
+      "dependsOn": ["canvas: watch element"],
       "type": "shell",
       "command": "pnpm --filter @elysion/frontend start",
       "isBackground": true,
