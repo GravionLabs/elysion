@@ -1,7 +1,7 @@
 name: Epic
 description: A large body of work spanning multiple features, tied to a spec/ADR.
-title: "[Epic] "
-labels: ["epic"]
+title: '[Epic] '
+labels: ['epic']
 body:
   - type: textarea
     id: goal

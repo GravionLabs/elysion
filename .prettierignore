@@ -1,0 +1,8 @@
+node_modules
+dist
+dist-element
+.angular
+pnpm-lock.yaml
+apps/frontend/public/canvas
+apps/business-backend
+infra/docker/data

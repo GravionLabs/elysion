@@ -1,13 +1,13 @@
 name: PBI
 description: Product backlog item — a scoped, demoable slice of a Feature.
-title: "[PBI] "
-labels: ["pbi"]
+title: '[PBI] '
+labels: ['pbi']
 body:
   - type: input
     id: feature
     attributes:
       label: Parent Feature
-      description: "#<issue number>"
+      description: '#<issue number>'
     validations:
       required: true
   - type: textarea

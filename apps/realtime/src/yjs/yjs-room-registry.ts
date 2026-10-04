@@ -60,16 +60,24 @@ export class YjsRoomRegistry {
       ({ added, updated, removed }: { added: number[]; updated: number[]; removed: number[] }) => {
         for (const clientId of [...added, ...updated]) {
           this.presence
-            .recordState(boardId, clientId, awarenessProtocol.encodeAwarenessUpdate(awareness, [clientId]))
+            .recordState(
+              boardId,
+              clientId,
+              awarenessProtocol.encodeAwarenessUpdate(awareness, [clientId]),
+            )
             .catch((error: unknown) =>
-              this.logger.warn(`Presence recordState failed for board ${boardId} client ${clientId}: ${String(error)}`),
+              this.logger.warn(
+                `Presence recordState failed for board ${boardId} client ${clientId}: ${String(error)}`,
+              ),
             );
         }
         for (const clientId of removed) {
           this.presence
             .removeState(boardId, clientId)
             .catch((error: unknown) =>
-              this.logger.warn(`Presence removeState failed for board ${boardId} client ${clientId}: ${String(error)}`),
+              this.logger.warn(
+                `Presence removeState failed for board ${boardId} client ${clientId}: ${String(error)}`,
+              ),
             );
         }
       },

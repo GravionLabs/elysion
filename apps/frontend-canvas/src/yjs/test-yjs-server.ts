@@ -51,7 +51,8 @@ export function startTestYjsServer(): Promise<TestYjsServer> {
   }
 
   wss.on('connection', (client, request) => {
-    const boardId = new URL(request.url ?? '', 'http://localhost').searchParams.get('board') ?? 'default';
+    const boardId =
+      new URL(request.url ?? '', 'http://localhost').searchParams.get('board') ?? 'default';
     const room = getOrCreateRoom(boardId);
     room.clients.add(client);
 
@@ -61,7 +62,9 @@ export function startTestYjsServer(): Promise<TestYjsServer> {
     client.send(encoding.toUint8Array(step1));
 
     client.on('message', (data: Buffer) => {
-      const decoder = decoding.createDecoder(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+      const decoder = decoding.createDecoder(
+        new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+      );
       if (decoding.readVarUint(decoder) !== MESSAGE_SYNC) {
         return;
       }

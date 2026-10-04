@@ -107,7 +107,11 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    devDependencies:
+      prettier:
+        specifier: ^3.8.1
+        version: 3.9.6
 
   apps/bff:
     dependencies:

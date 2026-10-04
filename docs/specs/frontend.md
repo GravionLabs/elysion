@@ -1,9 +1,11 @@
 # Frontend spec (Angular + React/Excalidraw, TypeScript 6)
 
 ## Owner
+
 Frontend
 
 ## Responsibilities
+
 Angular shell app embedding a React/Excalidraw canvas component, Yjs client for CRDT sync, WebSocket client for presence, RxJS for state management. See ADR 0002.
 
 ## Canvas embedding
@@ -15,7 +17,7 @@ The React/Excalidraw canvas lives in its own workspace package, `apps/frontend-c
 - The Angular↔React contract is a `board-id` attribute in, and `ready`/`error` custom events out (surfaced as a `Board.status` signal) — kept minimal on purpose so the Yjs and presence features have a place to attach later.
 - Build integration: `apps/frontend`'s `prebuild` npm script builds the element bundle and copies the whole `dist-element/` directory into `public/canvas/`, so `pnpm --filter @elysion/frontend build` (and the Dockerfile, which now also installs `apps/frontend-canvas`) produce a single deployable artifact with the canvas bundle already in place — no manual copy step. The element bundle is built as an **ES module**, not iife: Excalidraw's optional heavy features (mermaid/cytoscape/katex diagram import, image resizing) need to stay as separate lazy chunks loaded only on demand, which iife's single-file output can't do — that's why the copy step grabs the whole directory rather than one file.
 
-This was chosen over Angular Elements (which wraps an *Angular* component as a custom element) because the piece being embedded is a React tree; a plain custom element wrapping a React root needs no Angular-specific tooling and keeps the two frameworks' build pipelines fully independent.
+This was chosen over Angular Elements (which wraps an _Angular_ component as a custom element) because the piece being embedded is a React tree; a plain custom element wrapping a React root needs no Angular-specific tooling and keeps the two frameworks' build pipelines fully independent.
 
 ## Why Excalidraw, not tldraw
 

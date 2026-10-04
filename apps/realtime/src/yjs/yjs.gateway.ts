@@ -53,7 +53,9 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Idempotent per board id — a no-op for every connection after the room's first.
     this.presence
       .subscribe(boardId, (message) => this.broadcastToRoom(room, message))
-      .catch((error: unknown) => this.logger.warn(`Presence subscribe failed for board ${boardId}: ${String(error)}`));
+      .catch((error: unknown) =>
+        this.logger.warn(`Presence subscribe failed for board ${boardId}: ${String(error)}`),
+      );
 
     client.on('message', (data: RawData) => this.handleMessage(client, room, data));
 
@@ -104,7 +106,9 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.broadcast(room, bytes, client);
         this.presence
           .publish(room.boardId, bytes)
-          .catch((error: unknown) => this.logger.warn(`Presence publish failed for board ${room.boardId}: ${String(error)}`));
+          .catch((error: unknown) =>
+            this.logger.warn(`Presence publish failed for board ${room.boardId}: ${String(error)}`),
+          );
         break;
       }
       default:
