@@ -1,16 +1,19 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Component, inject, input, signal } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, Component, inject, input } from '@angular/core';
+import { BoardStore } from './board.store';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
 
-export type CanvasStatus = 'loading' | 'ready' | 'error';
+export type { CanvasStatus } from './board.store';
 
 @Component({
   imports: [],
+  providers: [BoardStore],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-board',
   styleUrl: './board.scss',
   templateUrl: './board.html',
 })
 export class Board {
+  readonly #store = inject(BoardStore);
   readonly #loader = inject(CanvasElementLoader);
   readonly #canvasElementSrc = inject(CANVAS_ELEMENT_SRC);
 
@@ -23,17 +26,17 @@ export class Board {
   /** Passed to <elysion-canvas> as the `theme` attribute; omitted (element follows the system preference) when not set. */
   readonly theme = input<'light' | 'dark'>();
 
-  readonly status = signal<CanvasStatus>('loading');
+  readonly status = this.#store.status;
 
   constructor() {
-    this.#loader.load(this.#canvasElementSrc).catch(() => this.status.set('error'));
+    this.#loader.load(this.#canvasElementSrc).catch(() => this.#store.markError());
   }
 
   onCanvasReady(): void {
-    this.status.set('ready');
+    this.#store.markReady();
   }
 
   onCanvasError(): void {
-    this.status.set('error');
+    this.#store.markError();
   }
 }
