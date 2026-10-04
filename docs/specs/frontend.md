@@ -46,6 +46,8 @@ Excalidraw draws elements with roughjs onto a `<canvas>`, so their look is eleme
 
 ## Why Excalidraw, not tldraw
 
+The decision, the comparison with Foblex f-flow and the cost of replacing the canvas are recorded in [ADR 0004](../adr/0004-canvas-library.md).
+
 The canvas was originally built on tldraw (see GitHub Feature #25), but tldraw's SDK is source-available, not open source: its license prohibits use in a "Production Environment" without a paid or non-commercial License Key, and enforces this with a "Get a license for production" watermark. Elysion is meant to be a genuinely open-source Mural alternative, so the canvas was swapped to [Excalidraw](https://github.com/excalidraw/excalidraw) (`@excalidraw/excalidraw`), which is MIT-licensed (see GitHub Feature #68). The embedding architecture above is unaffected by that swap — it only changed what renders inside `CanvasApp`.
 
 ## Yjs client integration
