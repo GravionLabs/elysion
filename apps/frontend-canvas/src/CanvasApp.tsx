@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { Minimap } from './Minimap';
+import { SceneStore } from './scene-store';
+import { scrollToCenter } from './minimap-geometry';
 import { Toolbar, type ToolbarTool } from './Toolbar';
 import { ELEMENT_DEFAULTS, VIEW_BACKGROUND_COLOR } from './element-style';
 import { createStickyNote, type StickyColor } from './sticky-note';
@@ -35,6 +38,7 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
   const resolvedTheme = useResolvedTheme(theme);
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
+  const sceneStoreRef = useRef(new SceneStore());
   const [activeTool, setActiveTool] = useState<ToolType | 'custom'>('selection');
 
   // Connection setup lives in the effect, not render, and is re-created (not
@@ -64,6 +68,15 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const panTo = (center: { x: number; y: number }) => {
+    const snapshot = sceneStoreRef.current.get();
+    if (!snapshot) return;
+    apiRef.current?.updateScene({
+      appState: scrollToCenter(center, snapshot),
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+  };
 
   const addSticky = (color: StickyColor) => {
     const api = apiRef.current;
@@ -100,8 +113,17 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
         onChange={(elements, appState) => {
           bindingRef.current?.onLocalChange(elements);
           setActiveTool(appState.activeTool.type);
+          sceneStoreRef.current.set({
+            elements: elements.filter((element) => !element.isDeleted),
+            scrollX: appState.scrollX,
+            scrollY: appState.scrollY,
+            zoom: appState.zoom.value,
+            width: appState.width,
+            height: appState.height,
+          });
         }}
       />
+      <Minimap store={sceneStoreRef.current} onPan={panTo} />
       <Toolbar
         activeTool={activeTool}
         onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
