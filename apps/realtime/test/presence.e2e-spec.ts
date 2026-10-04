@@ -121,7 +121,9 @@ describe('Presence across realtime instances (e2e)', () => {
 
     clientA.setState({ name: 'Ada', cursor: { x: 1, y: 2 } });
 
-    await waitUntil(() => clientB.awareness.getStates().get(clientA.awareness.clientID) !== undefined);
+    await waitUntil(
+      () => clientB.awareness.getStates().get(clientA.awareness.clientID) !== undefined,
+    );
     expect(clientB.awareness.getStates().get(clientA.awareness.clientID)).toEqual({
       name: 'Ada',
       cursor: { x: 1, y: 2 },
@@ -143,8 +145,12 @@ describe('Presence across realtime instances (e2e)', () => {
     const clientC = new TestPresenceClient(`${instanceB.baseUrl}?board=${boardId}`);
     await clientC.waitForOpen();
 
-    await waitUntil(() => clientC.awareness.getStates().get(clientA.awareness.clientID) !== undefined);
-    expect(clientC.awareness.getStates().get(clientA.awareness.clientID)).toEqual({ name: 'Grace' });
+    await waitUntil(
+      () => clientC.awareness.getStates().get(clientA.awareness.clientID) !== undefined,
+    );
+    expect(clientC.awareness.getStates().get(clientA.awareness.clientID)).toEqual({
+      name: 'Grace',
+    });
 
     clientA.close();
     clientC.close();

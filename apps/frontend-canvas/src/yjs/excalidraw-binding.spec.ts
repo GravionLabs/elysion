@@ -6,7 +6,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { ExcalidrawYjsBinding } from './excalidraw-binding.js';
 
 function rectangle() {
-  const [element] = convertToExcalidrawElements([{ type: 'rectangle', x: 0, y: 0, width: 10, height: 10 }]);
+  const [element] = convertToExcalidrawElements([
+    { type: 'rectangle', x: 0, y: 0, width: 10, height: 10 },
+  ]);
   return element;
 }
 

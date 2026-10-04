@@ -48,7 +48,11 @@ export class PresenceRelay implements OnModuleDestroy {
 
   /** Persists one client's current awareness state, keyed by board id + client id, so a client joining on any instance can be caught up. */
   async recordState(boardId: string, clientId: number, update: Uint8Array): Promise<void> {
-    await this.pub.hset(this.stateKeyFor(boardId), String(clientId), Buffer.from(update).toString('base64'));
+    await this.pub.hset(
+      this.stateKeyFor(boardId),
+      String(clientId),
+      Buffer.from(update).toString('base64'),
+    );
   }
 
   /** Drops a client's persisted state — call when that client goes offline (its awareness state is set to `null`). */

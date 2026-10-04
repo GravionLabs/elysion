@@ -1,13 +1,13 @@
 name: Feature
 description: A user-facing or system capability, part of an Epic.
-title: "[Feature] "
-labels: ["feature"]
+title: '[Feature] '
+labels: ['feature']
 body:
   - type: input
     id: epic
     attributes:
       label: Parent Epic
-      description: "#<issue number>"
+      description: '#<issue number>'
     validations:
       required: true
   - type: textarea

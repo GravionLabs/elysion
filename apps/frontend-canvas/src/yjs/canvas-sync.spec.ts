@@ -57,7 +57,9 @@ describe('canvas Yjs sync (two CanvasApp-style peers)', () => {
     const peerA = createCanvasPeer(url);
     const peerB = createCanvasPeer(url);
 
-    const [rect] = convertToExcalidrawElements([{ type: 'rectangle', x: 0, y: 0, width: 10, height: 10 }]);
+    const [rect] = convertToExcalidrawElements([
+      { type: 'rectangle', x: 0, y: 0, width: 10, height: 10 },
+    ]);
     peerA.draw(rect);
 
     await waitUntil(() => peerB.getElements().some((element) => element.id === rect.id));
@@ -70,7 +72,9 @@ describe('canvas Yjs sync (two CanvasApp-style peers)', () => {
   it('sends a newly-joining peer the board state that already exists', async () => {
     const url = `${server.url}?board=${crypto.randomUUID()}`;
     const peerA = createCanvasPeer(url);
-    const [rect] = convertToExcalidrawElements([{ type: 'rectangle', x: 0, y: 0, width: 10, height: 10 }]);
+    const [rect] = convertToExcalidrawElements([
+      { type: 'rectangle', x: 0, y: 0, width: 10, height: 10 },
+    ]);
     peerA.draw(rect);
 
     // Give the server time to actually receive and store it before the
@@ -97,14 +101,18 @@ describe('canvas Yjs sync (two CanvasApp-style peers)', () => {
     // Excalidraw mutates its element objects in place rather than creating
     // a new object per change; draw() must still capture each version
     // independently rather than aliasing the same mutable reference.
-    const [rect] = convertToExcalidrawElements([{ type: 'rectangle', x: 0, y: 0, width: 10, height: 10 }]);
+    const [rect] = convertToExcalidrawElements([
+      { type: 'rectangle', x: 0, y: 0, width: 10, height: 10 },
+    ]);
     peerA.draw(rect);
     await waitUntil(() => peerB.getElements().some((element) => element.id === rect.id));
 
     Object.assign(rect, { width: 999, version: rect.version + 1 });
     peerA.draw(rect);
 
-    await waitUntil(() => peerB.getElements().find((element) => element.id === rect.id)?.width === 999);
+    await waitUntil(
+      () => peerB.getElements().find((element) => element.id === rect.id)?.width === 999,
+    );
     expect(peerB.getElements().find((element) => element.id === rect.id)?.width).toBe(999);
 
     peerA.destroy();
@@ -115,7 +123,9 @@ describe('canvas Yjs sync (two CanvasApp-style peers)', () => {
     const peerA = createCanvasPeer(`${server.url}?board=${crypto.randomUUID()}`);
     const peerB = createCanvasPeer(`${server.url}?board=${crypto.randomUUID()}`);
 
-    const [rect] = convertToExcalidrawElements([{ type: 'rectangle', x: 0, y: 0, width: 10, height: 10 }]);
+    const [rect] = convertToExcalidrawElements([
+      { type: 'rectangle', x: 0, y: 0, width: 10, height: 10 },
+    ]);
     peerA.draw(rect);
     await new Promise((resolve) => setTimeout(resolve, 150));
 

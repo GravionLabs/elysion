@@ -28,7 +28,9 @@ infra/docker/data/
 !.env.example
 
 # IDE / OS
-.vscode/
+/.vscode/*
+!/.vscode/extensions.json
+apps/*/.vscode/
 .idea/
 .DS_Store
 Thumbs.db

@@ -35,8 +35,8 @@ describe('YjsRoomRegistry presence persistence', () => {
     awarenessProtocol.applyAwarenessUpdate(room.awareness, update, 'test');
 
     expect(presence.recordState).toHaveBeenCalledTimes(1);
-    const [boardId, clientId, storedUpdate] = (presence.recordState as ReturnType<typeof vi.fn>).mock
-      .calls[0] as [string, number, Uint8Array];
+    const [boardId, clientId, storedUpdate] = (presence.recordState as ReturnType<typeof vi.fn>)
+      .mock.calls[0] as [string, number, Uint8Array];
     expect(boardId).toBe('board-1');
     expect(clientId).toBe(42);
 
@@ -51,7 +51,11 @@ describe('YjsRoomRegistry presence persistence', () => {
     const registry = new YjsRoomRegistry(presence);
     const room = registry.getOrCreate('board-2');
 
-    awarenessProtocol.applyAwarenessUpdate(room.awareness, encodeRemoteState(7, { name: 'Bob' }), 'test');
+    awarenessProtocol.applyAwarenessUpdate(
+      room.awareness,
+      encodeRemoteState(7, { name: 'Bob' }),
+      'test',
+    );
     expect(presence.removeState).not.toHaveBeenCalled();
 
     awarenessProtocol.removeAwarenessStates(room.awareness, [7], 'test');

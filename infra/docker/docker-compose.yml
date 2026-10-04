@@ -4,10 +4,10 @@ services:
   traefik:
     image: traefik:v3.7.13
     command:
-      - "--configFile=/etc/traefik/traefik.yml"
+      - '--configFile=/etc/traefik/traefik.yml'
     ports:
-      - "80:80"
-      - "8080:8080" # Traefik dashboard
+      - '80:80'
+      - '8080:8080' # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ../traefik/traefik.yml:/etc/traefik/traefik.yml:ro
@@ -21,7 +21,7 @@ services:
       POSTGRES_PASSWORD: elysion
       POSTGRES_DB: elysion
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql
     networks:
@@ -30,7 +30,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis-data:/data
     networks:
@@ -43,8 +43,8 @@ services:
       MINIO_ROOT_USER: elysion
       MINIO_ROOT_PASSWORD: elysion123
     ports:
-      - "9000:9000"
-      - "9001:9001" # MinIO console
+      - '9000:9000'
+      - '9001:9001' # MinIO console
     volumes:
       - minio-data:/data
     networks:
@@ -55,24 +55,24 @@ services:
   whoami-api:
     image: traefik/whoami
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.whoami-api.rule=PathPrefix(`/api`)"
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.whoami-api.rule=PathPrefix(`/api`)'
     networks:
       - elysion
 
   whoami-realtime:
     image: traefik/whoami
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.whoami-realtime.rule=PathPrefix(`/realtime`)"
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.whoami-realtime.rule=PathPrefix(`/realtime`)'
     networks:
       - elysion
 
   whoami-internal:
     image: traefik/whoami
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.whoami-internal.rule=PathPrefix(`/internal`)"
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.whoami-internal.rule=PathPrefix(`/internal`)'
     networks:
       - elysion
 

@@ -85,7 +85,9 @@ export class YjsWebsocketClient {
       syncProtocol.writeSyncStep1(encoder, this.doc);
       this.#send(encoding.toUint8Array(encoder));
     });
-    socket.addEventListener('message', (event) => this.#handleMessage(new Uint8Array(event.data as ArrayBuffer)));
+    socket.addEventListener('message', (event) =>
+      this.#handleMessage(new Uint8Array(event.data as ArrayBuffer)),
+    );
     socket.addEventListener('close', () => {
       this.#onStatusChange?.('disconnected');
       this.#scheduleReconnect();
