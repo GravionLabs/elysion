@@ -27,6 +27,15 @@ The canvas UI follows the design of GravionLabs/ariadne:
 - `styles/excalidraw-theme.css` maps those tokens onto Excalidraw's own CSS custom properties (`--island-bg-color`, `--color-primary*`, `--color-surface-*`, `--shadow-island`, radii, ...). Scoping under `.elysion-canvas` beats Excalidraw's `.excalidraw` / `.excalidraw.theme--dark` rules by specificity, independent of stylesheet order. Excalidraw's DOM classes are not public API, so only its documented-by-use variables are overridden; hardcoded spots would need targeted selectors and are an upgrade risk.
 - The `theme` attribute on `<elysion-canvas>` (`light` | `dark`, also an input on Angular's `Board`) sets `data-theme` on the root and Excalidraw's `theme` prop. Without it the canvas follows `prefers-color-scheme` live.
 
+## Bottom toolbar
+
+Excalidraw's own top tool island is hidden (`.shapes-section`, in `styles/toolbar.css`) and replaced by `Toolbar.tsx`, a bottom-centered floating pill styled after ariadne's toolbox (surface background, 1px border, `--radius-xl`, `--shadow-md`, 34px icon buttons, dividers between groups, `--c-primary-soft` for the active tool, wrapping on narrow viewports). Excalidraw's DOM classes are not public API, so the island is hidden rather than restyled; its keyboard shortcuts keep working.
+
+- Clicking a button calls `excalidrawAPI.setActiveTool({ type })`.
+- The active button is derived from `appState.activeTool.type` in `onChange`, so shortcuts and any other tool change stay in sync.
+- The pill is a `role="toolbar"` with `aria-label`, `aria-pressed` and `title="<name> (<shortcut>)"` per button and a `:focus-visible` outline.
+- Excalidraw handles shortcuts only while its own container has focus (`handleKeyboardGlobally` is off); the toolbar does not change that.
+
 ## Why Excalidraw, not tldraw
 
 The canvas was originally built on tldraw (see GitHub Feature #25), but tldraw's SDK is source-available, not open source: its license prohibits use in a "Production Environment" without a paid or non-commercial License Key, and enforces this with a "Get a license for production" watermark. Elysion is meant to be a genuinely open-source Mural alternative, so the canvas was swapped to [Excalidraw](https://github.com/excalidraw/excalidraw) (`@excalidraw/excalidraw`), which is MIT-licensed (see GitHub Feature #68). The embedding architecture above is unaffected by that swap — it only changed what renders inside `CanvasApp`.
