@@ -25,7 +25,7 @@ The canvas UI follows the design of GravionLabs/ariadne:
 
 - `apps/frontend-canvas/src/styles/tokens.css` holds ariadne's `--c-*` design tokens (light and dark), scoped to the `.elysion-canvas` root that `CanvasApp` renders, so nothing leaks into the host page. Keep the names and values in sync with ariadne's `apps/web/src/styles.scss`.
 - `styles/excalidraw-theme.css` maps those tokens onto Excalidraw's own CSS custom properties (`--island-bg-color`, `--color-primary*`, `--color-surface-*`, `--shadow-island`, radii, ...). Scoping under `.elysion-canvas` beats Excalidraw's `.excalidraw` / `.excalidraw.theme--dark` rules by specificity, independent of stylesheet order. Excalidraw's DOM classes are not public API, so only its documented-by-use variables are overridden; hardcoded spots would need targeted selectors and are an upgrade risk.
-- The `theme` attribute on `<elysion-canvas>` (`light` | `dark`, also an input on Angular's `Board`) sets `data-theme` on the root and Excalidraw's `theme` prop. Without it the canvas follows `prefers-color-scheme` live.
+- The `theme` attribute on `<elysion-canvas>` (`light` | `dark`, also an input on Angular's `Board`) sets `data-theme` on the root and Excalidraw's `theme` prop. Without it the canvas follows `prefers-color-scheme` live. Because a `theme` is always passed to Excalidraw, its own light/dark toggle (main menu, Alt+Shift+D) is enabled explicitly with `UIOptions.canvasActions.toggleTheme` (Excalidraw otherwise shows it only when no `theme` is given, #197); `CanvasApp` keeps the active theme from `appState.theme`, so the tokens and the minimap follow a toggle, and a changed attribute or system preference still wins over it.
 
 ## Bottom toolbar
 
