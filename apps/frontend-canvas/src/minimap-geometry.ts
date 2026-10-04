@@ -92,6 +92,14 @@ export function toMinimapRect(rect: SceneRect, layout: MinimapLayout): SceneRect
   };
 }
 
+/**
+ * The same mapping with the viewport frame taken from a newer snapshot. While dragging, the mapping
+ * (scale and origin) is frozen but the frame must keep following the view.
+ */
+export function followViewport(layout: MinimapLayout, snapshot: SceneSnapshot): MinimapLayout {
+  return { ...layout, viewport: toMinimapRect(viewportInScene(snapshot), layout) };
+}
+
 /** The scene point under a point in the minimap. */
 export function minimapToScene(
   point: { x: number; y: number },

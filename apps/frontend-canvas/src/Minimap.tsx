@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useRef, useSyncExternalStore } from 'react';
 import {
   computeLayout,
+  followViewport,
   minimapToScene,
   toMinimapRect,
   type MinimapLayout,
@@ -61,7 +62,13 @@ export function Minimap({ store, onPan }: MinimapProps) {
     const canvas = canvasRef.current;
     if (!canvas || !snapshot || !hasContent) return;
     const frame = requestAnimationFrame(() =>
-      draw(canvas, snapshot, frozenLayout.current ?? computeLayout(snapshot, MINIMAP_SIZE)),
+      draw(
+        canvas,
+        snapshot,
+        frozenLayout.current
+          ? followViewport(frozenLayout.current, snapshot)
+          : computeLayout(snapshot, MINIMAP_SIZE),
+      ),
     );
     return () => cancelAnimationFrame(frame);
   }, [snapshot, hasContent, layoutVersion]);

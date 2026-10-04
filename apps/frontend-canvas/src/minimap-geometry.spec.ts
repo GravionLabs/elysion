@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeLayout,
+  followViewport,
   minimapToScene,
   sceneBounds,
   scrollToCenter,
@@ -83,6 +84,24 @@ describe('degenerate scenes', () => {
     );
     expect(Number.isFinite(layout.scale)).toBe(true);
     expect(Number.isFinite(layout.originX)).toBe(true);
+  });
+});
+
+describe('followViewport', () => {
+  it('keeps scale and origin but moves the frame to the new view', () => {
+    const size = { width: 160, height: 120 };
+    const start = snapshot();
+    const layout = computeLayout(start, size);
+    const moved = snapshot({ scrollX: -50, scrollY: -20 });
+
+    const followed = followViewport(layout, moved);
+
+    expect(followed.scale).toBe(layout.scale);
+    expect(followed.originX).toBe(layout.originX);
+    expect(followed.originY).toBe(layout.originY);
+    expect(followed.viewport.x).toBeCloseTo(layout.viewport.x + 50 * layout.scale);
+    expect(followed.viewport.y).toBeCloseTo(layout.viewport.y + 20 * layout.scale);
+    expect(followed.viewport.width).toBeCloseTo(layout.viewport.width);
   });
 });
 

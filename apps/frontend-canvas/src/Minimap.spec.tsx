@@ -1,7 +1,12 @@
 import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Minimap } from './Minimap';
-import { computeLayout, type SceneSnapshot } from './minimap-geometry';
+import {
+  computeLayout,
+  toMinimapRect,
+  viewportInScene,
+  type SceneSnapshot,
+} from './minimap-geometry';
 import { MINIMAP_SIZE } from './Minimap';
 import { SceneStore } from './scene-store';
 
@@ -91,6 +96,27 @@ describe('Minimap while and after moving the view through it', () => {
 
     const fresh = computeLayout(moved, MINIMAP_SIZE).viewport;
     expect(lastFrame(canvas)).toEqual([fresh.x, fresh.y, fresh.width, fresh.height]);
+  });
+
+  it('moves the frame with the view while the pointer is still down', async () => {
+    const store = new SceneStore();
+    const { container } = render(<Minimap store={store} onPan={() => {}} />);
+    act(() => store.set(snapshot));
+    await nextFrame();
+    const canvas = container.querySelector('canvas') as HTMLCanvasElement;
+    canvas.getBoundingClientRect = () => ({ left: 0, top: 0 }) as DOMRect;
+    const before = lastFrame(canvas);
+
+    pointer(canvas, 'pointerdown', 80, 60);
+    const moved = { ...snapshot, scrollX: -150, scrollY: -100 };
+    act(() => store.set(moved));
+    await nextFrame();
+
+    // The mapping stays as it was when the drag began; only the frame follows the view.
+    const frozen = computeLayout(snapshot, MINIMAP_SIZE);
+    const expected = toMinimapRect(viewportInScene(moved), frozen);
+    expect(lastFrame(canvas)).not.toEqual(before);
+    expect(lastFrame(canvas)).toEqual([expected.x, expected.y, expected.width, expected.height]);
   });
 
   it('does not send the view beyond the content when the pointer leaves the minimap', () => {
