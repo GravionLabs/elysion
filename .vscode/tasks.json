@@ -3,7 +3,7 @@
   "tasks": [
     {
       "label": "infra: up",
-      "detail": "Traefik, Postgres, Redis and MinIO (docker compose, detached)",
+      "detail": "Traefik, Postgres, Redis and RustFS (docker compose, detached)",
       "type": "shell",
       "command": "pnpm dev:infra",
       "problemMatcher": []
