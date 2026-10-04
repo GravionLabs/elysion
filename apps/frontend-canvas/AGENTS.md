@@ -26,6 +26,10 @@ pnpm --filter @elysion/frontend-canvas test               # vitest
 - The custom element bundle bundles its own React/ReactDOM runtime so the Angular host doesn't need to provide one.
 - `yjs/` wires the scene to `apps/realtime`'s sync gateway — see `docs/specs/frontend.md`'s "Yjs client integration" section before touching it; the two bugs fixed there (initial-sync-to-late-joiner, in-place-mutation aliasing) are exactly the kind that pass unit tests against fresh/empty rooms but break in a real two-tab session, so verify any change against a real running `apps/realtime` and two browser tabs, not just `vitest`.
 
+## Look and feel
+
+The canvas follows ariadne's design: `src/styles/` (tokens, Excalidraw variable mapping, toolbar), `Toolbar.tsx`, `element-style.ts`, `sticky-note.ts` — see "Theming", "Bottom toolbar" and "Canvas element style" in `docs/specs/frontend.md`. The dev entry accepts `?theme=light|dark` for checking both themes.
+
 ## Verifying changes
 
 `pnpm --filter @elysion/frontend-canvas test` must pass, then `pnpm --filter @elysion/frontend-canvas build` and `build:element` must both succeed. For anything touching `yjs/`, also manually verify: run `apps/realtime` for real (`node dist/main.js`), point two browser tabs/instances at the canvas with the same board id (e.g. via `main.tsx`'s dev entry, temporarily setting `yjsServerUrl`), and confirm an edit in one appears in the other — unit tests alone missed both real bugs found here because they used fresh/empty rooms, not a room with pre-existing history from a late-joining peer.

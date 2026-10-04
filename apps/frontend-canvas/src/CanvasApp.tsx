@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Toolbar, type ToolbarTool } from './Toolbar';
+import { ELEMENT_DEFAULTS, VIEW_BACKGROUND_COLOR } from './element-style';
+import { createStickyNote, type StickyColor } from './sticky-note';
 import { useResolvedTheme, type CanvasTheme } from './useResolvedTheme';
-import { Excalidraw } from '@excalidraw/excalidraw';
+import { CaptureUpdateAction, Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import './styles/tokens.css';
 import './styles/excalidraw-theme.css';
@@ -63,6 +65,23 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const addSticky = (color: StickyColor) => {
+    const api = apiRef.current;
+    if (!api) return;
+    const { scrollX, scrollY, zoom, width, height } = api.getAppState();
+    const center = {
+      x: width / 2 / zoom.value - scrollX,
+      y: height / 2 / zoom.value - scrollY,
+    };
+    const note = createStickyNote(color, center);
+    api.updateScene({
+      elements: [...api.getSceneElements(), ...note],
+      appState: { selectedElementIds: { [note[0].id]: true } },
+      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    });
+    api.setActiveTool({ type: 'selection' });
+  };
+
   return (
     <div
       className="elysion-canvas"
@@ -71,6 +90,9 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
     >
       <Excalidraw
         theme={resolvedTheme}
+        initialData={{
+          appState: { ...ELEMENT_DEFAULTS, viewBackgroundColor: VIEW_BACKGROUND_COLOR },
+        }}
         excalidrawAPI={(api) => {
           apiRef.current = api;
           bindingRef.current?.attach(api);
@@ -83,6 +105,7 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
       <Toolbar
         activeTool={activeTool}
         onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
+        onAddSticky={addSticky}
       />
     </div>
   );

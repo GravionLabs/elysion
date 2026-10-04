@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { ToolType } from '@excalidraw/excalidraw/types';
+import { STICKY_COLORS, type StickyColor } from './sticky-note';
 
 export type ToolbarTool = Extract<
   ToolType,
@@ -169,10 +170,19 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
 export interface ToolbarProps {
   activeTool: ToolType | 'custom';
   onSelect: (tool: ToolbarTool) => void;
+  onAddSticky?: (color: StickyColor) => void;
 }
 
+const STICKY_ICON = (
+  <Icon>
+    <path d="M5 4h14a1 1 0 0 1 1 1v9l-6 6H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM14 20v-5a1 1 0 0 1 1-1h5" />
+  </Icon>
+);
+
 /** The bottom-centered floating tool pill, styled after ariadne's toolbox. */
-export function Toolbar({ activeTool, onSelect }: ToolbarProps) {
+export function Toolbar({ activeTool, onSelect, onAddSticky }: ToolbarProps) {
+  const [stickyOpen, setStickyOpen] = useState(false);
+
   return (
     <div className="elysion-toolbar" role="toolbar" aria-label="Canvas tools">
       {GROUPS.map((group, index) => (
@@ -195,6 +205,40 @@ export function Toolbar({ activeTool, onSelect }: ToolbarProps) {
               </button>
             );
           })}
+          {onAddSticky && group.some((d) => d.tool === 'text') && (
+            <div className="elysion-sticky">
+              <button
+                type="button"
+                className={stickyOpen ? 'elysion-icon-button active' : 'elysion-icon-button'}
+                aria-label="Sticky note"
+                aria-haspopup="true"
+                aria-expanded={stickyOpen}
+                title="Sticky note"
+                data-testid="elysion-tool-sticky"
+                onClick={() => setStickyOpen((open) => !open)}
+              >
+                {STICKY_ICON}
+              </button>
+              {stickyOpen && (
+                <div className="elysion-sticky__colors" role="group" aria-label="Sticky note color">
+                  {STICKY_COLORS.map((color) => (
+                    <button
+                      key={color.name}
+                      type="button"
+                      className="elysion-sticky__swatch"
+                      style={{ background: color.hex }}
+                      aria-label={`${color.name} sticky note`}
+                      title={`${color.name} sticky note`}
+                      onClick={() => {
+                        onAddSticky(color);
+                        setStickyOpen(false);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ))}
     </div>

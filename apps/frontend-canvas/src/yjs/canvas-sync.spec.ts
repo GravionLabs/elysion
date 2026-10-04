@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExcalidrawYjsBinding } from './excalidraw-binding.js';
 import { startTestYjsServer, waitUntil, type TestYjsServer } from './test-yjs-server.js';
 import { YjsWebsocketClient } from './YjsWebsocketClient.js';
+import { STICKY_COLORS, createStickyNote } from '../sticky-note.js';
 
 const WebSocketImpl = NodeWebSocketClient as unknown as typeof WebSocket;
 
@@ -64,6 +65,27 @@ describe('canvas Yjs sync (two CanvasApp-style peers)', () => {
 
     await waitUntil(() => peerB.getElements().some((element) => element.id === rect.id));
     expect(peerB.getElements().map((element) => element.id)).toContain(rect.id);
+
+    peerA.destroy();
+    peerB.destroy();
+  });
+
+  it('syncs a sticky note (container plus bound text) with its style intact', async () => {
+    const url = `${server.url}?board=${crypto.randomUUID()}`;
+    const peerA = createCanvasPeer(url);
+    const peerB = createCanvasPeer(url);
+
+    const [card, label] = createStickyNote(STICKY_COLORS[3], { x: 0, y: 0 });
+    peerA.binding.onLocalChange([card, label] as unknown as OrderedExcalidrawElement[]);
+
+    await waitUntil(() => peerB.getElements().some((element) => element.id === label.id));
+    const synced = peerB.getElements().find((element) => element.id === card.id);
+    expect(synced).toMatchObject({
+      roughness: 0,
+      fillStyle: 'solid',
+      strokeColor: STICKY_COLORS[3].hex,
+      backgroundColor: card.backgroundColor,
+    });
 
     peerA.destroy();
     peerB.destroy();
