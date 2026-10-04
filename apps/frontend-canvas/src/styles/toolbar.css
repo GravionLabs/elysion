@@ -76,3 +76,41 @@
   color: var(--c-primary);
   background: var(--c-primary-soft);
 }
+
+/* The sticky-note button opens a row of ariadne's node colors above the pill. */
+.elysion-sticky {
+  position: relative;
+}
+
+.elysion-sticky__colors {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  transform: translateX(-50%);
+}
+
+.elysion-sticky__swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid var(--c-surface-1);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--c-border);
+}
+
+.elysion-sticky__swatch:hover {
+  box-shadow: 0 0 0 2px var(--c-primary);
+}
+
+.elysion-sticky__swatch:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 2px;
+}

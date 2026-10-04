@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { CanvasApp } from './CanvasApp';
+import { parseTheme } from './useResolvedTheme';
 
 const container = document.getElementById('root');
 if (!container) {
@@ -9,6 +10,9 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <CanvasApp boardId="dev" />
+    <CanvasApp
+      boardId="dev"
+      theme={parseTheme(new URLSearchParams(location.search).get('theme'))}
+    />
   </StrictMode>,
 );

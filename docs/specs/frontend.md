@@ -36,6 +36,14 @@ Excalidraw's own top tool island is hidden (`.shapes-section`, in `styles/toolba
 - The pill is a `role="toolbar"` with `aria-label`, `aria-pressed` and `title="<name> (<shortcut>)"` per button and a `:focus-visible` outline.
 - Excalidraw handles shortcuts only while its own container has focus (`handleKeyboardGlobally` is off); the toolbar does not change that.
 
+## Canvas element style
+
+Excalidraw draws elements with roughjs onto a `<canvas>`, so their look is element properties, not CSS (unlike the UI chrome above):
+
+- `element-style.ts` sets defaults for newly drawn shapes through `initialData.appState`: `roughness: 0` (flat instead of hand-drawn), solid fill, 1px stroke, round corners, ariadne's text color and Helvetica. The canvas background is ariadne's `--c-bg`. Users can still change any element's style in Excalidraw's property panel; the defaults only make the ariadne look the path of least resistance. Excalidraw has no public prop to replace its color-picker palette, so the picker keeps its default swatches.
+- **Sticky notes** are not a native Excalidraw element. `sticky-note.ts` builds one as a rectangle with a bound, centered text (via `convertToExcalidrawElements`) in the look of ariadne's node cards: the accent color as 1px border and a 14% tint of it as fill. The toolbar's sticky button opens a row of ariadne's `--c-node-*` colors and inserts the note at the viewport center, selected (press Enter to edit its text). Being ordinary elements, notes sync through the Yjs binding unchanged.
+- Colors are stored in light-theme space. Excalidraw's dark theme inverts canvas colors with a CSS filter (`invert(93%) hue-rotate(180deg)`), which turns the same values into dark equivalents; the accent hues survive the hue rotation.
+
 ## Why Excalidraw, not tldraw
 
 The canvas was originally built on tldraw (see GitHub Feature #25), but tldraw's SDK is source-available, not open source: its license prohibits use in a "Production Environment" without a paid or non-commercial License Key, and enforces this with a "Get a license for production" watermark. Elysion is meant to be a genuinely open-source Mural alternative, so the canvas was swapped to [Excalidraw](https://github.com/excalidraw/excalidraw) (`@excalidraw/excalidraw`), which is MIT-licensed (see GitHub Feature #68). The embedding architecture above is unaffected by that swap — it only changed what renders inside `CanvasApp`.
