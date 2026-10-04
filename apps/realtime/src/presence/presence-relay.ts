@@ -5,8 +5,9 @@ import { REDIS_PUB_CLIENT, REDIS_SUB_CLIENT } from '../redis/redis.provider.js';
 
 export type PresenceHandler = (message: Uint8Array) => void;
 
-const CHANNEL_PREFIX = 'presence:';
-const STATE_KEY_PREFIX = 'presence:state:';
+// Valkey is shared with other projects (local-infra): everything Elysion writes is namespaced.
+const CHANNEL_PREFIX = 'elysion:presence:';
+const STATE_KEY_PREFIX = 'elysion:presence:state:';
 
 /**
  * Relays Yjs awareness (presence) messages between `realtime` instances via

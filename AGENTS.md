@@ -1,6 +1,6 @@
 # Elysion — Agent Instructions
 
-Open-source Mural alternative. Monorepo: Angular + React/Excalidraw frontend, two NestJS services (BFF, realtime/Yjs), a .NET 10 business backend, Traefik gateway, Postgres/Redis/RustFS (S3).
+Open-source Mural alternative. Monorepo: Angular + React/Excalidraw frontend, two NestJS services (BFF, realtime/Yjs), a .NET 10 business backend, Traefik gateway, Postgres and RustFS (S3); Valkey comes from the shared `local-infra`.
 
 Each `apps/*` subdirectory has its own `AGENTS.md` with service-specific detail — read it before working in that app. This file covers repo-wide conventions.
 
@@ -27,7 +27,8 @@ Each `apps/*` subdirectory has its own `AGENTS.md` with service-specific detail 
 
 ## Workflow
 
-- Run `pnpm dev:infra` (docker-compose: Traefik, Postgres, Redis, RustFS) before working on any backend service locally.
+- Run `pnpm dev:infra` (docker-compose: Traefik, Postgres, RustFS) before working on any backend service locally.
+- **Valkey/Redis, RabbitMQ and Portainer come from the shared `../local-infra` repo** (`docker compose up -d` there) and must never be defined in Elysion's compose file. Valkey is shared across projects: namespace every key and channel with `elysion:`. Containerized apps join the external `local-infra` network; host apps use `localhost:6379`.
 - Docker builds must run from the repo root (`docker build -f apps/<app>/Dockerfile .`) — Dockerfiles COPY `pnpm-workspace.yaml`/lockfile from the root.
 - Verify changes actually run (build + start + hit the relevant endpoint), not just that they compile — see each app's `AGENTS.md` for its specific check.
 

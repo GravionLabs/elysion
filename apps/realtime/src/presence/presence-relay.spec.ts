@@ -104,4 +104,18 @@ describe('PresenceRelay', () => {
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
   });
+
+  it('namespaces channels and state keys with elysion: because Valkey is shared with other projects', async () => {
+    const bus = new FakeRedisBus();
+    const hset = vi.fn().mockResolvedValue(1);
+    const pub = Object.assign(new FakeRedisClient(bus), { hset });
+    const sub = new FakeRedisClient(bus);
+    const relay = new PresenceRelay(pub as unknown as Redis, sub as unknown as Redis);
+
+    await relay.subscribe('board-1', vi.fn());
+    await relay.recordState('board-1', 7, new Uint8Array([1]));
+
+    expect([...sub.subscribedChannels]).toEqual(['elysion:presence:board-1']);
+    expect(hset.mock.calls[0][0]).toBe('elysion:presence:state:board-1');
+  });
 });
