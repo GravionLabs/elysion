@@ -1,5 +1,9 @@
 name: elysion
 
+# Valkey (Redis), RabbitMQ and Portainer are shared across projects and run from
+# ~/Source/gravionlabs/local-infra (`docker compose up -d` there). Do not define them here:
+# apps on the host use localhost:6379, apps in containers join the external `local-infra` network.
+
 services:
   traefik:
     image: traefik:v3.7.13
@@ -27,17 +31,9 @@ services:
     networks:
       - elysion
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - '${REDIS_PORT:-6379}:6379'
-    volumes:
-      - redis-data:/data
-    networks:
-      - elysion
-
   # S3-compatible object store. MinIO's community images are no longer pullable (Docker Hub and
-  # quay.io both deny access), so RustFS stands in; it speaks the same S3 API on the same ports.
+  # quay.io both deny access), so RustFS stands in with the same S3 API. Host ports are 9100/9101 because Portainer from
+  # local-infra owns 9000.
   rustfs:
     image: rustfs/rustfs:1.0.1
     environment:
@@ -45,8 +41,8 @@ services:
       RUSTFS_SECRET_KEY: elysion123
       RUSTFS_CONSOLE_ENABLE: 'true'
     ports:
-      - '${RUSTFS_S3_PORT:-9000}:9000' # S3 API
-      - '${RUSTFS_CONSOLE_PORT:-9001}:9001' # console
+      - '${RUSTFS_S3_PORT:-9100}:9000' # S3 API
+      - '${RUSTFS_CONSOLE_PORT:-9101}:9001' # console
     volumes:
       - rustfs-data:/data
     networks:
@@ -87,19 +83,18 @@ services:
   #     - "traefik.http.routers.bff.rule=PathPrefix(`/api`)"
   #   depends_on:
   #     - postgres
-  #     - redis
   #   networks:
   #     - elysion
+  #     - local-infra # reach Valkey as valkey:6379
 
   # realtime:
   #   build: ../../apps/realtime
   #   labels:
   #     - "traefik.enable=true"
   #     - "traefik.http.routers.realtime.rule=PathPrefix(`/realtime`)"
-  #   depends_on:
-  #     - redis
   #   networks:
   #     - elysion
+  #     - local-infra # reach Valkey as valkey:6379
 
   # business-backend:
   #   build: ../../apps/business-backend
@@ -119,8 +114,10 @@ services:
 networks:
   elysion:
     driver: bridge
+  # Uncomment together with the application services above; requires local-infra to be running.
+  # local-infra:
+  #   external: true
 
 volumes:
   postgres-data:
-  redis-data:
   rustfs-data:

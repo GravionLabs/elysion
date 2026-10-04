@@ -13,7 +13,7 @@ import { MESSAGE_AWARENESS } from '../src/yjs/protocol.js';
 
 /**
  * Requires a real Redis reachable at REDIS_URL (defaults to
- * redis://localhost:6379, matching infra/docker/docker-compose.yml) — this
+ * redis://localhost:6379, the shared Valkey from local-infra) — this
  * suite verifies presence actually crosses process boundaries via Redis
  * pub/sub, which an in-process fake can't exercise.
  */

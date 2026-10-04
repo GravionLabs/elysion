@@ -13,7 +13,7 @@ Frontend (Angular + React/tldraw)
     |
   Business Backend (.NET 10)  — domain logic, persistence, exports
     |
-  PostgreSQL / Redis / RustFS (S3-compatible object store)
+  PostgreSQL / Valkey (shared) / RustFS (S3-compatible object store)
 ```
 
 Decisions are recorded as ADRs: [gateway and BFF](docs/adr/0001-gateway-and-bff.md), [the TypeScript version split](docs/adr/0002-typescript-version-split.md), [the .NET 10 business backend](docs/adr/0003-net10-business-backend.md). Per-service contracts live in [docs/specs/](docs/specs).
@@ -24,7 +24,7 @@ You need Node.js (see `.nvmrc`), [pnpm](https://pnpm.io) (pinned via `packageMan
 
 ```sh
 pnpm install      # JS/TS workspace dependencies (frontend, frontend-canvas, bff, realtime)
-pnpm dev:infra    # shared infrastructure: Traefik, Postgres, Redis, RustFS
+pnpm dev:infra    # Elysion's own infrastructure: Traefik, Postgres, RustFS
 ```
 
 Run an individual service:
@@ -56,15 +56,24 @@ docker build -f apps/bff/Dockerfile -t elysion-bff .
 
 `.vscode/launch.json` has a configuration per service and a compound that starts everything with F5:
 
-| Configuration         | What it starts                                                          | Port | Debugger |
-| --------------------- | ----------------------------------------------------------------------- | ---- | -------- |
-| `frontend (Chrome)`   | `ng serve` (builds the canvas bundle first), opens Chrome               | 4200 | Chrome   |
-| `bff`                 | `nest start --debug --watch`                                            | 3000 | 9229     |
-| `realtime`            | `nest start --debug=9230 --watch` with `PORT=3001`                      | 3001 | 9230     |
-| `business-backend`    | the .NET API (`dotnet build` first), `Development` environment          | 5174 | coreclr  |
-| `Elysion: full stack` | `pnpm dev:infra`, then business-backend, bff, realtime and the frontend | -    | all      |
+| Configuration         | What it starts                                                                                   | Port | Debugger |
+| --------------------- | ------------------------------------------------------------------------------------------------ | ---- | -------- |
+| `frontend (Chrome)`   | `ng serve` (builds the canvas bundle first), opens Chrome                                        | 4200 | Chrome   |
+| `bff`                 | `nest start --debug --watch`                                                                     | 3000 | 9229     |
+| `realtime`            | `nest start --debug=9230 --watch` with `PORT=3001`                                               | 3001 | 9230     |
+| `business-backend`    | the .NET API (`dotnet build` first), `Development` environment                                   | 5174 | coreclr  |
+| `Elysion: full stack` | checks local-infra, runs `pnpm dev:infra`, then business-backend, bff, realtime and the frontend | -    | all      |
 
-Run `pnpm install` once, and have Docker running for the infrastructure. If a default host port is already taken on your machine (for example 9000 by Portainer or 6379 by another Redis), copy `infra/docker/.env.example` to `infra/docker/.env` and change `RUSTFS_S3_PORT` / `REDIS_PORT`; after moving Redis, also start realtime with a matching `REDIS_URL`. The C# configuration needs the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) (recommended in `.vscode/extensions.json`).
+Run `pnpm install` once, and have Docker running. The C# configuration needs the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) (recommended in `.vscode/extensions.json`).
+
+### Shared local infrastructure
+
+Valkey (Redis), RabbitMQ and Portainer are not part of this repository: they run once per machine from [`local-infra`](../local-infra) (`docker compose up -d` there) and are shared by all local projects. Elysion must not define them again.
+
+- Apps on the host reach Valkey at `localhost:6379` (`REDIS_URL` overrides it); containers join the external `local-infra` network and use `valkey:6379`.
+- Valkey is shared, so everything Elysion stores is prefixed with `elysion:` (for example `elysion:presence:<board>`), as local-infra's multi-tenancy convention asks.
+- Portainer owns host port 9000, which is why RustFS listens on 9100 (S3) and 9101 (console). If a port is taken on your machine, copy `infra/docker/.env.example` to `infra/docker/.env` and change it.
+- `Elysion: full stack` first checks that the local-infra Valkey container is running and stops with a hint otherwise.
 
 ## Project layout
 
@@ -81,7 +90,7 @@ packages/
   shared-types/      cross-app TS types, compiled to plain JS/d.ts
   proto/             gRPC/contract definitions (if/when used)
 infra/
-  docker/            docker-compose.yml (Traefik, Postgres, Redis, RustFS)
+  docker/            docker-compose.yml (Traefik, Postgres, RustFS)
   traefik/           Traefik static config
   kubernetes/        production manifests (future)
 docs/
