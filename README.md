@@ -13,7 +13,7 @@ Frontend (Angular + React/tldraw)
     |
   Business Backend (.NET 10)  — domain logic, persistence, exports
     |
-  PostgreSQL / Redis / MinIO
+  PostgreSQL / Redis / RustFS (S3-compatible object store)
 ```
 
 Decisions are recorded as ADRs: [gateway and BFF](docs/adr/0001-gateway-and-bff.md), [the TypeScript version split](docs/adr/0002-typescript-version-split.md), [the .NET 10 business backend](docs/adr/0003-net10-business-backend.md). Per-service contracts live in [docs/specs/](docs/specs).
@@ -24,7 +24,7 @@ You need Node.js (see `.nvmrc`), [pnpm](https://pnpm.io) (pinned via `packageMan
 
 ```sh
 pnpm install      # JS/TS workspace dependencies (frontend, frontend-canvas, bff, realtime)
-pnpm dev:infra    # shared infrastructure: Traefik, Postgres, Redis, MinIO
+pnpm dev:infra    # shared infrastructure: Traefik, Postgres, Redis, RustFS
 ```
 
 Run an individual service:
@@ -64,7 +64,7 @@ docker build -f apps/bff/Dockerfile -t elysion-bff .
 | `business-backend`    | the .NET API (`dotnet build` first), `Development` environment          | 5174 | coreclr  |
 | `Elysion: full stack` | `pnpm dev:infra`, then business-backend, bff, realtime and the frontend | -    | all      |
 
-Run `pnpm install` once, and have Docker running for the infrastructure. The C# configuration needs the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) (recommended in `.vscode/extensions.json`).
+Run `pnpm install` once, and have Docker running for the infrastructure. If a default host port is already taken on your machine (for example 9000 by Portainer or 6379 by another Redis), copy `infra/docker/.env.example` to `infra/docker/.env` and change `RUSTFS_S3_PORT` / `REDIS_PORT`; after moving Redis, also start realtime with a matching `REDIS_URL`. The C# configuration needs the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) (recommended in `.vscode/extensions.json`).
 
 ## Project layout
 
@@ -81,7 +81,7 @@ packages/
   shared-types/      cross-app TS types, compiled to plain JS/d.ts
   proto/             gRPC/contract definitions (if/when used)
 infra/
-  docker/            docker-compose.yml (Traefik, Postgres, Redis, MinIO)
+  docker/            docker-compose.yml (Traefik, Postgres, Redis, RustFS)
   traefik/           Traefik static config
   kubernetes/        production manifests (future)
 docs/
