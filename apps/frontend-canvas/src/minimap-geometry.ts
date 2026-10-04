@@ -27,6 +27,9 @@ export interface MinimapLayout {
 
 const PADDING = 12;
 
+/** The frame never takes up more than 1 / this of the minimap's width or height. */
+const MIN_EXTENT_IN_VIEWPORTS = 2;
+
 /** The part of the scene the canvas currently shows (Excalidraw: sceneX = clientX / zoom - scrollX). */
 export function viewportInScene(snapshot: SceneSnapshot): SceneRect {
   return {
@@ -51,7 +54,16 @@ export function sceneBounds(snapshot: SceneSnapshot): SceneRect {
     if (element.x + element.width > maxX) maxX = element.x + element.width;
     if (element.y + element.height > maxY) maxY = element.y + element.height;
   }
-  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+  // Like ariadne's `fMinSize`: a small scene must not blow the frame up to the whole minimap, so the
+  // bounds are at least this many viewports wide and high, around the middle of what is shown.
+  const width = Math.max(maxX - minX, view.width * MIN_EXTENT_IN_VIEWPORTS);
+  const height = Math.max(maxY - minY, view.height * MIN_EXTENT_IN_VIEWPORTS);
+  return {
+    x: (minX + maxX) / 2 - width / 2,
+    y: (minY + maxY) / 2 - height / 2,
+    width,
+    height,
+  };
 }
 
 export function computeLayout(

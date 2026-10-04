@@ -32,13 +32,23 @@ describe('viewportInScene', () => {
 });
 
 describe('sceneBounds', () => {
-  it('covers the elements and the viewport', () => {
-    const bounds = sceneBounds(snapshot({ scrollX: -300 }));
-    // toBeCloseTo: -scrollY yields -0 at scroll 0, which toEqual would treat as different from 0.
+  it('covers the elements and the viewport when the content is large', () => {
+    const bounds = sceneBounds(
+      snapshot({ elements: [{ x: 0, y: 0, width: 5000, height: 3000 }], scrollX: -300 }),
+    );
+    // The viewport (200x100 at x=300) lies inside the element, so the element decides.
     expect(bounds.x).toBeCloseTo(0);
     expect(bounds.y).toBeCloseTo(0);
+    expect(bounds.width).toBe(5000);
+    expect(bounds.height).toBe(3000);
+  });
+
+  it('is at least two viewports wide and high around the middle of what is shown', () => {
+    const bounds = sceneBounds(snapshot({ scrollX: -300 }));
+    // Viewport 200x100 at x=300 and an element 100x50 at the origin span 500x100, below the minimum height.
     expect(bounds.width).toBe(500);
-    expect(bounds.height).toBe(100);
+    expect(bounds.height).toBe(200);
+    expect(bounds.y + bounds.height / 2).toBeCloseTo(50);
   });
 });
 
@@ -60,6 +70,31 @@ describe('computeLayout', () => {
     const layout = computeLayout(snap, size);
     const element = toMinimapRect(snap.elements[0], layout);
     expect(element.width / layout.viewport.width).toBeCloseTo(100 / 200);
+  });
+});
+
+describe('frame size', () => {
+  const size = { width: 160, height: 120 };
+
+  it('stays at most half the minimap when the content is small', () => {
+    const { viewport } = computeLayout(snapshot(), size);
+    expect(viewport.width).toBeLessThanOrEqual(size.width / 2 + 0.001);
+    expect(viewport.height).toBeLessThanOrEqual(size.height / 2 + 0.001);
+  });
+
+  it('is centered on the view, not pushed into a corner', () => {
+    const { viewport } = computeLayout(snapshot(), size);
+    expect(viewport.x + viewport.width / 2).toBeCloseTo(size.width / 2);
+    expect(viewport.y + viewport.height / 2).toBeCloseTo(size.height / 2);
+  });
+
+  it('still shrinks when the content outgrows the minimum extent', () => {
+    const wide = computeLayout(
+      snapshot({ elements: [{ x: 0, y: 0, width: 5000, height: 3000 }] }),
+      size,
+    );
+    const small = computeLayout(snapshot(), size);
+    expect(wide.viewport.width).toBeLessThan(small.viewport.width);
   });
 });
 
