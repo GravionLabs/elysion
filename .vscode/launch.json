@@ -1,0 +1,49 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "frontend (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}/apps/frontend",
+      "preLaunchTask": "frontend: serve"
+    },
+    {
+      "name": "bff",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm --filter @elysion/bff start:debug",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "realtime",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "PORT=3001 pnpm --filter @elysion/realtime exec nest start --debug=9230 --watch",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "business-backend",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "dotnet: build business-backend",
+      "program": "${workspaceFolder}/apps/business-backend/src/Elysion.BusinessBackend.Api/bin/Debug/net10.0/Elysion.BusinessBackend.Api.dll",
+      "cwd": "${workspaceFolder}/apps/business-backend/src/Elysion.BusinessBackend.Api",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5174"
+      },
+      "console": "internalConsole",
+      "stopAtEntry": false
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Elysion: full stack",
+      "configurations": ["business-backend", "bff", "realtime", "frontend (Chrome)"],
+      "preLaunchTask": "infra: up",
+      "stopAll": true
+    }
+  ]
+}

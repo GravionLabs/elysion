@@ -30,6 +30,8 @@ infra/docker/data/
 # IDE / OS
 /.vscode/*
 !/.vscode/extensions.json
+!/.vscode/launch.json
+!/.vscode/tasks.json
 apps/*/.vscode/
 .idea/
 .DS_Store

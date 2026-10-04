@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "infra: up",
+      "detail": "Traefik, Postgres, Redis and MinIO (docker compose, detached)",
+      "type": "shell",
+      "command": "pnpm dev:infra",
+      "problemMatcher": []
+    },
+    {
+      "label": "canvas: build element",
+      "detail": "Builds <elysion-canvas> and copies it into apps/frontend/public/canvas",
+      "type": "shell",
+      "command": "pnpm --filter @elysion/frontend run prebuild",
+      "problemMatcher": []
+    },
+    {
+      "label": "frontend: serve",
+      "detail": "ng serve on http://localhost:4200",
+      "dependsOn": ["canvas: build element"],
+      "type": "shell",
+      "command": "pnpm --filter @elysion/frontend start",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "typescript",
+        "pattern": "$tsc",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Changes detected|Building",
+          "endsPattern": "bundle generation (complete|failed)|Local:"
+        }
+      }
+    },
+    {
+      "label": "dotnet: build business-backend",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/apps/business-backend/src/Elysion.BusinessBackend.Api/Elysion.BusinessBackend.Api.csproj"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    }
+  ]
+}

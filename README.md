@@ -52,6 +52,20 @@ Each app has a `Dockerfile`; build from the repo root so the workspace files are
 docker build -f apps/bff/Dockerfile -t elysion-bff .
 ```
 
+## Run and debug in VS Code
+
+`.vscode/launch.json` has a configuration per service and a compound that starts everything with F5:
+
+| Configuration         | What it starts                                                          | Port | Debugger |
+| --------------------- | ----------------------------------------------------------------------- | ---- | -------- |
+| `frontend (Chrome)`   | `ng serve` (builds the canvas bundle first), opens Chrome               | 4200 | Chrome   |
+| `bff`                 | `nest start --debug --watch`                                            | 3000 | 9229     |
+| `realtime`            | `nest start --debug=9230 --watch` with `PORT=3001`                      | 3001 | 9230     |
+| `business-backend`    | the .NET API (`dotnet build` first), `Development` environment          | 5174 | coreclr  |
+| `Elysion: full stack` | `pnpm dev:infra`, then business-backend, bff, realtime and the frontend | -    | all      |
+
+Run `pnpm install` once, and have Docker running for the infrastructure. The C# configuration needs the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) (recommended in `.vscode/extensions.json`).
+
 ## Project layout
 
 ```
