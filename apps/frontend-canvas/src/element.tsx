@@ -1,9 +1,10 @@
 import { type Root, createRoot } from 'react-dom/client';
 import { CanvasApp } from './CanvasApp';
+import { parseTheme } from './useResolvedTheme';
 
 export const ELEMENT_TAG_NAME = 'elysion-canvas';
 
-const OBSERVED_ATTRIBUTES = ['board-id', 'yjs-server-url'] as const;
+const OBSERVED_ATTRIBUTES = ['board-id', 'yjs-server-url', 'theme'] as const;
 
 class ElysionCanvasElement extends HTMLElement {
   static get observedAttributes(): readonly string[] {
@@ -32,6 +33,7 @@ class ElysionCanvasElement extends HTMLElement {
       <CanvasApp
         boardId={this.getAttribute('board-id') ?? undefined}
         yjsServerUrl={this.getAttribute('yjs-server-url') ?? undefined}
+        theme={parseTheme(this.getAttribute('theme'))}
       />,
     );
   }

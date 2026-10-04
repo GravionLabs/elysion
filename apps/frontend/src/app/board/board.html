@@ -2,6 +2,7 @@
   class="board-canvas"
   [attr.board-id]="boardId()"
   [attr.yjs-server-url]="yjsServerUrl()"
+  [attr.theme]="theme()"
   (ready)="onCanvasReady()"
   (error)="onCanvasError()"
 ></elysion-canvas>

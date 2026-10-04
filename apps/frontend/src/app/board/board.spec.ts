@@ -46,6 +46,15 @@ describe('Board', () => {
     expect(el.getAttribute('yjs-server-url')).toBe('ws://localhost:3000/yjs');
   });
 
+  it('passes the theme attribute through when set and omits it otherwise', () => {
+    expect(fixture.nativeElement.querySelector('elysion-canvas').hasAttribute('theme')).toBe(false);
+    fixture.componentRef.setInput('theme', 'dark');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('elysion-canvas').getAttribute('theme')).toBe(
+      'dark',
+    );
+  });
+
   it('omits the yjs server url attribute when not set', () => {
     const el = fixture.nativeElement.querySelector('elysion-canvas');
     expect(el.hasAttribute('yjs-server-url')).toBe(false);

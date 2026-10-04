@@ -1,0 +1,45 @@
+/*
+ * Maps the ariadne tokens (tokens.css) onto Excalidraw's CSS custom properties. Excalidraw defines
+ * them on `.excalidraw` and `.excalidraw.theme--dark`; scoping under `.elysion-canvas` wins on
+ * specificity regardless of stylesheet order. Only variables Excalidraw documents by use in its own
+ * UI are overridden; the canvas content itself is styled via element properties, not CSS.
+ */
+.elysion-canvas .excalidraw,
+.elysion-canvas .excalidraw.theme--dark {
+  --island-bg-color: var(--c-surface-1);
+  --popup-bg-color: var(--c-surface-1);
+  --popup-secondary-bg-color: var(--c-surface-2);
+  --popup-text-color: var(--c-text);
+  --sidebar-bg-color: var(--c-surface-1);
+  --sidebar-border-color: var(--c-border);
+  --overlay-bg-color: var(--c-selection-overlay);
+
+  --color-primary: var(--c-primary);
+  --color-primary-hover: var(--c-primary-hover);
+  --color-primary-darker: var(--c-primary-hover);
+  --color-primary-darkest: var(--c-primary-hover);
+  --color-primary-light: var(--c-primary-soft);
+  --color-primary-light-darker: color-mix(in srgb, var(--c-primary) 22%, var(--c-surface-1));
+  --color-surface-primary-container: var(--c-primary-soft);
+
+  --color-surface-lowest: var(--c-surface-1);
+  --color-surface-low: var(--c-surface-2);
+  --color-surface-mid: var(--c-surface-2);
+  --color-surface-high: var(--c-surface-3);
+
+  --color-on-surface: var(--c-text);
+  --text-primary-color: var(--c-text);
+  --icon-fill-color: var(--c-text-subtle);
+
+  --button-hover-bg: var(--c-surface-3);
+  --input-bg-color: var(--c-surface-1);
+  --input-border-color: var(--c-border);
+  --input-hover-bg-color: var(--c-surface-3);
+  --dialog-border-color: var(--c-border);
+  --color-border-outline: var(--c-border);
+  --focus-highlight-color: var(--c-focus);
+
+  --border-radius-md: var(--radius-md);
+  --border-radius-lg: var(--radius-xl);
+  --shadow-island: var(--shadow-md);
+}
