@@ -22,18 +22,25 @@ function createMockApi() {
     getAppState: () => restoreAppState(null, null),
     updateScene,
   } as unknown as ExcalidrawImperativeAPI;
-  return { api, getElements: () => elements };
+  return {
+    api,
+    getElements: () => elements,
+    setElements: (next: readonly OrderedExcalidrawElement[]) => {
+      elements = next;
+    },
+  };
 }
 
 /** One (client + binding + mock api) triple, wired exactly like CanvasApp does. */
 function createCanvasPeer(url: string) {
   const client = new YjsWebsocketClient(url, undefined, { WebSocketImpl });
   const binding = new ExcalidrawYjsBinding(client.doc);
-  const { api, getElements } = createMockApi();
+  const { api, getElements, setElements } = createMockApi();
   binding.attach(api);
   return {
     binding,
     getElements,
+    setElements,
     draw: (element: OrderedExcalidrawElement) => binding.onLocalChange([element]),
     destroy: () => {
       binding.destroy();
@@ -86,6 +93,45 @@ describe('canvas Yjs sync (two CanvasApp-style peers)', () => {
       strokeColor: STICKY_COLORS[3].hex,
       backgroundColor: card.backgroundColor,
     });
+
+    peerA.destroy();
+    peerB.destroy();
+  });
+
+  it('propagates a later move of an already-synced element in both directions', async () => {
+    const url = `${server.url}?board=${crypto.randomUUID()}`;
+    const peerA = createCanvasPeer(url);
+    const peerB = createCanvasPeer(url);
+
+    // Excalidraw edits scene elements in place (bumping version/versionNonce)
+    // and then reports the whole scene through onChange.
+    const move = (peer: ReturnType<typeof createCanvasPeer>, id: string, x: number) => {
+      const element = peer.getElements().find((candidate) => candidate.id === id)!;
+      Object.assign(element, {
+        x,
+        version: element.version + 1,
+        versionNonce: Math.random() * 1e9,
+      });
+      peer.binding.onLocalChange(peer.getElements());
+    };
+    const xOn = (peer: ReturnType<typeof createCanvasPeer>, id: string) =>
+      peer.getElements().find((candidate) => candidate.id === id)?.x;
+
+    const [rect] = convertToExcalidrawElements([
+      { type: 'rectangle', x: 0, y: 0, width: 10, height: 10 },
+    ]);
+    peerA.setElements([rect as unknown as OrderedExcalidrawElement]);
+    peerA.binding.onLocalChange(peerA.getElements());
+    await waitUntil(() => peerB.getElements().some((element) => element.id === rect.id));
+
+    move(peerA, rect.id, 100);
+    await waitUntil(() => xOn(peerB, rect.id) === 100);
+
+    move(peerB, rect.id, 200);
+    await waitUntil(() => xOn(peerA, rect.id) === 200);
+
+    move(peerA, rect.id, 300);
+    await waitUntil(() => xOn(peerB, rect.id) === 300);
 
     peerA.destroy();
     peerB.destroy();

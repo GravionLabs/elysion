@@ -17,6 +17,10 @@ const ELEMENTS_MAP_KEY = 'elements';
  * Feedback loops are avoided without an "applying remote update" flag: a
  * remote-applied element keeps the version number it arrived with, so the
  * next local onChange sees `version` unchanged and skips writing it back.
+ *
+ * Objects never cross the boundary by reference in either direction: writes
+ * store a clone, and elements handed to the scene are clones of what the map
+ * holds. Excalidraw mutates scene elements in place.
  */
 export class ExcalidrawYjsBinding {
   readonly #doc: Y.Doc;
@@ -64,9 +68,25 @@ export class ExcalidrawYjsBinding {
     }
 
     const localElements = api.getSceneElementsIncludingDeleted();
-    const remoteElements = Array.from(this.#elements.values()) as RemoteExcalidrawElement[];
-    const reconciled = reconcileElements(localElements, remoteElements, api.getAppState());
+    const stored = Array.from(this.#elements.values());
+    const reconciled = reconcileElements(
+      localElements,
+      stored as RemoteExcalidrawElement[],
+      api.getAppState(),
+    );
 
-    api.updateScene({ elements: reconciled, captureUpdate: CaptureUpdateAction.NEVER });
+    // reconcileElements hands the stored objects themselves to the scene, and
+    // Excalidraw then edits scene elements in place. Without a copy that edit
+    // lands in the Y.Map behind Yjs's back: the version comparison in
+    // onLocalChange sees "equal" and the change is never written, so later
+    // moves of an already-synced element never reach the other peers. This
+    // happens on the writer too, because Y.Map observers also fire for local
+    // writes.
+    const storedObjects = new Set<unknown>(stored);
+    const detached = reconciled.map((element) =>
+      storedObjects.has(element) ? structuredClone(element) : element,
+    );
+
+    api.updateScene({ elements: detached, captureUpdate: CaptureUpdateAction.NEVER });
   };
 }
