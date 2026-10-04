@@ -1,0 +1,83 @@
+/*
+ * Design tokens shared with GravionLabs/ariadne (apps/web/src/styles.scss). Names and values follow
+ * ariadne's `--c-*` set so both editors stay visually aligned. They are scoped to the canvas root,
+ * not :root, so the bundle never leaks into the Angular host page.
+ */
+.elysion-canvas {
+  color-scheme: light;
+
+  --c-bg: #f4f5f7;
+  --c-surface-1: #ffffff;
+  --c-surface-2: #f7f8fa;
+  --c-surface-3: #eef0f4;
+
+  --c-border: #e2e5eb;
+  --c-border-muted: #b0b5c3;
+
+  --c-text: #1a1c23;
+  --c-text-subtle: #6b7086;
+
+  --c-primary: #6366f1;
+  --c-primary-hover: #4f46e5;
+  --c-primary-soft: rgba(99, 102, 241, 0.08);
+  --c-on-primary: #ffffff;
+  --c-selection-overlay: rgba(255, 255, 255, 0.6);
+  --c-focus: var(--c-primary);
+  --c-danger: #d14343;
+  --c-warning: #b54708;
+
+  /* Accent colors for canvas elements such as sticky notes. */
+  --c-node-red: #ef4444;
+  --c-node-orange: #f97316;
+  --c-node-amber: #eab308;
+  --c-node-green: #22c55e;
+  --c-node-teal: #14b8a6;
+  --c-node-blue: #3b82f6;
+  --c-node-purple: #8b5cf6;
+  --c-node-pink: #ec4899;
+
+  --radius-md: 8px;
+  --radius-xl: 12px;
+
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 20px 50px rgba(16, 24, 40, 0.16);
+
+  --transition-fast: 0.12s ease;
+}
+
+.elysion-canvas[data-theme='dark'] {
+  color-scheme: dark;
+
+  --c-bg: #14161c;
+  --c-surface-1: #1c1f27;
+  --c-surface-2: #222630;
+  --c-surface-3: #2a2f3b;
+
+  --c-border: #333949;
+  --c-border-muted: #6b7388;
+
+  --c-text: #e8eaf0;
+  --c-text-subtle: #a0a7bb;
+
+  --c-primary: #8b93f8;
+  --c-primary-hover: #a5acfa;
+  --c-primary-soft: rgba(139, 147, 248, 0.16);
+  --c-on-primary: #11131a;
+  --c-selection-overlay: rgba(28, 31, 39, 0.6);
+  --c-danger: #f87171;
+  --c-warning: #fdb022;
+
+  --c-node-red: #f87171;
+  --c-node-orange: #fb923c;
+  --c-node-amber: #facc15;
+  --c-node-green: #4ade80;
+  --c-node-teal: #2dd4bf;
+  --c-node-blue: #60a5fa;
+  --c-node-purple: #a78bfa;
+  --c-node-pink: #f472b6;
+
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.34);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.6);
+}

@@ -19,6 +19,14 @@ The React/Excalidraw canvas lives in its own workspace package, `apps/frontend-c
 
 This was chosen over Angular Elements (which wraps an _Angular_ component as a custom element) because the piece being embedded is a React tree; a plain custom element wrapping a React root needs no Angular-specific tooling and keeps the two frameworks' build pipelines fully independent.
 
+## Theming (ariadne design)
+
+The canvas UI follows the design of GravionLabs/ariadne:
+
+- `apps/frontend-canvas/src/styles/tokens.css` holds ariadne's `--c-*` design tokens (light and dark), scoped to the `.elysion-canvas` root that `CanvasApp` renders, so nothing leaks into the host page. Keep the names and values in sync with ariadne's `apps/web/src/styles.scss`.
+- `styles/excalidraw-theme.css` maps those tokens onto Excalidraw's own CSS custom properties (`--island-bg-color`, `--color-primary*`, `--color-surface-*`, `--shadow-island`, radii, ...). Scoping under `.elysion-canvas` beats Excalidraw's `.excalidraw` / `.excalidraw.theme--dark` rules by specificity, independent of stylesheet order. Excalidraw's DOM classes are not public API, so only its documented-by-use variables are overridden; hardcoded spots would need targeted selectors and are an upgrade risk.
+- The `theme` attribute on `<elysion-canvas>` (`light` | `dark`, also an input on Angular's `Board`) sets `data-theme` on the root and Excalidraw's `theme` prop. Without it the canvas follows `prefers-color-scheme` live.
+
 ## Why Excalidraw, not tldraw
 
 The canvas was originally built on tldraw (see GitHub Feature #25), but tldraw's SDK is source-available, not open source: its license prohibits use in a "Production Environment" without a paid or non-commercial License Key, and enforces this with a "Get a license for production" watermark. Elysion is meant to be a genuinely open-source Mural alternative, so the canvas was swapped to [Excalidraw](https://github.com/excalidraw/excalidraw) (`@excalidraw/excalidraw`), which is MIT-licensed (see GitHub Feature #68). The embedding architecture above is unaffected by that swap — it only changed what renders inside `CanvasApp`.

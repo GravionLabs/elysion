@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
+import { useResolvedTheme, type CanvasTheme } from './useResolvedTheme';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
+import './styles/tokens.css';
+import './styles/excalidraw-theme.css';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
@@ -15,6 +18,8 @@ export interface CanvasAppProps {
    * (Feature #28), so override this once it is.
    */
   yjsServerUrl?: string;
+  /** `light` or `dark`; follows the system preference while unset. */
+  theme?: CanvasTheme;
 }
 
 function defaultYjsServerUrl(): string {
@@ -22,7 +27,8 @@ function defaultYjsServerUrl(): string {
   return `${protocol}//${window.location.host}/yjs`;
 }
 
-export function CanvasApp({ boardId = 'default', yjsServerUrl }: CanvasAppProps) {
+export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAppProps) {
+  const resolvedTheme = useResolvedTheme(theme);
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
 
@@ -55,8 +61,13 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl }: CanvasAppProps)
   }, []);
 
   return (
-    <div style={{ position: 'fixed', inset: 0 }}>
+    <div
+      className="elysion-canvas"
+      data-theme={resolvedTheme}
+      style={{ position: 'fixed', inset: 0 }}
+    >
       <Excalidraw
+        theme={resolvedTheme}
         excalidrawAPI={(api) => {
           apiRef.current = api;
           bindingRef.current?.attach(api);

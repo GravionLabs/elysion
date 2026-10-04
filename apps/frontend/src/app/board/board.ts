@@ -20,6 +20,9 @@ export class Board {
   /** Passed to <elysion-canvas> as the `yjs-server-url` attribute; omitted (element uses its own same-origin default) when not set. */
   readonly yjsServerUrl = input<string>();
 
+  /** Passed to <elysion-canvas> as the `theme` attribute; omitted (element follows the system preference) when not set. */
+  readonly theme = input<'light' | 'dark'>();
+
   readonly status = signal<CanvasStatus>('loading');
 
   constructor() {
