@@ -1,4 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useReducer, useRef, useSyncExternalStore } from 'react';
 import {
   computeLayout,
   minimapToScene,
@@ -53,6 +53,8 @@ export function Minimap({ store, onPan }: MinimapProps) {
   // While dragging, the mapping is frozen: the layout includes the viewport, so it would otherwise
   // rescale under the pointer whenever the view leaves the content.
   const frozenLayout = useRef<MinimapLayout | null>(null);
+  // Bumped when the frozen layout is released, so the minimap re-fits even if no scene change follows.
+  const [layoutVersion, refit] = useReducer((version: number) => version + 1, 0);
   const hasContent = !!snapshot && snapshot.elements.length > 0;
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export function Minimap({ store, onPan }: MinimapProps) {
       draw(canvas, snapshot, frozenLayout.current ?? computeLayout(snapshot, MINIMAP_SIZE)),
     );
     return () => cancelAnimationFrame(frame);
-  }, [snapshot, hasContent]);
+  }, [snapshot, hasContent, layoutVersion]);
 
   if (!snapshot || !hasContent) return null;
 
@@ -70,9 +72,17 @@ export function Minimap({ store, onPan }: MinimapProps) {
     const layout = frozenLayout.current;
     if (!layout) return;
     const bounds = event.currentTarget.getBoundingClientRect();
-    onPan(
-      minimapToScene({ x: event.clientX - bounds.left, y: event.clientY - bounds.top }, layout),
-    );
+    // The pointer stays captured outside the minimap; clamp it so dragging out stops at the edge
+    // instead of flying the view away from the content.
+    const x = Math.min(Math.max(event.clientX - bounds.left, 0), MINIMAP_SIZE.width);
+    const y = Math.min(Math.max(event.clientY - bounds.top, 0), MINIMAP_SIZE.height);
+    onPan(minimapToScene({ x, y }, layout));
+  };
+
+  const release = () => {
+    if (!frozenLayout.current) return;
+    frozenLayout.current = null;
+    refit();
   };
 
   return (
@@ -90,12 +100,8 @@ export function Minimap({ store, onPan }: MinimapProps) {
         onPointerMove={(event) => {
           if (frozenLayout.current) panTo(event);
         }}
-        onPointerUp={() => {
-          frozenLayout.current = null;
-        }}
-        onPointerCancel={() => {
-          frozenLayout.current = null;
-        }}
+        onPointerUp={release}
+        onPointerCancel={release}
       />
     </div>
   );
