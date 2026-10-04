@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Toolbar, type ToolbarTool } from './Toolbar';
 import { useResolvedTheme, type CanvasTheme } from './useResolvedTheme';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import './styles/tokens.css';
 import './styles/excalidraw-theme.css';
-import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
+import './styles/toolbar.css';
+import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
 import { YjsWebsocketClient } from './yjs/YjsWebsocketClient.js';
@@ -31,6 +33,7 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
   const resolvedTheme = useResolvedTheme(theme);
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
+  const [activeTool, setActiveTool] = useState<ToolType | 'custom'>('selection');
 
   // Connection setup lives in the effect, not render, and is re-created (not
   // just torn down) on cleanup: React StrictMode's dev-only
@@ -72,7 +75,14 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
           apiRef.current = api;
           bindingRef.current?.attach(api);
         }}
-        onChange={(elements) => bindingRef.current?.onLocalChange(elements)}
+        onChange={(elements, appState) => {
+          bindingRef.current?.onLocalChange(elements);
+          setActiveTool(appState.activeTool.type);
+        }}
+      />
+      <Toolbar
+        activeTool={activeTool}
+        onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
       />
     </div>
   );

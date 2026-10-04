@@ -1,0 +1,78 @@
+/*
+ * Excalidraw's own tool island is replaced by <Toolbar>. Its classes are not public API, so the
+ * default toolbar is hidden (the keyboard shortcuts keep working) rather than restyled.
+ */
+.elysion-canvas .shapes-section {
+  display: none;
+}
+
+/* ariadne's `.floating` + `.toolbox` (apps/web/src/app/editor/editor.scss). */
+.elysion-toolbar {
+  position: absolute;
+  z-index: 10;
+  bottom: 16px;
+  left: 50%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  max-width: calc(100% - 32px);
+  padding: 4px;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  transform: translateX(-50%);
+}
+
+.elysion-toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.elysion-toolbar__divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 18px;
+  margin: 0 2px;
+  background: var(--c-border);
+}
+
+.elysion-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--c-text-subtle);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.elysion-icon-button:hover:not(:disabled) {
+  background: var(--c-surface-3);
+  color: var(--c-text);
+}
+
+.elysion-icon-button:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: -2px;
+}
+
+.elysion-icon-button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.elysion-icon-button.active {
+  color: var(--c-primary);
+  background: var(--c-primary-soft);
+}
