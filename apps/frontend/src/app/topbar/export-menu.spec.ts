@@ -34,6 +34,7 @@ describe('ExportMenu', () => {
     expect(items().map((i) => i.textContent?.trim())).toEqual([
       'PNG image',
       'SVG image',
+      'PDF document',
       'Excalidraw file',
     ]);
   });
@@ -41,7 +42,8 @@ describe('ExportMenu', () => {
   it.each([
     [0, 'png'],
     [1, 'svg'],
-    [2, 'excalidraw'],
+    [2, 'pdf'],
+    [3, 'excalidraw'],
   ] as const)('item %i requests %s and closes the menu', async (index, format) => {
     await open();
 
@@ -91,5 +93,51 @@ describe('ExportMenu', () => {
     el().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await fixture.whenStable();
     expect(menu()).toBeNull();
+  });
+
+  it('asks for a PDF, for the selection when that is chosen', async () => {
+    fixture.componentRef.setInput('hasSelection', true);
+    await open();
+    checkbox().click();
+    await fixture.whenStable();
+
+    items()[2].click();
+
+    expect(requests).toEqual([{ format: 'pdf', selectionOnly: true }]);
+  });
+
+  describe('while a file is being prepared', () => {
+    beforeEach(async () => {
+      fixture.componentRef.setInput('busy', 'pdf');
+      await fixture.whenStable();
+    });
+
+    it('says what it is preparing on the button', () => {
+      expect(trigger().textContent).toContain('Preparing PDF…');
+      expect(trigger().getAttribute('aria-busy')).toBe('true');
+    });
+
+    it('names the format that is being prepared', async () => {
+      fixture.componentRef.setInput('busy', 'png');
+      await fixture.whenStable();
+
+      expect(trigger().textContent).toContain('Preparing PNG…');
+    });
+
+    it('does not start a second export: the items are disabled and a request is ignored', async () => {
+      await open();
+
+      expect(items().every((item) => item.disabled)).toBe(true);
+      items()[0].click();
+      expect(requests).toEqual([]);
+    });
+
+    it('goes back to "Export" when it is done', async () => {
+      fixture.componentRef.setInput('busy', null);
+      await fixture.whenStable();
+
+      expect(trigger().textContent).toContain('Export');
+      expect(trigger().getAttribute('aria-busy')).toBe('false');
+    });
   });
 });

@@ -19,7 +19,7 @@ import { RouterLink } from '@angular/router';
 import { AppBrand } from '../shared/app-brand';
 import { BoardApi, BoardLookup, isStoredBoardId } from './board-api';
 import { CanvasElement } from './canvas-element';
-import { downloadBlob, exportFilename } from './download';
+import { downloadBlob, exportFilename, type ExportFormat } from './download';
 import { ExportRequest } from '../topbar/export-menu';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
 
@@ -65,6 +65,9 @@ export class Board {
 
   /** A short message about the last export or import; `null` when there is none. */
   readonly notice = signal<string | null>(null);
+
+  /** An export is being prepared: a PDF of a large board takes seconds, so the Export menu says so. */
+  readonly exporting = signal<ExportFormat | null>(null);
 
   /** A file chosen for import that waits for the user's confirmation. */
   readonly pendingImport = signal<File | null>(null);
@@ -157,6 +160,7 @@ export class Board {
       this.notice.set('The canvas is not ready yet.');
       return;
     }
+    this.exporting.set(request.format);
     try {
       const blob = await canvas.exportBoard(request.format, {
         selectionOnly: request.selectionOnly,
@@ -176,6 +180,8 @@ export class Board {
       this.notice.set(null);
     } catch {
       this.notice.set('The export failed.');
+    } finally {
+      this.exporting.set(null);
     }
   }
 

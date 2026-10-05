@@ -13,6 +13,7 @@ import { RouterLink } from '@angular/router';
 import { MAX_BOARD_NAME_LENGTH } from '../board/board-api';
 import { AppBrand } from '../shared/app-brand';
 import { Theme } from '../theme/theme.service';
+import { ExportFormat } from '../board/download';
 import { ExportMenu, ExportRequest } from './export-menu';
 
 /** The Yjs connection of the canvas, as its `status` event reports it. */
@@ -41,6 +42,8 @@ export class TopBar {
   readonly theme = input.required<Theme>();
   /** Whether anything is selected on the canvas (enables 'selection only' in the Export menu). */
   readonly hasSelection = input(false);
+  /** The format of the export being prepared; the Export menu waits for it. */
+  readonly exporting = input<ExportFormat | null>(null);
   /** Whether the library sidebar is open. */
   readonly libraryOpen = input(false);
 

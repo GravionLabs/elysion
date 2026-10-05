@@ -3,19 +3,26 @@
   class="menu-button"
   aria-haspopup="menu"
   [attr.aria-expanded]="open()"
+  [attr.aria-busy]="busy() !== null"
   title="Export the board"
   (click)="toggle()"
 >
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M12 3v12m0 0-4-4m4 4 4-4M5 20h14" />
   </svg>
-  <span>Export</span>
+  <span>{{ busyLabel() ?? 'Export' }}</span>
 </button>
 
 @if (open()) {
   <div class="menu" role="menu" aria-label="Export">
     @for (item of formats; track item.format) {
-      <button type="button" class="menu-item" role="menuitem" (click)="choose(item.format)">
+      <button
+        type="button"
+        class="menu-item"
+        role="menuitem"
+        [disabled]="busy() !== null"
+        (click)="choose(item.format)"
+      >
         {{ item.label }}
       </button>
     }

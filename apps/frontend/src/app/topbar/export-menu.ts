@@ -1,12 +1,28 @@
-import { Component, ElementRef, HostListener, inject, input, output, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { ExportFormat } from '../board/download';
+
+const PREPARING: Record<ExportFormat, string> = {
+  png: 'PNG',
+  svg: 'SVG',
+  pdf: 'PDF',
+  excalidraw: 'file',
+};
 
 export interface ExportRequest {
   format: ExportFormat;
   selectionOnly: boolean;
 }
 
-/** The Export menu of the top bar, after ariadne's: PNG, SVG or an .excalidraw file. */
+/** The Export menu of the top bar, after ariadne's: PNG, SVG, a PDF document or an .excalidraw file. */
 @Component({
   selector: 'app-export-menu',
   styleUrl: './export-menu.scss',
@@ -17,6 +33,8 @@ export class ExportMenu {
 
   /** Whether anything is selected; the 'selection only' option needs it. */
   readonly hasSelection = input(false);
+  /** The format being prepared (a PDF takes a moment on a large board); the items wait until it is done. */
+  readonly busy = input<ExportFormat | null>(null);
   readonly exportRequested = output<ExportRequest>();
 
   protected readonly open = signal(false);
@@ -25,14 +43,24 @@ export class ExportMenu {
   protected readonly formats: readonly { format: ExportFormat; label: string }[] = [
     { format: 'png', label: 'PNG image' },
     { format: 'svg', label: 'SVG image' },
+    { format: 'pdf', label: 'PDF document' },
     { format: 'excalidraw', label: 'Excalidraw file' },
   ];
+
+  /** The text on the button while a file is being prepared, e.g. "Preparing PDF…". */
+  protected readonly busyLabel = computed(() => {
+    const format = this.busy();
+    return format === null ? null : `Preparing ${PREPARING[format]}…`;
+  });
 
   protected toggle(): void {
     this.open.update((open) => !open);
   }
 
   protected choose(format: ExportFormat): void {
+    if (this.busy() !== null) {
+      return;
+    }
     this.open.set(false);
     this.exportRequested.emit({
       format,

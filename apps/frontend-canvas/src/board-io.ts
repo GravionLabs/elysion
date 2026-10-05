@@ -10,8 +10,9 @@ import type {
   NonDeletedExcalidrawElement,
 } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
+import { svgToPdf } from './pdf';
 
-export type ExportFormat = 'png' | 'svg' | 'excalidraw';
+export type ExportFormat = 'png' | 'svg' | 'excalidraw' | 'pdf';
 
 export interface ExportOptions {
   /** Export only what is selected (with the text bound to selected shapes). */
@@ -97,6 +98,8 @@ export async function exportBoard(
       const svg = await exportToSvg({ elements, appState: exportState, files });
       return new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' });
     }
+    case 'pdf':
+      return svgToPdf(await exportToSvg({ elements, appState: exportState, files }));
     case 'excalidraw':
       return new Blob([serializeAsJSON(elements, appState, files, 'local')], {
         type: 'application/json',

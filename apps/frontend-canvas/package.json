@@ -15,9 +15,11 @@
   "dependencies": {
     "@elysion/design-tokens": "workspace:*",
     "@excalidraw/excalidraw": "^0.18.1",
+    "jspdf": "^4.2.1",
     "lib0": "^0.2.117",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "svg2pdf.js": "^2.8.1",
     "y-protocols": "^1.0.7",
     "yjs": "^13.6.32"
   },

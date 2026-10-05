@@ -16,7 +16,9 @@ export default defineConfig({
         // "main" is a plain .json file, no import attribute) — Node's
         // native loader rejects that. Inlining forces the whole graph
         // through Vite's transform instead, which handles JSON imports.
-        inline: [/@excalidraw\/excalidraw/, 'open-color'],
+        // svg2pdf.js is inlined for another reason: Node would take its UMD build, which looks for
+        // a global `jspdf` and fails; Vite's transform takes the ES build.
+        inline: [/@excalidraw\/excalidraw/, 'open-color', 'svg2pdf.js'],
       },
     },
   },

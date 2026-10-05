@@ -18,7 +18,7 @@ which was planned before the client-side exports existed.
 
 A throwaway page (not in the repository) built boards of sticky-note-style cards (a rounded rectangle with
 two lines of text, German umlauts and a dash) and arrows between every third pair, exported the scene with
-`exportToSvg`, and made a PDF in Chrome in two ways. The PDFs were checked with poppler (`pdfinfo`,
+`exportToSvg` (padding 16 px in the prototype; the implementation keeps Excalidraw's default like the other exports), and made a PDF in Chrome in two ways. The PDFs were checked with poppler (`pdfinfo`,
 `pdffonts`, `pdftotext`, `pdftoppm`, `pdfimages`).
 
 | Board            | Elements | SVG export | A: vector PDF (jsPDF + svg2pdf.js) | B: PNG at 2x embedded (pdf-lib)       |
@@ -81,7 +81,7 @@ content; not scriptable.
 1. **Option A: PDF is made in the browser from the SVG export**, with jsPDF and svg2pdf.js loaded by a dynamic
    `import()` when PDF is chosen. `ExportFormat` gains `'pdf'`; the element resolves with an
    `application/pdf` Blob, or `null` for an empty board or selection, like the other formats.
-2. **One page sized to the content**: the SVG's size plus the same padding as the other exports (16 px), the
+2. **One page sized to the content**: the SVG's size, with Excalidraw's default padding like the other exports, and the
    board's background, light colours like the PNG and SVG export. A PDF page may not exceed 14,400 points
    (200 inches, Acrobat's limit): content larger than that is scaled down uniformly so its longer side fits.
 3. **Fonts: Helvetica.** The `font-family` of the SVG's text is set to `helvetica` before the conversion, so

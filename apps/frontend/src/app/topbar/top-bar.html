@@ -73,6 +73,7 @@
     </button>
     <app-export-menu
       [hasSelection]="hasSelection()"
+      [busy]="exporting()"
       (exportRequested)="exportRequested.emit($event)"
     />
   </div>

@@ -6,12 +6,14 @@ describe('exportFilename', () => {
     expect(exportFilename(null, 'team-retro', 'svg', false)).toBe('team-retro.svg');
   });
 
-  it('names the three formats', () => {
+  it('names the four formats', () => {
     expect(exportFilename('b', 'id', 'excalidraw', false)).toBe('b.excalidraw');
+    expect(exportFilename('Q3 planning', 'id', 'pdf', false)).toBe('Q3-planning.pdf');
   });
 
   it('marks a selection export', () => {
     expect(exportFilename('b', 'id', 'png', true)).toBe('b-selection.png');
+    expect(exportFilename('Q3 planning', 'id', 'pdf', true)).toBe('Q3-planning-selection.pdf');
   });
 
   it('keeps letters from other languages and drops what a file system dislikes', () => {
