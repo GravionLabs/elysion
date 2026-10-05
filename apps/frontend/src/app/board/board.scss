@@ -59,3 +59,56 @@
     }
   }
 }
+
+// A board id without a board: a header like the list's and a short message with the way back.
+.not-found-header {
+  display: flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 14px;
+  background: var(--c-surface-1);
+  border-bottom: 1px solid var(--c-border);
+  box-shadow: var(--shadow);
+}
+
+.not-found {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 64px 16px;
+  text-align: center;
+
+  h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin: 0 0 8px;
+    color: var(--c-text-subtle);
+  }
+}
+
+.not-found-link {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 14px;
+  color: var(--c-on-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--c-primary);
+  border-radius: var(--radius-md);
+
+  &:hover {
+    background: var(--c-primary-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 2px;
+  }
+}

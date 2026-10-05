@@ -1,8 +1,5 @@
 <header class="page-header">
-  <a class="brand" routerLink="/" aria-label="Elysion: all boards">
-    <span class="brand-mark" aria-hidden="true">E</span>
-    <span class="app-title">Elysion</span>
-  </a>
+  <app-brand />
 </header>
 
 <main class="page">
@@ -14,6 +11,31 @@
       </button>
     }
   </div>
+
+  @if (deleteTarget(); as target) {
+    <div class="confirm" role="alertdialog" aria-label="Confirm delete">
+      <p>
+        Delete “{{ target.name }}”? The board and everything on it will be gone. This cannot be
+        undone.
+      </p>
+      @if (deleteError(); as message) {
+        <p class="field-error" role="alert">{{ message }}</p>
+      }
+      <div class="confirm-actions">
+        <button
+          type="button"
+          class="button danger"
+          [disabled]="deleting()"
+          (click)="confirmDelete()"
+        >
+          {{ deleting() ? 'Deleting…' : 'Delete' }}
+        </button>
+        <button type="button" class="button" [disabled]="deleting()" (click)="cancelDelete()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  }
 
   @if (createState() !== 'closed') {
     <form class="create" (submit)="$event.preventDefault(); create()">
@@ -77,11 +99,22 @@
       } @else {
         <ul class="boards">
           @for (board of boards(); track board.id) {
-            <li>
+            <li class="board-item">
               <a class="board-card" [routerLink]="board.path">
                 <span class="board-name">{{ board.name }}</span>
                 <span class="board-date">Created {{ board.createdAt | date: 'mediumDate' }}</span>
               </a>
+              <button
+                type="button"
+                class="delete-button"
+                [attr.aria-label]="'Delete the board ' + board.name"
+                title="Delete this board"
+                (click)="askDelete(board)"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 7h16M10 11v6m4-6v6M6 7l1 12h10l1-12M9 7V4h6v3" />
+                </svg>
+              </button>
             </li>
           }
         </ul>

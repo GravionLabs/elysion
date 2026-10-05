@@ -1,39 +1,50 @@
-<app-top-bar
-  [boardId]="boardId()"
-  [boardName]="boardName()"
-  [canRename]="boardName() !== null"
-  [status]="syncStatus()"
-  [theme]="theme()"
-  [libraryOpen]="libraryOpen()"
-  [hasSelection]="selectionCount() > 0"
-  (renameRequested)="rename($event)"
-  (themeToggle)="toggleTheme()"
-  (libraryToggle)="toggleLibrary()"
-  (exportRequested)="exportBoard($event)"
-  (importChosen)="chooseImport($event)"
-/>
-@if (pendingImport(); as file) {
-  <div class="board-banner confirm" role="alertdialog" aria-label="Confirm import">
-    <span>Replace everything on this board with “{{ file.name }}”?</span>
-    <button type="button" class="banner-button primary" (click)="confirmImport()">Replace</button>
-    <button type="button" class="banner-button" (click)="cancelImport()">Cancel</button>
-  </div>
-} @else if (notice(); as message) {
-  <div class="board-banner" role="status">
-    <span>{{ message }}</span>
-    <button type="button" class="banner-button" (click)="dismissNotice()">Dismiss</button>
-  </div>
+@if (notFound()) {
+  <header class="not-found-header"><app-brand /></header>
+  <main class="not-found">
+    <h1>Board not found</h1>
+    <p>This board does not exist, or it was deleted.</p>
+    <a class="not-found-link" routerLink="/">Show all boards</a>
+  </main>
+} @else {
+  <app-top-bar
+    [boardId]="boardId()"
+    [boardName]="boardName()"
+    [canRename]="boardName() !== null"
+    [status]="syncStatus()"
+    [theme]="theme()"
+    [libraryOpen]="libraryOpen()"
+    [hasSelection]="selectionCount() > 0"
+    (renameRequested)="rename($event)"
+    (themeToggle)="toggleTheme()"
+    (libraryToggle)="toggleLibrary()"
+    (exportRequested)="exportBoard($event)"
+    (importChosen)="chooseImport($event)"
+  />
+  @if (pendingImport(); as file) {
+    <div class="board-banner confirm" role="alertdialog" aria-label="Confirm import">
+      <span>Replace everything on this board with “{{ file.name }}”?</span>
+      <button type="button" class="banner-button primary" (click)="confirmImport()">Replace</button>
+      <button type="button" class="banner-button" (click)="cancelImport()">Cancel</button>
+    </div>
+  } @else if (notice(); as message) {
+    <div class="board-banner" role="status">
+      <span>{{ message }}</span>
+      <button type="button" class="banner-button" (click)="dismissNotice()">Dismiss</button>
+    </div>
+  }
+  @if (canvasVisible()) {
+    <elysion-canvas
+      #canvas
+      class="board-canvas"
+      [attr.board-id]="boardId()"
+      [attr.yjs-server-url]="yjsServerUrl()"
+      [attr.theme]="theme()"
+      (ready)="onCanvasReady()"
+      (error)="onCanvasError()"
+      (status)="onSyncStatus($event)"
+      (themechange)="onCanvasThemeChange($event)"
+      (librarychange)="onLibraryChange($event)"
+      (selectioncount)="onSelectionCount($event)"
+    ></elysion-canvas>
+  }
 }
-<elysion-canvas
-  #canvas
-  class="board-canvas"
-  [attr.board-id]="boardId()"
-  [attr.yjs-server-url]="yjsServerUrl()"
-  [attr.theme]="theme()"
-  (ready)="onCanvasReady()"
-  (error)="onCanvasError()"
-  (status)="onSyncStatus($event)"
-  (themechange)="onCanvasThemeChange($event)"
-  (librarychange)="onLibraryChange($event)"
-  (selectioncount)="onSelectionCount($event)"
-></elysion-canvas>

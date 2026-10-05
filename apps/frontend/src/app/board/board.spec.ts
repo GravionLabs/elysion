@@ -325,16 +325,73 @@ describe('Board', () => {
       expect(title()).toContain('Q3 planning');
     });
 
-    it('keeps showing the id when the board has no record', async () => {
+    it('keeps showing the id, and the canvas, when the BFF fails', async () => {
       fixture.componentRef.setInput('boardId', id);
       fixture.detectChanges();
       await fixture.whenStable();
 
-      http.expectOne(`/api/boards/${id}`).flush('', { status: 404, statusText: 'Not Found' });
+      http.expectOne(`/api/boards/${id}`).flush('', { status: 502, statusText: 'Bad Gateway' });
       await fixture.whenStable();
       fixture.detectChanges();
 
       expect(title()).toContain(id);
+      expect(fixture.nativeElement.querySelector('elysion-canvas')).not.toBeNull();
+    });
+
+    it('does not ask the BFF about a room such as default', async () => {
+      fixture.componentRef.setInput('boardId', 'default');
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      http.expectNone(() => true);
+      expect(title()).toContain('default');
+    });
+
+    describe('a board that does not exist', () => {
+      const open = async () => {
+        fixture.componentRef.setInput('boardId', id);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+      };
+      const answer = async (status: number, body: object | string = '') => {
+        http.expectOne(`/api/boards/${id}`).flush(body, { status, statusText: 'x' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+      };
+
+      it('does not start the canvas for a stored board id until the BFF has answered', async () => {
+        await open();
+
+        expect(fixture.nativeElement.querySelector('elysion-canvas')).toBeNull();
+
+        await answer(200, { id, name: 'Q3 planning', createdAt: '', path: '' });
+
+        expect(fixture.nativeElement.querySelector('elysion-canvas')).not.toBeNull();
+      });
+
+      it('shows "Board not found" with a way back, and no canvas, on a 404', async () => {
+        await open();
+        await answer(404);
+
+        const page = fixture.nativeElement as HTMLElement;
+        expect(page.querySelector('h1')?.textContent).toContain('Board not found');
+        expect(page.textContent).toContain('does not exist, or it was deleted');
+        expect(page.querySelector('a.not-found-link')?.getAttribute('href')).toBe('/');
+        expect(page.querySelector('elysion-canvas')).toBeNull();
+        expect(page.querySelector('app-top-bar')).toBeNull();
+        expect(TestBed.inject(Title).getTitle()).toBe('Board not found · Elysion');
+      });
+
+      it('starts the canvas at once for a room that is not a stored board', async () => {
+        fixture.componentRef.setInput('boardId', 'team-retro');
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelector('elysion-canvas')).not.toBeNull();
+        expect(fixture.nativeElement.querySelector('h1')?.textContent).not.toContain('not found');
+      });
     });
 
     describe('renaming', () => {
@@ -434,15 +491,6 @@ describe('Board', () => {
         expect(fixture.nativeElement.querySelector('.title-button')).toBeNull();
         expect(TestBed.inject(Title).getTitle()).toBe('Elysion');
       });
-    });
-
-    it('does not ask the BFF about a room such as default', async () => {
-      fixture.componentRef.setInput('boardId', 'default');
-      fixture.detectChanges();
-      await fixture.whenStable();
-
-      http.expectNone(() => true);
-      expect(title()).toContain('default');
     });
   });
 

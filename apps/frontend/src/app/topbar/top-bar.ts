@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MAX_BOARD_NAME_LENGTH } from '../board/board-api';
+import { AppBrand } from '../shared/app-brand';
 import { Theme } from '../theme/theme.service';
 import { ExportMenu, ExportRequest } from './export-menu';
 
@@ -25,7 +26,7 @@ const STATUS_LABEL: Record<SyncStatus, string> = {
 
 /** The bar at the top of the board page, modeled on ariadne's: identity left, actions right. */
 @Component({
-  imports: [ExportMenu, RouterLink],
+  imports: [AppBrand, ExportMenu, RouterLink],
   selector: 'app-top-bar',
   styleUrl: './top-bar.scss',
   templateUrl: './top-bar.html',
