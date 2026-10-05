@@ -9,7 +9,8 @@ See `docs/specs/bff.md` and `docs/adr/0001-gateway-and-bff.md`.
 ```sh
 pnpm --filter @elysion/bff start        # dev
 pnpm --filter @elysion/bff run build    # nest build
-pnpm --filter @elysion/bff test         # vitest
+pnpm --filter @elysion/bff test         # vitest (unit)
+pnpm --filter @elysion/bff test:e2e     # vitest (e2e, against a fake business backend)
 ```
 
 ## TypeScript version — do not bump to 7
@@ -21,6 +22,10 @@ pnpm --filter @elysion/bff test         # vitest
 - Package name `@elysion/bff` (not `bff`) — the workspace filter and Dockerfile depend on it.
 - `"files": ["dist"]` in `package.json` matters — the Dockerfile uses `pnpm deploy --prod`, which packs by `files`/gitignore rules like `npm pack`; without it, `dist/` (gitignored) is silently excluded from the deployed output.
 - New guards/interceptors/modules go through Nest's standard DI patterns — nothing repo-specific here yet beyond the health endpoint pattern (`src/health.controller.ts`).
+
+## Board endpoints
+
+`src/boards/`: `BusinessBackendClient` (Node's built-in `fetch`, no HTTP library) maps the business backend's answers to the BFF's errors, `BoardsController` serves `/api/boards`. The backend URL comes from `BUSINESS_BACKEND_URL` (default `http://localhost:5174`). The e2e tests start `test/fake-business-backend.ts`, a small in-memory copy of the Board API with the same routes and status codes, so keep it in step with `BoardsController` in the business backend. `tsc -p tsconfig.json` reports a pre-existing error for `supertest/types` in `test/app.e2e-spec.ts`; the build config (`tsconfig.build.json`) excludes the tests.
 
 ## Docker
 
