@@ -27,6 +27,14 @@ This is what makes collaboration links possible (#101).
 
 The top bar of the board page links back: the brand and an "All boards" button (an icon only below 640 px) both go to `/`.
 
+### Deleting a board
+
+Every card in the list has a **Delete** button (a trash icon with the label "Delete the board <name>", beside the card's link, not inside it). It opens a confirmation in the page, never a browser dialog: "Delete “<name>”? The board and everything on it will be gone. This cannot be undone." with **Delete** and **Cancel**. Confirming sends `DELETE /api/boards/:id` (the business backend deletes the stored document with the board); the board then leaves the list, and deleting the last one shows the empty state. While the request runs the buttons are disabled; if it fails the board stays and the confirmation shows "The board could not be deleted. Try again."
+
+### Board not found
+
+`Board` asks the BFF about a stored board's id (`BoardApi.find`: `found`, `missing` on a 404, `unavailable` when the BFF fails, `room` for ids that cannot be a board's, such as `default`). On `missing` the page shows "Board not found. This board does not exist, or it was deleted." with a link to the list, and **never starts the canvas**: connecting would create a room, and once something is drawn a stored document, for a board that is gone. A stored board's canvas starts when the BFF has answered; a room such as `default` starts at once; if the BFF fails the canvas starts anyway, named by its id. The tab is named "Board not found · Elysion".
+
 ### Renaming a board
 
 The board's title in the top bar is a button when the board is a stored one (a room such as `default` has no name to change and stays plain text). Clicking it turns the title into a field with the name selected; **Enter** or leaving the field saves, **Escape** cancels, and a name that did not change sends nothing. An empty name is refused: Enter keeps the field open with "A board needs a name.", leaving the field with an empty name just cancels. The field takes up to 120 characters, the backend's limit.

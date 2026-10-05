@@ -157,4 +157,98 @@ describe('BoardList', () => {
       http.expectNone('/api/boards');
     });
   });
+
+  describe('deleting a board', () => {
+    beforeEach(async () => {
+      await respondWith([board('b2', 'Sprint review'), board('b1', 'Retro')]);
+    });
+
+    const askToDelete = async (name: string) => {
+      (el().querySelector(`button[aria-label="Delete the board ${name}"]`) as HTMLElement).click();
+      await fixture.whenStable();
+    };
+    const confirm = () => el().querySelector('[role="alertdialog"]') as HTMLElement | null;
+    const confirmButton = (selector: string) =>
+      (confirm() as HTMLElement).querySelector(selector) as HTMLElement;
+    const names = () =>
+      [...el().querySelectorAll('.board-name')].map((name) => name.textContent?.trim());
+
+    it('offers a labelled Delete next to every board, not inside its link', () => {
+      const buttons = [...el().querySelectorAll('.delete-button')];
+
+      expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
+        'Delete the board Sprint review',
+        'Delete the board Retro',
+      ]);
+      expect(buttons.every((b) => !b.closest('a'))).toBe(true);
+    });
+
+    it('asks first, in the page, and names the board; nothing is sent yet', async () => {
+      await askToDelete('Retro');
+
+      expect(confirm()?.textContent).toContain('Delete “Retro”?');
+      expect(confirm()?.textContent).toContain('cannot be undone');
+      http.expectNone(() => true);
+      expect(names()).toEqual(['Sprint review', 'Retro']);
+    });
+
+    it('deletes only the chosen board once confirmed', async () => {
+      await askToDelete('Retro');
+
+      confirmButton('.danger').click();
+      await fixture.whenStable();
+      const request = http.expectOne('/api/boards/b1');
+      expect(request.request.method).toBe('DELETE');
+      expect(confirm()?.textContent).toContain('Deleting…');
+      request.flush(null, { status: 204, statusText: 'No Content' });
+      await fixture.whenStable();
+
+      expect(names()).toEqual(['Sprint review']);
+      expect(confirm()).toBeNull();
+    });
+
+    it('does nothing on Cancel', async () => {
+      await askToDelete('Retro');
+
+      confirmButton('button:not(.danger)').click();
+      await fixture.whenStable();
+
+      http.expectNone(() => true);
+      expect(confirm()).toBeNull();
+      expect(names()).toEqual(['Sprint review', 'Retro']);
+    });
+
+    it('keeps the board and says so when deleting fails, and lets the user try again', async () => {
+      await askToDelete('Retro');
+      confirmButton('.danger').click();
+      await fixture.whenStable();
+      http.expectOne('/api/boards/b1').flush('', { status: 502, statusText: 'Bad Gateway' });
+      await fixture.whenStable();
+
+      expect(confirm()?.textContent).toContain('could not be deleted');
+      expect(names()).toEqual(['Sprint review', 'Retro']);
+
+      confirmButton('.danger').click();
+      await fixture.whenStable();
+      http.expectOne('/api/boards/b1').flush(null, { status: 204, statusText: 'No Content' });
+      await fixture.whenStable();
+
+      expect(names()).toEqual(['Sprint review']);
+    });
+
+    it('shows the empty state after the last board is deleted', async () => {
+      await askToDelete('Retro');
+      confirmButton('.danger').click();
+      await fixture.whenStable();
+      http.expectOne('/api/boards/b1').flush(null, { status: 204, statusText: 'No Content' });
+      await fixture.whenStable();
+      await askToDelete('Sprint review');
+      confirmButton('.danger').click();
+      await fixture.whenStable();
+      http.expectOne('/api/boards/b2').flush(null, { status: 204, statusText: 'No Content' });
+      await fixture.whenStable();
+
+      expect(text()).toContain('No boards yet');
+    });
+  });
 });
