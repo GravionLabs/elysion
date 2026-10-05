@@ -1,8 +1,8 @@
 using System.Net.Mime;
 using Elysion.BusinessBackend.Api.Data;
+using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
 
 namespace Elysion.BusinessBackend.Api.Endpoints;
@@ -33,15 +33,15 @@ public static class BoardDocumentEndpoints
         return routes;
     }
 
-    private static async Task<IResult> Get(string boardId, ElysionDbContext db, CancellationToken cancellationToken)
+    private static async Task<IResult> Get(string boardId, IBoardDocumentRepository documents, CancellationToken cancellationToken)
     {
         if (!IsValidId(boardId)) return TypedResults.BadRequest();
-        var document = await db.BoardDocuments.AsNoTracking().FirstOrDefaultAsync(d => d.BoardId == boardId, cancellationToken);
+        var document = await documents.FindAsync(boardId, cancellationToken);
         return document is null ? TypedResults.NotFound() : new StateResult(document, StatusCodes.Status200OK);
     }
 
     private static async Task<IResult> Put(
-        string boardId, HttpRequest request, ElysionDbContext db, TimeProvider time, CancellationToken cancellationToken)
+        string boardId, HttpRequest request, IBoardDocumentRepository documents, TimeProvider time, CancellationToken cancellationToken)
     {
         if (!IsValidId(boardId)) return TypedResults.BadRequest();
         if (request.ContentType?.StartsWith(OctetStream, StringComparison.OrdinalIgnoreCase) != true)
@@ -62,49 +62,24 @@ public static class BoardDocumentEndpoints
         await request.Body.CopyToAsync(buffer, cancellationToken);
         var state = buffer.ToArray();
 
-        var document = await db.BoardDocuments.FirstOrDefaultAsync(d => d.BoardId == boardId, cancellationToken);
-        if (create)
+        TryParseVersion(ifMatch, out var expected);
+        var result = await documents.SaveAsync(boardId, state, create ? null : expected, time.GetUtcNow(), cancellationToken);
+        return result switch
         {
-            if (document is not null) return new StateResult(document, StatusCodes.Status409Conflict);
-            document = new BoardDocument { BoardId = boardId, State = state, Version = 1, UpdatedAt = time.GetUtcNow() };
-            db.BoardDocuments.Add(document);
-        }
-        else
-        {
-            TryParseVersion(ifMatch, out var expected);
-            if (document is null) return TypedResults.NotFound();
-            if (document.Version != expected) return new StateResult(document, StatusCodes.Status409Conflict);
-
-            document.State = state;
-            document.Version = expected + 1;
-            document.UpdatedAt = time.GetUtcNow();
-        }
-
-        try
-        {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex) when (ex is DbUpdateConcurrencyException or DbUpdateException)
-        {
-            // Another request saved between our read and our write: hand back what is stored now.
-            db.ChangeTracker.Clear();
-            var current = await db.BoardDocuments.AsNoTracking().FirstOrDefaultAsync(d => d.BoardId == boardId, cancellationToken);
-            return current is null
-                ? TypedResults.StatusCode(StatusCodes.Status409Conflict)
-                : new StateResult(current, StatusCodes.Status409Conflict);
-        }
-
-        return new SavedResult(document.Version);
+            { Status: DocumentSaveStatus.Saved, Document: { } saved } => new SavedResult(saved.Version),
+            { Status: DocumentSaveStatus.NotFound } => TypedResults.NotFound(),
+            { Document: { } current } => new StateResult(current, StatusCodes.Status409Conflict),
+            _ => TypedResults.StatusCode(StatusCodes.Status409Conflict),
+        };
     }
 
-    private static async Task<IResult> Delete(string boardId, ElysionDbContext db, CancellationToken cancellationToken)
+    private static async Task<IResult> Delete(
+        string boardId, IBoardDocumentRepository documents, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         if (!IsValidId(boardId)) return TypedResults.BadRequest();
-        var document = await db.BoardDocuments.FirstOrDefaultAsync(d => d.BoardId == boardId, cancellationToken);
-        if (document is not null)
+        if (await documents.RemoveAsync(boardId, cancellationToken))
         {
-            db.BoardDocuments.Remove(document);
-            await db.SaveChangesAsync(cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         return TypedResults.NoContent();

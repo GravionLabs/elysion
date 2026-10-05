@@ -104,6 +104,13 @@ authorization queries (#117) would otherwise be repeated in every handler.
 - Handlers become easy to unit-test with a substitute repository, but the existing
   `WebApplicationFactory` tests stay the main safety net; they are unchanged by this refactoring (#468).
 
+## Implementation note
+
+Built in #468. Repositories **stage** changes (`Add`, `Remove`) and `IUnitOfWork` commits, for every aggregate, instead of
+some repository methods saving themselves and others not: one rule is easier to follow than two, and a request
+that changes one aggregate commits once the same way. The one exception stays point 3: the versioned document save
+commits inside `SaveAsync`, because it has to turn a lost write into a `Conflict`.
+
 ## Owner decision
 
 Accepted by the product owner on 2026-10-05: **option B, hand-written repositories**, as recommended above. #468 implements
