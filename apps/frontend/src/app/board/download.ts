@@ -1,9 +1,10 @@
-export type ExportFormat = 'png' | 'svg' | 'excalidraw';
+export type ExportFormat = 'png' | 'svg' | 'excalidraw' | 'pdf';
 
 const EXTENSION: Record<ExportFormat, string> = {
   png: 'png',
   svg: 'svg',
   excalidraw: 'excalidraw',
+  pdf: 'pdf',
 };
 
 /** A file name from the board's name (or id): letters, digits and `._-`, never empty. */

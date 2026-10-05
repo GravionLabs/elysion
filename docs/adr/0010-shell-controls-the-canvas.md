@@ -26,7 +26,8 @@ theme, and later the Library sidebar, export and import.
 'disconnected' }`, the Yjs connection), `themechange` (`{ theme }`, only when the user switches
      the theme inside the canvas, not when the host sets it).
    - _Commands_, as methods on the element, added when a feature needs one (`toggleLibrary()`,
-     `exportBoard(format)`, `importFile(file)` come with their PBIs). Methods rather than attributes,
+     `exportBoard(format)`, `importFile(file)` come with their PBIs; `exportBoard` takes `png`, `svg`, `pdf`
+     (ADR 0013) or `excalidraw`). Methods rather than attributes,
      because they are actions, not state.
 3. **The theme is app-wide state in the shell** (`ThemeService`: a stored explicit choice, otherwise the
    system preference), written to `data-theme` on `<html>` and passed to the canvas as the `theme`

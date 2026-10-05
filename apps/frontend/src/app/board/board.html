@@ -14,6 +14,7 @@
     [theme]="theme()"
     [libraryOpen]="libraryOpen()"
     [hasSelection]="selectionCount() > 0"
+    [exporting]="exporting()"
     (renameRequested)="rename($event)"
     (themeToggle)="toggleTheme()"
     (libraryToggle)="toggleLibrary()"

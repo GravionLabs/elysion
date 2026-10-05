@@ -1,13 +1,13 @@
 import { convertToExcalidrawElements, serializeAsJSON } from '@excalidraw/excalidraw';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { elementsToExport, exportBoard, importFile, replaceScene } from './board-io';
 
 // convertToExcalidrawElements ignores a given `id` and makes up its own, so ids are set afterwards.
-function rect(id: string): ExcalidrawElement {
+function rect(id: string, x = 0, y = 0, size = 10): ExcalidrawElement {
   const [element] = convertToExcalidrawElements([
-    { type: 'rectangle', x: 0, y: 0, width: 10, height: 10 },
+    { type: 'rectangle', x, y, width: size, height: size },
   ]);
   return { ...element, id } as unknown as ExcalidrawElement;
 }
@@ -145,6 +145,63 @@ describe('exportBoard', () => {
     expect(
       await exportBoard(fakeApi(scene, {}).api, 'excalidraw', { selectionOnly: true }),
     ).toBeNull();
+  });
+
+  describe('as a PDF', () => {
+    // svg2pdf.js asks every SVG element for its box, which jsdom does not have.
+    beforeEach(() => {
+      (SVGElement.prototype as unknown as { getBBox: () => object }).getBBox = () => ({
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+      });
+    });
+
+    const inspect = async (blob: Blob) => {
+      const text = new TextDecoder('latin1').decode(await blob.arrayBuffer());
+      const box = text.match(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/);
+      return {
+        text,
+        pages: (text.match(/\/Type \/Page\b/g) ?? []).length,
+        width: Number(box?.[1]),
+        height: Number(box?.[2]),
+      };
+    };
+
+    it('is a real PDF with one page', async () => {
+      const blob = (await exportBoard(fakeApi(scene).api, 'pdf'))!;
+
+      expect(blob.type).toBe('application/pdf');
+      const pdf = await inspect(blob);
+      expect(pdf.text.startsWith('%PDF-')).toBe(true);
+      expect(pdf.pages).toBe(1);
+      expect(pdf.width).toBeGreaterThan(0);
+    });
+
+    it('answers null for an empty board and for an empty selection', async () => {
+      expect(await exportBoard(fakeApi([]).api, 'pdf')).toBeNull();
+      expect(await exportBoard(fakeApi(scene, {}).api, 'pdf', { selectionOnly: true })).toBeNull();
+    });
+
+    it('makes the page as large as what is exported: the selection is a smaller page than the board', async () => {
+      const far = [rect('near', 0, 0, 100), rect('far', 2000, 1000, 100)];
+
+      const whole = await inspect((await exportBoard(fakeApi(far).api, 'pdf'))!);
+      const selection = await inspect(
+        (await exportBoard(fakeApi(far, { near: true }).api, 'pdf', { selectionOnly: true }))!,
+      );
+
+      expect(selection.width).toBeLessThan(whole.width);
+      expect(selection.height).toBeLessThan(whole.height);
+      expect(selection.pages).toBe(1);
+    });
+
+    it('keeps the text of a labeled shape as text in the built-in font', async () => {
+      const blob = (await exportBoard(fakeApi(labeled('card')).api, 'pdf'))!;
+
+      expect((await inspect(blob)).text).toContain('/BaseFont /Helvetica');
+    });
   });
 
   it('leaves deleted elements out', async () => {

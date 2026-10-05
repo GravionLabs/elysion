@@ -192,6 +192,59 @@ describe('Board', () => {
       expect(downloads[0].download).toBe('team-retro-selection.png');
     });
 
+    it('downloads a PDF named after the board, for the selection too', async () => {
+      const exportBoard = vi
+        .fn()
+        .mockResolvedValue(new Blob(['%PDF'], { type: 'application/pdf' }));
+      Object.assign(canvas(), { exportBoard });
+      fixture.componentRef.setInput('boardId', 'team-retro');
+
+      await component.exportBoard({ format: 'pdf', selectionOnly: false });
+      await component.exportBoard({ format: 'pdf', selectionOnly: true });
+
+      expect(exportBoard.mock.calls).toEqual([
+        ['pdf', { selectionOnly: false }],
+        ['pdf', { selectionOnly: true }],
+      ]);
+      expect(downloads.map((d) => d.download)).toEqual([
+        'team-retro.pdf',
+        'team-retro-selection.pdf',
+      ]);
+    });
+
+    it('shows "Preparing PDF…" while the PDF is made and is ready for another export after', async () => {
+      let finish!: (blob: Blob) => void;
+      Object.assign(canvas(), {
+        exportBoard: vi.fn().mockReturnValue(new Promise<Blob>((resolve) => (finish = resolve))),
+      });
+      const button = () =>
+        fixture.nativeElement.querySelector('app-export-menu button') as HTMLButtonElement;
+
+      const done = component.exportBoard({ format: 'pdf', selectionOnly: false });
+      await settle();
+      expect(button().textContent).toContain('Preparing PDF…');
+      expect(downloads).toEqual([]);
+
+      finish(new Blob(['%PDF']));
+      await done;
+      await settle();
+
+      expect(button().textContent).toContain('Export');
+      expect(downloads).toHaveLength(1);
+    });
+
+    it('says the export failed and stops showing "Preparing" when the PDF cannot be made', async () => {
+      Object.assign(canvas(), { exportBoard: vi.fn().mockRejectedValue(new Error('boom')) });
+
+      await component.exportBoard({ format: 'pdf', selectionOnly: false });
+      await settle();
+
+      expect(banner()?.textContent).toContain('export failed');
+      expect(
+        (fixture.nativeElement.querySelector('app-export-menu button') as HTMLElement).textContent,
+      ).not.toContain('Preparing');
+    });
+
     it('says so instead of downloading when there is nothing to export', async () => {
       Object.assign(canvas(), { exportBoard: vi.fn().mockResolvedValue(null) });
 
