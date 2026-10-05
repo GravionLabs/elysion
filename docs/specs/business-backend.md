@@ -34,6 +34,27 @@ There is no owner and no authorization yet: every caller sees every board. Users
 
 **Duplicate** creates a board named "<name> (copy)" (the name is cut short, to 120 characters, when the suffix would not fit) and copies the source's stored document byte for byte as a fresh document (version 1), so the two boards are independent from then on. The copy is what was last saved: changes still inside a room's save window (a few seconds) are not in it yet. A board without content gets a copy without a document.
 
+## Authentication
+
+Every endpoint requires a Keycloak access token (`Authorization: Bearer ...`, [identity.md](identity.md), [ADR 0014](../adr/0014-keycloak-identity-provider.md)): JWT bearer authentication runs before authorization, and the fallback policy demands an authenticated user for anything that does not say `AllowAnonymous`. A request without a valid token is `401` with `WWW-Authenticate: Bearer`. The service validates tokens and never issues them.
+
+- **Validation is explicit and always on**, also in Development: signature (`RequireSignedTokens`, an `alg: none` token is refused), issuer (`OIDC_ISSUER_URL`), audience (`OIDC_AUDIENCE`, `elysion-bff`), expiry (30 seconds of clock skew).
+- **Configuration** is bound to `OidcOptions` under the names of the other services: `OIDC_ISSUER_URL` and `OIDC_AUDIENCE` (required: the service does not start without them; development values are in `appsettings.Development.json`, the compose file sets them for the container) and the optional `OIDC_JWKS_URI`.
+- **Signing keys** come from the realm, never from configuration. By default through the issuer's discovery document. Inside the compose network the issuer in the tokens is `http://localhost:8081/...`, which the container cannot reach, so `OIDC_JWKS_URI` points at `http://keycloak:8080/.../certs` and `JwksConfigurationManager` takes the keys from there (cached for an hour, fetched again when a token names an unknown key, at most every 30 seconds).
+- **Anonymous endpoints:** `/health` (container health checks), the OpenAPI document in Development, and the internal document API `/internal/boards/{boardId}/document`. The last one is open **on purpose, for now**: the realtime service calls it without a token and `/internal` is reachable only on the compose network (the edge does not route it). Authenticating that service-to-service call is tracked separately; until then it is the one hole in the fallback policy.
+- **The audience** is not in Keycloak's default access tokens. The realm file gives `elysion-frontend` an audience mapper for `elysion-bff`; a realm imported before that change needs `DROP DATABASE keycloak` and a restart of Keycloak to pick it up.
+- **Tests** use real JWTs signed with a key made for the run (`ApiFactory.CreateToken`, `CreateAuthenticatedClient`); the application validates them as it would Keycloak's, only the source of the key is replaced.
+
+Manual check against a running backend (`pnpm dev:infra`, then from `apps/business-backend`: `ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/Elysion.BusinessBackend.Api --no-launch-profile --urls http://localhost:5174`):
+
+```sh
+TOKEN=$(curl -s http://localhost:8081/realms/elysion/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=elysion-frontend -d username=dev -d password=dev | jq -r .access_token)
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:5174/health                              # 200
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:5174/boards                              # 401
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $TOKEN" http://localhost:5174/boards   # 200
+```
+
 ## Repositories
 
 [ADR 0015](../adr/0015-business-backend-repositories.md): the endpoints reach the database through `IBoardRepository` (`ListNewestFirstAsync`, `FindAsync`, `FindForUpdateAsync`, `Add`, `Remove`) and `IBoardDocumentRepository` (`FindAsync`, `SaveAsync`, `Add`, `RemoveAsync`), and commit through `IUnitOfWork` (the scoped `ElysionDbContext`). Repositories hand out untracked copies unless asked for an update, never `IQueryable`. `Add`, `Remove` and `RemoveAsync` stage; the unit of work commits, which makes duplicating a board (a board and a document) and deleting one (the board and its canvas content) single transactions. `IBoardDocumentRepository.SaveAsync` is the versioned save of ADR 0011 and commits itself: `Saved` with the new version, `NotFound` for an update of a missing document, `Conflict` with the stored document when the version moved on, a first save met an existing document, or another writer won the race. The HTTP behavior did not change; the repositories have their own tests (`BoardRepositoryTests`, `BoardDocumentRepositoryTests`) on SQLite, with `DateTimeOffset` stored as a number in the test context because SQLite cannot order by it.

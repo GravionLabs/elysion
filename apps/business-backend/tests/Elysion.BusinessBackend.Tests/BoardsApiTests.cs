@@ -17,7 +17,7 @@ public class BoardsApiTests
     public void SetUp()
     {
         _factory = new ApiFactory();
-        _client = _factory.CreateClient();
+        _client = _factory.CreateAuthenticatedClient();
     }
 
     [TearDown]
@@ -116,7 +116,7 @@ public class BoardsApiTests
     {
         var time = Substitute.For<TimeProvider>();
         using var factory = new ApiFactory(time);
-        using var client = factory.CreateClient();
+        using var client = factory.CreateAuthenticatedClient();
 
         foreach (var (name, at) in new[]
                  {
@@ -142,7 +142,7 @@ public class BoardsApiTests
         // 7th fractional digit set: Postgres would cut it off on the next read.
         time.GetUtcNow().Returns(new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero).AddTicks(1_234_567));
         using var factory = new ApiFactory(time);
-        using var client = factory.CreateClient();
+        using var client = factory.CreateAuthenticatedClient();
 
         var response = await client.PostAsJsonAsync("/boards", new BoardNameRequest("Precise"));
         var created = (await response.Content.ReadFromJsonAsync<BoardDto>())!;

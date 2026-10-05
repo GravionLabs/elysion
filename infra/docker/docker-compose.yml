@@ -108,6 +108,11 @@ services:
     environment:
       ConnectionStrings__Elysion: Host=postgres;Port=5432;Database=elysion;Username=elysion;Password=elysion
       Database__MigrateOnStartup: 'true'
+      # Access tokens come from Keycloak (docs/specs/identity.md). The issuer is the address the browser used;
+      # the keys are fetched over the compose network.
+      OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
+      OIDC_AUDIENCE: elysion-bff
+      OIDC_JWKS_URI: http://keycloak:8080/realms/elysion/protocol/openid-connect/certs
     depends_on:
       postgres:
         condition: service_healthy

@@ -15,7 +15,7 @@ public class BoardDocumentsApiTests
     public void SetUp()
     {
         _factory = new ApiFactory();
-        _client = _factory.CreateClient();
+        _client = _factory.CreateClient(); // the realtime service sends no token (the internal API is anonymous)
     }
 
     [TearDown]
@@ -145,12 +145,14 @@ public class BoardDocumentsApiTests
     [Test]
     public async Task Deleting_a_board_deletes_its_document()
     {
-        var created = await _client.PostAsJsonAsync("/boards", new BoardNameRequest("Workshop"));
+        // The board API needs a signed-in user; the document API does not (the realtime service has no token).
+        using var signedIn = _factory.CreateAuthenticatedClient();
+        var created = await signedIn.PostAsJsonAsync("/boards", new BoardNameRequest("Workshop"));
         var board = (await created.Content.ReadFromJsonAsync<BoardDto>())!;
         await PutAsync(board.Id.ToString(), [1, 2, 3], ifNoneMatchAny: true);
         await PutAsync("default", [9], ifNoneMatchAny: true);
 
-        (await _client.DeleteAsync($"/boards/{board.Id}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await signedIn.DeleteAsync($"/boards/{board.Id}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         (await _client.GetAsync(Url(board.Id.ToString()))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await _client.GetAsync(Url("default"))).StatusCode.ShouldBe(HttpStatusCode.OK);
