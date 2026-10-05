@@ -36,3 +36,7 @@ apps/*/.vscode/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Test coverage
+coverage/
+TestResults/
