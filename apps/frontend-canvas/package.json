@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@elysion/design-tokens": "workspace:*",
     "@excalidraw/excalidraw": "^0.18.1",
     "lib0": "^0.2.117",
     "react": "^19.2.8",

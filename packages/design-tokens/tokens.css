@@ -1,8 +1,12 @@
 /*
  * Design tokens shared with GravionLabs/ariadne (apps/web/src/styles.scss). Names and values follow
- * ariadne's `--c-*` set so both editors stay visually aligned. They are scoped to the canvas root,
- * not :root, so the bundle never leaks into the Angular host page.
+ * ariadne's `--c-*` set so both products stay visually aligned.
+ *
+ * Used by the Angular shell (on <html>, where `data-theme` is set by ThemeService) and by the canvas
+ * bundle (on its own `.elysion-canvas` root, so the bundle also works in a host that does not load
+ * this file and never leaks into the host page).
  */
+:root,
 .elysion-canvas {
   color-scheme: light;
 
@@ -46,6 +50,7 @@
   --transition-fast: 0.12s ease;
 }
 
+:root[data-theme='dark'],
 .elysion-canvas[data-theme='dark'] {
   color-scheme: dark;
 

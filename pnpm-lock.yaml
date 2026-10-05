@@ -197,6 +197,9 @@ importers:
       '@angular/router':
         specifier: ^22.1.0
         version: 22.1.5(@angular/common@22.1.5(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2))(@angular/platform-browser@22.1.5(@angular/common@22.1.5(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2)))(rxjs@7.8.2)
+      '@elysion/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
@@ -228,6 +231,9 @@ importers:
 
   apps/frontend-canvas:
     dependencies:
+      '@elysion/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
       '@excalidraw/excalidraw':
         specifier: ^0.18.1
         version: 0.18.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -374,6 +380,8 @@ importers:
       vitest:
         specifier: ^4.1.2
         version: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(jsdom@28.1.0(@noble/hashes@1.8.0)(supports-color@7.2.0))(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0))
+
+  packages/design-tokens: {}
 
 packages:
 

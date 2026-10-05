@@ -20,4 +20,15 @@ describe('elysion-canvas custom element', () => {
 
     document.body.removeChild(el);
   });
+
+  it('announces the connection status as a status event', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME);
+    const statuses: string[] = [];
+    el.addEventListener('status', (event) => statuses.push((event as CustomEvent).detail.status));
+
+    document.body.appendChild(el);
+    await waitFor(() => expect(statuses).toContain('connecting'));
+
+    document.body.removeChild(el);
+  });
 });

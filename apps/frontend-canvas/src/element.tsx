@@ -28,9 +28,15 @@ class ElysionCanvasElement extends HTMLElement {
     this.#render();
   }
 
+  #emit(name: string, detail: unknown): void {
+    this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
+  }
+
   #render(): void {
     this.#root?.render(
       <CanvasApp
+        onStatusChange={(status) => this.#emit('status', { status })}
+        onThemeChange={(theme) => this.#emit('themechange', { theme })}
         boardId={this.getAttribute('board-id') ?? undefined}
         yjsServerUrl={this.getAttribute('yjs-server-url') ?? undefined}
         theme={parseTheme(this.getAttribute('theme'))}
