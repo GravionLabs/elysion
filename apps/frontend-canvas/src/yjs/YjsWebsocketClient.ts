@@ -1,8 +1,9 @@
 import * as decoding from 'lib0/decoding';
 import * as encoding from 'lib0/encoding';
+import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
-import { MESSAGE_SYNC } from './protocol.js';
+import { MESSAGE_AWARENESS, MESSAGE_SYNC } from './protocol.js';
 
 export type YjsConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
@@ -28,11 +29,17 @@ export interface YjsWebsocketClientOptions {
  * wildcard support) — the board id here must already be part of `url`
  * (typically as a `?board=` query param, matching the gateway).
  *
- * Presence/awareness (message type 1, Feature #17) isn't handled — this
- * client only keeps the doc in sync.
+ * Presence/awareness (message type 1) rides on the same socket: `awareness` is the
+ * y-protocols `Awareness` of the doc. Callers set their local state on it and read the
+ * others' from it; this class sends changes, applies what the server sends (including the
+ * snapshot of who is already in the room, pushed on connect), clears the others' states
+ * when the connection drops (they are unknown until it is back), and announces the local
+ * state again after a reconnect.
  */
 export class YjsWebsocketClient {
   readonly doc: Y.Doc;
+  /** Who is on the board: the local state is set on it, the others' arrive through the socket. */
+  readonly awareness: awarenessProtocol.Awareness;
 
   #url: string;
   #socket: WebSocket | null = null;
@@ -49,7 +56,10 @@ export class YjsWebsocketClient {
     this.#onStatusChange = options.onStatusChange;
     this.#WebSocketImpl = options.WebSocketImpl ?? WebSocket;
 
+    this.awareness = new awarenessProtocol.Awareness(doc);
+
     this.doc.on('update', this.#handleLocalUpdate);
+    this.awareness.on('update', this.#handleAwarenessUpdate);
     this.#connect();
   }
 
@@ -59,6 +69,12 @@ export class YjsWebsocketClient {
       clearTimeout(this.#reconnectTimer);
     }
     this.doc.off('update', this.#handleLocalUpdate);
+    // Tell the others we are gone, as long as the socket is still open (the server also drops our
+    // state when the socket closes).
+    this.awareness.off('update', this.#handleAwarenessUpdate);
+    awarenessProtocol.removeAwarenessStates(this.awareness, [this.doc.clientID], 'destroy');
+    this.#sendAwareness([this.doc.clientID]);
+    this.awareness.destroy();
     this.#socket?.close();
     this.#socket = null;
   }
@@ -84,15 +100,36 @@ export class YjsWebsocketClient {
       encoding.writeVarUint(encoder, MESSAGE_SYNC);
       syncProtocol.writeSyncStep1(encoder, this.doc);
       this.#send(encoding.toUint8Array(encoder));
+      this.#announceAgain();
     });
     socket.addEventListener('message', (event) =>
       this.#handleMessage(new Uint8Array(event.data as ArrayBuffer)),
     );
     socket.addEventListener('close', () => {
+      // Whoever was on the board is unknown until we are connected again.
+      const others = [...this.awareness.getStates().keys()].filter(
+        (id) => id !== this.doc.clientID,
+      );
+      awarenessProtocol.removeAwarenessStates(this.awareness, others, this);
       this.#onStatusChange?.('disconnected');
       this.#scheduleReconnect();
     });
     socket.addEventListener('error', () => socket.close());
+  }
+
+  /**
+   * The server dropped our presence when the old connection closed, and removing a state raises its
+   * clock for us by one: an announcement with our old clock would be ignored until our next heartbeat
+   * (up to 30 s later). Setting the state twice raises our clock past the server's, and each setting is
+   * sent by the update handler.
+   */
+  #announceAgain(): void {
+    const state = this.awareness.getLocalState();
+    if (state === null) {
+      return;
+    }
+    this.awareness.setLocalState(state);
+    this.awareness.setLocalState(state);
   }
 
   #scheduleReconnect(): void {
@@ -108,6 +145,15 @@ export class YjsWebsocketClient {
   #handleMessage(message: Uint8Array): void {
     const decoder = decoding.createDecoder(message);
     const messageType = decoding.readVarUint(decoder);
+
+    if (messageType === MESSAGE_AWARENESS) {
+      awarenessProtocol.applyAwarenessUpdate(
+        this.awareness,
+        decoding.readVarUint8Array(decoder),
+        this,
+      );
+      return;
+    }
     if (messageType !== MESSAGE_SYNC) {
       return;
     }
@@ -129,6 +175,30 @@ export class YjsWebsocketClient {
     syncProtocol.writeUpdate(encoder, update);
     this.#send(encoding.toUint8Array(encoder));
   };
+
+  /** Local changes go out; what was applied from the server (origin `this`) does not come back. */
+  #handleAwarenessUpdate = (
+    { added, updated, removed }: { added: number[]; updated: number[]; removed: number[] },
+    origin: unknown,
+  ): void => {
+    if (origin === this) {
+      return;
+    }
+    this.#sendAwareness([...added, ...updated, ...removed]);
+  };
+
+  #sendAwareness(clientIds: number[]): void {
+    if (clientIds.length === 0) {
+      return;
+    }
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, MESSAGE_AWARENESS);
+    encoding.writeVarUint8Array(
+      encoder,
+      awarenessProtocol.encodeAwarenessUpdate(this.awareness, clientIds),
+    );
+    this.#send(encoding.toUint8Array(encoder));
+  }
 
   #send(message: Uint8Array): void {
     if (this.#socket?.readyState === this.#WebSocketImpl.OPEN) {
