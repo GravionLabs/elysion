@@ -30,7 +30,7 @@ The board endpoints (`/boards`, minimal APIs in `Endpoints/BoardEndpoints.cs`) a
 
 A board is `{ id, name, createdAt }`. The name is trimmed and must be 1 to 120 characters; otherwise the answer is `400` with problem details (`errors.name`). A route id that is not a GUID is a `404`. `createdAt` is cut to microseconds, which is what Postgres keeps, so a create and every later read show the same value.
 
-There is no owner and no authorization yet: every caller sees every board. Users, board membership and policies come with the identity epic (#91); the identity provider is Keycloak and this service only validates tokens ([ADR 0014](../adr/0014-keycloak-identity-provider.md)).
+There is no owner and no authorization yet: every caller sees every board. Users, board membership and policies come with the identity epic (#91); the identity provider is Keycloak and this service only validates tokens ([ADR 0014](../adr/0014-keycloak-identity-provider.md), [token flow](identity.md)).
 
 **Duplicate** creates a board named "<name> (copy)" (the name is cut short, to 120 characters, when the suffix would not fit) and copies the source's stored document byte for byte as a fresh document (version 1), so the two boards are independent from then on. The copy is what was last saved: changes still inside a room's save window (a few seconds) are not in it yet. A board without content gets a copy without a document.
 

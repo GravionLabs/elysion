@@ -25,7 +25,7 @@ A board is `{ id, name, createdAt, path }`: the backend's fields plus `path`, th
 
 Errors: an id that is not a UUID is a `404` without a call to the backend; a body without a string `name` is a `400`; a name the backend rejects (blank, over 120 characters) stays a `400` with the backend's message; an unknown board stays `404`; an unreachable or failing backend is a `502` (`The business backend is not reachable.`), while `/health` stays up.
 
-No authentication yet (#119) and no caching. Identity comes from Keycloak (see [ADR 0014](../adr/0014-keycloak-identity-provider.md)); the BFF will only validate its tokens.
+No authentication yet (#119) and no caching. Identity comes from Keycloak (see [ADR 0014](../adr/0014-keycloak-identity-provider.md)); the BFF will only validate its tokens. The token flow, `/auth/verify` for Traefik's forwardAuth and the WS token it issues are in [identity.md](identity.md).
 
 ## Configuration
 
