@@ -16,6 +16,13 @@ import { PresenceRelay } from '../presence/presence-relay.js';
 import { MESSAGE_AWARENESS, MESSAGE_SYNC } from './protocol.js';
 import { YjsRoom, YjsRoomRegistry } from './yjs-room-registry.js';
 
+/**
+ * A viewer's connection is read-only. Its sync step 2 and update messages are dropped (never applied, never
+ * relayed); this many in total close the connection, so a client that keeps editing is told. A viewer
+ * that just looks sends none beyond the one reply to the server's first sync step.
+ */
+export const MAX_DROPPED_VIEWER_WRITES = 20;
+
 function toUint8Array(data: RawData): Uint8Array {
   if (Array.isArray(data)) {
     return new Uint8Array(Buffer.concat(data));
@@ -40,6 +47,7 @@ function toUint8Array(data: RawData): Uint8Array {
 export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(YjsGateway.name);
   private readonly roomByClient = new WeakMap<WebSocket, YjsRoom>();
+  private readonly droppedViewerWrites = new WeakMap<WebSocket, number>();
 
   constructor(
     private readonly registry: YjsRoomRegistry,
@@ -194,6 +202,14 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     switch (messageType) {
       case MESSAGE_SYNC: {
+        // A viewer may ask for the board's state (sync step 1) and nothing else: step 2 and updates are writes.
+        if (
+          room.memberBySocket.get(client)?.role === 'viewer' &&
+          decoding.peekVarUint(decoder) !== syncProtocol.messageYjsSyncStep1
+        ) {
+          this.dropViewerWrite(client, room);
+          break;
+        }
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, MESSAGE_SYNC);
         syncProtocol.readSyncMessage(decoder, encoder, room.doc, client);
@@ -218,6 +234,16 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       default:
         this.logger.warn(`Unknown Yjs message type ${messageType}`);
+    }
+  }
+
+  /** Drops a viewer's write, and closes the connection when the viewer keeps trying (4403, the contract's "forbidden"). */
+  private dropViewerWrite(client: WebSocket, room: YjsRoom): void {
+    const dropped = (this.droppedViewerWrites.get(client) ?? 0) + 1;
+    this.droppedViewerWrites.set(client, dropped);
+    this.logger.debug(`Dropped a write from a viewer on board ${room.boardId} (${dropped})`);
+    if (dropped > MAX_DROPPED_VIEWER_WRITES) {
+      client.close(WS_CLOSE_FORBIDDEN, 'Viewers cannot change the board');
     }
   }
 
