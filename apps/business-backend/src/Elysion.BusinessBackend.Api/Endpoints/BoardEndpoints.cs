@@ -1,15 +1,19 @@
+using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
+using Elysion.BusinessBackend.Api.Identity;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Elysion.BusinessBackend.Api.Endpoints;
 
 /// <summary>
-/// Board CRUD. There is no owner or authorization yet (users and policies come with the identity
-/// epic), so every caller sees every board. Reached through the BFF only.
+/// Board CRUD behind the board policies (<see cref="BoardPolicies"/>): creating a board makes the caller its
+/// Owner, the list holds only the caller's boards, reading needs a role, renaming needs Editor, deleting
+/// needs Owner. A caller with no role on a board gets 404, not 403 (<see cref="BoardAuthorizationResultHandler"/>).
+/// Reached through the BFF only.
 /// </summary>
 public static class BoardEndpoints
 {
@@ -20,17 +24,18 @@ public static class BoardEndpoints
         var group = routes.MapGroup("/boards").WithTags("Boards");
 
         group.MapGet("", List).WithName("ListBoards");
-        group.MapGet("/{id:guid}", Get).WithName("GetBoard");
+        group.MapGet("/{id:guid}", Get).WithName("GetBoard").RequireAuthorization(BoardPolicies.Read);
+        group.MapGet("/{id:guid}/membership/me", MyMembership).WithName("GetMyMembership").RequireAuthorization(BoardPolicies.Read);
         group.MapPost("", Create).WithName("CreateBoard").Accepts<BoardNameRequest>("application/json").RequireJsonContentType();
-        group.MapPatch("/{id:guid}", Rename).WithName("RenameBoard").Accepts<BoardNameRequest>("application/json").RequireJsonContentType();
-        group.MapPost("/{id:guid}/duplicate", Duplicate).WithName("DuplicateBoard");
-        group.MapDelete("/{id:guid}", Delete).WithName("DeleteBoard");
+        group.MapPatch("/{id:guid}", Rename).WithName("RenameBoard").Accepts<BoardNameRequest>("application/json").RequireJsonContentType().RequireAuthorization(BoardPolicies.Write);
+        group.MapPost("/{id:guid}/duplicate", Duplicate).WithName("DuplicateBoard").RequireAuthorization(BoardPolicies.Read);
+        group.MapDelete("/{id:guid}", Delete).WithName("DeleteBoard").RequireAuthorization(BoardPolicies.Administer);
         return routes;
     }
 
-    private static async Task<Ok<IReadOnlyList<BoardDto>>> List(IBoardRepository boards, CancellationToken cancellationToken)
+    private static async Task<Ok<IReadOnlyList<BoardDto>>> List(IBoardRepository boards, ICurrentUser user, CancellationToken cancellationToken)
     {
-        var all = await boards.ListNewestFirstAsync(cancellationToken);
+        var all = await boards.ListVisibleToAsync(user.Id, cancellationToken);
         return TypedResults.Ok<IReadOnlyList<BoardDto>>(all.Select(BoardDto.From).ToList());
     }
 
@@ -40,15 +45,24 @@ public static class BoardEndpoints
         return board is null ? TypedResults.NotFound() : TypedResults.Ok(BoardDto.From(board));
     }
 
+    /// <summary>The caller's role on the board in the route, for the BFF's WS token check (#120). 404 for non-members.</summary>
+    private static async Task<Results<Ok<MembershipDto>, NotFound>> MyMembership(
+        Guid id, IBoardRepository boards, ICurrentUser user, CancellationToken cancellationToken)
+    {
+        var role = await boards.GetRoleAsync(id, user.Id, cancellationToken);
+        return role is null ? TypedResults.NotFound() : TypedResults.Ok(new MembershipDto(id, role.Value.ToString()));
+    }
+
     private static async Task<Results<Created<BoardDto>, ValidationProblem>> Create(
-        BoardNameRequest? request, HttpRequest http, IBoardRepository boards, IUnitOfWork unitOfWork, TimeProvider time, CancellationToken cancellationToken)
+        BoardNameRequest? request, HttpRequest http, IBoardRepository boards, IUnitOfWork unitOfWork, ICurrentUser user,
+        TimeProvider time, CancellationToken cancellationToken)
     {
         if (!Board.TryNormalizeName(request?.Name, out var name))
         {
             return InvalidName();
         }
 
-        var board = Board.Create(Guid.CreateVersion7(), name, TruncateToMicroseconds(time.GetUtcNow()));
+        var board = NewOwnedBoard(name, user, TruncateToMicroseconds(time.GetUtcNow()));
         boards.Add(board);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         // An absolute Location, as CreatedAtAction produced.
@@ -81,7 +95,7 @@ public static class BoardEndpoints
     /// </summary>
     private static async Task<Results<Created<BoardDto>, NotFound>> Duplicate(
         Guid id, HttpRequest http, IBoardRepository boards, IBoardDocumentRepository documents, IUnitOfWork unitOfWork,
-        TimeProvider time, CancellationToken cancellationToken)
+        ICurrentUser user, TimeProvider time, CancellationToken cancellationToken)
     {
         var source = await boards.FindAsync(id, cancellationToken);
         if (source is null)
@@ -90,7 +104,8 @@ public static class BoardEndpoints
         }
 
         var now = TruncateToMicroseconds(time.GetUtcNow());
-        var copy = Board.Create(Guid.CreateVersion7(), CopyName(source.Name), now);
+        // The copy is the caller's own board, whoever owns the source.
+        var copy = NewOwnedBoard(CopyName(source.Name), user, now);
         boards.Add(copy);
 
         var document = await documents.FindAsync(id.ToString(), cancellationToken);
@@ -108,6 +123,14 @@ public static class BoardEndpoints
         await unitOfWork.SaveChangesAsync(cancellationToken);
         var location = UriHelper.BuildAbsolute(http.Scheme, http.Host, http.PathBase, $"/boards/{copy.Id}");
         return TypedResults.Created(location, BoardDto.From(copy));
+    }
+
+    /// <summary>A board owned by <paramref name="owner"/>, with the explicit Owner membership that sharing lists will show.</summary>
+    private static Board NewOwnedBoard(string name, ICurrentUser owner, DateTimeOffset now)
+    {
+        var board = Board.Create(Guid.CreateVersion7(), name, now, owner.Id);
+        board.Memberships.Add(BoardMembership.Create(board.Id, owner.Id, BoardRole.Owner, now));
+        return board;
     }
 
     /// <summary>"&lt;name&gt; (copy)", with the name cut short when the suffix would not fit the limit.</summary>

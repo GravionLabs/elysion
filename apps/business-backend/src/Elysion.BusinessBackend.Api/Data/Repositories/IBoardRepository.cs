@@ -8,8 +8,17 @@ namespace Elysion.BusinessBackend.Api.Data.Repositories;
 /// </summary>
 public interface IBoardRepository
 {
-    /// <summary>All boards, the most recently created first.</summary>
-    Task<IReadOnlyList<Board>> ListNewestFirstAsync(CancellationToken cancellationToken);
+    /// <summary>
+    /// The boards a user is a member of or owns, the most recently created first. A board without an owner and
+    /// without that user's membership is not in the list.
+    /// </summary>
+    Task<IReadOnlyList<Board>> ListVisibleToAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The user's role on a board, or null when they have none (not a member, or no such board). The board's
+    /// owner is an Owner even without a membership row, so a board is usable before anybody was invited.
+    /// </summary>
+    Task<BoardRole?> GetRoleAsync(Guid boardId, Guid userId, CancellationToken cancellationToken);
 
     /// <summary>One board, or null. A copy that is not tracked: changes to it are not saved.</summary>
     Task<Board?> FindAsync(Guid id, CancellationToken cancellationToken);

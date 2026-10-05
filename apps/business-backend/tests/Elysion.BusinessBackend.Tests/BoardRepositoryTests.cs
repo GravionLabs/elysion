@@ -20,22 +20,77 @@ public class BoardRepositoryTests
     private static Board NewBoard(string name, int minutesAgo = 0) =>
         Board.Create(Guid.CreateVersion7(), name, Now.AddMinutes(-minutesAgo));
 
-    private async Task SeedAsync(params Board[] boards)
+    private static User NewUser(string subject) =>
+        User.Create(Guid.CreateVersion7(), subject, subject, null, Now);
+
+    private async Task SeedAsync(params object[] entities)
     {
         await using var db = _database.NewContext();
-        db.Boards.AddRange(boards);
+        db.AddRange(entities);
         await db.SaveChangesAsync();
     }
 
     [Test]
-    public async Task Lists_the_newest_board_first()
+    public async Task Lists_only_the_boards_of_the_user_newest_first()
     {
-        await SeedAsync(NewBoard("old", 30), NewBoard("new", 1), NewBoard("middle", 10));
+        var ada = NewUser("ada");
+        var bea = NewUser("bea");
+        var owned = Board.Create(Guid.CreateVersion7(), "owned", Now.AddMinutes(-30), ada.Id);
+        var shared = Board.Create(Guid.CreateVersion7(), "shared", Now.AddMinutes(-10), bea.Id);
+        var newest = Board.Create(Guid.CreateVersion7(), "newest", Now.AddMinutes(-1), ada.Id);
+        var others = Board.Create(Guid.CreateVersion7(), "others", Now, bea.Id);
+        var ownerless = Board.Create(Guid.CreateVersion7(), "ownerless", Now);
+        await SeedAsync(
+            ada, bea, owned, shared, newest, others, ownerless,
+            BoardMembership.Create(shared.Id, ada.Id, BoardRole.Viewer, Now));
         await using var db = _database.NewContext();
 
-        var boards = await new BoardRepository(db).ListNewestFirstAsync(CancellationToken.None);
+        var boards = await new BoardRepository(db).ListVisibleToAsync(ada.Id, CancellationToken.None);
 
-        boards.Select(b => b.Name).ShouldBe(["new", "middle", "old"]);
+        boards.Select(b => b.Name).ShouldBe(["newest", "shared", "owned"]);
+    }
+
+    [Test]
+    public async Task Lists_nothing_for_a_user_without_boards()
+    {
+        var ada = NewUser("ada");
+        await SeedAsync(ada, NewBoard("ownerless"));
+        await using var db = _database.NewContext();
+
+        (await new BoardRepository(db).ListVisibleToAsync(ada.Id, CancellationToken.None)).ShouldBeEmpty();
+    }
+
+    [Test]
+    public async Task The_role_is_the_membership_role_and_the_owner_is_an_owner_without_a_membership_row()
+    {
+        var owner = NewUser("owner");
+        var editor = NewUser("editor");
+        var viewer = NewUser("viewer");
+        var stranger = NewUser("stranger");
+        var board = Board.Create(Guid.CreateVersion7(), "Retro", Now, owner.Id); // no membership row for the owner
+        await SeedAsync(
+            owner, editor, viewer, stranger, board,
+            BoardMembership.Create(board.Id, editor.Id, BoardRole.Editor, Now),
+            BoardMembership.Create(board.Id, viewer.Id, BoardRole.Viewer, Now));
+        await using var db = _database.NewContext();
+        var repository = new BoardRepository(db);
+
+        (await repository.GetRoleAsync(board.Id, owner.Id, CancellationToken.None)).ShouldBe(BoardRole.Owner);
+        (await repository.GetRoleAsync(board.Id, editor.Id, CancellationToken.None)).ShouldBe(BoardRole.Editor);
+        (await repository.GetRoleAsync(board.Id, viewer.Id, CancellationToken.None)).ShouldBe(BoardRole.Viewer);
+        (await repository.GetRoleAsync(board.Id, stranger.Id, CancellationToken.None)).ShouldBeNull();
+        (await repository.GetRoleAsync(Guid.NewGuid(), owner.Id, CancellationToken.None)).ShouldBeNull();
+    }
+
+    [Test]
+    public async Task An_owner_with_a_lower_membership_row_is_still_the_owner()
+    {
+        var owner = NewUser("owner");
+        var board = Board.Create(Guid.CreateVersion7(), "Retro", Now, owner.Id);
+        await SeedAsync(owner, board, BoardMembership.Create(board.Id, owner.Id, BoardRole.Viewer, Now));
+        await using var db = _database.NewContext();
+
+        (await new BoardRepository(db).GetRoleAsync(board.Id, owner.Id, CancellationToken.None)).ShouldBe(BoardRole.Owner);
     }
 
     [Test]
