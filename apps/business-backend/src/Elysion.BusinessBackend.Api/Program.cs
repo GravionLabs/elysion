@@ -1,4 +1,5 @@
 using Elysion.BusinessBackend.Api.Data;
+using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Endpoints;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,11 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddDbContext<ElysionDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Elysion")));
+
+// Endpoints depend on these, not on the DbContext (ADR 0015). The unit of work is the same scoped context.
+builder.Services.AddScoped<IUnitOfWork>(services => services.GetRequiredService<ElysionDbContext>());
+builder.Services.AddScoped<IBoardRepository, BoardRepository>();
+builder.Services.AddScoped<IBoardDocumentRepository, BoardDocumentRepository>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 

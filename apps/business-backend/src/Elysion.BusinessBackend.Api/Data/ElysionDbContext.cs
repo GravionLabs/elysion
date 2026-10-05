@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Elysion.BusinessBackend.Api.Data;
 
-public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbContext(options)
+public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbContext(options), IUnitOfWork
 {
     public DbSet<Board> Boards => Set<Board>();
     public DbSet<BoardDocument> BoardDocuments => Set<BoardDocument>();
