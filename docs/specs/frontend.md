@@ -36,6 +36,16 @@ Excalidraw's own top tool island is hidden (`.shapes-section`, in `styles/toolba
 - The pill is a `role="toolbar"` with `aria-label`, `aria-pressed` and `title="<name> (<shortcut>)"` per button and a `:focus-visible` outline.
 - Excalidraw handles shortcuts only while its own container has focus (`handleKeyboardGlobally` is off); the toolbar does not change that.
 
+## Minimap
+
+`Minimap.tsx` is an overview of the whole scene at the bottom left, modeled on ariadne's (`.minimap` in `editor.scss`): 160x120, `--c-surface-1`, 1px `--c-border`, `--radius-md`, `--shadow`. Elements are drawn as grey rectangles, the visible area as a `--c-primary` frame. Excalidraw has no minimap (ariadne's comes from f-flow), so it is built here.
+
+- `CanvasApp` copies the live elements and the scroll, zoom and canvas size from `onChange` into a `SceneStore`, which lives outside React state: a drag on the canvas then re-renders only the minimap, not `CanvasApp` and Excalidraw. Redraws are throttled to one per animation frame.
+- `minimap-geometry.ts` holds the maths, unit-tested without a DOM: scene bounds (elements plus viewport, so the frame never leaves the minimap, and at least two viewports wide and high, like ariadne's `fMinSize`, so the frame stays at most about half the minimap instead of filling it when the content is small), the scale, and the mapping back to scene points. Bounds use a loop, because spreading hundreds of thousands of elements into `Math.min` overflows the call stack. Layout plus mapping took 4 ms for 5,000 and 9 ms for 50,000 elements.
+- Clicking or dragging in it pans the canvas: the picked scene point is scrolled to the center through `updateScene({ appState: { scrollX, scrollY } })`. Scroll is local state and is not written to Yjs. While dragging, the mapping (scale and origin) is frozen, because it includes the viewport and would otherwise rescale under the pointer, but the frame keeps following the view (`followViewport`); the elements therefore stay where they are until release; the pointer is clamped to the minimap, so dragging out stops at its edge instead of flying the view away from the content. On release the layout is unfrozen and the minimap re-fits to the current scene (it must redraw then even if no scene change follows, #190).
+- It is hidden while the scene is empty. It sits above Excalidraw's zoom and undo controls (`--elysion-minimap-bottom`, 72px) and below Excalidraw's UI layer, so the property panel is never covered; once those controls move into the toolbar (#181) the bottom is 16px like ariadne's.
+- jsdom does not fire Excalidraw's `onChange` after `updateScene`, so the wiring into `CanvasApp` is checked in the browser, not in a unit test.
+
 ## Canvas element style
 
 Excalidraw draws elements with roughjs onto a `<canvas>`, so their look is element properties, not CSS (unlike the UI chrome above):
