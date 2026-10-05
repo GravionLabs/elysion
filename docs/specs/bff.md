@@ -29,12 +29,19 @@ No authentication yet (#119) and no caching. Identity comes from Keycloak (see [
 
 ## Configuration
 
-| Variable | Default | |
-| --- | --- |
-| `PORT` | `3000` | port of the BFF |
-| `BUSINESS_BACKEND_URL` | `http://localhost:5174` | the business backend, whose dev port is set in `.vscode/launch.json` |
+Read once at startup by `src/config/` (`@nestjs/config`, validated by `validateEnv`) and used through the typed `AppConfigService` (`config.get('PORT')` is a number); nothing else reads `process.env`. A missing or malformed variable stops the process before it listens, with a message that names every problem. For local runs copy `apps/bff/.env.example` to `apps/bff/.env`; the compose file sets what the container needs.
 
-Read directly from the environment for now; a config module with validation is #118.
+| Variable               | Default                                | Meaning                                                                                   |
+| ---------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `PORT`                 | `3000`                                 | port of the BFF                                                                           |
+| `BUSINESS_BACKEND_URL` | `http://localhost:5174`                | the business backend, whose dev port is set in `.vscode/launch.json`                      |
+| `OIDC_ISSUER_URL`      | `http://localhost:8081/realms/elysion` | the `iss` the access tokens carry ([identity.md](identity.md))                            |
+| `OIDC_AUDIENCE`        | `elysion-bff`                          | the audience an access token must contain                                                 |
+| `OIDC_JWKS_URI`        | none (derived from the issuer)         | where to fetch Keycloak's keys when that is not the issuer's address (inside compose)     |
+| `WS_TOKEN_SECRET`      | **none, required**                     | HS256 secret of the WS token, at least 32 characters, the same as in the realtime service |
+| `WS_TOKEN_TTL_SECONDS` | `60`                                   | lifetime of a WS token                                                                    |
+
+The auth variables are only declared so far: nothing validates a token or issues a WS token yet (#119, #120).
 
 ## Open questions
 

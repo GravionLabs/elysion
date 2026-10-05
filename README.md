@@ -34,7 +34,7 @@ pnpm dev:stack    # the whole stack in containers behind Traefik: http://localho
 
 To check that the stack works: `curl -fsS http://localhost/api/boards` answers with a JSON list, `http://localhost/` opens the app, and a board created with `curl -X POST -H 'content-type: application/json' -d '{"name":"Check"}' http://localhost/api/boards` opens at the `path` it returns, with the name in the top bar and the status "Connected". Open that URL in two windows and draw in one to see the other follow.
 
-Run an individual service:
+Run an individual service (the BFF needs its environment first: `cp apps/bff/.env.example apps/bff/.env`, once):
 
 ```sh
 pnpm --filter @elysion/frontend start
