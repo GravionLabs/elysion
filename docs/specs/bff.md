@@ -25,7 +25,18 @@ A board is `{ id, name, createdAt, path }`: the backend's fields plus `path`, th
 
 Errors: an id that is not a UUID is a `404` without a call to the backend; a body without a string `name` is a `400`; a name the backend rejects (blank, over 120 characters) stays a `400` with the backend's message; an unknown board stays `404`; an unreachable or failing backend is a `502` (`The business backend is not reachable.`), while `/health` stays up.
 
-No authentication yet (#119) and no caching. Identity comes from Keycloak (see [ADR 0014](../adr/0014-keycloak-identity-provider.md)); the BFF will only validate its tokens. The token flow, `/auth/verify` for Traefik's forwardAuth and the WS token it issues are in [identity.md](identity.md).
+No caching.
+
+## Authentication
+
+Every route needs a Keycloak access token (`Authorization: Bearer ...`; [identity.md](identity.md), [ADR 0014](../adr/0014-keycloak-identity-provider.md)) except `GET /health`, which container health checks call without one (`@Public()`). `src/auth/`:
+
+- `TokenVerifier` (on `jose`) checks signature against the realm's keys, issuer (`OIDC_ISSUER_URL`), audience (`OIDC_AUDIENCE`, `elysion-bff`), expiry (30 s of clock tolerance) and a `sub`; only RS256 is accepted, so a token cannot pick `none` or a weaker algorithm. The keys come from `OIDC_JWKS_URI`, or `<issuer>/protocol/openid-connect/certs`; `jose` caches them and fetches again when a token names an unknown key (rotation). A failure to reach the realm is a server error, not "invalid token". It never calls the business backend.
+- `AuthGuard` is global (`APP_GUARD`): no token or an invalid one is `401` with `WWW-Authenticate: Bearer`; on success `request.auth` holds the token and its claims.
+- `GET /api/auth/verify` is what Traefik's forwardAuth middleware calls (#8; the open-source Traefik has no JWT middleware): `200` with `X-Auth-User-Id` (`sub`) and `X-Auth-User-Email` (when the token has one), or `401`. Cheap by design: a cached key and a signature check.
+- The board routes forward the caller's own token to the business backend (`@AccessToken()`), which decides what the user may do; its `401`, `403` and `404` (no role on a board is a 404 there) are passed on.
+
+In tests the verifier is replaced by one that trusts a locally generated key pair (`test/test-auth.ts`: `signToken`, `bearer`, `testVerifier`); everything else about the check is the production code.
 
 ## Configuration
 
@@ -41,7 +52,7 @@ Read once at startup by `src/config/` (`@nestjs/config`, validated by `validateE
 | `WS_TOKEN_SECRET`      | **none, required**                     | HS256 secret of the WS token, at least 32 characters, the same as in the realtime service |
 | `WS_TOKEN_TTL_SECONDS` | `60`                                   | lifetime of a WS token                                                                    |
 
-The auth variables are only declared so far: nothing validates a token or issues a WS token yet (#119, #120).
+`OIDC_*` are used by the token verifier; `WS_TOKEN_*` are only declared so far (the WS token comes with #120).
 
 ## Open questions
 

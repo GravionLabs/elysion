@@ -21,8 +21,8 @@ sequenceDiagram
     B->>K: authorization code flow with PKCE (client elysion-frontend)
     K-->>B: access token (JWT, short-lived) + refresh token
     B->>T: GET /api/boards, Authorization: Bearer access token
-    T->>F: forwardAuth: GET /auth/verify (same headers)
-    F-->>T: 200 + X-User-Id, X-User-Email (or 401)
+    T->>F: forwardAuth: GET /api/auth/verify (same headers)
+    F-->>T: 200 + X-Auth-User-Id, X-Auth-User-Email (or 401)
     T->>F: the original request, now with the user headers
     F->>D: the call, Authorization: Bearer access token
     D-->>F: data (D validates the JWT and the board role itself)
@@ -57,14 +57,14 @@ Hub). Do not look for one and do not write one in Traefik's config. The edge val
 protected router Traefik calls the BFF's verify endpoint with the request's headers, passes the request on
 when the answer is `2xx` and returns the BFF's answer (`401`) otherwise.
 
-- Verify endpoint: `GET /auth/verify` on the BFF (#119). It validates the access token against Keycloak's JWKS
-  (signature, `iss`, `aud`, expiry) and answers `200` with `X-User-Id` (the `sub` claim) and `X-User-Email`, or
-  `401`. The middleware lists these in `authResponseHeaders` so they reach the BFF's route handlers.
+- Verify endpoint: `GET /api/auth/verify` on the BFF (#119; under `/api` like the BFF's other routes). It validates
+  the access token against Keycloak's JWKS (signature, `iss`, `aud`, expiry) and answers `200` with `X-Auth-User-Id`
+  (the `sub` claim) and `X-Auth-User-Email`, or `401`. The middleware lists these in `authResponseHeaders` so they reach the BFF's route handlers.
 - Protected: the `/api` router (#121). Public: `/` (the Angular app, which must load to start the login),
   `/health` of each service, and `/yjs`: a WebSocket upgrade carries the WS token in its URL and the realtime
   service checks it itself, so the edge does not need to.
-- The BFF's own routes (`/auth/verify` included) are reached by Traefik over the compose network. A request from
-  outside to `/auth/verify` would only ever answer about the caller's own token, and is not routed.
+- The verify endpoint sits behind the same `/api` route as the rest of the BFF, so it is reachable from outside too;
+  that is harmless: it only ever answers about the caller's own token.
 
 ## The WS token
 
@@ -121,7 +121,7 @@ so the services must not derive the key address from the issuer there.
 | ---------------- | -------------------------------------------- | ---------------------------------------------------------------- |
 | Keycloak         | the login                                    | who the user is; issues access and refresh tokens                |
 | Traefik          | nothing itself; asks the BFF (`forwardAuth`) | whether `/api/*` requests get through                            |
-| BFF              | the access token (`/auth/verify`)            | issues the WS token for a board the user may open                |
+| BFF              | the access token (`/api/auth/verify`)        | issues the WS token for a board the user may open                |
 | Business backend | the access token (JWT bearer)                | users, board membership, roles and the policies on each endpoint |
 | Realtime         | the WS token, at the handshake               | read-only for a viewer; closes with 4401 or 4403 otherwise       |
 

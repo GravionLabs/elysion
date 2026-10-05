@@ -1,9 +1,11 @@
 import {
   BadGatewayException,
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 /** Base URL of the business backend, e.g. `http://localhost:5174`. */
@@ -19,44 +21,54 @@ export interface Board {
 const TIMEOUT_MS = 5000;
 
 /**
- * Talks to the business backend's Board API and turns its failures into the HTTP errors the BFF
- * answers with: 404 stays 404, a rejected name stays 400 (with the backend's message), and
- * anything else, including an unreachable backend, is a 502.
+ * Talks to the business backend's Board API on behalf of the signed-in user: every call carries the user's
+ * access token, and the backend decides what that user may do. Its failures become the HTTP errors the BFF
+ * answers with: 401, 403 and 404 stay as they are (a board the user has no role on is a 404 there, by design), a
+ * rejected name stays 400 (with the backend's message), and anything else, including an unreachable backend,
+ * is a 502.
  */
 @Injectable()
 export class BusinessBackendClient {
   constructor(@Inject(BUSINESS_BACKEND_URL) private readonly baseUrl: string) {}
 
-  listBoards(): Promise<Board[]> {
-    return this.request<Board[]>('GET', '/boards');
+  listBoards(token: string): Promise<Board[]> {
+    return this.request<Board[]>(token, 'GET', '/boards');
   }
 
-  getBoard(id: string): Promise<Board> {
-    return this.request<Board>('GET', `/boards/${id}`);
+  getBoard(token: string, id: string): Promise<Board> {
+    return this.request<Board>(token, 'GET', `/boards/${id}`);
   }
 
-  createBoard(name: string): Promise<Board> {
-    return this.request<Board>('POST', '/boards', { name });
+  createBoard(token: string, name: string): Promise<Board> {
+    return this.request<Board>(token, 'POST', '/boards', { name });
   }
 
-  renameBoard(id: string, name: string): Promise<Board> {
-    return this.request<Board>('PATCH', `/boards/${id}`, { name });
+  renameBoard(token: string, id: string, name: string): Promise<Board> {
+    return this.request<Board>(token, 'PATCH', `/boards/${id}`, { name });
   }
 
-  duplicateBoard(id: string): Promise<Board> {
-    return this.request<Board>('POST', `/boards/${id}/duplicate`);
+  duplicateBoard(token: string, id: string): Promise<Board> {
+    return this.request<Board>(token, 'POST', `/boards/${id}/duplicate`);
   }
 
-  async deleteBoard(id: string): Promise<void> {
-    await this.request<void>('DELETE', `/boards/${id}`);
+  async deleteBoard(token: string, id: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/boards/${id}`);
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  private async request<T>(
+    token: string,
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<T> {
     let response: Response;
     try {
       response = await fetch(new URL(path, this.baseUrl), {
         method,
-        headers: body === undefined ? undefined : { 'content-type': 'application/json' },
+        headers: {
+          authorization: `Bearer ${token}`,
+          ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+        },
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
@@ -66,6 +78,12 @@ export class BusinessBackendClient {
 
     if (response.ok) {
       return (response.status === 204 ? undefined : await response.json()) as T;
+    }
+    if (response.status === 401) {
+      throw new UnauthorizedException();
+    }
+    if (response.status === 403) {
+      throw new ForbiddenException();
     }
     if (response.status === 404) {
       throw new NotFoundException();

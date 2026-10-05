@@ -16,6 +16,8 @@ interface FakeBoard {
 export class FakeBusinessBackend {
   readonly boards = new Map<string, FakeBoard>();
   requests = 0;
+  /** The `Authorization` header of every request, in order. */
+  readonly authorizations: Array<string | undefined> = [];
   #server: Server | null = null;
 
   get url(): string {
@@ -40,6 +42,7 @@ export class FakeBusinessBackend {
 
   async #handle(req: IncomingMessage, res: import('node:http').ServerResponse): Promise<void> {
     this.requests += 1;
+    this.authorizations.push(req.headers.authorization);
     const send = (status: number, body?: unknown) => {
       res.writeHead(status, { 'content-type': 'application/json' });
       res.end(body === undefined ? undefined : JSON.stringify(body));
