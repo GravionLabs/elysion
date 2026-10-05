@@ -12,6 +12,7 @@ import { AppModule } from '../src/app.module.js';
 import { DocumentStore } from '../src/persistence/document-store.js';
 import { InMemoryDocumentStore } from '../src/persistence/in-memory-document-store.js';
 import { MESSAGE_SYNC } from '../src/yjs/protocol.js';
+import { PERSISTENCE_OPTIONS } from '../src/yjs/yjs-room-registry.js';
 
 /**
  * A board survives a restart of the realtime service (ADR 0011): content drawn in one process is there
@@ -87,10 +88,20 @@ function waitUntil(check: () => boolean, timeoutMs = 3000): Promise<void> {
 
 async function startInstance(
   store: DocumentStore,
+  options: Record<string, number> = {},
 ): Promise<{ app: INestApplication; url: string }> {
   const moduleFixture = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(DocumentStore)
     .useValue(store)
+    .overrideProvider(PERSISTENCE_OPTIONS)
+    .useValue({
+      saveDebounceMs: 50,
+      saveMaxWaitMs: 500,
+      retryBaseMs: 50,
+      retryMaxMs: 200,
+      evictAfterMs: 300,
+      ...options,
+    })
     .compile();
   const app = moduleFixture.createNestApplication();
   app.useWebSocketAdapter(new WsAdapter(app));
@@ -151,6 +162,66 @@ describe('Board persistence (e2e)', () => {
     await client.waitForOpen();
 
     expect(await client.closed).toBe(1011);
+    await app.close();
+  });
+
+  it('unloads an idle board and serves the stored state again when someone returns', async () => {
+    const store = new InMemoryDocumentStore();
+    const boardId = `evict-${Date.now()}`;
+    const { app, url } = await startInstance(store);
+
+    const drawing = new SyncClient(`${url}?board=${boardId}`);
+    await drawing.waitForOpen();
+    drawing.doc.getMap('elements').set('rect-1', 'from the first visit');
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    drawing.close();
+    await waitUntil(() => store.documents.has(boardId));
+    await new Promise((resolve) => setTimeout(resolve, 600)); // longer than the grace period: the room is unloaded
+
+    // Another instance changes the stored document meanwhile. A room still held in memory would not show it.
+    const stored = await store.load(boardId);
+    const elsewhere = new Y.Doc();
+    Y.applyUpdate(elsewhere, stored!.state);
+    elsewhere.getMap('elements').set('rect-2', 'saved by another instance');
+    await store.save(boardId, Y.encodeStateAsUpdate(elsewhere), stored!.version);
+
+    const returning = new SyncClient(`${url}?board=${boardId}`);
+    await returning.waitForOpen();
+    await waitUntil(() => returning.doc.getMap('elements').has('rect-2'));
+
+    expect(returning.doc.getMap('elements').toJSON()).toEqual({
+      'rect-1': 'from the first visit',
+      'rect-2': 'saved by another instance',
+    });
+    returning.close();
+    await app.close();
+  });
+
+  it('keeps an idle board in memory when someone comes back within the grace period', async () => {
+    const store = new InMemoryDocumentStore();
+    const boardId = `keep-${Date.now()}`;
+    const { app, url } = await startInstance(store, { evictAfterMs: 2_000 });
+
+    const first = new SyncClient(`${url}?board=${boardId}`);
+    await first.waitForOpen();
+    first.doc.getMap('elements').set('a', 1);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    first.close();
+    await waitUntil(() => store.documents.has(boardId));
+
+    // The stored copy changes behind the room's back; an unchanged room stays as it was in memory.
+    const stored = await store.load(boardId);
+    const elsewhere = new Y.Doc();
+    Y.applyUpdate(elsewhere, stored!.state);
+    elsewhere.getMap('elements').set('b', 2);
+    await store.save(boardId, Y.encodeStateAsUpdate(elsewhere), stored!.version);
+
+    const second = new SyncClient(`${url}?board=${boardId}`);
+    await second.waitForOpen();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    expect(second.doc.getMap('elements').toJSON()).toEqual({ a: 1 });
+    second.close();
     await app.close();
   });
 });

@@ -42,6 +42,10 @@ class FakeRedisClient extends EventEmitter {
     this.subscribedChannels.add(channel);
   }
 
+  async unsubscribe(channel: string): Promise<void> {
+    this.subscribedChannels.delete(channel);
+  }
+
   readonly hashes = new Map<string, Map<string, string>>();
   readonly expirations = new Map<string, number>();
 
@@ -190,6 +194,23 @@ describe('PresenceRelay', () => {
 
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops delivering a board once it is unsubscribed, and tolerates unsubscribing twice', async () => {
+    const bus = new FakeRedisBus();
+    const relayA = createRelay(bus);
+    const relayB = createRelay(bus);
+    const received = vi.fn();
+    await relayB.subscribe('board-1', received);
+
+    await relayB.unsubscribe('board-1');
+    await relayB.unsubscribe('board-1');
+    await relayA.publish('board-1', new Uint8Array([1]));
+    await relayB.subscribe('board-1', received); // subscribing again after an unload works
+    await relayA.publish('board-1', new Uint8Array([2]));
+
+    expect(received).toHaveBeenCalledTimes(1);
+    expect(received).toHaveBeenCalledWith(new Uint8Array([2]));
   });
 
   it('namespaces channels and state keys with elysion: because Valkey is shared with other projects', async () => {

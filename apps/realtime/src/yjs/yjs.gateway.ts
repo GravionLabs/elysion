@@ -101,7 +101,7 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.removeAwarenessOf(room, client);
     if (room.clients.size === 0) {
       this.registry
-        .flush(room)
+        .release(room)
         .catch((error: unknown) =>
           this.logger.error(`Saving board ${room.boardId} failed: ${String(error)}`),
         );

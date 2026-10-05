@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Y from 'yjs';
+import type { WebSocket } from 'ws';
 import {
   DocumentStore,
   type SaveResult,
@@ -14,10 +15,12 @@ const OPTIONS = {
   saveMaxWaitMs: 5_000,
   retryBaseMs: 500,
   retryMaxMs: 4_000,
+  evictAfterMs: 10_000,
 };
 
 function fakePresence(): PresenceRelay {
   return {
+    unsubscribe: vi.fn().mockResolvedValue(undefined),
     recordState: vi.fn().mockResolvedValue(undefined),
     removeState: vi.fn().mockResolvedValue(undefined),
     publish: vi.fn().mockResolvedValue(undefined),
@@ -230,6 +233,96 @@ describe('YjsRoomRegistry persistence', () => {
       await registry.onModuleDestroy();
 
       expect(store.saves).toHaveLength(1);
+    });
+  });
+
+  describe('unloading idle rooms', () => {
+    const connect = (room: { clients: Set<WebSocket> }) => {
+      const socket = { readyState: 1, OPEN: 1, send: vi.fn() } as unknown as WebSocket;
+      room.clients.add(socket);
+      return () => room.clients.delete(socket);
+    };
+
+    it('saves a room whose last client left and unloads it after the grace period', async () => {
+      const presence = fakePresence();
+      registry = new YjsRoomRegistry(presence, store, OPTIONS);
+      const room = await registry.getOrLoad('b');
+      const leave = connect(room);
+      room.doc.getMap('elements').set('a', '1');
+      leave();
+
+      await registry.release(room);
+      expect(store.saves).toHaveLength(1); // saved at once
+      await vi.advanceTimersByTimeAsync(9_000);
+      expect(presence.unsubscribe).not.toHaveBeenCalled(); // still inside the grace period
+      await vi.advanceTimersByTimeAsync(1_500);
+
+      expect(presence.unsubscribe).toHaveBeenCalledWith('b');
+      const again = await registry.getOrLoad('b'); // comes from the store, not from memory
+      expect(again).not.toBe(room);
+      expect(store.loads).toEqual(['b', 'b']);
+    });
+
+    it('keeps the room when a client connects during the grace period', async () => {
+      const room = await registry.getOrLoad('b');
+      const leave = connect(room);
+      leave();
+      await registry.release(room);
+
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(await registry.getOrLoad('b')).toBe(room);
+      connect(room);
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(await registry.getOrLoad('b')).toBe(room);
+      expect(store.loads).toEqual(['b']);
+    });
+
+    it('does not unload a room that has clients again when the timer fires', async () => {
+      const room = await registry.getOrLoad('b');
+      connect(room)();
+      await registry.release(room);
+      connect(room); // joined without going through getOrLoad
+
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(await registry.getOrLoad('b')).toBe(room);
+    });
+
+    it('keeps the content while the final save keeps failing, and unloads once it works', async () => {
+      const presence = fakePresence();
+      registry = new YjsRoomRegistry(presence, store, OPTIONS);
+      const room = await registry.getOrLoad('b');
+      connect(room)();
+      room.doc.getMap('elements').set('a', 'precious');
+      let failing = true;
+      store.saveResult = async () => {
+        if (failing) throw new Error('backend down');
+        return { saved: true, version: '1' };
+      };
+      await registry.release(room);
+
+      await vi.advanceTimersByTimeAsync(35_000); // several grace periods with the backend down
+      expect(presence.unsubscribe).not.toHaveBeenCalled(); // still in memory, nothing lost
+      failing = false;
+      await vi.advanceTimersByTimeAsync(30_000);
+
+      expect(presence.unsubscribe).toHaveBeenCalledWith('b');
+      const saved = new Y.Doc();
+      Y.applyUpdate(saved, store.saves.at(-1)!.state);
+      expect(elementsOf(saved)).toEqual({ a: 'precious' });
+    });
+
+    it('does not unload anything while a client is still connected', async () => {
+      const presence = fakePresence();
+      registry = new YjsRoomRegistry(presence, store, OPTIONS);
+      const room = await registry.getOrLoad('b');
+      connect(room);
+
+      await vi.advanceTimersByTimeAsync(120_000);
+
+      expect(await registry.getOrLoad('b')).toBe(room);
+      expect(presence.unsubscribe).not.toHaveBeenCalled();
     });
   });
 
