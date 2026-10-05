@@ -8,6 +8,16 @@ Frontend
 
 Angular shell app embedding a React/Excalidraw canvas component, Yjs client for CRDT sync, WebSocket client for presence, RxJS for state management. See ADR 0002.
 
+## Routes
+
+| URL                            | Result                                                                                                                                                                                                                                                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/board/:boardId`              | The board with that id. The route param is called `boardId` so `withComponentInputBinding()` hands it straight to `Board.boardId`, which becomes the `board-id` attribute of `<elysion-canvas>` and therefore the Yjs room. The id is URL-decoded (`/board/q3%20plan%2Fv2` is the room `q3 plan/v2`). |
+| `/board/%20` (whitespace only) | Redirected to the default board by `boardIdGuard`: the id becomes a room name, so an empty one is never connected to.                                                                                                                                                                                 |
+| `/` and any unknown path       | Redirected to `/board/default`, the id that was hard-coded before, until the board list (#102) exists.                                                                                                                                                                                                |
+
+This is what makes collaboration links possible (#101). `HttpClient` is deliberately not provided yet: nothing calls an API until the board list or the BFF endpoints exist.
+
 ## Canvas embedding
 
 The React/Excalidraw canvas lives in its own workspace package, `apps/frontend-canvas`, and is embedded via a **custom element** (`<elysion-canvas>`), not Angular Elements:
