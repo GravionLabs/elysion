@@ -34,9 +34,21 @@ There is no owner and no authorization yet: every caller sees every board. Users
 
 **Duplicate** creates a board named "<name> (copy)" (the name is cut short, to 120 characters, when the suffix would not fit) and copies the source's stored document byte for byte as a fresh document (version 1), so the two boards are independent from then on. The copy is what was last saved: changes still inside a room's save window (a few seconds) are not in it yet. A board without content gets a copy without a document.
 
+## Users and memberships (data model)
+
+The model for the identity epic (#91); no endpoint uses it yet.
+
+| Table              | Columns                                                                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Users`            | `Id` (local key), `Subject` (Keycloak `sub`, **unique**: the join to the identity provider, not the email), `Email` (optional), `DisplayName`, `CreatedAt` |
+| `BoardMemberships` | `BoardId`, `UserId`, `Role` (`Owner`, `Editor` or `Viewer`, stored as text), `CreatedAt`; the key is (`BoardId`, `UserId`): one role per user per board    |
+| `Boards`           | gains `OwnerId` (the creator, foreign key to `Users`)                                                                                                      |
+
+`Boards.OwnerId` is **nullable**: the boards that exist when the migration runs have no owner, and none can be invented for them. Authorization (#117) decides what an ownerless board means and who becomes its owner. Deleting a user deletes their memberships and leaves their boards ownerless; deleting a board deletes its memberships. The migration `AddUsersAndMemberships` was applied to a development database that held a board: the board stayed, with `OwnerId` null.
+
 ## Tests
 
-`dotnet test` runs `tests/Elysion.BusinessBackend.Tests` (NUnit, NSubstitute, Shouldly). They run the real pipeline through `WebApplicationFactory<Program>` with the EF in-memory provider instead of Postgres, so no infrastructure is needed. In-memory is not Postgres: behavior that depends on the provider (ordering, precision, constraints) was checked once against a real database, and anything that starts to depend on SQL should get a test against Postgres.
+`dotnet test` runs `tests/Elysion.BusinessBackend.Tests` (NUnit, NSubstitute, Shouldly). They run the real pipeline through `WebApplicationFactory<Program>` with the EF in-memory provider instead of Postgres, so no infrastructure is needed. In-memory is not Postgres: behavior that depends on the provider (ordering, precision, constraints) was checked once against a real database, and anything that starts to depend on SQL should get a test against Postgres. The exception is the users and memberships model (`MembershipModelTests`): unique indexes and foreign keys are not enforced by the in-memory provider, so those tests use SQLite in memory, which is relational.
 
 ## Open questions
 

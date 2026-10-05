@@ -3,6 +3,7 @@ using System;
 using Elysion.BusinessBackend.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Elysion.BusinessBackend.Api.Data.Migrations
 {
     [DbContext(typeof(ElysionDbContext))]
-    partial class ElysionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261005134947_AddUsersAndMemberships")]
+    partial class AddUsersAndMemberships
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
