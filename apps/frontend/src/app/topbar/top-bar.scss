@@ -1,0 +1,122 @@
+// After ariadne's `.topbar` (apps/web/src/app/editor/editor.scss), on the shared design tokens.
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 52px;
+  padding: 0 14px;
+  background: var(--c-surface-1);
+  border-bottom: 1px solid var(--c-border);
+  box-shadow: var(--shadow);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-mark {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  color: var(--c-on-primary);
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--c-primary), var(--c-node-purple));
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.35);
+}
+
+.app-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.topbar-divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 22px;
+  background: var(--c-border);
+}
+
+.board-title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--c-warning);
+  border-radius: 50%;
+}
+
+.status[data-status='connected'] .status-dot {
+  background: var(--c-node-green);
+}
+
+.status[data-status='disconnected'] .status-dot {
+  background: var(--c-danger);
+}
+
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  color: var(--c-text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: var(--c-text-subtle);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  &:hover {
+    background: var(--c-surface-3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: -2px;
+  }
+}

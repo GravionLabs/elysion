@@ -1,9 +1,14 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   height: 100%;
 }
 
+// The canvas fills the element it is in (position: absolute; inset: 0), so the element needs a size
+// of its own: all the space the top bar leaves.
 .board-canvas {
+  position: relative;
   display: block;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }

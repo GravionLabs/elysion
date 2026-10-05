@@ -17,7 +17,7 @@ onto a `<canvas>`, so their look is element properties.
 
 ## Decision
 
-1. **Tokens, not copies of styles.** `src/styles/tokens.css` holds ariadne's `--c-*` tokens for light and
+1. **Tokens, not copies of styles.** `src/styles/tokens.css` (since moved to `packages/design-tokens`, see [ADR 0010](0010-shell-controls-the-canvas.md)) holds ariadne's `--c-*` tokens for light and
    dark, scoped to a `.elysion-canvas` root rendered by `CanvasApp` so nothing leaks into the host page.
    `excalidraw-theme.css` maps them onto Excalidraw's CSS custom properties. The scope wins by
    specificity over `.excalidraw` and `.excalidraw.theme--dark`, independent of stylesheet order.

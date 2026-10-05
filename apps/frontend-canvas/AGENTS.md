@@ -29,7 +29,11 @@ pnpm --filter @elysion/frontend-canvas test               # vitest
 
 ## Look and feel
 
-The canvas follows ariadne's design: `src/styles/` (tokens, Excalidraw variable mapping, toolbar), `Toolbar.tsx`, `element-style.ts`, `sticky-note.ts` — see "Theming", "Bottom toolbar" and "Canvas element style" in `docs/specs/frontend.md`. The dev entry accepts `?theme=light|dark` for checking both themes.
+The canvas follows ariadne's design: the tokens come from `packages/design-tokens` (shared with the Angular shell), `src/styles/` has the Excalidraw variable mapping and the toolbar, `Toolbar.tsx`, `element-style.ts`, `sticky-note.ts` — see "Theming", "Bottom toolbar" and "Canvas element style" in `docs/specs/frontend.md`. The dev entry accepts `?theme=light|dark` for checking both themes.
+
+## Element contract
+
+Attributes in (`board-id`, `yjs-server-url`, `theme`), events out (`ready`, `error`, `status`, `themechange`): see "Top bar and the element contract" in `docs/specs/frontend.md` and ADR 0010. A new capability the shell needs is a new event or method there, with a test on both sides. The root fills the element it is in (`position: absolute; inset: 0`), so the host must size `<elysion-canvas>`.
 
 ## Verifying changes
 
