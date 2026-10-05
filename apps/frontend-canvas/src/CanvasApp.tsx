@@ -34,8 +34,16 @@ function defaultYjsServerUrl(): string {
   return `${protocol}//${window.location.host}/yjs`;
 }
 
+// Excalidraw only offers its own light/dark toggle when it is not given a `theme`; we always pass one
+// (the host or the system decides), so the toggle has to be switched on explicitly.
+const UI_OPTIONS = { canvasActions: { toggleTheme: true } };
+
 export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAppProps) {
   const resolvedTheme = useResolvedTheme(theme);
+  // What is shown right now: a toggle inside Excalidraw changes it, and so does a new `theme`
+  // attribute or system preference (which wins over an earlier toggle).
+  const [activeTheme, setActiveTheme] = useState<CanvasTheme>(resolvedTheme);
+  useEffect(() => setActiveTheme(resolvedTheme), [resolvedTheme]);
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
   const sceneStoreRef = useRef(new SceneStore());
@@ -98,11 +106,12 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
   return (
     <div
       className="elysion-canvas"
-      data-theme={resolvedTheme}
+      data-theme={activeTheme}
       style={{ position: 'fixed', inset: 0 }}
     >
       <Excalidraw
-        theme={resolvedTheme}
+        theme={activeTheme}
+        UIOptions={UI_OPTIONS}
         initialData={{
           appState: { ...ELEMENT_DEFAULTS, viewBackgroundColor: VIEW_BACKGROUND_COLOR },
         }}
@@ -113,6 +122,7 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
         onChange={(elements, appState) => {
           bindingRef.current?.onLocalChange(elements);
           setActiveTool(appState.activeTool.type);
+          setActiveTheme(appState.theme);
           sceneStoreRef.current.set({
             elements: elements.filter((element) => !element.isDeleted),
             scrollX: appState.scrollX,

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { CanvasApp } from './CanvasApp';
 
@@ -23,5 +23,18 @@ describe('CanvasApp', () => {
     await screen.findByTestId('toolbar-rectangle');
 
     expect(container.querySelector('.elysion-canvas')?.getAttribute('data-theme')).toBe('light');
+  });
+
+  it("offers Excalidraw's theme toggle in the main menu and the tokens follow it", async () => {
+    const { container } = render(<CanvasApp boardId="test-board" theme="light" />);
+    await screen.findByTestId('toolbar-rectangle');
+
+    fireEvent.click(await screen.findByTestId('main-menu-trigger'));
+    fireEvent.click(await screen.findByText('Dark mode'));
+
+    await waitFor(() =>
+      expect(container.querySelector('.elysion-canvas')?.getAttribute('data-theme')).toBe('dark'),
+    );
+    expect(container.querySelector('.excalidraw.theme--dark')).toBeTruthy();
   });
 });
