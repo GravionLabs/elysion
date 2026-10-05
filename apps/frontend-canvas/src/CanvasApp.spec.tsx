@@ -2,6 +2,16 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest';
 import { CanvasApp } from './CanvasApp';
 
+/** Excalidraw's own theme shortcut, Alt+Shift+D; it listens on its container. */
+function switchThemeWithShortcut(container: HTMLElement) {
+  fireEvent.keyDown(container.querySelector('.excalidraw') as HTMLElement, {
+    key: 'D',
+    code: 'KeyD',
+    altKey: true,
+    shiftKey: true,
+  });
+}
+
 describe('CanvasApp', () => {
   it('renders the Excalidraw canvas', async () => {
     render(<CanvasApp boardId="test-board" />);
@@ -25,12 +35,11 @@ describe('CanvasApp', () => {
     expect(container.querySelector('.elysion-canvas')?.getAttribute('data-theme')).toBe('light');
   });
 
-  it("offers Excalidraw's theme toggle in the main menu and the tokens follow it", async () => {
+  it("keeps Excalidraw's theme shortcut (Alt+Shift+D) and the tokens follow it", async () => {
     const { container } = render(<CanvasApp boardId="test-board" theme="light" />);
     await screen.findByTestId('toolbar-rectangle');
 
-    fireEvent.click(await screen.findByTestId('main-menu-trigger'));
-    fireEvent.click(await screen.findByText('Dark mode'));
+    switchThemeWithShortcut(container);
 
     await waitFor(() =>
       expect(container.querySelector('.elysion-canvas')?.getAttribute('data-theme')).toBe('dark'),
@@ -54,8 +63,7 @@ describe('CanvasApp', () => {
     expect(onThemeChange).not.toHaveBeenCalled();
 
     // The user switches it with Excalidraw's own toggle.
-    fireEvent.click(await screen.findByTestId('main-menu-trigger'));
-    fireEvent.click(await screen.findByText('Light mode'));
+    switchThemeWithShortcut(container);
 
     await waitFor(() => expect(onThemeChange).toHaveBeenCalledWith('light'));
     expect(onThemeChange).toHaveBeenCalledTimes(1);
@@ -100,5 +108,38 @@ describe('CanvasApp', () => {
     for (const label of container.querySelectorAll('.sidebar-trigger__label-element')) {
       expect(label.textContent).toBe('');
     }
+  });
+
+  it('keeps only Clear canvas and Help in the main menu: the rest is in the top bar', async () => {
+    render(<CanvasApp boardId="test-board" />);
+    await screen.findByTestId('toolbar-rectangle');
+
+    fireEvent.click(await screen.findByTestId('main-menu-trigger'));
+
+    expect(await screen.findByText('Reset the canvas')).toBeTruthy();
+    expect(screen.getByText('Help')).toBeTruthy();
+    for (const gone of ['Open', 'Save to...', 'Export image...', 'Dark mode', 'Light mode']) {
+      expect(screen.queryByText(gone)).toBeNull();
+    }
+  });
+
+  it('exports a real sticky note and takes the file back in', async () => {
+    const onControls = vi.fn();
+    render(<CanvasApp boardId="test-board" onControls={onControls} />);
+    await screen.findByTestId('toolbar-rectangle');
+    const controls = onControls.mock.calls[0][0];
+
+    expect(await controls.exportBoard('excalidraw')).toBeNull(); // nothing on the board yet
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sticky note' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Amber sticky note' }));
+
+    const file = (await controls.exportBoard('excalidraw')) as Blob;
+    const ids = (JSON.parse(await file.text()).elements as { id: string }[]).map((e) => e.id);
+    expect(ids).toHaveLength(2); // the card and its text
+
+    expect(await controls.importFile(file)).toBe(2);
+    const again = JSON.parse(await ((await controls.exportBoard('excalidraw')) as Blob).text());
+    expect(again.elements.map((e: { id: string }) => e.id).sort()).toEqual([...ids].sort());
   });
 });

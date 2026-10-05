@@ -12,3 +12,50 @@
   flex: 1;
   min-height: 0;
 }
+
+// A short message under the top bar (export hints, import confirmation and result).
+.board-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  color: var(--c-text);
+  background: var(--c-surface-2);
+  border-bottom: 1px solid var(--c-border);
+  font-size: 13px;
+
+  span {
+    margin-right: auto;
+  }
+}
+
+.banner-button {
+  height: 28px;
+  padding: 0 12px;
+  color: var(--c-text);
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--c-surface-3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 1px;
+  }
+
+  &.primary {
+    color: var(--c-on-primary);
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+
+    &:hover {
+      background: var(--c-primary-hover);
+    }
+  }
+}

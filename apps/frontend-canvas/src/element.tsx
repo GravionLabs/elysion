@@ -1,5 +1,6 @@
 import { type Root, createRoot } from 'react-dom/client';
 import { CanvasApp, type CanvasControls } from './CanvasApp';
+import type { ExportFormat, ExportOptions } from './board-io';
 import { parseTheme } from './useResolvedTheme';
 
 export const ELEMENT_TAG_NAME = 'elysion-canvas';
@@ -35,6 +36,18 @@ class ElysionCanvasElement extends HTMLElement {
     this.#controls?.toggleLibrary();
   }
 
+  /** The board (or the selection) as a file, or `null` when there is nothing to export or the canvas is not up. */
+  exportBoard(format: ExportFormat, options?: ExportOptions): Promise<Blob | null> {
+    return this.#controls ? this.#controls.exportBoard(format, options) : Promise.resolve(null);
+  }
+
+  /** Replaces the board with an .excalidraw file; rejects when the file is not one or the canvas is not up. */
+  importFile(file: Blob): Promise<number> {
+    return this.#controls
+      ? this.#controls.importFile(file)
+      : Promise.reject(new Error('The canvas is not ready yet.'));
+  }
+
   #emit(name: string, detail: unknown): void {
     this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
   }
@@ -46,6 +59,7 @@ class ElysionCanvasElement extends HTMLElement {
         onThemeChange={(theme) => this.#emit('themechange', { theme })}
         onControls={(controls) => (this.#controls = controls)}
         onLibraryChange={(open) => this.#emit('librarychange', { open })}
+        onSelectionCount={(count) => this.#emit('selectioncount', { count })}
         boardId={this.getAttribute('board-id') ?? undefined}
         yjsServerUrl={this.getAttribute('yjs-server-url') ?? undefined}
         theme={parseTheme(this.getAttribute('theme'))}

@@ -12,6 +12,33 @@
     <span class="status-dot" aria-hidden="true"></span>{{ statusLabel() }}
   </span>
 
+  <div class="topbar-actions">
+    <input
+      #importInput
+      type="file"
+      accept=".excalidraw,.json,application/json"
+      class="visually-hidden"
+      tabindex="-1"
+      aria-hidden="true"
+      (change)="chooseImport($event)"
+    />
+    <button
+      type="button"
+      class="menu-button import-button"
+      title="Import an .excalidraw file into this board"
+      (click)="importInput.click()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 15V3m0 0L8 7m4-4 4 4M5 20h14" />
+      </svg>
+      <span>Import</span>
+    </button>
+    <app-export-menu
+      [hasSelection]="hasSelection()"
+      (exportRequested)="exportRequested.emit($event)"
+    />
+  </div>
+
   <div class="topbar-end">
     <button
       type="button"

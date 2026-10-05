@@ -52,4 +52,26 @@ describe('elysion-canvas custom element', () => {
 
     document.body.removeChild(el);
   });
+
+  it('has export and import methods that are safe before the canvas is up', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
+      exportBoard(format: string): Promise<Blob | null>;
+      importFile(file: Blob): Promise<number>;
+    };
+
+    await expect(el.exportBoard('svg')).resolves.toBeNull();
+    await expect(el.importFile(new Blob(['{}']))).rejects.toThrow('not ready');
+  });
+
+  it('exports through the element once the canvas is up', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
+      exportBoard(format: string): Promise<Blob | null>;
+    };
+    document.body.appendChild(el);
+    await waitFor(() => expect(el.querySelector('[data-testid="toolbar-rectangle"]')).toBeTruthy());
+
+    await expect(el.exportBoard('excalidraw')).resolves.toBeNull(); // empty board, but it is answered
+
+    document.body.removeChild(el);
+  });
 });
