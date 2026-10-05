@@ -36,9 +36,9 @@ export class TopBar {
   readonly importChosen = output<File>();
 
   protected chooseImport(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = ''; // the same file can be chosen again
+    const fileInput = event.target as HTMLInputElement;
+    const file = fileInput.files?.[0];
+    fileInput.value = ''; // the same file can be chosen again
     if (file) {
       this.importChosen.emit(file);
     }

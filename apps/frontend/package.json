@@ -7,7 +7,8 @@
     "prebuild": "pnpm --filter @elysion/frontend-canvas build:element && rm -rf public/canvas && mkdir -p public/canvas && cp -r ../frontend-canvas/dist-element/. public/canvas/",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "lint": "oxlint -c oxlint.json src/"
   },
   "private": true,
   "dependencies": {
@@ -26,6 +27,7 @@
     "@angular/cli": "^22.1.7",
     "@angular/compiler-cli": "^22.1.0",
     "jsdom": "^28.0.0",
+    "oxlint": "^1.58.0",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
     "vitest": "^4.0.8"

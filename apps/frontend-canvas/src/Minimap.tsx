@@ -71,6 +71,8 @@ export function Minimap({ store, onPan }: MinimapProps) {
       ),
     );
     return () => cancelAnimationFrame(frame);
+    // `layoutVersion` is not read in the effect: bumping it is how a released drag asks for a re-fit.
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies
   }, [snapshot, hasContent, layoutVersion]);
 
   if (!snapshot || !hasContent) return null;

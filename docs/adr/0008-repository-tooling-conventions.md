@@ -20,8 +20,12 @@ to build, test or lint everything. GravionLabs/ariadne already solved this with 
    the Angular parser for HTML), `.prettierignore` and `.editorconfig`. Per-app Prettier configs are
    removed. `pnpm format` / `pnpm format:check` run over the whole repository.
 3. **Root scripts fan out** with `pnpm -r --if-present`: `build`, `test`, `lint`.
-4. **Linters stay per app.** The NestJS apps use oxlint; the frontend has none yet. There is no root
-   ESLint configuration as in ariadne.
+4. **oxlint is the linter for every TypeScript app.** Each app has its own `oxlint.json` and a `lint`
+   script: the NestJS apps lint `src/` and `test/`; the canvas enables the React and React hooks rules;
+   the Angular app turns on the `typescript` and `oxc` plugins. All of them treat the `correctness`
+   category as errors, and the frontends also report `suspicious` findings as warnings. There is no root
+   ESLint configuration as in ariadne. Rules that are switched off carry a reason in the config or in an
+   `oxlint-disable-next-line` comment next to the code.
 5. **No shared `tsconfig.base.json`.** The apps need different module systems and compiler options
    (NestJS with `nodenext` and decorators, the canvas with a bundler and JSX, Angular with its own
    options), so a base would share almost nothing. This keeps [ADR 0002](0002-typescript-version-split.md).
@@ -32,7 +36,8 @@ to build, test or lint everything. GravionLabs/ariadne already solved this with 
 ## Consequences
 
 - The initial reformat touched about 40 files; formatting-only commits will show up in `git blame`.
-- Every new app inherits the formatter without configuration. A new linter or compiler option still
-  has to be chosen per app.
+- Every new app inherits the formatter without configuration. A new TypeScript app adds an
+  `oxlint.json` and a `lint` script (`pnpm lint` at the root picks it up); compiler options are still
+  chosen per app.
 - Ports for local runs are fixed in `launch.json` (frontend 4200, BFF 3000, realtime 3001, business
   backend 5174), and changing them means changing the configurations and the README table together.
