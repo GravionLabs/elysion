@@ -1,0 +1,53 @@
+{
+  "realm": "elysion",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "roles": {
+    "realm": [{ "name": "board-user", "description": "Can create and open boards" }]
+  },
+  "defaultRole": { "name": "default-roles-elysion" },
+  "clients": [
+    {
+      "clientId": "elysion-frontend",
+      "name": "Elysion frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": ["http://localhost:4200/*", "http://localhost/*"],
+      "webOrigins": ["http://localhost:4200", "http://localhost"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*##http://localhost/*"
+      }
+    },
+    {
+      "clientId": "elysion-bff",
+      "name": "Elysion BFF",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "elysion-bff-dev-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "dev",
+      "email": "dev@elysion.local",
+      "emailVerified": true,
+      "firstName": "Dev",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "dev", "temporary": false }],
+      "realmRoles": ["board-user"]
+    }
+  ]
+}

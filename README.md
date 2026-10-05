@@ -18,7 +18,7 @@ Frontend (Angular + React/tldraw)
   PostgreSQL / Valkey (shared) / RustFS (S3-compatible object store)
 ```
 
-Decisions are recorded as ADRs: [gateway and BFF](docs/adr/0001-gateway-and-bff.md), [the TypeScript version split](docs/adr/0002-typescript-version-split.md), [the .NET 10 business backend](docs/adr/0003-net10-business-backend.md), [the canvas library](docs/adr/0004-canvas-library.md), [the canvas follows ariadne's design](docs/adr/0005-canvas-follows-ariadne-design.md), [shared local infrastructure](docs/adr/0006-shared-local-infrastructure.md), [RustFS instead of MinIO](docs/adr/0007-rustfs-replaces-minio.md), [repository tooling conventions](docs/adr/0008-repository-tooling-conventions.md), [state in the Angular shell](docs/adr/0009-angular-shell-state.md), [the shell controls the canvas](docs/adr/0010-shell-controls-the-canvas.md), [board document persistence](docs/adr/0011-board-document-persistence.md), [minimal APIs in the business backend](docs/adr/0012-minimal-apis-in-the-business-backend.md) Per-service contracts live in [docs/specs/](docs/specs), [PDF export in the browser](docs/adr/0013-pdf-export.md).
+Decisions are recorded as ADRs: [gateway and BFF](docs/adr/0001-gateway-and-bff.md), [the TypeScript version split](docs/adr/0002-typescript-version-split.md), [the .NET 10 business backend](docs/adr/0003-net10-business-backend.md), [the canvas library](docs/adr/0004-canvas-library.md), [the canvas follows ariadne's design](docs/adr/0005-canvas-follows-ariadne-design.md), [shared local infrastructure](docs/adr/0006-shared-local-infrastructure.md), [RustFS instead of MinIO](docs/adr/0007-rustfs-replaces-minio.md), [repository tooling conventions](docs/adr/0008-repository-tooling-conventions.md), [state in the Angular shell](docs/adr/0009-angular-shell-state.md), [the shell controls the canvas](docs/adr/0010-shell-controls-the-canvas.md), [board document persistence](docs/adr/0011-board-document-persistence.md), [minimal APIs in the business backend](docs/adr/0012-minimal-apis-in-the-business-backend.md) Per-service contracts live in [docs/specs/](docs/specs), [PDF export in the browser](docs/adr/0013-pdf-export.md), [Keycloak as the identity provider](docs/adr/0014-keycloak-identity-provider.md).
 
 ## Getting started
 
@@ -26,7 +26,7 @@ You need Node.js (see `.nvmrc`), [pnpm](https://pnpm.io) (pinned via `packageMan
 
 ```sh
 pnpm install      # JS/TS workspace dependencies (frontend, frontend-canvas, bff, realtime)
-pnpm dev:infra    # Elysion's own infrastructure: Traefik, Postgres, RustFS
+pnpm dev:infra    # Elysion's own infrastructure: Traefik, Postgres, RustFS, Keycloak (http://localhost:8081, realm `elysion`, dev user `dev` / `dev`, ADR 0014)
 pnpm dev:stack    # the whole stack in containers behind Traefik: http://localhost/
 ```
 
