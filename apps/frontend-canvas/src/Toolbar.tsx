@@ -167,11 +167,46 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
   ],
 ];
 
+export type ZoomAction = 'in' | 'out' | 'reset' | 'fit';
+export type HistoryAction = 'undo' | 'redo';
+
 export interface ToolbarProps {
   activeTool: ToolType | 'custom';
   onSelect: (tool: ToolbarTool) => void;
   onAddSticky?: (color: StickyColor) => void;
+  /** Undo and redo; the buttons are only shown when this is given. */
+  onHistory?: (action: HistoryAction) => void;
+  /** Zoom out, in, back to 100% and fit to content; shown together with `zoomPercent`. */
+  onZoom?: (action: ZoomAction) => void;
+  /** The current zoom in percent, shown on the reset button. */
+  zoomPercent?: number;
 }
+
+const UNDO_ICON = (
+  <Icon>
+    <path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" />
+  </Icon>
+);
+const REDO_ICON = (
+  <Icon>
+    <path d="m15 14 5-5-5-5m5 5H10a6 6 0 0 0 0 12h3" />
+  </Icon>
+);
+const ZOOM_OUT_ICON = (
+  <Icon>
+    <path d="M5 12h14" />
+  </Icon>
+);
+const ZOOM_IN_ICON = (
+  <Icon>
+    <path d="M5 12h14M12 5v14" />
+  </Icon>
+);
+const FIT_ICON = (
+  <Icon>
+    <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+  </Icon>
+);
 
 const STICKY_ICON = (
   <Icon>
@@ -180,14 +215,45 @@ const STICKY_ICON = (
 );
 
 /** The bottom-centered floating tool pill, styled after ariadne's toolbox. */
-export function Toolbar({ activeTool, onSelect, onAddSticky }: ToolbarProps) {
+export function Toolbar({
+  activeTool,
+  onSelect,
+  onAddSticky,
+  onHistory,
+  onZoom,
+  zoomPercent,
+}: ToolbarProps) {
   const [stickyOpen, setStickyOpen] = useState(false);
 
   return (
     <div className="elysion-toolbar" role="toolbar" aria-label="Canvas tools">
+      {onHistory && (
+        <div className="elysion-toolbar__group elysion-toolbar__history">
+          <button
+            type="button"
+            className="elysion-icon-button"
+            aria-label="Undo"
+            title="Undo (Ctrl+Z)"
+            data-testid="elysion-undo"
+            onClick={() => onHistory('undo')}
+          >
+            {UNDO_ICON}
+          </button>
+          <button
+            type="button"
+            className="elysion-icon-button"
+            aria-label="Redo"
+            title="Redo (Ctrl+Shift+Z)"
+            data-testid="elysion-redo"
+            onClick={() => onHistory('redo')}
+          >
+            {REDO_ICON}
+          </button>
+        </div>
+      )}
       {GROUPS.map((group, index) => (
         <div className="elysion-toolbar__group" key={group[0].tool}>
-          {index > 0 && <div className="elysion-toolbar__divider" />}
+          {(index > 0 || onHistory) && <div className="elysion-toolbar__divider" />}
           {group.map(({ tool, label, shortcut, icon }) => {
             const active = activeTool === tool;
             return (
@@ -241,6 +307,51 @@ export function Toolbar({ activeTool, onSelect, onAddSticky }: ToolbarProps) {
           )}
         </div>
       ))}
+      {onZoom && (
+        <div className="elysion-toolbar__group">
+          <div className="elysion-toolbar__divider" />
+          <button
+            type="button"
+            className="elysion-icon-button"
+            aria-label="Zoom out"
+            title="Zoom out (Ctrl+-)"
+            data-testid="elysion-zoom-out"
+            onClick={() => onZoom('out')}
+          >
+            {ZOOM_OUT_ICON}
+          </button>
+          <button
+            type="button"
+            className="elysion-zoom-level"
+            aria-label="Reset zoom to 100%"
+            title="Reset zoom (Ctrl+0)"
+            data-testid="elysion-zoom-reset"
+            onClick={() => onZoom('reset')}
+          >
+            {zoomPercent ?? 100}%
+          </button>
+          <button
+            type="button"
+            className="elysion-icon-button"
+            aria-label="Zoom in"
+            title="Zoom in (Ctrl++)"
+            data-testid="elysion-zoom-in"
+            onClick={() => onZoom('in')}
+          >
+            {ZOOM_IN_ICON}
+          </button>
+          <button
+            type="button"
+            className="elysion-icon-button"
+            aria-label="Zoom to fit"
+            title="Zoom to fit (Shift+1)"
+            data-testid="elysion-zoom-fit"
+            onClick={() => onZoom('fit')}
+          >
+            {FIT_ICON}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

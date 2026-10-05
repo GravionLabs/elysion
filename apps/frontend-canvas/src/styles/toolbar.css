@@ -4,6 +4,10 @@
  */
 /* Desktop layout: the tools sit in .shapes-section. */
 .elysion-canvas .shapes-section,
+/* The zoom and undo/redo cluster in the bottom-left corner (the footer's left part): zoom and
+   history are in the toolbar, and the corner belongs to the minimap. Internal class, like the ones
+   around it: Excalidraw 0.18 offers no component to replace it. */
+.elysion-canvas .layer-ui__wrapper__footer-left,
 /* Compact layout (a phone, or a short landscape window): Excalidraw switches to its own mobile
    toolbar on top, an Island of its own. There is no option to turn that layout off. */
 .elysion-canvas .App-toolbar--mobile,
@@ -41,6 +45,15 @@
  */
 .elysion-canvas:has(.mobile-misc-tools-container) .elysion-toolbar {
   bottom: 72px;
+}
+
+/* ...and its bar has undo and redo of its own, so ours (and the divider after them) step aside. */
+.elysion-canvas:has(.mobile-misc-tools-container) .elysion-toolbar__history,
+.elysion-canvas:has(.mobile-misc-tools-container)
+  .elysion-toolbar__history
+  + .elysion-toolbar__group
+  > .elysion-toolbar__divider:first-child {
+  display: none;
 }
 
 /* ...and the minimap would then sit on the toolbar, so a compact canvas has none. */
@@ -146,7 +159,7 @@
   position: absolute;
   z-index: 3;
   left: 16px;
-  bottom: var(--elysion-minimap-bottom, 72px);
+  bottom: var(--elysion-minimap-bottom, 16px);
   width: 160px;
   height: 120px;
   overflow: hidden;
@@ -162,4 +175,46 @@
   height: 100%;
   cursor: pointer;
   touch-action: none;
+}
+
+/* The toolbar has grown by undo/redo and the zoom buttons: next to the minimap it wraps instead of
+   running under it... */
+.elysion-canvas:has(.elysion-minimap) .elysion-toolbar {
+  max-width: calc(100% - 2 * (160px + 32px));
+}
+
+/* ...and on a narrower canvas the minimap moves above the toolbar (up to two rows) instead. */
+@media (max-width: 1100px) {
+  .elysion-minimap {
+    bottom: var(--elysion-minimap-bottom, 112px);
+  }
+
+  .elysion-canvas:has(.elysion-minimap) .elysion-toolbar {
+    max-width: calc(100% - 32px);
+  }
+}
+
+/* The zoom level between the zoom buttons, which resets the zoom: a label that is also a button. */
+.elysion-zoom-level {
+  min-width: 48px;
+  height: 34px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--c-text);
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.elysion-zoom-level:hover {
+  background: var(--c-surface-3);
+}
+
+.elysion-zoom-level:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: -2px;
 }

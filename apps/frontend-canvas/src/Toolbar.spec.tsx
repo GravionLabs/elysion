@@ -33,6 +33,43 @@ describe('Toolbar', () => {
   });
 });
 
+describe('Toolbar undo, redo and zoom', () => {
+  it('shows neither group unless it is given the handlers', () => {
+    render(<Toolbar activeTool="selection" onSelect={() => {}} />);
+
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Zoom in' })).toBeNull();
+  });
+
+  it('reports undo and redo, with the shortcuts in the titles', () => {
+    const onHistory = vi.fn();
+    render(<Toolbar activeTool="selection" onSelect={() => {}} onHistory={onHistory} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }));
+
+    expect(onHistory.mock.calls).toEqual([['undo'], ['redo']]);
+    expect(screen.getByRole('button', { name: 'Undo' }).getAttribute('title')).toBe(
+      'Undo (Ctrl+Z)',
+    );
+  });
+
+  it('reports every zoom action and shows the zoom level on the reset button', () => {
+    const onZoom = vi.fn();
+    render(
+      <Toolbar activeTool="selection" onSelect={() => {}} onZoom={onZoom} zoomPercent={125} />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset zoom to 100%' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom to fit' }));
+
+    expect(onZoom.mock.calls).toEqual([['out'], ['in'], ['reset'], ['fit']]);
+    expect(screen.getByRole('button', { name: 'Reset zoom to 100%' }).textContent).toBe('125%');
+  });
+});
+
 describe('Toolbar inside CanvasApp', () => {
   it('switches the Excalidraw tool on click and stays in sync with keyboard shortcuts', async () => {
     const { container } = render(<CanvasApp boardId="test-board" />);

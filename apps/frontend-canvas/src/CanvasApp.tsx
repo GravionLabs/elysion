@@ -3,7 +3,8 @@ import { exportBoard, importFile, type ExportFormat, type ExportOptions } from '
 import { Minimap } from './Minimap';
 import { SceneStore } from './scene-store';
 import { scrollToCenter } from './minimap-geometry';
-import { Toolbar, type ToolbarTool } from './Toolbar';
+import { ZOOM_STEP, zoomAbout } from './zoom';
+import { Toolbar, type HistoryAction, type ToolbarTool, type ZoomAction } from './Toolbar';
 import { ELEMENT_DEFAULTS, VIEW_BACKGROUND_COLOR } from './element-style';
 import { createStickyNote, type StickyColor } from './sticky-note';
 import { useResolvedTheme, type CanvasTheme } from './useResolvedTheme';
@@ -102,6 +103,8 @@ export function CanvasApp({
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
   const sceneStoreRef = useRef(new SceneStore());
   const [activeTool, setActiveTool] = useState<ToolType | 'custom'>('selection');
+  const [zoomPercent, setZoomPercent] = useState(100);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // Connection setup lives in the effect, not render, and is re-created (not
   // just torn down) on cleanup: React StrictMode's dev-only
@@ -142,6 +145,63 @@ export function CanvasApp({
     });
   };
 
+  /** Zooms about the middle of the view, so what is in the middle stays there. */
+  const zoomTo = (value: number) => {
+    const api = apiRef.current;
+    if (!api) return;
+    const { scrollX, scrollY, zoom, width, height } = api.getAppState();
+    const next = zoomAbout({ scrollX, scrollY, zoom: zoom.value, width, height }, value);
+    api.updateScene({
+      appState: {
+        zoom: { value: next.zoom as typeof zoom.value },
+        scrollX: next.scrollX,
+        scrollY: next.scrollY,
+      },
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+  };
+
+  const onZoom = (action: ZoomAction) => {
+    const api = apiRef.current;
+    if (!api) return;
+    const current = api.getAppState().zoom.value;
+    if (action === 'in') zoomTo(current + ZOOM_STEP);
+    else if (action === 'out') zoomTo(current - ZOOM_STEP);
+    else if (action === 'reset') zoomTo(1);
+    else {
+      const elements = api.getSceneElements();
+      if (elements.length === 0) zoomTo(1);
+      else
+        api.scrollToContent(elements, {
+          fitToViewport: true,
+          viewportZoomFactor: 0.9,
+          animate: true,
+        });
+    }
+  };
+
+  /**
+   * Undo and redo have no public API in Excalidraw 0.18, so the toolbar presses the shortcut on the
+   * canvas: its own handler then does exactly what the keyboard does (and keeps the history in one place).
+   */
+  const onHistory = (action: HistoryAction) => {
+    const target = rootRef.current?.querySelector<HTMLElement>('.excalidraw');
+    if (!target) return;
+    target.focus({ preventScroll: true });
+    target.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'z',
+        code: 'KeyZ',
+        // Excalidraw reads Ctrl or Cmd depending on the platform; sending both is correct on each.
+        ctrlKey: true,
+        metaKey: true,
+        shiftKey: action === 'redo',
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  };
+
   const addSticky = (color: StickyColor) => {
     const api = apiRef.current;
     if (!api) return;
@@ -161,6 +221,7 @@ export function CanvasApp({
 
   return (
     <div
+      ref={rootRef}
       className="elysion-canvas"
       data-theme={activeTheme}
       style={{ position: 'absolute', inset: 0 }}
@@ -183,6 +244,7 @@ export function CanvasApp({
         onChange={(elements, appState) => {
           bindingRef.current?.onLocalChange(elements);
           setActiveTool(appState.activeTool.type);
+          setZoomPercent(Math.round(appState.zoom.value * 100));
           const selected = Object.values(appState.selectedElementIds).filter(Boolean).length;
           if (selected !== selectionCount.current) {
             selectionCount.current = selected;
@@ -223,6 +285,9 @@ export function CanvasApp({
         activeTool={activeTool}
         onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
         onAddSticky={addSticky}
+        onHistory={onHistory}
+        onZoom={onZoom}
+        zoomPercent={zoomPercent}
       />
     </div>
   );
