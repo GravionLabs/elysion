@@ -1,10 +1,17 @@
 <header class="topbar">
-  <div class="brand">
+  <a class="brand" routerLink="/" aria-label="Elysion: all boards">
     <span class="brand-mark" aria-hidden="true">E</span>
     <span class="app-title">Elysion</span>
-  </div>
+  </a>
 
   <span class="topbar-divider" aria-hidden="true"></span>
+
+  <a class="menu-button all-boards" routerLink="/" title="Back to all boards">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15 5l-7 7 7 7" />
+    </svg>
+    <span>All boards</span>
+  </a>
 
   <h1 class="board-title" [title]="boardId()">{{ title() }}</h1>
 

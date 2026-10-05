@@ -6,6 +6,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from './app.routes';
 import { Board } from './board/board';
 import { CanvasElementLoader } from './board/canvas-element-loader';
+import { BoardList } from './board-list/board-list';
 
 describe('routes', () => {
   let harness: RouterTestingHarness;
@@ -39,22 +40,27 @@ describe('routes', () => {
     expect(board.boardId()).toBe('q3 plan/v2');
   });
 
-  it('redirects / to the default board', async () => {
-    const board = await harness.navigateByUrl('/', Board);
+  it('opens the board list at /', async () => {
+    await harness.navigateByUrl('/', BoardList);
 
-    expect(router.url).toBe('/board/default');
-    expect(board.boardId()).toBe('default');
+    expect(router.url).toBe('/');
   });
 
-  it('redirects unknown paths to the default board', async () => {
-    await harness.navigateByUrl('/nowhere/at/all', Board);
+  it('sends unknown paths to the board list', async () => {
+    await harness.navigateByUrl('/nowhere/at/all', BoardList);
 
-    expect(router.url).toBe('/board/default');
+    expect(router.url).toBe('/');
   });
 
   it('does not connect to a room named with only whitespace', async () => {
-    await harness.navigateByUrl('/board/%20%20', Board);
+    await harness.navigateByUrl('/board/%20%20', BoardList);
 
-    expect(router.url).toBe('/board/default');
+    expect(router.url).toBe('/');
+  });
+
+  it('still opens the room named default, which is not a stored board', async () => {
+    const board = await harness.navigateByUrl('/board/default', Board);
+
+    expect(board.boardId()).toBe('default');
   });
 });

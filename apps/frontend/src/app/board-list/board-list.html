@@ -1,0 +1,91 @@
+<header class="page-header">
+  <a class="brand" routerLink="/" aria-label="Elysion: all boards">
+    <span class="brand-mark" aria-hidden="true">E</span>
+    <span class="app-title">Elysion</span>
+  </a>
+</header>
+
+<main class="page">
+  <div class="page-title">
+    <h1>Boards</h1>
+    @if (state() === 'ready' && boards().length > 0 && createState() === 'closed') {
+      <button type="button" class="button primary new-board" (click)="openCreate()">
+        New board
+      </button>
+    }
+  </div>
+
+  @if (createState() !== 'closed') {
+    <form class="create" (submit)="$event.preventDefault(); create()">
+      <label for="board-name">Board name</label>
+      <div class="create-row">
+        <input
+          #nameInput
+          id="board-name"
+          name="name"
+          type="text"
+          autocomplete="off"
+          data-1p-ignore
+          data-lpignore="true"
+          [attr.maxlength]="maxNameLength"
+          [value]="draftName()"
+          [disabled]="createState() === 'saving'"
+          [attr.aria-invalid]="createError() ? 'true' : null"
+          [attr.aria-describedby]="createError() ? 'board-name-error' : null"
+          (input)="updateName($event)"
+          (keydown.escape)="cancelCreate()"
+        />
+        <button type="submit" class="button primary" [disabled]="createState() === 'saving'">
+          {{ createState() === 'saving' ? 'Creating…' : 'Create' }}
+        </button>
+        <button
+          type="button"
+          class="button"
+          [disabled]="createState() === 'saving'"
+          (click)="cancelCreate()"
+        >
+          Cancel
+        </button>
+      </div>
+      @if (createError(); as message) {
+        <p id="board-name-error" class="field-error" role="alert">{{ message }}</p>
+      }
+    </form>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="message" role="status">Loading boards…</p>
+    }
+    @case ('error') {
+      <div class="message error" role="alert">
+        <p>The boards could not be loaded.</p>
+        <button type="button" class="button" (click)="load()">Try again</button>
+      </div>
+    }
+    @default {
+      @if (boards().length === 0) {
+        <div class="empty">
+          <h2>No boards yet</h2>
+          <p>Create a board to start drawing and collaborating.</p>
+          @if (createState() === 'closed') {
+            <button type="button" class="button primary new-board" (click)="openCreate()">
+              Create your first board
+            </button>
+          }
+        </div>
+      } @else {
+        <ul class="boards">
+          @for (board of boards(); track board.id) {
+            <li>
+              <a class="board-card" [routerLink]="board.path">
+                <span class="board-name">{{ board.name }}</span>
+                <span class="board-date">Created {{ board.createdAt | date: 'mediumDate' }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</main>

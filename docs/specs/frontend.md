@@ -13,10 +13,19 @@ Angular shell app embedding a React/Excalidraw canvas component, Yjs client for 
 | URL                            | Result                                                                                                                                                                                                                                                                                                |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/board/:boardId`              | The board with that id. The route param is called `boardId` so `withComponentInputBinding()` hands it straight to `Board.boardId`, which becomes the `board-id` attribute of `<elysion-canvas>` and therefore the Yjs room. The id is URL-decoded (`/board/q3%20plan%2Fv2` is the room `q3 plan/v2`). |
-| `/board/%20` (whitespace only) | Redirected to the default board by `boardIdGuard`: the id becomes a room name, so an empty one is never connected to.                                                                                                                                                                                 |
-| `/` and any unknown path       | Redirected to `/board/default`, the id that was hard-coded before, until the board list (#102) exists.                                                                                                                                                                                                |
+| `/board/%20` (whitespace only) | Redirected to the board list by `boardIdGuard`: the id becomes a room name, so an empty one is never connected to.                                                                                                                                                                                    |
+| `/`                            | The board list (`BoardList`): the boards from `GET /api/boards`, newest first, each a card linking to its board; see Board list below.                                                                                                                                                                |
+| any unknown path               | Redirected to `/`. The room `default` is not a stored board but still opens at `/board/default`.                                                                                                                                                                                                      |
 
-This is what makes collaboration links possible (#101). `HttpClient` is deliberately not provided yet: nothing calls an API until the board list or the BFF endpoints exist.
+This is what makes collaboration links possible (#101).
+
+### Board list
+
+`BoardList` (`src/app/board-list/`) is the home page, in the look of the top bar on the shared tokens. It loads the boards through `BoardApi.list()` and has three states: **loading** ("Loading boards…"), **error** (a message with "Try again", the BFF being down must not leave a blank page) and **ready**, which is either the grid of board cards (name, creation date; one column per roughly 220 px, so it works at phone width) or the **empty** state with a "Create your first board" button.
+
+**New board** opens an inline form (no browser dialog) with the name preset to "Untitled board", focused and selected; Enter or Create sends `POST /api/boards` (the name is trimmed; blank or longer than 120 characters is refused before the request), Escape or Cancel closes it. While the request runs the form is disabled; if it fails the form stays open with a message so the user can retry. On success the app opens the new board. Until the identity epic lands the list shows every board; with the authorization policies (#117) it shows only the user's boards, without changes here.
+
+The top bar of the board page links back: the brand and an "All boards" button (an icon only below 640 px) both go to `/`.
 
 ## Top bar and the element contract
 
