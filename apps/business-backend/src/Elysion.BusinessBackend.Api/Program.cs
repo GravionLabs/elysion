@@ -12,6 +12,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<ElysionDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Elysion")));
 
+builder.Services.AddSingleton(TimeProvider.System);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -27,3 +29,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Lets the test project host the app (WebApplicationFactory<Program>).
+public partial class Program;

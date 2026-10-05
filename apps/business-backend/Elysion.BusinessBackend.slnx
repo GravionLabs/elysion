@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Elysion.BusinessBackend.Api/Elysion.BusinessBackend.Api.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Elysion.BusinessBackend.Tests/Elysion.BusinessBackend.Tests.csproj" />
+  </Folder>
 </Solution>
