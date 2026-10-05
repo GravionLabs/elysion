@@ -8,6 +8,7 @@ See `docs/specs/business-backend.md` and `docs/adr/0003-net10-business-backend.m
 
 - `Elysion.BusinessBackend.slnx` — solution file
 - `src/Elysion.BusinessBackend.Api/` — the Web API project
+- `tests/Elysion.BusinessBackend.Tests/` — NUnit tests (`dotnet test`); they host the app with `WebApplicationFactory<Program>` and the in-memory EF provider, see `ApiFactory`
 - `Directory.Packages.props` — **all** package versions go here (Central Package Management is on: `ManagePackageVersionsCentrally=true`). Add `<PackageVersion Include="..." Version="..." />` here, then `<PackageReference Include="..." />` (no version) in the `.csproj`.
 - `Directory.Build.props` — shared TFM/nullable/warnings-as-errors settings for every project under this directory.
 - `dotnet-tools.json` — local tool manifest (currently just `dotnet-ef`). Use `dotnet tool run dotnet-ef ...`, not a global install.
@@ -16,6 +17,7 @@ See `docs/specs/business-backend.md` and `docs/adr/0003-net10-business-backend.m
 
 ```sh
 dotnet build
+dotnet test
 dotnet run --project src/Elysion.BusinessBackend.Api --no-launch-profile --urls http://localhost:5080
 
 # migrations (Postgres must be running: pnpm dev:infra from repo root)
@@ -31,7 +33,8 @@ Connection string is in `appsettings.Development.json` (`ConnectionStrings:Elysi
 ## Conventions
 
 - New entities go in `Entities/`, DbContext is `Data/ElysionDbContext.cs` — add a `DbSet<T>` there and generate a migration, don't hand-write SQL.
-- Controllers in `Controllers/`, `[ApiController]` + `[Route(...)]` pattern (see `HealthController`).
+- Controllers in `Controllers/`, `[ApiController]` + `[Route(...)]` pattern (see `HealthController`). Request and response types are records in `Contracts/`; never return an entity (see `BoardsController`).
+- Use the injected `TimeProvider`, not `DateTimeOffset.UtcNow`, so tests can control time.
 - `TreatWarningsAsErrors` is on (`Directory.Build.props`) — a warning breaks the build, don't suppress it without a reason.
 
 ## Gotcha: Postgres 18 volume mount
