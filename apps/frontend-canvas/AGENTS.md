@@ -15,6 +15,7 @@ The element bundle builds as an **ES module** (not iife) so Excalidraw's optiona
 pnpm --filter @elysion/frontend-canvas dev              # standalone dev server
 pnpm --filter @elysion/frontend-canvas build             # typecheck + app build
 pnpm --filter @elysion/frontend-canvas build:element      # typecheck + custom-element bundle (dist-element/)
+pnpm --filter @elysion/frontend-canvas build:element:watch # rebuild on change and refresh apps/frontend/public/canvas
 pnpm --filter @elysion/frontend-canvas test               # vitest
 ```
 
