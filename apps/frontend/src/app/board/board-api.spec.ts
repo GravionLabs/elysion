@@ -91,4 +91,72 @@ describe('BoardApi', () => {
 
     await expect(result).rejects.toMatchObject({ status: 400 });
   });
+
+  it('renames a board with a PATCH', async () => {
+    const result = firstValueFrom(api.rename(id, 'Planning'));
+
+    const request = http.expectOne(`/api/boards/${id}`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ name: 'Planning' });
+    request.flush({ ...board, name: 'Planning' });
+
+    expect((await result).name).toBe('Planning');
+  });
+
+  it('does not hide a failing rename', async () => {
+    const result = firstValueFrom(api.rename(id, 'Planning'));
+
+    http.expectOne(`/api/boards/${id}`).flush('', { status: 404, statusText: 'Not Found' });
+
+    await expect(result).rejects.toMatchObject({ status: 404 });
+  });
+
+  describe('find', () => {
+    it('is a room, without a request, for an id that cannot be a stored board', async () => {
+      expect(await firstValueFrom(api.find('default'))).toEqual({ status: 'room' });
+      http.expectNone(() => true);
+    });
+
+    it('finds a stored board', async () => {
+      const result = firstValueFrom(api.find(id));
+
+      http.expectOne(`/api/boards/${id}`).flush(board);
+
+      expect(await result).toEqual({ status: 'found', board });
+    });
+
+    it('says a board is missing on a 404', async () => {
+      const result = firstValueFrom(api.find(id));
+
+      http.expectOne(`/api/boards/${id}`).flush('', { status: 404, statusText: 'Not Found' });
+
+      expect(await result).toEqual({ status: 'missing' });
+    });
+
+    it('says it is unavailable, not missing, when the BFF fails', async () => {
+      const result = firstValueFrom(api.find(id));
+
+      http.expectOne(`/api/boards/${id}`).flush('', { status: 502, statusText: 'Bad Gateway' });
+
+      expect(await result).toEqual({ status: 'unavailable' });
+    });
+  });
+
+  it('deletes a board', async () => {
+    const result = firstValueFrom(api.delete(id));
+
+    const request = http.expectOne(`/api/boards/${id}`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null, { status: 204, statusText: 'No Content' });
+
+    await expect(result).resolves.toBeNull();
+  });
+
+  it('does not hide a failing delete', async () => {
+    const result = firstValueFrom(api.delete(id));
+
+    http.expectOne(`/api/boards/${id}`).flush('', { status: 404, statusText: 'Not Found' });
+
+    await expect(result).rejects.toMatchObject({ status: 404 });
+  });
 });

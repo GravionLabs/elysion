@@ -1,6 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { Component, ElementRef, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
+import { AppBrand } from '../shared/app-brand';
 import { ThemeService } from '../theme/theme.service';
 import { BoardApi, BoardInfo, MAX_BOARD_NAME_LENGTH } from '../board/board-api';
 
@@ -11,7 +13,7 @@ type CreateState = 'closed' | 'editing' | 'saving';
 
 /** The home page: the boards, newest first, and a way to start a new one. */
 @Component({
-  imports: [DatePipe, RouterLink],
+  imports: [AppBrand, DatePipe, RouterLink],
   selector: 'app-board-list',
   styleUrl: './board-list.scss',
   templateUrl: './board-list.html',
@@ -19,6 +21,7 @@ type CreateState = 'closed' | 'editing' | 'saving';
 export class BoardList {
   readonly #api = inject(BoardApi);
   readonly #router = inject(Router);
+  readonly #pageTitle = inject(Title);
   // Injected so the theme is applied to the page, which the board page does through its top bar.
   readonly #theme = inject(ThemeService);
 
@@ -32,9 +35,15 @@ export class BoardList {
   protected readonly draftName = signal(DEFAULT_NEW_BOARD_NAME);
   protected readonly createError = signal<string | null>(null);
 
+  /** The board the user is being asked about; `null` when no deletion is pending. */
+  protected readonly deleteTarget = signal<BoardInfo | null>(null);
+  protected readonly deleting = signal(false);
+  protected readonly deleteError = signal<string | null>(null);
+
   private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
 
   constructor() {
+    this.#pageTitle.setTitle('Boards · Elysion');
     this.load();
     // Put the cursor in the name field, with the default selected, when the form opens.
     effect(() => {
@@ -96,6 +105,36 @@ export class BoardList {
       error: () => {
         this.createState.set('editing');
         this.createError.set('The board could not be created. Try again.');
+      },
+    });
+  }
+
+  protected askDelete(board: BoardInfo): void {
+    this.deleteError.set(null);
+    this.deleteTarget.set(board);
+  }
+
+  protected cancelDelete(): void {
+    if (!this.deleting()) {
+      this.deleteTarget.set(null);
+    }
+  }
+
+  protected confirmDelete(): void {
+    const board = this.deleteTarget();
+    if (!board || this.deleting()) {
+      return;
+    }
+    this.deleting.set(true);
+    this.#api.delete(board.id).subscribe({
+      next: () => {
+        this.boards.update((boards) => boards.filter((b) => b.id !== board.id));
+        this.deleting.set(false);
+        this.deleteTarget.set(null);
+      },
+      error: () => {
+        this.deleting.set(false);
+        this.deleteError.set('The board could not be deleted. Try again.');
       },
     });
   }

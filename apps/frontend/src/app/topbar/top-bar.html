@@ -1,8 +1,5 @@
 <header class="topbar">
-  <a class="brand" routerLink="/" aria-label="Elysion: all boards">
-    <span class="brand-mark" aria-hidden="true">E</span>
-    <span class="app-title">Elysion</span>
-  </a>
+  <app-brand />
 
   <span class="topbar-divider" aria-hidden="true"></span>
 
@@ -13,7 +10,41 @@
     <span>All boards</span>
   </a>
 
-  <h1 class="board-title" [title]="boardId()">{{ title() }}</h1>
+  <h1 class="board-title" [title]="boardId()">
+    @if (editing()) {
+      <input
+        #titleInput
+        class="title-input"
+        type="text"
+        autocomplete="off"
+        data-1p-ignore
+        data-lpignore="true"
+        aria-label="Board name"
+        [attr.maxlength]="maxNameLength"
+        [value]="draft()"
+        [attr.aria-invalid]="nameError() ? 'true' : null"
+        [attr.aria-describedby]="nameError() ? 'title-error' : null"
+        (input)="updateDraft($event)"
+        (keydown.enter)="submitRename()"
+        (keydown.escape)="cancelRename()"
+        (blur)="blurRename()"
+      />
+    } @else if (canRename()) {
+      <button
+        type="button"
+        class="title-button"
+        aria-label="Rename the board {{ title() }}"
+        (click)="startRename()"
+      >
+        {{ title() }}
+      </button>
+    } @else {
+      {{ title() }}
+    }
+  </h1>
+  @if (nameError(); as message) {
+    <span id="title-error" class="title-error" role="alert">{{ message }}</span>
+  }
 
   <span class="status" [attr.data-status]="status()" role="status">
     <span class="status-dot" aria-hidden="true"></span>{{ statusLabel() }}

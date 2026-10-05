@@ -1,5 +1,17 @@
-import { Component, computed, input, output } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  input,
+  output,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MAX_BOARD_NAME_LENGTH } from '../board/board-api';
+import { AppBrand } from '../shared/app-brand';
 import { Theme } from '../theme/theme.service';
 import { ExportMenu, ExportRequest } from './export-menu';
 
@@ -14,7 +26,7 @@ const STATUS_LABEL: Record<SyncStatus, string> = {
 
 /** The bar at the top of the board page, modeled on ariadne's: identity left, actions right. */
 @Component({
-  imports: [ExportMenu, RouterLink],
+  imports: [AppBrand, ExportMenu, RouterLink],
   selector: 'app-top-bar',
   styleUrl: './top-bar.scss',
   templateUrl: './top-bar.html',
@@ -23,6 +35,8 @@ export class TopBar {
   readonly boardId = input.required<string>();
   /** The board's name when it has one; a room without a record shows its id. */
   readonly boardName = input<string | null>(null);
+  /** Whether the title can be edited: only a stored board has a name to change. */
+  readonly canRename = input(false);
   readonly status = input<SyncStatus>('connecting');
   readonly theme = input.required<Theme>();
   /** Whether anything is selected on the canvas (enables 'selection only' in the Export menu). */
@@ -30,11 +44,77 @@ export class TopBar {
   /** Whether the library sidebar is open. */
   readonly libraryOpen = input(false);
 
+  /** The user confirmed a new name (trimmed, different from the current one). */
+  readonly renameRequested = output<string>();
   readonly themeToggle = output<void>();
   readonly libraryToggle = output<void>();
   readonly exportRequested = output<ExportRequest>();
   /** A file was picked for import; the page confirms before anything is replaced. */
   readonly importChosen = output<File>();
+
+  protected readonly maxNameLength = MAX_BOARD_NAME_LENGTH;
+  protected readonly editing = signal(false);
+  protected readonly draft = signal('');
+  protected readonly nameError = signal<string | null>(null);
+  private readonly titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
+
+  constructor() {
+    // Put the cursor in the field, with the name selected, when editing starts.
+    effect(() => {
+      const field = this.titleInput()?.nativeElement;
+      if (field) {
+        untracked(() => {
+          field.focus();
+          field.select();
+        });
+      }
+    });
+  }
+
+  protected startRename(): void {
+    this.draft.set(this.title());
+    this.nameError.set(null);
+    this.editing.set(true);
+  }
+
+  protected updateDraft(event: Event): void {
+    this.draft.set((event.target as HTMLInputElement).value);
+    this.nameError.set(null);
+  }
+
+  /** Enter: saves a valid name; a blank one is refused and the field stays open. */
+  protected submitRename(): void {
+    this.finishRename(true);
+  }
+
+  /** Leaving the field saves a valid name and quietly drops a blank one. */
+  protected blurRename(): void {
+    this.finishRename(false);
+  }
+
+  protected cancelRename(): void {
+    this.editing.set(false);
+    this.nameError.set(null);
+  }
+
+  private finishRename(refuseBlank: boolean): void {
+    if (!this.editing()) {
+      return; // Escape already closed it; removing the field can still fire a blur
+    }
+    const name = this.draft().trim();
+    if (!name) {
+      if (refuseBlank) {
+        this.nameError.set('A board needs a name.');
+      } else {
+        this.cancelRename();
+      }
+      return;
+    }
+    this.cancelRename();
+    if (name !== this.boardName()) {
+      this.renameRequested.emit(name);
+    }
+  }
 
   protected chooseImport(event: Event): void {
     const fileInput = event.target as HTMLInputElement;

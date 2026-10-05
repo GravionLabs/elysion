@@ -1,7 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By, Title } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
+import { TopBar } from '../topbar/top-bar';
 import { ThemeService } from '../theme/theme.service';
 import { Board } from './board';
 import { CanvasElementLoader } from './canvas-element-loader';
@@ -323,16 +325,17 @@ describe('Board', () => {
       expect(title()).toContain('Q3 planning');
     });
 
-    it('keeps showing the id when the board has no record', async () => {
+    it('keeps showing the id, and the canvas, when the BFF fails', async () => {
       fixture.componentRef.setInput('boardId', id);
       fixture.detectChanges();
       await fixture.whenStable();
 
-      http.expectOne(`/api/boards/${id}`).flush('', { status: 404, statusText: 'Not Found' });
+      http.expectOne(`/api/boards/${id}`).flush('', { status: 502, statusText: 'Bad Gateway' });
       await fixture.whenStable();
       fixture.detectChanges();
 
       expect(title()).toContain(id);
+      expect(fixture.nativeElement.querySelector('elysion-canvas')).not.toBeNull();
     });
 
     it('does not ask the BFF about a room such as default', async () => {
@@ -342,6 +345,152 @@ describe('Board', () => {
 
       http.expectNone(() => true);
       expect(title()).toContain('default');
+    });
+
+    describe('a board that does not exist', () => {
+      const open = async () => {
+        fixture.componentRef.setInput('boardId', id);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+      };
+      const answer = async (status: number, body: object | string = '') => {
+        http.expectOne(`/api/boards/${id}`).flush(body, { status, statusText: 'x' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+      };
+
+      it('does not start the canvas for a stored board id until the BFF has answered', async () => {
+        await open();
+
+        expect(fixture.nativeElement.querySelector('elysion-canvas')).toBeNull();
+
+        await answer(200, { id, name: 'Q3 planning', createdAt: '', path: '' });
+
+        expect(fixture.nativeElement.querySelector('elysion-canvas')).not.toBeNull();
+      });
+
+      it('shows "Board not found" with a way back, and no canvas, on a 404', async () => {
+        await open();
+        await answer(404);
+
+        const page = fixture.nativeElement as HTMLElement;
+        expect(page.querySelector('h1')?.textContent).toContain('Board not found');
+        expect(page.textContent).toContain('does not exist, or it was deleted');
+        expect(page.querySelector('a.not-found-link')?.getAttribute('href')).toBe('/');
+        expect(page.querySelector('elysion-canvas')).toBeNull();
+        expect(page.querySelector('app-top-bar')).toBeNull();
+        expect(TestBed.inject(Title).getTitle()).toBe('Board not found · Elysion');
+      });
+
+      it('starts the canvas at once for a room that is not a stored board', async () => {
+        fixture.componentRef.setInput('boardId', 'team-retro');
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelector('elysion-canvas')).not.toBeNull();
+        expect(fixture.nativeElement.querySelector('h1')?.textContent).not.toContain('not found');
+      });
+    });
+
+    describe('renaming', () => {
+      const flushName = async (name: string) => {
+        http.expectOne(`/api/boards/${id}`).flush({ id, name, createdAt: '', path: '' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+      };
+      const rename = async (name: string) => {
+        const bar = fixture.debugElement.query(By.directive(TopBar)).componentInstance as TopBar;
+        bar.renameRequested.emit(name);
+        await fixture.whenStable();
+        fixture.detectChanges();
+      };
+
+      beforeEach(async () => {
+        fixture.componentRef.setInput('boardId', id);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        await flushName('Q3 planning');
+      });
+
+      it('shows the new name at once and keeps it after the server confirms', async () => {
+        await rename('Q4 planning');
+
+        expect(title()).toContain('Q4 planning'); // before the PATCH is answered
+        const request = http.expectOne(`/api/boards/${id}`);
+        expect(request.request.method).toBe('PATCH');
+        expect(request.request.body).toEqual({ name: 'Q4 planning' });
+        request.flush({ id, name: 'Q4 planning', createdAt: '', path: '' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(title()).toContain('Q4 planning');
+        expect(fixture.nativeElement.querySelector('.board-banner')).toBeNull();
+      });
+
+      it('shows the name the server stored, which is trimmed', async () => {
+        await rename('Q4 planning');
+
+        http
+          .expectOne(`/api/boards/${id}`)
+          .flush({ id, name: 'Q4 planning (stored)', createdAt: '', path: '' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(title()).toContain('Q4 planning (stored)');
+      });
+
+      it('puts the old name back and says so when saving fails', async () => {
+        await rename('Q4 planning');
+
+        http.expectOne(`/api/boards/${id}`).flush('', { status: 502, statusText: 'Bad Gateway' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(title()).toContain('Q3 planning');
+        expect(fixture.nativeElement.querySelector('.board-banner')?.textContent).toContain(
+          'could not be renamed',
+        );
+      });
+
+      it('goes back to the name before, not to the loaded one, when a second rename fails', async () => {
+        await rename('Q4 planning');
+        http
+          .expectOne(`/api/boards/${id}`)
+          .flush({ id, name: 'Q4 planning', createdAt: '', path: '' });
+        await rename('Q5 planning');
+
+        http.expectOne(`/api/boards/${id}`).flush('', { status: 400, statusText: 'Bad Request' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(title()).toContain('Q4 planning');
+      });
+
+      it('names the browser tab after the board', async () => {
+        expect(TestBed.inject(Title).getTitle()).toBe('Q3 planning · Elysion');
+
+        await rename('Q4 planning');
+        http
+          .expectOne(`/api/boards/${id}`)
+          .flush({ id, name: 'Q4 planning', createdAt: '', path: '' });
+        await fixture.whenStable();
+
+        expect(TestBed.inject(Title).getTitle()).toBe('Q4 planning · Elysion');
+      });
+
+      it('offers the rename only for a stored board', async () => {
+        expect(fixture.nativeElement.querySelector('.title-button')).not.toBeNull();
+
+        fixture.componentRef.setInput('boardId', 'default');
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelector('.title-button')).toBeNull();
+        expect(TestBed.inject(Title).getTitle()).toBe('Elysion');
+      });
     });
   });
 

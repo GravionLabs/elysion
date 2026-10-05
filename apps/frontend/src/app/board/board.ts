@@ -2,16 +2,22 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   Component,
   ElementRef,
+  computed,
+  effect,
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { map, switchMap } from 'rxjs';
+import { startWith, switchMap } from 'rxjs';
 import { Theme, ThemeService } from '../theme/theme.service';
 import { SyncStatus, TopBar } from '../topbar/top-bar';
-import { BoardApi } from './board-api';
+import { RouterLink } from '@angular/router';
+import { AppBrand } from '../shared/app-brand';
+import { BoardApi, BoardLookup, isStoredBoardId } from './board-api';
 import { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename } from './download';
 import { ExportRequest } from '../topbar/export-menu';
@@ -19,9 +25,11 @@ import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader
 
 export type CanvasStatus = 'loading' | 'ready' | 'error';
 
+const PENDING: BoardLookup | { status: 'pending' } = { status: 'pending' };
+
 /** The board page: the top bar and the canvas element below it. */
 @Component({
-  imports: [TopBar],
+  imports: [AppBrand, RouterLink, TopBar],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-board',
   styleUrl: './board.scss',
@@ -32,6 +40,7 @@ export class Board {
   readonly #canvasElementSrc = inject(CANVAS_ELEMENT_SRC);
   readonly #themeService = inject(ThemeService);
   readonly #api = inject(BoardApi);
+  readonly #pageTitle = inject(Title);
 
   /** Passed to <elysion-canvas> as the `board-id` attribute. */
   readonly boardId = input('default');
@@ -63,17 +72,62 @@ export class Board {
   /** The Yjs connection, from the element's `status` event. */
   readonly syncStatus = signal<SyncStatus>('connecting');
 
-  /** The board's name, or `null` while it loads and for a room without a stored board. */
-  readonly boardName = toSignal(
-    toObservable(this.boardId).pipe(
-      switchMap((id) => this.#api.get(id)),
-      map((board) => board?.name ?? null),
-    ),
-    { initialValue: null },
+  /** What the BFF says about the board id; `pending` until it answers. */
+  readonly #lookup = toSignal(
+    toObservable(this.boardId).pipe(switchMap((id) => this.#api.find(id).pipe(startWith(PENDING)))),
+    { initialValue: PENDING },
   );
+
+  /** The board's name as loaded, or `null` while it loads and for a room without a stored board. */
+  readonly #loadedName = computed(() => {
+    const lookup = this.#lookup();
+    return lookup.status === 'found' ? lookup.board.name : null;
+  });
+
+  /** The id belongs to no board: it never existed or the board was deleted. */
+  readonly notFound = computed(() => this.#lookup().status === 'missing');
+
+  /**
+   * Whether to start the canvas. Not for a board that does not exist: connecting would create a room
+   * (and, once something is drawn, a stored document) for it. A stored board's id waits for the answer.
+   */
+  readonly canvasVisible = computed(
+    () =>
+      !this.notFound() && !(this.#lookup().status === 'pending' && isStoredBoardId(this.boardId())),
+  );
+
+  /** A name the user just gave the board, shown at once (and rolled back if saving fails). */
+  readonly #renamedTo = signal<string | null>(null);
+
+  /** The board's name, or `null` while it loads and for a room without a stored board. */
+  readonly boardName = computed(() => this.#renamedTo() ?? this.#loadedName());
 
   constructor() {
     this.#loader.load(this.#canvasElementSrc).catch(() => this.status.set('error'));
+    // Another board in the same page starts without the previous one's new name.
+    effect(() => {
+      this.boardId();
+      untracked(() => this.#renamedTo.set(null));
+    });
+    effect(() => {
+      const name = this.boardName();
+      this.#pageTitle.setTitle(
+        this.notFound() ? 'Board not found · Elysion' : name ? `${name} · Elysion` : 'Elysion',
+      );
+    });
+  }
+
+  /** The user confirmed a new name in the top bar: show it at once, save it, undo it if saving fails. */
+  rename(name: string): void {
+    const before = this.#renamedTo();
+    this.#renamedTo.set(name);
+    this.#api.rename(this.boardId(), name).subscribe({
+      next: (board) => this.#renamedTo.set(board.name),
+      error: () => {
+        this.#renamedTo.set(before);
+        this.notice.set('The board could not be renamed.');
+      },
+    });
   }
 
   onCanvasReady(): void {
