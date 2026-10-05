@@ -1,3 +1,8 @@
+import {
+  WS_CLOSE_FORBIDDEN,
+  WS_CLOSE_UNAUTHORIZED,
+  type WsTokenClaims,
+} from '@elysion/shared-types';
 import { Injectable, Logger } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway } from '@nestjs/websockets';
 import * as decoding from 'lib0/decoding';
@@ -6,6 +11,7 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import type { IncomingMessage } from 'node:http';
 import type { RawData, WebSocket } from 'ws';
+import { InvalidWsTokenError, WsTokenVerifier } from '../auth/ws-token-verifier.js';
 import { PresenceRelay } from '../presence/presence-relay.js';
 import { MESSAGE_AWARENESS, MESSAGE_SYNC } from './protocol.js';
 import { YjsRoom, YjsRoomRegistry } from './yjs-room-registry.js';
@@ -23,7 +29,8 @@ function toUint8Array(data: RawData): Uint8Array {
 /**
  * Yjs CRDT sync over a plain WebSocket, one room per board id (passed as a
  * `?board=` query param — the gateway's ws path match is exact, so it can't
- * route on a dynamic path segment). Presence/awareness messages are relayed
+ * route on a dynamic path segment). Every connection also carries a `?token=`: the board-scoped WS token the BFF
+ * issued (docs/specs/identity.md), verified locally at the handshake and bound to the connection. Presence/awareness messages are relayed
  * verbatim, unread, to every other client in the room — both local (via
  * in-memory broadcast) and on other `realtime` instances (via
  * {@link PresenceRelay}'s Redis pub/sub).
@@ -37,26 +44,19 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly registry: YjsRoomRegistry,
     private readonly presence: PresenceRelay,
+    private readonly tokens: WsTokenVerifier,
   ) {}
 
   handleConnection(client: WebSocket, request: IncomingMessage): void {
-    const boardId = this.readBoardId(request);
+    const { boardId, token } = this.readQuery(request);
     if (!boardId) {
       client.close(1008, 'Missing board id');
       return;
     }
 
-    // Messages can arrive while the board's stored state is still loading (the browser sends its first sync
-    // step on open); handling them in order after the load keeps them from being dropped.
-    const ready = this.registry.getOrLoad(boardId);
-    let queue: Promise<void> = ready.then(
-      (room) => this.join(client, room),
-      (error: unknown) => {
-        // Fail closed: serving an empty board in place of the real one would let the next save overwrite it.
-        this.logger.error(`Board ${boardId} could not be loaded: ${String(error)}`);
-        client.close(1011, 'Board could not be loaded');
-      },
-    );
+    // Messages can arrive while the token is being checked and the board's stored state is loading (the browser
+    // sends its first sync step on open); handling them in order after the admission keeps them from being dropped.
+    let queue: Promise<void> = this.admit(client, boardId, token);
     client.on('message', (data: RawData) => {
       queue = queue.then(async () => {
         const room = this.roomByClient.get(client);
@@ -67,10 +67,46 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  private async join(client: WebSocket, room: YjsRoom): Promise<void> {
-    if (client.readyState !== client.OPEN) {
-      return; // gone while the board was loading
+  /**
+   * The gate: the connection is let into the room only with a valid WS token for exactly this board. A token for
+   * another board would otherwise open every board, which is the point of the token. Failures close the socket
+   * with 4401 (no usable token) or 4403 (a valid token for a different board), before the board is even loaded.
+   */
+  private async admit(client: WebSocket, boardId: string, token: string | null): Promise<void> {
+    let member: WsTokenClaims;
+    try {
+      member = await this.tokens.verify(token);
+    } catch (error) {
+      if (error instanceof InvalidWsTokenError) {
+        client.close(WS_CLOSE_UNAUTHORIZED, 'Invalid or missing token');
+      } else {
+        this.logger.error(`WS token check failed: ${String(error)}`);
+        client.close(1011, 'Authentication unavailable');
+      }
+      return;
     }
+    if (member.boardId !== boardId) {
+      client.close(WS_CLOSE_FORBIDDEN, 'Token is for another board');
+      return;
+    }
+
+    let room: YjsRoom;
+    try {
+      room = await this.registry.getOrLoad(boardId);
+    } catch (error) {
+      // Fail closed: serving an empty board in place of the real one would let the next save overwrite it.
+      this.logger.error(`Board ${boardId} could not be loaded: ${String(error)}`);
+      client.close(1011, 'Board could not be loaded');
+      return;
+    }
+    await this.join(client, room, member);
+  }
+
+  private async join(client: WebSocket, room: YjsRoom, member: WsTokenClaims): Promise<void> {
+    if (client.readyState !== client.OPEN) {
+      return; // gone while the token was checked and the board was loading
+    }
+    room.memberBySocket.set(client, { sub: member.sub, role: member.role });
     room.clients.add(client);
     this.roomByClient.set(client, room);
     this.sendSyncStep1(client, room);
@@ -98,6 +134,7 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
     room.clients.delete(client);
+    room.memberBySocket.delete(client);
     this.removeAwarenessOf(room, client);
     if (room.clients.size === 0) {
       this.registry
@@ -108,9 +145,9 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  private readBoardId(request: IncomingMessage): string | null {
+  private readQuery(request: IncomingMessage): { boardId: string | null; token: string | null } {
     const url = new URL(request.url ?? '', 'http://localhost');
-    return url.searchParams.get('board');
+    return { boardId: url.searchParams.get('board'), token: url.searchParams.get('token') };
   }
 
   private sendSyncStep1(client: WebSocket, room: YjsRoom): void {

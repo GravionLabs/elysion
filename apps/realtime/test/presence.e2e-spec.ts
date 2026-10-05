@@ -12,6 +12,7 @@ import { AppModule } from '../src/app.module.js';
 import { DocumentStore } from '../src/persistence/document-store.js';
 import { InMemoryDocumentStore } from '../src/persistence/in-memory-document-store.js';
 import { MESSAGE_AWARENESS } from '../src/yjs/protocol.js';
+import { boardUrl } from './ws-token.js';
 
 /**
  * Requires a real Redis reachable at REDIS_URL (defaults to
@@ -130,8 +131,8 @@ describe('Presence across realtime instances (e2e)', () => {
 
   it('relays a presence update from a client on one instance to a client on another', async () => {
     const boardId = `presence-${Date.now()}-relay`;
-    const clientA = new TestPresenceClient(`${instanceA.baseUrl}?board=${boardId}`);
-    const clientB = new TestPresenceClient(`${instanceB.baseUrl}?board=${boardId}`);
+    const clientA = new TestPresenceClient(boardUrl(instanceA.baseUrl, boardId));
+    const clientB = new TestPresenceClient(boardUrl(instanceB.baseUrl, boardId));
     await Promise.all([clientA.waitForOpen(), clientB.waitForOpen()]);
 
     clientA.setState({ name: 'Ada', cursor: { x: 1, y: 2 } });
@@ -150,14 +151,14 @@ describe('Presence across realtime instances (e2e)', () => {
 
   it('sends a snapshot of existing presence to a client newly joining on a different instance', async () => {
     const boardId = `presence-${Date.now()}-snapshot`;
-    const clientA = new TestPresenceClient(`${instanceA.baseUrl}?board=${boardId}`);
+    const clientA = new TestPresenceClient(boardUrl(instanceA.baseUrl, boardId));
     await clientA.waitForOpen();
     clientA.setState({ name: 'Grace' });
 
     // Give the update time to persist to Redis before anyone new joins.
     await new Promise((resolve) => setTimeout(resolve, 200));
 
-    const clientC = new TestPresenceClient(`${instanceB.baseUrl}?board=${boardId}`);
+    const clientC = new TestPresenceClient(boardUrl(instanceB.baseUrl, boardId));
     await clientC.waitForOpen();
 
     await waitUntil(
@@ -173,9 +174,9 @@ describe('Presence across realtime instances (e2e)', () => {
 
   it('removes a client that drops without a close frame, for peers on both instances and for later joiners', async () => {
     const boardId = `presence-${Date.now()}-ghost`;
-    const ghost = new TestPresenceClient(`${instanceA.baseUrl}?board=${boardId}`);
-    const peerSameInstance = new TestPresenceClient(`${instanceA.baseUrl}?board=${boardId}`);
-    const peerOtherInstance = new TestPresenceClient(`${instanceB.baseUrl}?board=${boardId}`);
+    const ghost = new TestPresenceClient(boardUrl(instanceA.baseUrl, boardId));
+    const peerSameInstance = new TestPresenceClient(boardUrl(instanceA.baseUrl, boardId));
+    const peerOtherInstance = new TestPresenceClient(boardUrl(instanceB.baseUrl, boardId));
     await Promise.all([
       ghost.waitForOpen(),
       peerSameInstance.waitForOpen(),
@@ -197,7 +198,7 @@ describe('Presence across realtime instances (e2e)', () => {
     );
 
     // A client joining afterwards is caught up from Valkey and must not be told about the ghost.
-    const late = new TestPresenceClient(`${instanceB.baseUrl}?board=${boardId}`);
+    const late = new TestPresenceClient(boardUrl(instanceB.baseUrl, boardId));
     await late.waitForOpen();
     await new Promise((resolve) => setTimeout(resolve, 300));
     expect(late.remoteClientIds()).not.toContain(ghost.awareness.clientID);

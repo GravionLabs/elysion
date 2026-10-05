@@ -1,6 +1,7 @@
 import * as Y from 'yjs';
 import { InMemoryDocumentStore } from '../src/persistence/in-memory-document-store.js';
 import { SyncClient, startInstance, waitUntil } from './helpers.js';
+import { boardUrl } from './ws-token.js';
 
 /**
  * A board survives a restart of the realtime service (ADR 0011): content drawn in one process is there
@@ -15,7 +16,7 @@ describe('Board persistence (e2e)', () => {
     const boardId = `persist-${Date.now()}`;
 
     const first = await startInstance(store);
-    const drawing = new SyncClient(`${first.url}?board=${boardId}`);
+    const drawing = new SyncClient(boardUrl(first.url, boardId));
     await drawing.waitForOpen();
     drawing.doc.getMap('elements').set('rect-1', { type: 'rectangle', x: 10, y: 20 });
     await new Promise((resolve) => setTimeout(resolve, 150)); // let the update reach the server
@@ -24,7 +25,7 @@ describe('Board persistence (e2e)', () => {
     await first.app.close(); // the process goes away; its memory with it
 
     const second = await startInstance(store);
-    const reopening = new SyncClient(`${second.url}?board=${boardId}`);
+    const reopening = new SyncClient(boardUrl(second.url, boardId));
     await reopening.waitForOpen();
     await waitUntil(() => reopening.doc.getMap('elements').has('rect-1'));
 
@@ -40,7 +41,7 @@ describe('Board persistence (e2e)', () => {
   it('does not save a board nobody changed', async () => {
     const store = new InMemoryDocumentStore();
     const { app, url } = await startInstance(store);
-    const viewer = new SyncClient(`${url}?board=untouched-${Date.now()}`);
+    const viewer = new SyncClient(boardUrl(url, `untouched-${Date.now()}`));
     await viewer.waitForOpen();
     await new Promise((resolve) => setTimeout(resolve, 100));
     viewer.close();
@@ -57,7 +58,7 @@ describe('Board persistence (e2e)', () => {
     };
     const { app, url } = await startInstance(store);
 
-    const client = new SyncClient(`${url}?board=unloadable-${Date.now()}`);
+    const client = new SyncClient(boardUrl(url, `unloadable-${Date.now()}`));
     await client.waitForOpen();
 
     expect(await client.closed).toBe(1011);
@@ -69,7 +70,7 @@ describe('Board persistence (e2e)', () => {
     const boardId = `evict-${Date.now()}`;
     const { app, url } = await startInstance(store);
 
-    const drawing = new SyncClient(`${url}?board=${boardId}`);
+    const drawing = new SyncClient(boardUrl(url, boardId));
     await drawing.waitForOpen();
     drawing.doc.getMap('elements').set('rect-1', 'from the first visit');
     await new Promise((resolve) => setTimeout(resolve, 150));
@@ -84,7 +85,7 @@ describe('Board persistence (e2e)', () => {
     elsewhere.getMap('elements').set('rect-2', 'saved by another instance');
     await store.save(boardId, Y.encodeStateAsUpdate(elsewhere), stored!.version);
 
-    const returning = new SyncClient(`${url}?board=${boardId}`);
+    const returning = new SyncClient(boardUrl(url, boardId));
     await returning.waitForOpen();
     await waitUntil(() => returning.doc.getMap('elements').has('rect-2'));
 
@@ -101,7 +102,7 @@ describe('Board persistence (e2e)', () => {
     const boardId = `keep-${Date.now()}`;
     const { app, url } = await startInstance(store, { evictAfterMs: 2_000 });
 
-    const first = new SyncClient(`${url}?board=${boardId}`);
+    const first = new SyncClient(boardUrl(url, boardId));
     await first.waitForOpen();
     first.doc.getMap('elements').set('a', 1);
     await new Promise((resolve) => setTimeout(resolve, 150));
@@ -115,7 +116,7 @@ describe('Board persistence (e2e)', () => {
     elsewhere.getMap('elements').set('b', 2);
     await store.save(boardId, Y.encodeStateAsUpdate(elsewhere), stored!.version);
 
-    const second = new SyncClient(`${url}?board=${boardId}`);
+    const second = new SyncClient(boardUrl(url, boardId));
     await second.waitForOpen();
     await new Promise((resolve) => setTimeout(resolve, 300));
 

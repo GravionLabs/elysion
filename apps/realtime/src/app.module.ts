@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { AuthModule } from './auth/auth.module.js';
 import { DocumentRelay } from './document/document-relay.js';
 import { PersistenceModule } from './persistence/persistence.module.js';
 import { PresenceRelay } from './presence/presence-relay.js';
@@ -13,7 +14,7 @@ import {
 } from './yjs/yjs-room-registry.js';
 
 @Module({
-  imports: [RedisModule, PersistenceModule],
+  imports: [AuthModule, RedisModule, PersistenceModule],
   controllers: [AppController],
   providers: [
     AppService,
