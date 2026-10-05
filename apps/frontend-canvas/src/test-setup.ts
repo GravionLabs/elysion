@@ -30,3 +30,8 @@ if (!document.fonts) {
     value: { add: () => {}, delete: () => {}, has: () => false, forEach: () => {} },
   });
 }
+
+// Excalidraw takes long to start when the machine is busy (the other workspaces' tests run in
+// parallel); the default one second for findBy and waitFor was not enough then.
+import { configure } from '@testing-library/react';
+configure({ asyncUtilTimeout: 5000 });

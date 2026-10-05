@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { CanvasApp } from './CanvasApp';
 import { Toolbar } from './Toolbar';
+import { excalidrawReady } from './test-utils';
 
 describe('Toolbar', () => {
   it('is an accessible toolbar with a labelled, titled button per tool', () => {
@@ -47,6 +48,7 @@ describe('Toolbar inside CanvasApp', () => {
 
     // Excalidraw's own shortcut changes the tool; the toolbar must follow.
     // Without `handleKeyboardGlobally` Excalidraw listens on its own container.
+    await excalidrawReady(container);
     const excalidraw = container.querySelector('.excalidraw') as HTMLElement;
     fireEvent.keyDown(excalidraw, { key: 'e', code: 'KeyE' });
     await waitFor(() => expect(pressed('Eraser')).toBe('true'));
