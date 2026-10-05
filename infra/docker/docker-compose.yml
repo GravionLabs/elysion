@@ -78,6 +78,9 @@ services:
       dockerfile: apps/bff/Dockerfile
     environment:
       BUSINESS_BACKEND_URL: http://business-backend:8080
+      # Keycloak is `keycloak:8080` here, while tokens carry the issuer the browser used (localhost:8081).
+      OIDC_JWKS_URI: http://keycloak:8080/realms/elysion/protocol/openid-connect/certs
+      WS_TOKEN_SECRET: dev-only-ws-token-secret-change-me-0123456789 # development value only
     depends_on:
       - business-backend
     labels:

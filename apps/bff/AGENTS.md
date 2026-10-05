@@ -27,6 +27,10 @@ pnpm --filter @elysion/bff test:e2e     # vitest (e2e, against a fake business b
 
 `src/boards/`: `BusinessBackendClient` (Node's built-in `fetch`, no HTTP library) maps the business backend's answers to the BFF's errors, `BoardsController` serves `/api/boards`. The backend URL comes from `BUSINESS_BACKEND_URL` (default `http://localhost:5174`). The e2e tests start `test/fake-business-backend.ts`, a small in-memory copy of the Board API with the same routes and status codes, so keep it in step with `BoardsController` in the business backend. `tsc -p tsconfig.json` reports a pre-existing error for `supertest/types` in `test/app.e2e-spec.ts`; the build config (`tsconfig.build.json`) excludes the tests.
 
+## Configuration
+
+`src/config/`: `validateEnv` (the schema, with defaults) and `AppConfigService` (typed accessor). Read configuration only through `AppConfigService`, never from `process.env`; a new variable goes into `AppConfig`, `validateEnv`, its spec, `.env.example`, the table in `docs/specs/bff.md` and (if the container needs it) the compose file. For local runs copy `apps/bff/.env.example` to `apps/bff/.env` (git-ignored): `WS_TOKEN_SECRET` has no default, so without it the BFF refuses to start and says so. Do not use `ConfigService.get('PORT')` for these values: it prefers the raw string in `process.env` over the validated one. The tests get their `WS_TOKEN_SECRET` from `vitest.config*.ts`.
+
 ## Docker
 
 Build from the repo root: `docker build -f apps/bff/Dockerfile -t elysion-bff .`. The build stage runs `pnpm install --filter @elysion/bff...`, `nest build`, then `pnpm deploy --prod /out` to produce a clean `node_modules` (don't try to copy `node_modules` across stages manually — pnpm's symlinks break when the directory structure changes between stages).

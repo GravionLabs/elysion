@@ -8,6 +8,8 @@ export default defineConfig({
   test: {
     globals: true,
     root: './',
+    // Required by the configuration schema; a development value, as in .env.example.
+    env: { WS_TOKEN_SECRET: 'test-only-ws-token-secret-0123456789abcdef' },
     include: ['**/*.spec.ts'],
   },
 });
