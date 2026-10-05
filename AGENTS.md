@@ -28,6 +28,7 @@ Each `apps/*` subdirectory has its own `AGENTS.md` with service-specific detail 
 
 ## Workflow
 
+- **CI** (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `main`: `verify` (`pnpm format:check`, `pnpm lint`, `pnpm test`, `pnpm build` — the same chain you run locally), `dotnet-coverage` (NUnit with coverlet) and `e2e` (BFF and realtime e2e against a Valkey service container, plus vitest coverage). Reproduce a failing job locally with the command shown in the workflow; the e2e job needs `../local-infra`'s Valkey on port 6379. Pin new actions to a commit SHA with the version in a trailing comment.
 - Run `pnpm dev:infra` (docker-compose: Traefik, Postgres, RustFS) before working on any backend service locally.
 - **Valkey/Redis, RabbitMQ and Portainer come from the shared `../local-infra` repo** (`docker compose up -d` there) and must never be defined in Elysion's compose file. Valkey is shared across projects: namespace every key and channel with `elysion:`. Containerized apps join the external `local-infra` network; host apps use `localhost:6379`.
 - Docker builds must run from the repo root (`docker build -f apps/<app>/Dockerfile .`) — Dockerfiles COPY `pnpm-workspace.yaml`/lockfile from the root.

@@ -1,5 +1,7 @@
 # Elysion
 
+[![CI](https://github.com/GravionLabs/elysion/actions/workflows/ci.yml/badge.svg)](https://github.com/GravionLabs/elysion/actions/workflows/ci.yml)
+
 An open-source alternative to [Mural](https://mural.co): a collaborative whiteboard you can self-host. The canvas is Angular hosting a React/tldraw custom element, realtime collaboration runs on Yjs CRDTs over WebSockets, and the domain lives in a .NET backend.
 
 ## Architecture
@@ -46,7 +48,7 @@ pnpm lint            # oxlint, and `dotnet format --verify-no-changes` for the b
 pnpm format:check    # Prettier (pnpm format fixes)
 ```
 
-To verify a change as a whole, run `pnpm format:check && pnpm lint && pnpm test && pnpm build` (CI runs the same commands). The .NET parts need the .NET 10 SDK; the realtime end-to-end tests need local-infra's Valkey (`pnpm --filter @elysion/realtime test:e2e`).
+To verify a change as a whole, run `pnpm format:check && pnpm lint && pnpm test && pnpm build` (CI runs the same commands). CI (`.github/workflows/ci.yml`) has three jobs: that command chain; the .NET tests with a coverage report; and the BFF and realtime end-to-end tests against a Valkey service container, plus their coverage. Coverage reports are uploaded as workflow artifacts; there is no threshold yet. The .NET parts need the .NET 10 SDK; the realtime end-to-end tests need local-infra's Valkey (`pnpm --filter @elysion/realtime test:e2e`).
 
 Each app has a `Dockerfile`; build from the repo root so the workspace files are in context:
 
