@@ -16,6 +16,8 @@ export interface PersistenceOptions {
   /** A failed save is retried after this long, doubling up to {@link retryMaxMs}. */
   readonly retryBaseMs: number;
   readonly retryMaxMs: number;
+  /** A room without clients is unloaded this long after its last client left. */
+  readonly evictAfterMs: number;
 }
 
 export const PERSISTENCE_OPTIONS = Symbol('PERSISTENCE_OPTIONS');
@@ -25,7 +27,17 @@ const DEFAULT_PERSISTENCE_OPTIONS: PersistenceOptions = {
   saveMaxWaitMs: 10_000,
   retryBaseMs: 1_000,
   retryMaxMs: 30_000,
+  evictAfterMs: 30_000,
 };
+
+/** The defaults, with the grace period before an empty room is unloaded overridable by `ROOM_EVICT_AFTER_MS`. */
+export function persistenceOptionsFromEnv(): PersistenceOptions {
+  const evictAfterMs = Number(process.env.ROOM_EVICT_AFTER_MS);
+  return {
+    ...DEFAULT_PERSISTENCE_OPTIONS,
+    ...(Number.isFinite(evictAfterMs) && process.env.ROOM_EVICT_AFTER_MS ? { evictAfterMs } : {}),
+  };
+}
 
 /** Origin of updates merged in from the store; they are broadcast to clients but not saved again by themselves. */
 const STORE_ORIGIN = 'document-store';
@@ -39,6 +51,9 @@ interface SaveState {
   timer: NodeJS.Timeout | null;
   saving: Promise<void> | null;
   failures: number;
+  evictionTimer: NodeJS.Timeout | null;
+  /** Bumped whenever someone asks for the room, so an eviction that was already under way notices and stops. */
+  usage: number;
 }
 
 export interface YjsRoom {
@@ -80,6 +95,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
   getOrLoad(boardId: string): Promise<YjsRoom> {
     const existing = this.rooms.get(boardId);
     if (existing) {
+      this.cancelEviction(boardId);
       return Promise.resolve(existing);
     }
     const pending = this.loading.get(boardId);
@@ -97,10 +113,71 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     await this.save(room);
   }
 
+  /**
+   * Called when the last client of a room has left: saves it now and unloads it after the grace period
+   * unless someone connects again. The room is kept while its final save keeps failing.
+   */
+  async release(room: YjsRoom): Promise<void> {
+    await this.save(room);
+    if (room.clients.size === 0) {
+      this.scheduleEviction(room);
+    }
+  }
+
+  private scheduleEviction(room: YjsRoom): void {
+    const state = this.saves.get(room.boardId);
+    if (!state) {
+      return;
+    }
+    if (state.evictionTimer) clearTimeout(state.evictionTimer);
+    state.evictionTimer = setTimeout(() => void this.evict(room), this.options.evictAfterMs);
+    state.evictionTimer.unref();
+  }
+
+  private cancelEviction(boardId: string): void {
+    const state = this.saves.get(boardId);
+    if (!state) {
+      return;
+    }
+    state.usage += 1;
+    if (state.evictionTimer) clearTimeout(state.evictionTimer);
+    state.evictionTimer = null;
+  }
+
+  private async evict(room: YjsRoom): Promise<void> {
+    const state = this.saves.get(room.boardId);
+    if (!state || this.rooms.get(room.boardId) !== room) {
+      return;
+    }
+    state.evictionTimer = null;
+    const usage = state.usage;
+    await this.save(room);
+    if (state.usage !== usage || room.clients.size > 0) {
+      return; // someone asked for the room meanwhile
+    }
+    if (state.dirty) {
+      this.scheduleEviction(room); // the final save failed: keep the content and try again later
+      return;
+    }
+
+    if (state.timer) clearTimeout(state.timer);
+    this.rooms.delete(room.boardId);
+    this.saves.delete(room.boardId);
+    room.awareness.destroy();
+    room.doc.destroy();
+    await this.presence
+      .unsubscribe(room.boardId)
+      .catch((error: unknown) =>
+        this.logger.warn(`Presence unsubscribe failed for board ${room.boardId}: ${String(error)}`),
+      );
+    this.logger.log(`Unloaded idle board ${room.boardId}`);
+  }
+
   async onModuleDestroy(): Promise<void> {
     await Promise.allSettled([...this.rooms.values()].map((room) => this.save(room)));
     for (const state of this.saves.values()) {
       if (state.timer) clearTimeout(state.timer);
+      if (state.evictionTimer) clearTimeout(state.evictionTimer);
     }
   }
 
@@ -114,6 +191,8 @@ export class YjsRoomRegistry implements OnModuleDestroy {
       timer: null,
       saving: null,
       failures: 0,
+      evictionTimer: null,
+      usage: 0,
     });
     this.rooms.set(boardId, room);
     return room;

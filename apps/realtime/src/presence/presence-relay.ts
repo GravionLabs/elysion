@@ -63,6 +63,14 @@ export class PresenceRelay implements OnModuleDestroy {
     return subscription;
   }
 
+  /** Stops listening to a board's presence channel; call it when the board's room is unloaded. */
+  async unsubscribe(boardId: string): Promise<void> {
+    this.subscriptions.delete(boardId); // so a later subscribe really subscribes again
+    if (this.handlersByBoard.delete(boardId)) {
+      await this.sub.unsubscribe(this.channelFor(boardId));
+    }
+  }
+
   /**
    * Persists one client's current awareness state, keyed by board id + client id, so a client joining on any
    * instance can be caught up. The entry carries the time it was written: {@link snapshot} drops entries older

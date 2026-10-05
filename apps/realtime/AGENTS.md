@@ -20,7 +20,7 @@ Uses `@nestjs/platform-ws` (plain `ws`), **not** `@nestjs/platform-socket.io` â€
 
 ## Persistence
 
-`src/persistence/` holds the `DocumentStore` interface (`load`, `save`, `delete`) and `HttpDocumentStore` (ADR 0011; protocol in `docs/specs/realtime.md`). `YjsRoomRegistry.getOrLoad` is async and fails when the store does; `InMemoryDocumentStore` is for tests: the e2e suites replace `DocumentStore` with it (`overrideProvider(DocumentStore)`), `test/persistence.e2e-spec.ts` covers a restart.
+`src/persistence/` holds the `DocumentStore` interface (`load`, `save`, `delete`) and `HttpDocumentStore` (ADR 0011; protocol in `docs/specs/realtime.md`). `YjsRoomRegistry.getOrLoad` is async and fails when the store does; A room without clients is saved and unloaded after a grace period (`ROOM_EVICT_AFTER_MS`, default 30000; `YjsRoomRegistry.release`); the e2e suites shorten the registry's timings by overriding `PERSISTENCE_OPTIONS`. `InMemoryDocumentStore` is for tests: the e2e suites replace `DocumentStore` with it (`overrideProvider(DocumentStore)`), `test/persistence.e2e-spec.ts` covers a restart.
 
 ## Conventions
 
