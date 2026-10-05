@@ -219,6 +219,9 @@ importers:
       jsdom:
         specifier: ^28.0.0
         version: 28.1.0(@noble/hashes@1.8.0)(supports-color@7.2.0)
+      oxlint:
+        specifier: ^1.58.0
+        version: 1.81.0
       prettier:
         specifier: ^3.8.1
         version: 3.9.6
@@ -274,6 +277,9 @@ importers:
       jsdom:
         specifier: ^28.0.0
         version: 28.1.0(@noble/hashes@1.8.0)(supports-color@7.2.0)
+      oxlint:
+        specifier: ^1.58.0
+        version: 1.81.0
       typescript:
         specifier: ~6.0.2
         version: 6.0.3

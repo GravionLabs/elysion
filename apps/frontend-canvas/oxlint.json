@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/crates/oxc_linter/src/rules.rs",
+  "plugins": ["typescript", "react", "oxc"],
+  "categories": { "correctness": "error", "suspicious": "warn" },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    // The automatic JSX runtime (Vite, React 19) needs no React import.
+    "react/react-in-jsx-scope": "off"
+  },
+  "env": { "browser": true, "es2022": true },
+  "ignorePatterns": ["dist", "dist-element"]
+}
