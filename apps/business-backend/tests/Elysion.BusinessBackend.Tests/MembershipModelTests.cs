@@ -30,32 +30,13 @@ public class MembershipModelTests
         new(new DbContextOptionsBuilder<ElysionDbContext>().UseSqlite(_connection).Options);
 
     private static User NewUser(string subject = "kc-sub-1") =>
-        new()
-        {
-            Id = Guid.CreateVersion7(),
-            Subject = subject,
-            Email = $"{subject}@example.com",
-            DisplayName = subject,
-            CreatedAt = DateTimeOffset.UtcNow,
-        };
+        User.Create(Guid.CreateVersion7(), subject, subject, $"{subject}@example.com", DateTimeOffset.UtcNow);
 
     private static Board NewBoard(User? owner = null) =>
-        new()
-        {
-            Id = Guid.CreateVersion7(),
-            Name = "Retro",
-            CreatedAt = DateTimeOffset.UtcNow,
-            OwnerId = owner?.Id,
-        };
+        Board.Create(Guid.CreateVersion7(), "Retro", DateTimeOffset.UtcNow, owner?.Id);
 
     private static BoardMembership Membership(Board board, User user, BoardRole role) =>
-        new()
-        {
-            BoardId = board.Id,
-            UserId = user.Id,
-            Role = role,
-            CreatedAt = DateTimeOffset.UtcNow,
-        };
+        BoardMembership.Create(board.Id, user.Id, role, DateTimeOffset.UtcNow);
 
     [Test]
     public async Task A_user_can_be_created_and_made_owner_of_a_board()
