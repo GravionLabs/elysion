@@ -20,6 +20,12 @@ builder.Services.AddDbContext<ElysionDbContext>(options =>
 builder.Services.AddScoped<IUnitOfWork>(services => services.GetRequiredService<ElysionDbContext>());
 builder.Services.AddScoped<IBoardRepository, BoardRepository>();
 builder.Services.AddScoped<IBoardDocumentRepository, BoardDocumentRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+// The caller as a local user, provisioned from the token once per authenticated request.
+builder.Services.AddScoped<UserProvisioningService>();
+builder.Services.AddScoped<CurrentUserAccessor>();
+builder.Services.AddScoped<ICurrentUser>(services => services.GetRequiredService<CurrentUserAccessor>());
 
 builder.Services.AddSingleton(TimeProvider.System);
 
@@ -43,6 +49,7 @@ app.UseHttpsRedirection();
 
 // Authentication has to run first: authorization only looks at the user it has established.
 app.UseAuthentication();
+app.UseMiddleware<UserProvisioningMiddleware>();
 app.UseAuthorization();
 
 app.MapHealthEndpoints();

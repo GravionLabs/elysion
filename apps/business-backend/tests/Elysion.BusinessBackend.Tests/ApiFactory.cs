@@ -41,13 +41,15 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         string issuer = Issuer,
         TimeSpan? lifetime = null,
         SecurityKey? signingKey = null,
-        DateTimeOffset? now = null)
+        DateTimeOffset? now = null,
+        IEnumerable<Claim>? claims = null)
     {
         var issuedAt = now ?? DateTimeOffset.UtcNow;
         var expires = issuedAt + (lifetime ?? TimeSpan.FromMinutes(5));
         var descriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity([new Claim("sub", subject), new Claim("email", $"{subject}@example.com")]),
+            // `claims` replaces the default identity claims entirely (a token without `sub`, with a name, ...).
+            Subject = new ClaimsIdentity(claims ?? [new Claim("sub", subject), new Claim("email", $"{subject}@example.com")]),
             Issuer = issuer,
             Audience = audience,
             // A lifetime that already ended: the token must have been valid before it expired, so move its start back.
@@ -60,10 +62,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     }
 
     /// <summary>A client that sends a valid access token, as the BFF will for a signed-in user.</summary>
-    public HttpClient CreateAuthenticatedClient(string subject = "kc-sub-1")
+    public HttpClient CreateAuthenticatedClient(string subject = "kc-sub-1", IEnumerable<Claim>? claims = null)
     {
         var client = CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateToken(subject));
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateToken(subject, claims: claims));
         return client;
     }
 

@@ -55,6 +55,20 @@ curl -s -o /dev/null -w '%{http_code}\n' http://localhost:5174/boards           
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $TOKEN" http://localhost:5174/boards   # 200
 ```
 
+## Users are created from the token (just-in-time)
+
+`UserProvisioningMiddleware` runs after authentication and before authorization, **once per authenticated request**, and puts the caller's local `User` into the scoped `ICurrentUser` (`Id`, `Subject`, `DisplayName`, `Email`). Handlers and policies (#117) take `ICurrentUser`; they do not read claims. Unauthenticated requests and anonymous endpoints (`/health`, the internal document API) are skipped: they never need a user and never write to the database. A valid token without a usable `sub` is `401`.
+
+`UserProvisioningService` does the work, with this claim mapping (Keycloak access token):
+
+| Claim                                                       | Becomes                                                                |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `sub` (required)                                            | `User.Subject`, the key to the identity provider                       |
+| `email` (optional)                                          | `User.Email`                                                           |
+| `preferred_username`, else `name`, else `email`, else `sub` | `User.DisplayName`: never blank, whichever optional claims are missing |
+
+A new `sub` inserts a row; a known `sub` is updated only when the email or display name changed (an unchanged token writes nothing). Names and emails longer than the model keeps are cut; a `sub` longer than 255 characters is refused (`401`) instead of being stored cut. **Two first requests of the same person** race on the unique index of `Subject`: `IUserRepository.GetOrAddAsync` inserts, and when the insert fails because the subject exists now it returns the winner's row; there is no check-then-insert. Any other failed insert is not swallowed.
+
 ## Repositories
 
 [ADR 0015](../adr/0015-business-backend-repositories.md): the endpoints reach the database through `IBoardRepository` (`ListNewestFirstAsync`, `FindAsync`, `FindForUpdateAsync`, `Add`, `Remove`) and `IBoardDocumentRepository` (`FindAsync`, `SaveAsync`, `Add`, `RemoveAsync`), and commit through `IUnitOfWork` (the scoped `ElysionDbContext`). Repositories hand out untracked copies unless asked for an update, never `IQueryable`. `Add`, `Remove` and `RemoveAsync` stage; the unit of work commits, which makes duplicating a board (a board and a document) and deleting one (the board and its canvas content) single transactions. `IBoardDocumentRepository.SaveAsync` is the versioned save of ADR 0011 and commits itself: `Saved` with the new version, `NotFound` for an update of a missing document, `Conflict` with the stored document when the version moved on, a first save met an existing document, or another writer won the race. The HTTP behavior did not change; the repositories have their own tests (`BoardRepositoryTests`, `BoardDocumentRepositoryTests`) on SQLite, with `DateTimeOffset` stored as a number in the test context because SQLite cannot order by it.
