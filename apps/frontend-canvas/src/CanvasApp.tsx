@@ -17,6 +17,8 @@ import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/t
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
 import { YjsWebsocketClient, type YjsConnectionStatus } from './yjs/YjsWebsocketClient.js';
+import { createSessionIdentity } from './presence/identity';
+import { PresenceSync } from './presence/presence';
 
 /** What the host can ask the canvas to do; the element exposes these as methods. */
 export interface CanvasControls {
@@ -101,6 +103,9 @@ export function CanvasApp({
   const selectionCount = useRef(0);
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
+  const presenceRef = useRef<PresenceSync | null>(null);
+  // Who this tab is, made once: a re-render must not make a new collaborator.
+  const identityRef = useRef(createSessionIdentity());
   const sceneStoreRef = useRef(new SceneStore());
   const [activeTool, setActiveTool] = useState<ToolType | 'custom'>('selection');
   const [zoomPercent, setZoomPercent] = useState(100);
@@ -128,7 +133,12 @@ export function CanvasApp({
       onStatusChange: (status) => statusCallback.current?.(status),
     });
 
+    const presence = new PresenceSync(client.awareness, identityRef.current, () => apiRef.current);
+    presenceRef.current = presence;
+
     return () => {
+      presence.destroy();
+      presenceRef.current = null;
       client.destroy();
       binding.destroy();
       bindingRef.current = null;
@@ -235,14 +245,17 @@ export function CanvasApp({
         excalidrawAPI={(api) => {
           apiRef.current = api;
           bindingRef.current?.attach(api);
+          presenceRef.current?.refresh(); // the collaborators that were there before the canvas was
           controlsCallback.current?.({
             toggleLibrary: () => api.toggleSidebar({ name: LIBRARY_SIDEBAR, tab: LIBRARY_TAB }),
             exportBoard: (format, options) => exportBoard(api, format, options),
             importFile: (file) => importFile(api, file),
           });
         }}
+        onPointerUpdate={(update) => presenceRef.current?.pointerMoved(update)}
         onChange={(elements, appState) => {
           bindingRef.current?.onLocalChange(elements);
+          presenceRef.current?.selectionChanged(appState.selectedElementIds);
           setActiveTool(appState.activeTool.type);
           setZoomPercent(Math.round(appState.zoom.value * 100));
           const selected = Object.values(appState.selectedElementIds).filter(Boolean).length;

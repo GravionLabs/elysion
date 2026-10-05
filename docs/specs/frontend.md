@@ -170,3 +170,21 @@ The canvas was originally built on tldraw (see GitHub Feature #25), but tldraw's
 - **`destroy()`** removes the client's own state and sends that removal while the socket is still open (the gateway also drops the state when the socket closes), then stops the awareness timers.
 
 What is built on it, in order: the collaborators on the canvas (#109) and their path through the element to the shell (#110). `yjs/test-yjs-server.ts`, the test stand-in for the gateway, speaks awareness the same way (snapshot on connect, relay, removal when a socket closes, `dropConnections()` to simulate a network failure). WS auth (Feature #18) is not wired in on the frontend yet.
+
+### Collaborators on the canvas
+
+`src/presence/` turns the awareness states into what Excalidraw draws (cursor with a name pill, selection outlines) and publishes the local user's own state.
+
+**State shape** (`PresenceState`, one per client in `awareness.getStates()`):
+
+| Field                | Meaning                                                                                  |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `user`               | `{ id, name, color }`: who this is. Required; a state without a valid `user` is ignored. |
+| `pointer`            | `{ x, y, tool }` in scene coordinates; `tool` is `pointer` or `laser`.                   |
+| `button`             | `up` or `down`.                                                                          |
+| `selectedElementIds` | `{ [elementId]: true }`, the elements the user has selected.                             |
+
+- **Identity:** until sign-in exists (Feature #18), every canvas session makes a random id; name (`Guest 1000`-`9999`) and color (from the sticky-note palette) follow from a hash of it, so a user keeps the same look in every tab of that session.
+- **Rendering:** `toCollaborators` maps the states of the _other_ clients to Excalidraw's `collaborators` map (Excalidraw draws the local cursor itself). It treats remote data as untrusted: only hex colors, finite pointer numbers and `true` selection entries pass, names are cut at 40 characters. `PresenceSync` pushes the map with `updateScene({ collaborators, captureUpdate: NEVER })`, so it never touches undo history, and redraws only when another client's state changed.
+- **Publishing:** pointer moves are throttled to one message per 50 ms (the last position is always sent); the selection is sent only when it changed.
+- **Removal:** a client that leaves (tab closed, connection lost, `destroy()`) is removed by the awareness protocol and disappears from the canvas.
