@@ -1,3 +1,10 @@
+<app-top-bar
+  [boardId]="boardId()"
+  [boardName]="boardName()"
+  [status]="syncStatus()"
+  [theme]="theme()"
+  (themeToggle)="toggleTheme()"
+/>
 <elysion-canvas
   class="board-canvas"
   [attr.board-id]="boardId()"
@@ -5,4 +12,6 @@
   [attr.theme]="theme()"
   (ready)="onCanvasReady()"
   (error)="onCanvasError()"
+  (status)="onSyncStatus($event)"
+  (themechange)="onCanvasThemeChange($event)"
 ></elysion-canvas>

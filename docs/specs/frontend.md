@@ -18,6 +18,27 @@ Angular shell app embedding a React/Excalidraw canvas component, Yjs client for 
 
 This is what makes collaboration links possible (#101). `HttpClient` is deliberately not provided yet: nothing calls an API until the board list or the BFF endpoints exist.
 
+## Top bar and the element contract
+
+[ADR 0010](../adr/0010-shell-controls-the-canvas.md): the Angular shell owns the top bar (`topbar/top-bar.ts`, after ariadne's `.topbar`: brand, board name, sync status, theme toggle), the canvas stays free of board logic.
+
+| Direction | What                                 | Contract                                                                                                               |
+| --------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| in        | which board                          | attribute `board-id`                                                                                                   |
+| in        | gateway                              | attribute `yjs-server-url` (default: same-origin `/yjs`, proxied by `ng serve`, see below)                             |
+| in        | theme                                | attribute `theme` (`light` or `dark`)                                                                                  |
+| out       | the element started / failed         | events `ready`, `error`                                                                                                |
+| out       | Yjs connection                       | event `status`, `detail: { status: 'connecting' \| 'connected' \| 'disconnected' }`; `connecting` comes first on start |
+| out       | theme switched **inside** the canvas | event `themechange`, `detail: { theme }`; not sent when the host changed the attribute                                 |
+
+`Board` (the page) shows the top bar above `<elysion-canvas>`. The title is the board's name when the BFF has one (`BoardApi`, `GET /api/boards/:id`) and the id otherwise: a room such as `default` is not a stored board, so ids that are not UUIDs are not even asked for, and a 404 or a failing BFF falls back to the id. The sync chip shows `Connecting…`, `Connected` or `Offline`.
+
+**Theme.** `ThemeService` is app-wide: an explicit choice (top bar, or Excalidraw's own toggle, which arrives as `themechange`) is remembered in `localStorage` (`elysion.theme`, tolerant of blocked storage); without one the system preference is followed live. It sets `data-theme` on `<html>` for the tokens and the canvas `theme` attribute. Excalidraw's hamburger menu stays until the top bar covers what it offers (export and import, #211), so the theme can be switched in two places; `themechange` keeps them in step. `CanvasApp` recognizes a switch by the user from a change of Excalidraw's own `appState.theme` between two `onChange` calls, not from a difference to its own state: after the host changes the attribute, Excalidraw's value lags behind for a moment, and treating that as a user switch made the two flip each other.
+
+**Layout.** The canvas root is `position: absolute; inset: 0` and fills the element it is in; the element needs a size of its own. `Board` is a flex column (top bar, then `<elysion-canvas>` with `flex: 1`); the standalone dev entry gives `#root` the viewport. Excalidraw's own UI (hamburger, Library) therefore sits below the bar.
+
+**Dev proxy.** `apps/frontend/proxy.conf.json` (wired in angular.json) forwards `/api` to the BFF (3000) and `/yjs` (WebSocket) to realtime (3001), so the Angular app talks to both through its own origin as it will behind Traefik, and two tabs on one board URL sync without extra parameters. It is read when `ng serve` starts.
+
 ## Canvas embedding
 
 The React/Excalidraw canvas lives in its own workspace package, `apps/frontend-canvas`, and is embedded via a **custom element** (`<elysion-canvas>`), not Angular Elements:
@@ -33,7 +54,7 @@ This was chosen over Angular Elements (which wraps an _Angular_ component as a c
 
 The canvas UI follows the design of GravionLabs/ariadne:
 
-- `apps/frontend-canvas/src/styles/tokens.css` holds ariadne's `--c-*` design tokens (light and dark), scoped to the `.elysion-canvas` root that `CanvasApp` renders, so nothing leaks into the host page. Keep the names and values in sync with ariadne's `apps/web/src/styles.scss`.
+- `packages/design-tokens/tokens.css` (`@elysion/design-tokens`) holds ariadne's `--c-*` design tokens (light and dark). The Angular shell loads it on `<html>` (angular.json `styles`), the canvas bundle imports it and applies it to its own `.elysion-canvas` root as well, so the bundle works without the host's copy and nothing leaks into the host page. Keep the names and values in sync with ariadne's `apps/web/src/styles.scss`.
 - `styles/excalidraw-theme.css` maps those tokens onto Excalidraw's own CSS custom properties (`--island-bg-color`, `--color-primary*`, `--color-surface-*`, `--shadow-island`, radii, ...). Scoping under `.elysion-canvas` beats Excalidraw's `.excalidraw` / `.excalidraw.theme--dark` rules by specificity, independent of stylesheet order. Excalidraw's DOM classes are not public API, so only its documented-by-use variables are overridden; hardcoded spots would need targeted selectors and are an upgrade risk.
 - The `theme` attribute on `<elysion-canvas>` (`light` | `dark`, also an input on Angular's `Board`) sets `data-theme` on the root and Excalidraw's `theme` prop. Without it the canvas follows `prefers-color-scheme` live. Because a `theme` is always passed to Excalidraw, its own light/dark toggle (main menu, Alt+Shift+D) is enabled explicitly with `UIOptions.canvasActions.toggleTheme` (Excalidraw otherwise shows it only when no `theme` is given, #197); `CanvasApp` keeps the active theme from `appState.theme`, so the tokens and the minimap follow a toggle, and a changed attribute or system preference still wins over it.
 

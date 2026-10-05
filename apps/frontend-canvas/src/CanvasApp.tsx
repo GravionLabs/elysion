@@ -8,13 +8,13 @@ import { createStickyNote, type StickyColor } from './sticky-note';
 import { useResolvedTheme, type CanvasTheme } from './useResolvedTheme';
 import { CaptureUpdateAction, Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
-import './styles/tokens.css';
+import '@elysion/design-tokens/tokens.css';
 import './styles/excalidraw-theme.css';
 import './styles/toolbar.css';
 import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
-import { YjsWebsocketClient } from './yjs/YjsWebsocketClient.js';
+import { YjsWebsocketClient, type YjsConnectionStatus } from './yjs/YjsWebsocketClient.js';
 
 export interface CanvasAppProps {
   boardId?: string;
@@ -27,6 +27,13 @@ export interface CanvasAppProps {
   yjsServerUrl?: string;
   /** `light` or `dark`; follows the system preference while unset. */
   theme?: CanvasTheme;
+  /** The Yjs connection changed; also called once with `connecting` when the canvas starts. */
+  onStatusChange?: (status: YjsConnectionStatus) => void;
+  /**
+   * The user switched the theme inside the canvas (Excalidraw's own toggle). Not called when the host
+   * sets `theme` or the system preference changes: the host already knows about those.
+   */
+  onThemeChange?: (theme: CanvasTheme) => void;
 }
 
 function defaultYjsServerUrl(): string {
@@ -38,12 +45,27 @@ function defaultYjsServerUrl(): string {
 // (the host or the system decides), so the toggle has to be switched on explicitly.
 const UI_OPTIONS = { canvasActions: { toggleTheme: true } };
 
-export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAppProps) {
+export function CanvasApp({
+  boardId = 'default',
+  yjsServerUrl,
+  theme,
+  onStatusChange,
+  onThemeChange,
+}: CanvasAppProps) {
   const resolvedTheme = useResolvedTheme(theme);
   // What is shown right now: a toggle inside Excalidraw changes it, and so does a new `theme`
   // attribute or system preference (which wins over an earlier toggle).
   const [activeTheme, setActiveTheme] = useState<CanvasTheme>(resolvedTheme);
   useEffect(() => setActiveTheme(resolvedTheme), [resolvedTheme]);
+  // The theme Excalidraw last reported. It lags behind `activeTheme` for a moment after the host
+  // changed the attribute, so a mismatch alone does not mean the user switched it: only a change of
+  // Excalidraw's own value does.
+  const lastReportedTheme = useRef<CanvasTheme>(resolvedTheme);
+  // Callbacks are read through refs: the connection below is created once per mount.
+  const statusCallback = useRef(onStatusChange);
+  const themeCallback = useRef(onThemeChange);
+  statusCallback.current = onStatusChange;
+  themeCallback.current = onThemeChange;
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
   const sceneStoreRef = useRef(new SceneStore());
@@ -67,7 +89,9 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
 
     const url = new URL(yjsServerUrl ?? defaultYjsServerUrl());
     url.searchParams.set('board', boardId);
-    const client = new YjsWebsocketClient(url.toString(), doc);
+    const client = new YjsWebsocketClient(url.toString(), doc, {
+      onStatusChange: (status) => statusCallback.current?.(status),
+    });
 
     return () => {
       client.destroy();
@@ -107,7 +131,7 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
     <div
       className="elysion-canvas"
       data-theme={activeTheme}
-      style={{ position: 'fixed', inset: 0 }}
+      style={{ position: 'absolute', inset: 0 }}
     >
       <Excalidraw
         theme={activeTheme}
@@ -122,7 +146,13 @@ export function CanvasApp({ boardId = 'default', yjsServerUrl, theme }: CanvasAp
         onChange={(elements, appState) => {
           bindingRef.current?.onLocalChange(elements);
           setActiveTool(appState.activeTool.type);
-          setActiveTheme(appState.theme);
+          if (appState.theme !== lastReportedTheme.current) {
+            lastReportedTheme.current = appState.theme;
+            if (appState.theme !== activeTheme) {
+              setActiveTheme(appState.theme);
+              themeCallback.current?.(appState.theme);
+            }
+          }
           sceneStoreRef.current.set({
             elements: elements.filter((element) => !element.isDeleted),
             scrollX: appState.scrollX,

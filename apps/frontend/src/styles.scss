@@ -1,1 +1,18 @@
-/* You can add global styles to this file, and also import other style files */
+/* The design tokens come from @elysion/design-tokens (listed in angular.json). */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  color: var(--c-text);
+  font-family: system-ui, sans-serif;
+  background: var(--c-bg);
+}
+
+app-root {
+  display: block;
+  height: 100%;
+}
