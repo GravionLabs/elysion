@@ -4,10 +4,11 @@ import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BoardsModule } from './boards/boards.module.js';
 import { ConfigModule } from './config/config.module.js';
+import { RealtimeModule } from './realtime/realtime.module.js';
 import { HealthController } from './health.controller.js';
 
 @Module({
-  imports: [ConfigModule, AuthModule, BoardsModule],
+  imports: [ConfigModule, AuthModule, BoardsModule, RealtimeModule],
   controllers: [AppController, HealthController],
   providers: [AppService],
 })

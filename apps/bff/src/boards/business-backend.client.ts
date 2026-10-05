@@ -1,3 +1,4 @@
+import type { BoardRole } from '@elysion/shared-types';
 import {
   BadGatewayException,
   BadRequestException,
@@ -51,6 +52,26 @@ export class BusinessBackendClient {
     return this.request<Board>(token, 'POST', `/boards/${id}/duplicate`);
   }
 
+  /**
+   * The caller's role on a board, or null when they have none: not a member, or no such board (the backend
+   * answers 404 for both, so that board ids cannot be probed).
+   */
+  async getMyRole(token: string, boardId: string): Promise<BoardRole | null> {
+    try {
+      const membership = await this.request<{ role: string }>(
+        token,
+        'GET',
+        `/boards/${boardId}/membership/me`,
+      );
+      return toBoardRole(membership.role);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
   async deleteBoard(token: string, id: string): Promise<void> {
     await this.request<void>(token, 'DELETE', `/boards/${id}`);
   }
@@ -93,6 +114,15 @@ export class BusinessBackendClient {
     }
     throw new BadGatewayException(`The business backend answered ${response.status}.`);
   }
+}
+
+/** The backend names roles `Owner`, `Editor`, `Viewer`; the token carries them lower-case. An unknown one is an error, never a default. */
+function toBoardRole(role: string): BoardRole {
+  const lower = role.toLowerCase();
+  if (lower === 'owner' || lower === 'editor' || lower === 'viewer') {
+    return lower;
+  }
+  throw new BadGatewayException(`The business backend answered an unknown role "${role}".`);
 }
 
 /** The messages of an ASP.NET problem-details body, or a generic text if it has none. */

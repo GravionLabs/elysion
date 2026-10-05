@@ -26,7 +26,7 @@ sequenceDiagram
     T->>F: the original request, now with the user headers
     F->>D: the call, Authorization: Bearer access token
     D-->>F: data (D validates the JWT and the board role itself)
-    B->>T: POST /api/boards/{id}/ws-token, Bearer access token
+    B->>T: POST /api/realtime/token {boardId}, Bearer access token
     T->>F: forwardAuth, then the request
     F->>D: may this user open the board, as what?
     D-->>F: role (owner, editor or viewer)
@@ -43,7 +43,7 @@ sequenceDiagram
    token is valid before the request goes on (below); the BFF forwards the same header to the business
    backend, which validates the JWT again and enforces membership and roles (#116, #117). A token is checked
    by every service that acts on it, none trusts a header set by another.
-3. **The BFF exchanges the access token for a board-scoped WS token** (`POST /api/boards/{id}/ws-token`, #120).
+3. **The BFF exchanges the access token for a board-scoped WS token** (`POST /api/realtime/token` with `{ "boardId": "..." }`, #120; it answers `{ token, expiresAt }`).
    The BFF, not the gateway, issues it: ADR 0001 already gives token exchange for the WebSocket handshake to the
    BFF, and the BFF is the service that can ask the business backend for the user's role on that board.
 4. **The realtime service validates the WS token at the handshake** (#122) and uses the role to refuse updates
@@ -67,6 +67,10 @@ when the answer is `2xx` and returns the BFF's answer (`401`) otherwise.
   that is harmless: it only ever answers about the caller's own token.
 
 ## The WS token
+
+The contract below lives in code as well: `packages/shared-types` (`@elysion/shared-types`, compiled to plain JS and `.d.ts`) exports the claims type, the issuer, audience and algorithm constants, the roles and the close codes, and both the BFF and the realtime service import it, so the two cannot drift.
+
+**Issuing** (`POST /api/realtime/token`, BFF): the caller must be signed in, and the BFF asks the business backend for the caller's role on the board (`GET /boards/{id}/membership/me`, with the caller's own access token). **No role is `403`**; a board that does not exist and a board the caller may not see look the same, and an id that is not a stored board's UUID is `403` without asking anybody. A token is never minted merely because the caller is authenticated. The backend's `Owner`, `Editor` and `Viewer` become `owner`, `editor` and `viewer` in the token.
 
 A short-lived JWT, signed by the BFF and verified by the realtime service with a shared secret.
 

@@ -14,5 +14,6 @@ import { BUSINESS_BACKEND_URL, BusinessBackendClient } from './business-backend.
     },
     BusinessBackendClient,
   ],
+  exports: [BusinessBackendClient],
 })
 export class BoardsModule {}
