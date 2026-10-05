@@ -40,6 +40,10 @@ export class BoardList {
   protected readonly deleting = signal(false);
   protected readonly deleteError = signal<string | null>(null);
 
+  /** The board being duplicated, while the request runs, and the message when it failed. */
+  protected readonly duplicatingId = signal<string | null>(null);
+  protected readonly duplicateError = signal<string | null>(null);
+
   private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
 
   constructor() {
@@ -105,6 +109,25 @@ export class BoardList {
       error: () => {
         this.createState.set('editing');
         this.createError.set('The board could not be created. Try again.');
+      },
+    });
+  }
+
+  /** Copies the board with its content and opens the copy. */
+  protected duplicate(board: BoardInfo): void {
+    if (this.duplicatingId()) {
+      return;
+    }
+    this.duplicateError.set(null);
+    this.duplicatingId.set(board.id);
+    this.#api.duplicate(board.id).subscribe({
+      next: (copy) => {
+        this.duplicatingId.set(null);
+        void this.#router.navigateByUrl(copy.path);
+      },
+      error: () => {
+        this.duplicatingId.set(null);
+        this.duplicateError.set(`The board “${board.name}” could not be duplicated. Try again.`);
       },
     });
   }

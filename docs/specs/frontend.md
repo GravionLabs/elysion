@@ -27,6 +27,10 @@ This is what makes collaboration links possible (#101).
 
 The top bar of the board page links back: the brand and an "All boards" button (an icon only below 640 px) both go to `/`.
 
+### Duplicating a board
+
+Every card has a **Duplicate** button (labelled "Duplicate the board <name>", beside Delete). It sends `POST /api/boards/:id/duplicate`, which creates "<name> (copy)" with a copy of the content, and opens the copy. While the request runs the Duplicate buttons are disabled so a double click cannot make two copies; if it fails the list stays with "The board “<name>” could not be duplicated. Try again."
+
 ### Deleting a board
 
 Every card in the list has a **Delete** button (a trash icon with the label "Delete the board <name>", beside the card's link, not inside it). It opens a confirmation in the page, never a browser dialog: "Delete “<name>”? The board and everything on it will be gone. This cannot be undone." with **Delete** and **Cancel**. Confirming sends `DELETE /api/boards/:id` (the business backend deletes the stored document with the board); the board then leaves the list, and deleting the last one shows the empty state. While the request runs the buttons are disabled; if it fails the board stays and the confirmation shows "The board could not be deleted. Try again."
