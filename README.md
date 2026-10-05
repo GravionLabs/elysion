@@ -100,7 +100,7 @@ packages/
   proto/             gRPC/contract definitions (if/when used)
 infra/
   docker/            docker-compose.yml (Traefik, Postgres, RustFS)
-  traefik/           Traefik static config
+  traefik/           Traefik static config and dynamic middlewares (edge authentication)
   kubernetes/        production manifests (future)
 docs/
   adr/               architecture decision records
