@@ -3,13 +3,16 @@
 The order in which the open backlog is built, by phase. Each phase lists its PBIs in the order they
 should be implemented; a PBI's tasks are its GitHub sub-issues. The same order is on the project
 board ([GravionLabs project 7](https://github.com/users/GravionLabs/projects/7)): the **Phase** field
-holds the phase and the items are sorted in this order.
+holds the phase and the items are sorted in this order. Each phase is a GitHub milestone
+(M1 to M7) holding its features, PBIs and tasks; epics span several phases and have no milestone.
 
 Refined on 2026-10-05. When the backlog changes, update this file and the board together.
 
-## Phase 1 Foundation
+## M1 Foundation
 
-Cheap groundwork that every later PR benefits from: one command verifies the whole repository including .NET, every TypeScript app is linted, CI runs on every PR, and the whole stack runs behind Traefik (which the gateway auth work in phase 5 needs for its checks).
+Milestone: [M1 Foundation](https://github.com/GravionLabs/elysion/milestone/1)
+
+Cheap groundwork that every later PR benefits from: one command verifies the whole repository including .NET, every TypeScript app is linted, CI runs on every PR, and the whole stack runs behind Traefik (which the gateway auth work in M5 needs for its checks).
 
 1. #246 chore: run the .NET build, tests and format check from the root scripts (Feature #106)
 2. #249 chore: lint the Angular and canvas apps with oxlint (Feature #107)
@@ -17,9 +20,11 @@ Cheap groundwork that every later PR benefits from: one command verifies the who
 4. #256 ci: verify every push and pull request with GitHub Actions (Feature #29)
 5. #261 feat: run bff, realtime, business backend and frontend in the dev compose behind Traefik (Feature #28)
 
-## Phase 2 Durable boards
+## M2 Durable boards
 
-The largest functional gap: today a realtime restart wipes every board, and two realtime instances diverge on content. The persistence ADR comes first; deleting and duplicating boards in phase 3 build on its storage.
+Milestone: [M2 Durable boards](https://github.com/GravionLabs/elysion/milestone/2)
+
+The largest functional gap: today a realtime restart wipes every board, and two realtime instances diverge on content. The persistence ADR comes first; deleting and duplicating boards in M3 build on its storage.
 
 1. #266 docs: decide where board documents are persisted and record it as an ADR (Feature #98)
 2. #269 feat: persist board documents and restore them after a restart (Feature #98)
@@ -27,7 +32,9 @@ The largest functional gap: today a realtime restart wipes every board, and two 
 4. #279 feat: unload idle board rooms after their last client leaves (Feature #100)
 5. #274 feat: relay document updates between realtime instances through Valkey (Feature #99)
 
-## Phase 3 Board management
+## M3 Board management
+
+Milestone: [M3 Board management](https://github.com/GravionLabs/elysion/milestone/3)
 
 The product surface around the canvas: a home page with the board list, rename, delete and duplicate, plus the open canvas items (toolbar zoom and undo/redo, PDF export). The PDF ADR (#235) also decides whether the server-side export service #23 is needed at all.
 
@@ -38,15 +45,19 @@ The product surface around the canvas: a home page with the board list, rename, 
 5. #181 feat: free the bottom-left corner by moving zoom and undo/redo into the toolbar (Feature #179)
 6. #234 feat: export the board or the selection as a PDF document (Feature #104)
 
-## Phase 4 Presence
+## M4 Presence
 
-Collaborators' cursors and a presence indicator, with a session identity that phase 5 replaces by the logged-in user.
+Milestone: [M4 Presence](https://github.com/GravionLabs/elysion/milestone/4)
+
+Collaborators' cursors and a presence indicator, with a session identity that M5 replaces by the logged-in user.
 
 1. #108 feat: handle Yjs awareness in the canvas WebSocket client (Feature #27)
 2. #109 feat: render remote collaborators on the Excalidraw canvas (Feature #27)
 3. #110 feat: expose presence to Angular via the element contract and a presence service (Feature #27)
 
-## Phase 5 Identity and access
+## M5 Identity and access
+
+Milestone: [M5 Identity and access](https://github.com/GravionLabs/elysion/milestone/5)
 
 Keycloak, tokens and authorization end to end, in dependency order: provider and token-flow spec, backend authentication and membership model, BFF verification and WS tokens, edge and handshake checks, then the frontend login, sharing, and the SignalStore decision that ADR 0009 deferred to this point.
 
@@ -68,7 +79,9 @@ Keycloak, tokens and authorization end to end, in dependency order: provider and
 16. #324 feat: share a board from the top bar and open it read-only as a viewer (Feature #245)
 17. #317 refactor: decide on NgRx SignalStore once session, presence and board list exist (Feature #97)
 
-## Phase 6 Templates
+## M6 Templates
+
+Milestone: [M6 Templates](https://github.com/GravionLabs/elysion/milestone/6)
 
 Templates: a catalog with built-in templates, picking one for a new board, inserting one into a board, and saving your own.
 
@@ -77,7 +90,9 @@ Templates: a catalog with built-in templates, picking one for a new board, inser
 3. #336 feat: add a template to the current board (Feature #103)
 4. #340 feat: save a board or the selection as a template (Feature #22)
 
-## Phase 7 Operations
+## M7 Operations
+
+Milestone: [M7 Operations](https://github.com/GravionLabs/elysion/milestone/7)
 
 Operations work that only pays off once the product runs somewhere shared: CORS and rate limits, logs and metrics, caching (only if measured to be needed) and Kubernetes.
 
