@@ -100,6 +100,16 @@ Excalidraw draws elements with roughjs onto a `<canvas>`, so their look is eleme
 - **Sticky notes** are not a native Excalidraw element. `sticky-note.ts` builds one as a rectangle with a bound, centered text (via `convertToExcalidrawElements`) in the look of ariadne's node cards: the accent color as 1px border and a 14% tint of it as fill. The toolbar's sticky button opens a row of ariadne's `--c-node-*` colors and inserts the note at the viewport center, selected (press Enter to edit its text). Being ordinary elements, notes sync through the Yjs binding unchanged.
 - Colors are stored in light-theme space. Excalidraw's dark theme inverts canvas colors with a CSS filter (`invert(93%) hue-rotate(180deg)`), which turns the same values into dark equivalents; the accent hues survive the hue rotation.
 
+## Small screens
+
+Excalidraw switches to a compact layout on its own, for a phone or a short landscape window, and offers no option to turn that off. There it renders a mobile toolbar of its own on top, a loose hand tool beside it and its menu in a bar along the bottom edge. For the canvas this means:
+
+- Excalidraw's mobile toolbar island (`.App-toolbar--mobile`) and its loose tools (`.mobile-misc-tools-container`) are hidden like `.shapes-section` on desktop; our toolbar is the only tool bar (bug #176). Like the desktop one, these are internal classes and an upgrade risk.
+- The toolbar takes `width: max-content` instead of the half of the width that `left: 50%` leaves, so a phone gets two rows, not four.
+- The compact layout is recognized by Excalidraw's own container for it (`:has(.mobile-misc-tools-container)`), not by guessed thresholds. Then the toolbar sits 72px above the bottom edge so it does not cover Excalidraw's menu bar, and the minimap is left out (it would sit on the toolbar).
+
+Checked in a browser at 390x740 (phone), 800x480 (short landscape) and 1100x700 (desktop): no Excalidraw tool icons, no overlap between toolbar, minimap, menu and footer. CSS is not exercised by the unit tests (jsdom has no layout), so a regression here shows up in a browser, not in `pnpm test`.
+
 ## Why Excalidraw, not tldraw
 
 The decision, the comparison with Foblex f-flow and the cost of replacing the canvas are recorded in [ADR 0004](../adr/0004-canvas-library.md).
