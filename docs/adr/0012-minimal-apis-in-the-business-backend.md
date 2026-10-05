@@ -1,6 +1,6 @@
 # ADR 0012: Minimal APIs in the business backend, and no Carter for now
 
-- Status: proposed (waiting for the product owner; see "Decisions for the owner")
+- Status: accepted
 - Date: 2026-10-05
 - Issues: #428, #429, #430, #431
 - Builds on: [ADR 0003](0003-net10-business-backend.md)
@@ -88,11 +88,11 @@ with FluentValidation for request validation.
 - Endpoint discovery is explicit: forgetting the `Map` call for a new feature shows up as a 404 in its first
   test, not as silence.
 
-## Decisions for the owner
+## Owner decision
 
-Accepting this ADR means agreeing to:
+Accepted by the product owner on 2026-10-05:
 
-1. **Minimal APIs** in the business backend (already your requirement).
-2. **No Carter** for now, plain minimal APIs organized by extension methods.
+1. **Minimal APIs** in the business backend.
+2. **No Carter** for now: plain minimal APIs organized by extension methods.
 
-Set the status to accepted and remove the `needs-decision` label from #429, #430 and #431 to release #432.
+#432 moves the existing controllers over.
