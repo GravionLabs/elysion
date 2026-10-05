@@ -1,9 +1,11 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { CanvasApp } from './CanvasApp';
+import { excalidrawReady } from './test-utils';
 
-/** Excalidraw's own theme shortcut, Alt+Shift+D; it listens on its container. */
-function switchThemeWithShortcut(container: HTMLElement) {
+/** Excalidraw's own theme shortcut, Alt+Shift+D; it listens on its container, once it has loaded. */
+async function switchThemeWithShortcut(container: HTMLElement) {
+  await excalidrawReady(container);
   fireEvent.keyDown(container.querySelector('.excalidraw') as HTMLElement, {
     key: 'D',
     code: 'KeyD',
@@ -39,7 +41,7 @@ describe('CanvasApp', () => {
     const { container } = render(<CanvasApp boardId="test-board" theme="light" />);
     await screen.findByTestId('toolbar-rectangle');
 
-    switchThemeWithShortcut(container);
+    await switchThemeWithShortcut(container);
 
     await waitFor(() =>
       expect(container.querySelector('.elysion-canvas')?.getAttribute('data-theme')).toBe('dark'),
@@ -63,7 +65,7 @@ describe('CanvasApp', () => {
     expect(onThemeChange).not.toHaveBeenCalled();
 
     // The user switches it with Excalidraw's own toggle.
-    switchThemeWithShortcut(container);
+    await switchThemeWithShortcut(container);
 
     await waitFor(() => expect(onThemeChange).toHaveBeenCalledWith('light'));
     expect(onThemeChange).toHaveBeenCalledTimes(1);
