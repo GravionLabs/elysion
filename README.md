@@ -27,7 +27,12 @@ You need Node.js (see `.nvmrc`), [pnpm](https://pnpm.io) (pinned via `packageMan
 ```sh
 pnpm install      # JS/TS workspace dependencies (frontend, frontend-canvas, bff, realtime)
 pnpm dev:infra    # Elysion's own infrastructure: Traefik, Postgres, RustFS
+pnpm dev:stack    # the whole stack in containers behind Traefik: http://localhost/
 ```
+
+`pnpm dev:stack` builds and starts the frontend, BFF, realtime and business backend as containers next to the infrastructure; it needs local-infra running (`cd ../local-infra && docker compose up -d`) and fails with a hint otherwise. Traefik serves everything on port 80: `/` is the Angular app, `/api` the BFF, `/yjs` the realtime WebSocket; the business backend is only reachable from the BFF. `pnpm dev:stack:down` stops and removes everything again. Use `pnpm dev:infra` instead when you run the apps on the host.
+
+To check that the stack works: `curl -fsS http://localhost/api/boards` answers with a JSON list, `http://localhost/` opens the app, and a board created with `curl -X POST -H 'content-type: application/json' -d '{"name":"Check"}' http://localhost/api/boards` opens at the `path` it returns, with the name in the top bar and the status "Connected". Open that URL in two windows and draw in one to see the other follow.
 
 Run an individual service:
 

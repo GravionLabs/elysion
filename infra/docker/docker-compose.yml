@@ -28,6 +28,11 @@ services:
       - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U elysion -d elysion']
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - elysion
 
@@ -48,75 +53,75 @@ services:
     networks:
       - elysion
 
-  # --- Routing placeholders (remove once the real services below are wired in) ---
+  # --- Application services ---
+  # Behind the `apps` profile: `pnpm dev:infra` starts only the infrastructure above (for running the
+  # apps on the host), `pnpm dev:stack` adds these. Needs local-infra running (Valkey, ADR 0006).
+  # Routes at the edge: /api -> bff, /yjs -> realtime, / -> frontend. The business backend has no
+  # route: only the bff reaches it, at http://business-backend:8080 on the compose network.
 
-  whoami-api:
-    image: traefik/whoami
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.whoami-api.rule=PathPrefix(`/api`)'
+  business-backend:
+    profiles: [apps]
+    build: ../../apps/business-backend
+    environment:
+      ConnectionStrings__Elysion: Host=postgres;Port=5432;Database=elysion;Username=elysion;Password=elysion
+      Database__MigrateOnStartup: 'true'
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - elysion
 
-  whoami-realtime:
-    image: traefik/whoami
+  bff:
+    profiles: [apps]
+    build:
+      context: ../..
+      dockerfile: apps/bff/Dockerfile
+    environment:
+      BUSINESS_BACKEND_URL: http://business-backend:8080
+    depends_on:
+      - business-backend
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.whoami-realtime.rule=PathPrefix(`/realtime`)'
+      - 'traefik.http.routers.bff.rule=PathPrefix(`/api`)'
+      - 'traefik.http.services.bff.loadbalancer.server.port=3000'
     networks:
       - elysion
 
-  whoami-internal:
-    image: traefik/whoami
+  realtime:
+    profiles: [apps]
+    build:
+      context: ../..
+      dockerfile: apps/realtime/Dockerfile
+    environment:
+      REDIS_URL: redis://valkey:6379
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.whoami-internal.rule=PathPrefix(`/internal`)'
+      - 'traefik.http.routers.realtime.rule=PathPrefix(`/yjs`)'
+      - 'traefik.http.services.realtime.loadbalancer.server.port=3000'
     networks:
       - elysion
+      - local-infra # reach Valkey as valkey:6379
 
-  # --- Application services (uncomment/build once scaffolded) ---
-
-  # bff:
-  #   build: ../../apps/bff
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.bff.rule=PathPrefix(`/api`)"
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - elysion
-  #     - local-infra # reach Valkey as valkey:6379
-
-  # realtime:
-  #   build: ../../apps/realtime
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.realtime.rule=PathPrefix(`/realtime`)"
-  #   networks:
-  #     - elysion
-  #     - local-infra # reach Valkey as valkey:6379
-
-  # business-backend:
-  #   build: ../../apps/business-backend
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - elysion
-
-  # frontend:
-  #   build: ../../apps/frontend
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-  #   networks:
-  #     - elysion
+  frontend:
+    profiles: [apps]
+    build:
+      context: ../..
+      dockerfile: apps/frontend/Dockerfile
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.frontend.rule=PathPrefix(`/`)'
+      - 'traefik.http.routers.frontend.priority=1' # every more specific route wins
+      - 'traefik.http.services.frontend.loadbalancer.server.port=80'
+    networks:
+      - elysion
 
 networks:
   elysion:
     driver: bridge
-  # Uncomment together with the application services above; requires local-infra to be running.
-  # local-infra:
-  #   external: true
+  # Created by ../local-infra; only the services behind the `apps` profile join it.
+  local-infra:
+    external: true
+    name: local-infra
 
 volumes:
   postgres-data:

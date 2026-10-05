@@ -16,6 +16,14 @@ builder.Services.AddSingleton(TimeProvider.System);
 
 var app = builder.Build();
 
+// The containers of the dev stack start against an empty database: with Database:MigrateOnStartup the
+// app applies the migrations itself. Off by default; the tests use a provider without migrations.
+if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<ElysionDbContext>().Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
