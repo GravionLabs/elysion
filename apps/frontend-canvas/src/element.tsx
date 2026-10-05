@@ -1,5 +1,5 @@
 import { type Root, createRoot } from 'react-dom/client';
-import { CanvasApp } from './CanvasApp';
+import { CanvasApp, type CanvasControls } from './CanvasApp';
 import { parseTheme } from './useResolvedTheme';
 
 export const ELEMENT_TAG_NAME = 'elysion-canvas';
@@ -12,6 +12,7 @@ class ElysionCanvasElement extends HTMLElement {
   }
 
   #root: Root | null = null;
+  #controls: CanvasControls | null = null;
 
   connectedCallback(): void {
     this.#root = createRoot(this);
@@ -22,10 +23,16 @@ class ElysionCanvasElement extends HTMLElement {
   disconnectedCallback(): void {
     this.#root?.unmount();
     this.#root = null;
+    this.#controls = null;
   }
 
   attributeChangedCallback(): void {
     this.#render();
+  }
+
+  /** Opens the library sidebar, or closes it when it is open. Does nothing before the canvas is ready. */
+  toggleLibrary(): void {
+    this.#controls?.toggleLibrary();
   }
 
   #emit(name: string, detail: unknown): void {
@@ -37,6 +44,8 @@ class ElysionCanvasElement extends HTMLElement {
       <CanvasApp
         onStatusChange={(status) => this.#emit('status', { status })}
         onThemeChange={(theme) => this.#emit('themechange', { theme })}
+        onControls={(controls) => (this.#controls = controls)}
+        onLibraryChange={(open) => this.#emit('librarychange', { open })}
         boardId={this.getAttribute('board-id') ?? undefined}
         yjsServerUrl={this.getAttribute('yjs-server-url') ?? undefined}
         theme={parseTheme(this.getAttribute('theme'))}

@@ -110,6 +110,37 @@ describe('Board', () => {
     expect(chip()).toContain('Offline');
   });
 
+  describe('library', () => {
+    const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement;
+    const button = () =>
+      fixture.nativeElement.querySelector('.library-toggle') as HTMLButtonElement;
+
+    it('asks the element to toggle the library when the button is clicked', () => {
+      const toggleLibrary = vi.fn();
+      Object.assign(canvas(), { toggleLibrary });
+
+      button().click();
+
+      expect(toggleLibrary).toHaveBeenCalledTimes(1);
+    });
+
+    it('does nothing, without an error, while the element has no toggleLibrary yet', () => {
+      expect(() => button().click()).not.toThrow();
+    });
+
+    it('shows the library state the element reports', () => {
+      expect(button().getAttribute('aria-pressed')).toBe('false');
+
+      canvas().dispatchEvent(new CustomEvent('librarychange', { detail: { open: true } }));
+      fixture.detectChanges();
+      expect(button().getAttribute('aria-pressed')).toBe('true');
+
+      canvas().dispatchEvent(new CustomEvent('librarychange', { detail: { open: false } }));
+      fixture.detectChanges();
+      expect(button().getAttribute('aria-pressed')).toBe('false');
+    });
+  });
+
   describe('board name', () => {
     const id = '0197a8d2-1c3e-7a10-8000-000000000001';
     const title = () => fixture.nativeElement.querySelector('.board-title').textContent;

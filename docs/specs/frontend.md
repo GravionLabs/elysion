@@ -22,16 +22,20 @@ This is what makes collaboration links possible (#101). `HttpClient` is delibera
 
 [ADR 0010](../adr/0010-shell-controls-the-canvas.md): the Angular shell owns the top bar (`topbar/top-bar.ts`, after ariadne's `.topbar`: brand, board name, sync status, theme toggle), the canvas stays free of board logic.
 
-| Direction | What                                 | Contract                                                                                                               |
-| --------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| in        | which board                          | attribute `board-id`                                                                                                   |
-| in        | gateway                              | attribute `yjs-server-url` (default: same-origin `/yjs`, proxied by `ng serve`, see below)                             |
-| in        | theme                                | attribute `theme` (`light` or `dark`)                                                                                  |
-| out       | the element started / failed         | events `ready`, `error`                                                                                                |
-| out       | Yjs connection                       | event `status`, `detail: { status: 'connecting' \| 'connected' \| 'disconnected' }`; `connecting` comes first on start |
-| out       | theme switched **inside** the canvas | event `themechange`, `detail: { theme }`; not sent when the host changed the attribute                                 |
+| Direction | What                                 | Contract                                                                                                                 |
+| --------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| in        | which board                          | attribute `board-id`                                                                                                     |
+| in        | gateway                              | attribute `yjs-server-url` (default: same-origin `/yjs`, proxied by `ng serve`, see below)                               |
+| in        | theme                                | attribute `theme` (`light` or `dark`)                                                                                    |
+| out       | the element started / failed         | events `ready`, `error`                                                                                                  |
+| out       | Yjs connection                       | event `status`, `detail: { status: 'connecting' \| 'connected' \| 'disconnected' }`; `connecting` comes first on start   |
+| out       | theme switched **inside** the canvas | event `themechange`, `detail: { theme }`; not sent when the host changed the attribute                                   |
+| command   | open or close the library sidebar    | method `toggleLibrary()` on the element; a no-op until the canvas is up                                                  |
+| out       | library sidebar opened or closed     | event `librarychange`, `detail: { open }`; sent for the host's toggle and for the user's own (Excalidraw's close button) |
 
 `Board` (the page) shows the top bar above `<elysion-canvas>`. The title is the board's name when the BFF has one (`BoardApi`, `GET /api/boards/:id`) and the id otherwise: a room such as `default` is not a stored board, so ids that are not UUIDs are not even asked for, and a 404 or a failing BFF falls back to the id. The sync chip shows `Connecting…`, `Connected` or `Offline`.
+
+**Library.** The top bar's Library button calls `toggleLibrary()` on the element (`Board` finds it with `viewChild` and the `CanvasElement` type) and shows `aria-pressed` from `librarychange`. Inside, `CanvasApp` hands the host a small controls object once (`onControls`, which the element turns into its methods; later commands such as export join it) and reports `appState.openSidebar` for the default sidebar. Excalidraw's own floating Library button is not hidden with CSS on an internal class: `CanvasApp` renders its own `<DefaultSidebar.Trigger style="display: none">`, which takes the place of Excalidraw's fallback trigger (a test fails if that stops working after an upgrade). The sidebar itself is Excalidraw's, with its search and library tabs, its dock and close buttons.
 
 **Theme.** `ThemeService` is app-wide: an explicit choice (top bar, or Excalidraw's own toggle, which arrives as `themechange`) is remembered in `localStorage` (`elysion.theme`, tolerant of blocked storage); without one the system preference is followed live. It sets `data-theme` on `<html>` for the tokens and the canvas `theme` attribute. Excalidraw's hamburger menu stays until the top bar covers what it offers (export and import, #211), so the theme can be switched in two places; `themechange` keeps them in step. `CanvasApp` recognizes a switch by the user from a change of Excalidraw's own `appState.theme` between two `onChange` calls, not from a difference to its own state: after the host changes the attribute, Excalidraw's value lags behind for a moment, and treating that as a user switch made the two flip each other.
 

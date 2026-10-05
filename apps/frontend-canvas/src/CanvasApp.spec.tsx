@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { CanvasApp } from './CanvasApp';
 
@@ -67,5 +67,38 @@ describe('CanvasApp', () => {
     await screen.findByTestId('toolbar-rectangle');
 
     expect(onStatusChange).toHaveBeenCalledWith('connecting');
+  });
+
+  it('hands the host controls once, and they open and close the library sidebar', async () => {
+    const onControls = vi.fn();
+    const onLibraryChange = vi.fn();
+    render(
+      <CanvasApp boardId="test-board" onControls={onControls} onLibraryChange={onLibraryChange} />,
+    );
+    await screen.findByTestId('toolbar-rectangle');
+
+    expect(onControls).toHaveBeenCalledTimes(1);
+    const { toggleLibrary } = onControls.mock.calls[0][0];
+    expect(onLibraryChange).not.toHaveBeenCalled();
+
+    act(() => toggleLibrary());
+    await waitFor(() => expect(onLibraryChange).toHaveBeenLastCalledWith(true));
+
+    act(() => toggleLibrary());
+    await waitFor(() => expect(onLibraryChange).toHaveBeenLastCalledWith(false));
+    expect(onLibraryChange).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not show Excalidraw's own floating Library button", async () => {
+    const { container } = render(<CanvasApp boardId="test-board" />);
+    await screen.findByTestId('toolbar-rectangle');
+
+    // Our hidden trigger takes the place of Excalidraw's fallback; its label wrapper stays empty.
+    const triggers = [...container.querySelectorAll('.default-sidebar-trigger')];
+    expect(triggers).toHaveLength(1);
+    expect(getComputedStyle(triggers[0]).display).toBe('none');
+    for (const label of container.querySelectorAll('.sidebar-trigger__label-element')) {
+      expect(label.textContent).toBe('');
+    }
   });
 });

@@ -15,6 +15,21 @@
   <div class="topbar-end">
     <button
       type="button"
+      class="menu-button library-toggle"
+      [class.active]="libraryOpen()"
+      [attr.aria-pressed]="libraryOpen()"
+      title="Show or hide the shape library"
+      (click)="libraryToggle.emit()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"
+        />
+      </svg>
+      <span>Library</span>
+    </button>
+    <button
+      type="button"
       class="menu-button theme-toggle"
       [title]="themeTitle()"
       [attr.aria-label]="themeTitle()"
