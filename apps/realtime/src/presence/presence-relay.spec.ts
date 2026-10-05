@@ -119,6 +119,52 @@ describe('PresenceRelay', () => {
     expect(received).not.toHaveBeenCalled();
   });
 
+  it('lets a second subscriber wait for the subscription the first one started', async () => {
+    const bus = new FakeRedisBus();
+    const pub = new FakeRedisClient(bus);
+    const sub = new FakeRedisClient(bus);
+    let activate!: () => void;
+    sub.subscribe = (channel: string) =>
+      new Promise<void>((resolve) => {
+        activate = () => {
+          sub.subscribedChannels.add(channel);
+          resolve();
+        };
+      });
+    const relay = new PresenceRelay(pub as unknown as Redis, sub as unknown as Redis);
+
+    const first = relay.subscribe('board-1', vi.fn());
+    let secondDone = false;
+    const second = relay.subscribe('board-1', vi.fn()).then(() => (secondDone = true));
+    await Promise.resolve();
+    expect(secondDone).toBe(false); // the subscription is not active yet
+
+    activate();
+    await Promise.all([first, second]);
+
+    expect(secondDone).toBe(true);
+    expect(sub.subscribedChannels.has('elysion:presence:board-1')).toBe(true);
+  });
+
+  it('subscribes again after a failed subscription instead of staying unsubscribed', async () => {
+    const bus = new FakeRedisBus();
+    const pub = new FakeRedisClient(bus);
+    const sub = new FakeRedisClient(bus);
+    const real = sub.subscribe.bind(sub);
+    let failing = true;
+    sub.subscribe = async (channel: string) => {
+      if (failing) throw new Error('valkey down');
+      return real(channel);
+    };
+    const relay = new PresenceRelay(pub as unknown as Redis, sub as unknown as Redis);
+    await expect(relay.subscribe('board-1', vi.fn())).rejects.toThrow('valkey down');
+
+    failing = false;
+    await relay.subscribe('board-1', vi.fn());
+
+    expect(sub.subscribedChannels.has('elysion:presence:board-1')).toBe(true);
+  });
+
   it('keeps different boards independent', async () => {
     const bus = new FakeRedisBus();
     const relayA = createRelay(bus);
