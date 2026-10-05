@@ -1,6 +1,6 @@
 # ADR 0013: PDF export in the browser from the SVG export
 
-- Status: proposed (waiting for the product owner; see "Decisions for the owner")
+- Status: accepted
 - Date: 2026-10-05
 - Issues: #234, #235, #23
 - Builds on: [ADR 0010](0010-shell-controls-the-canvas.md)
@@ -104,12 +104,12 @@ content; not scriptable.
 - If a board is wider or taller than the PDF page limit it is scaled down, which can make small text hard to
   read; the PBI's tests cover the scaling.
 
-## Decisions for the owner
+## Owner decision
 
-Accepting this ADR means agreeing to:
+Accepted by the product owner on 2026-10-05:
 
 1. **Browser-side PDF** (A) from the SVG export, not a bitmap, a server or the print dialog.
 2. **Helvetica instead of Excalidraw's fonts** in the PDF for now.
-3. **Closing #23** (the export service) as not needed.
+3. **#23** (the export service) is closed as not needed.
 
-Set the status to accepted and remove the `needs-decision` label from #235 (and #234) to release #236 to #239.
+#236 to #239 implement it.
