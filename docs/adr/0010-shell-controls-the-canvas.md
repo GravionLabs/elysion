@@ -21,10 +21,13 @@ theme, and later the Library sidebar, export and import.
 1. **The top bar is an Angular component** in the shell. It sits in the board page next to
    `<elysion-canvas>` and uses the router and the BFF client directly.
 2. **The canvas is controlled through its element, in both directions.**
-   - _In_, as attributes: `board-id`, `yjs-server-url`, `theme` (existing).
+   - _In_, as attributes: `board-id`, `yjs-server-url`, `theme` (existing), and `user-name` and `user-color`
+     (#110: how this user appears to others; optional, a generated guest identity otherwise).
    - _Out_, as events: `ready` and `error` (existing), `status` (`{ status: 'connecting' | 'connected' |
 'disconnected' }`, the Yjs connection), `themechange` (`{ theme }`, only when the user switches
-     the theme inside the canvas, not when the host sets it).
+     the theme inside the canvas, not when the host sets it), `presence` (`{ users: [{ id, name, color }] }`,
+     the other people on the board, only when that list changes, #110). `error` (`{ message }`) is sent
+     when the connection to the board server fails, once per outage; the canvas keeps retrying.
    - _Commands_, as methods on the element, added when a feature needs one (`toggleLibrary()`,
      `exportBoard(format)`, `importFile(file)` come with their PBIs; `exportBoard` takes `png`, `svg`, `pdf`
      (ADR 0013) or `excalidraw`). Methods rather than attributes,

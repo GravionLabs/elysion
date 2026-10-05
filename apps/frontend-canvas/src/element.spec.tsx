@@ -2,6 +2,10 @@ import { waitFor } from '@testing-library/dom';
 import { describe, expect, it, vi } from 'vitest';
 import { ELEMENT_TAG_NAME } from './element';
 
+const ELEMENT_OBSERVES = (
+  customElements.get(ELEMENT_TAG_NAME) as unknown as { observedAttributes: string[] }
+).observedAttributes;
+
 describe('elysion-canvas custom element', () => {
   it('registers itself and renders when attached to the DOM', async () => {
     expect(customElements.get(ELEMENT_TAG_NAME)).toBeDefined();
@@ -29,6 +33,38 @@ describe('elysion-canvas custom element', () => {
     document.body.appendChild(el);
     await waitFor(() => expect(statuses).toContain('connecting'));
 
+    document.body.removeChild(el);
+  });
+
+  it('announces a failed connection as an error event with a message', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME);
+    el.setAttribute('yjs-server-url', 'ws://127.0.0.1:1/yjs'); // nothing listens on port 1
+    const messages: string[] = [];
+    el.addEventListener('error', (event) =>
+      messages.push((event as unknown as CustomEvent).detail?.message),
+    );
+
+    document.body.appendChild(el);
+    await waitFor(() => expect(messages.length).toBeGreaterThan(0), { timeout: 3000 });
+
+    expect(messages[0]).toMatch(/connection/i);
+    document.body.removeChild(el);
+  });
+
+  it('takes the user name and color as attributes without restarting the canvas', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME);
+    const statuses: string[] = [];
+    el.addEventListener('status', (event) => statuses.push((event as CustomEvent).detail.status));
+    document.body.appendChild(el);
+    await waitFor(() => expect(statuses).toContain('connecting'));
+    const connectsBefore = statuses.filter((status) => status === 'connecting').length;
+
+    el.setAttribute('user-name', 'Ada');
+    el.setAttribute('user-color', '#14b8a6');
+    await waitFor(() => expect(el.querySelector('[data-testid="toolbar-rectangle"]')).toBeTruthy());
+
+    expect(ELEMENT_OBSERVES).toEqual(expect.arrayContaining(['user-name', 'user-color']));
+    expect(statuses.filter((status) => status === 'connecting')).toHaveLength(connectsBefore);
     document.body.removeChild(el);
   });
 

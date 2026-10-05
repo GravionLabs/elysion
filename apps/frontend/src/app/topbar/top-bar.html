@@ -79,6 +79,16 @@
   </div>
 
   <div class="topbar-end">
+    @if (users().length > 0) {
+      <ul class="presence" [attr.aria-label]="presenceLabel()" [title]="presenceLabel()">
+        @for (user of visibleUsers(); track user.id) {
+          <li class="avatar" [style.background-color]="user.color">{{ initialsOf(user.name) }}</li>
+        }
+        @if (hiddenUsers() > 0) {
+          <li class="avatar more">+{{ hiddenUsers() }}</li>
+        }
+      </ul>
+    }
     <button
       type="button"
       class="menu-button library-toggle"

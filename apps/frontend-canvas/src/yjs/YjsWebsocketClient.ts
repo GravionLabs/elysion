@@ -5,12 +5,21 @@ import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
 import { MESSAGE_AWARENESS, MESSAGE_SYNC } from './protocol.js';
 
+/** The code the gateway closes a socket with when it cannot load the board (apps/realtime). */
+const SERVER_ERROR_CLOSE_CODE = 1011;
+
 export type YjsConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
 export interface YjsWebsocketClientOptions {
   /** @default 1000 */
   reconnectDelayMs?: number;
   onStatusChange?: (status: YjsConnectionStatus) => void;
+  /**
+   * The connection failed: the socket could not be opened or broke, or the server closed it because it
+   * could not serve the board (close code 1011). Called once per outage, not on every retry, and again
+   * only after the connection was up in between. The client keeps retrying on its own.
+   */
+  onError?: (error: Error) => void;
   /**
    * Overrides the WebSocket constructor used to connect — the global
    * `WebSocket` by default. Mainly for tests: Node's native `WebSocket`
@@ -47,6 +56,8 @@ export class YjsWebsocketClient {
   #reconnectDelayMs: number;
   #destroyed = false;
   #onStatusChange?: (status: YjsConnectionStatus) => void;
+  #onError?: (error: Error) => void;
+  #failureReported = false;
   #WebSocketImpl: typeof WebSocket;
 
   constructor(url: string, doc: Y.Doc = new Y.Doc(), options: YjsWebsocketClientOptions = {}) {
@@ -54,6 +65,7 @@ export class YjsWebsocketClient {
     this.doc = doc;
     this.#reconnectDelayMs = options.reconnectDelayMs ?? 1000;
     this.#onStatusChange = options.onStatusChange;
+    this.#onError = options.onError;
     this.#WebSocketImpl = options.WebSocketImpl ?? WebSocket;
 
     this.awareness = new awarenessProtocol.Awareness(doc);
@@ -90,6 +102,7 @@ export class YjsWebsocketClient {
     this.#socket = socket;
 
     socket.addEventListener('open', () => {
+      this.#failureReported = false;
       this.#onStatusChange?.('connected');
       // The server sends its own sync-step-1 on connect too (see
       // YjsGateway), but that only tells it what WE'RE missing. Send ours
@@ -105,7 +118,10 @@ export class YjsWebsocketClient {
     socket.addEventListener('message', (event) =>
       this.#handleMessage(new Uint8Array(event.data as ArrayBuffer)),
     );
-    socket.addEventListener('close', () => {
+    socket.addEventListener('close', (event) => {
+      if (event.code === SERVER_ERROR_CLOSE_CODE) {
+        this.#reportFailure('The server could not serve the board.');
+      }
       // Whoever was on the board is unknown until we are connected again.
       const others = [...this.awareness.getStates().keys()].filter(
         (id) => id !== this.doc.clientID,
@@ -114,7 +130,18 @@ export class YjsWebsocketClient {
       this.#onStatusChange?.('disconnected');
       this.#scheduleReconnect();
     });
-    socket.addEventListener('error', () => socket.close());
+    socket.addEventListener('error', () => {
+      this.#reportFailure('The connection to the board server failed.');
+      socket.close();
+    });
+  }
+
+  #reportFailure(message: string): void {
+    if (this.#failureReported || this.#destroyed) {
+      return;
+    }
+    this.#failureReported = true;
+    this.#onError?.(new Error(message));
   }
 
   /**

@@ -576,4 +576,47 @@ describe('Board', () => {
 
     expect(failingComponent.status()).toBe('error');
   });
+  describe('presence', () => {
+    const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement;
+    const avatars = () => [...fixture.nativeElement.querySelectorAll('app-top-bar .avatar')];
+    const present = (users: unknown) =>
+      canvas().dispatchEvent(new CustomEvent('presence', { detail: { users } }));
+
+    it('shows the people of a presence event in the top bar, and no one once they have left', async () => {
+      fixture.detectChanges();
+      expect(avatars()).toHaveLength(0);
+
+      present([{ id: 'a', name: 'Ada Lovelace', color: '#14b8a6' }]);
+      await fixture.whenStable();
+      expect(avatars().map((avatar) => avatar.textContent.trim())).toEqual(['AL']);
+
+      present([]);
+      await fixture.whenStable();
+      expect(avatars()).toHaveLength(0);
+    });
+
+    it('ignores entries that are not users', async () => {
+      fixture.detectChanges();
+
+      present([{ id: 'a', name: 'Ada', color: 'red' }, 'x']);
+      await fixture.whenStable();
+
+      expect(avatars()).toHaveLength(0);
+    });
+  });
+
+  describe('connection failures', () => {
+    const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement;
+
+    it('goes back to ready once the connection is up again', () => {
+      fixture.detectChanges();
+      canvas().dispatchEvent(new CustomEvent('ready'));
+      canvas().dispatchEvent(new CustomEvent('error', { detail: { message: 'down' } }));
+      expect(component.status()).toBe('error');
+
+      canvas().dispatchEvent(new CustomEvent('status', { detail: { status: 'connected' } }));
+
+      expect(component.status()).toBe('ready');
+    });
+  });
 });

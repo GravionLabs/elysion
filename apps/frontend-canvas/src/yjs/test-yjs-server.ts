@@ -15,6 +15,8 @@ export interface TestYjsServer {
   awarenessMessagesReceived: () => number;
   /** Drops every connection without a close handshake, like a network failure. */
   dropConnections: () => void;
+  /** Closes every socket with a close code, like the gateway does when it cannot load a board (1011). */
+  closeConnections: (code: number) => void;
 }
 
 interface Room {
@@ -144,6 +146,9 @@ export function startTestYjsServer(): Promise<TestYjsServer> {
         awarenessMessagesReceived: () => awarenessMessages,
         dropConnections: () => {
           for (const client of wss.clients) client.terminate();
+        },
+        closeConnections: (code) => {
+          for (const client of wss.clients) client.close(code);
         },
       });
     });

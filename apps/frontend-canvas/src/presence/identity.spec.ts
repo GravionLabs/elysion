@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { IDENTITY_COLORS, createSessionIdentity, hashOf, identityFor } from './identity';
+import {
+  IDENTITY_COLORS,
+  MAX_NAME_LENGTH,
+  createSessionIdentity,
+  hashOf,
+  identityFor,
+  withHostIdentity,
+} from './identity';
 import { STICKY_COLORS } from '../sticky-note';
 
 describe('identityFor', () => {
@@ -44,5 +51,33 @@ describe('hashOf', () => {
   it('is stable and not zero for text', () => {
     expect(hashOf('elysion')).toBe(hashOf('elysion'));
     expect(hashOf('elysion')).not.toBe(hashOf('elysioN'));
+  });
+});
+
+describe('withHostIdentity', () => {
+  const session = identityFor('abc');
+
+  it('keeps the session identity when the host asks for nothing', () => {
+    expect(withHostIdentity(session, undefined, undefined)).toEqual(session);
+  });
+
+  it('uses the name and color the host gives, and keeps the id', () => {
+    expect(withHostIdentity(session, ' Ada ', '#14b8a6')).toEqual({
+      id: 'abc',
+      name: 'Ada',
+      color: '#14b8a6',
+    });
+  });
+
+  it('ignores a blank name and a color that is not #rrggbb', () => {
+    for (const color of ['red', '#fff', 'url(x)', '']) {
+      expect(withHostIdentity(session, '   ', color)).toEqual(session);
+    }
+  });
+
+  it('cuts a long name', () => {
+    expect(withHostIdentity(session, 'x'.repeat(500), undefined).name).toHaveLength(
+      MAX_NAME_LENGTH,
+    );
   });
 });

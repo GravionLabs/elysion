@@ -273,4 +273,60 @@ describe('TopBar', () => {
       expect(titleButton()?.textContent).toContain('Q3 planning');
     });
   });
+  describe('presence', () => {
+    const users = [
+      { id: 'a', name: 'Ada Lovelace', color: '#14b8a6' },
+      { id: 'b', name: 'guest 4821', color: '#3b82f6' },
+    ];
+    const presence = () => el().querySelector('.presence');
+    const avatars = () => [...el().querySelectorAll('.presence .avatar')] as HTMLElement[];
+
+    it('shows nothing while nobody else is on the board', () => {
+      expect(presence()).toBeNull();
+    });
+
+    it('shows an avatar with initials and the cursor color for everyone else', async () => {
+      fixture.componentRef.setInput('users', users);
+      await fixture.whenStable();
+
+      expect(avatars().map((avatar) => avatar.textContent?.trim())).toEqual(['AL', 'G4']);
+      expect(avatars()[0].style.backgroundColor).toBe('rgb(20, 184, 166)');
+    });
+
+    it('names them for assistive technology and as a tooltip', async () => {
+      fixture.componentRef.setInput('users', users);
+      await fixture.whenStable();
+
+      expect(presence()?.getAttribute('aria-label')).toBe(
+        'On this board: Ada Lovelace, guest 4821',
+      );
+      fixture.componentRef.setInput('users', [users[0]]);
+      await fixture.whenStable();
+      expect(presence()?.getAttribute('title')).toBe('Ada Lovelace is on this board');
+    });
+
+    it('shows three avatars at most and counts the rest', async () => {
+      const many = Array.from({ length: 5 }, (_, i) => ({
+        id: `u${i}`,
+        name: `User ${i}`,
+        color: '#3b82f6',
+      }));
+      fixture.componentRef.setInput('users', many);
+      await fixture.whenStable();
+
+      expect(avatars().map((avatar) => avatar.textContent?.trim())).toEqual([
+        'U0',
+        'U1',
+        'U2',
+        '+2',
+      ]);
+    });
+
+    it('falls back to a question mark for a name without letters to take', async () => {
+      fixture.componentRef.setInput('users', [{ id: 'x', name: '  ', color: '#3b82f6' }]);
+      await fixture.whenStable();
+
+      expect(avatars()[0].textContent?.trim()).toBe('?');
+    });
+  });
 });
