@@ -15,6 +15,8 @@ See `docs/specs/business-backend.md` and `docs/adr/0003-net10-business-backend.m
 
 ## Commands
 
+From the repo root, `pnpm build`, `pnpm test` and `pnpm lint` run `dotnet build`, `dotnet test` and `dotnet format --verify-no-changes` for this app (see `package.json` and `run-dotnet.mjs`; `Data/Migrations` is excluded from the format check because `dotnet ef` generates it). Inside this directory:
+
 ```sh
 dotnet build
 dotnet test

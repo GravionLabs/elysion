@@ -19,7 +19,7 @@ Each `apps/*` subdirectory has its own `AGENTS.md` with service-specific detail 
 ## Tech stack conventions
 
 - **Package manager: pnpm only.** Never use `npm`/`yarn` in this repo. Version pinned in root `package.json` (`packageManager`) via corepack.
-- **Formatting/linting from the root**: Prettier is configured once at the root (`.prettierrc`, no per-app configs) — run `pnpm format` / `pnpm format:check`; `pnpm lint`, `pnpm build` and `pnpm test` fan out to every workspace app via `pnpm -r --if-present`.
+- **Formatting/linting from the root**: Prettier is configured once at the root (`.prettierrc`, no per-app configs) — run `pnpm format` / `pnpm format:check`; `pnpm lint`, `pnpm build` and `pnpm test` fan out to every workspace app via `pnpm -r --if-present`, including `apps/business-backend`, whose small `package.json` runs `dotnet build`, `dotnet test` and `dotnet format --verify-no-changes` through `run-dotnet.mjs` (generated migrations are excluded from the format check). **Verify a change with `pnpm format:check && pnpm lint && pnpm test && pnpm build` from the root** — that is also what CI runs.
 - **TypeScript 6, not 7**, on every app including the Angular frontend — see `docs/adr/0002-typescript-version-split.md`. TS 7.0.x's compiler API isn't usable by `@nestjs/cli` yet; don't re-attempt TS 7 on `apps/bff`/`apps/realtime` without checking that ADR first.
 - **.NET 10**, Central Package Management in `apps/business-backend` (`Directory.Packages.props` — add package versions there, not inline in `.csproj`).
 - Docker builds for the Node apps use `pnpm deploy --prod` in a multi-stage build (not manual `node_modules` copying — symlinks break across stages). Follow the same pattern for new Node services.

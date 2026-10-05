@@ -40,11 +40,13 @@ cd apps/business-backend && dotnet run --project src/Elysion.BusinessBackend.Api
 Other commands (each runs across the whole workspace):
 
 ```sh
-pnpm build           # build every app
-pnpm test            # unit tests (Vitest)
-pnpm lint            # oxlint
+pnpm build           # build every app, including the .NET solution
+pnpm test            # unit tests: Vitest, NUnit, and the repo scripts' node tests
+pnpm lint            # oxlint, and `dotnet format --verify-no-changes` for the backend
 pnpm format:check    # Prettier (pnpm format fixes)
 ```
+
+To verify a change as a whole, run `pnpm format:check && pnpm lint && pnpm test && pnpm build` (CI runs the same commands). The .NET parts need the .NET 10 SDK; the realtime end-to-end tests need local-infra's Valkey (`pnpm --filter @elysion/realtime test:e2e`).
 
 Each app has a `Dockerfile`; build from the repo root so the workspace files are in context:
 
