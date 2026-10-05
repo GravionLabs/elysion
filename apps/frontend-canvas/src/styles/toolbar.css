@@ -2,7 +2,13 @@
  * Excalidraw's own tool island is replaced by <Toolbar>. Its classes are not public API, so the
  * default toolbar is hidden (the keyboard shortcuts keep working) rather than restyled.
  */
-.elysion-canvas .shapes-section {
+/* Desktop layout: the tools sit in .shapes-section. */
+.elysion-canvas .shapes-section,
+/* Compact layout (a phone, or a short landscape window): Excalidraw switches to its own mobile
+   toolbar on top, an Island of its own. There is no option to turn that layout off. */
+.elysion-canvas .App-toolbar--mobile,
+/* ...and a loose hand tool beside it; the library trigger in there is already ours and hidden. */
+.elysion-canvas .mobile-misc-tools-container {
   display: none;
 }
 
@@ -17,6 +23,8 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
+  /* `left: 50%` would otherwise halve the width it may use, and a phone got four rows instead of two. */
+  width: max-content;
   max-width: calc(100% - 32px);
   padding: 4px;
   background: var(--c-surface-1);
@@ -24,6 +32,20 @@
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
   transform: translateX(-50%);
+}
+
+/*
+ * In its compact layout Excalidraw puts its menu in a bar along the bottom edge. Our toolbar then
+ * sits above that bar instead of on top of the menu. The compact layout is recognized by Excalidraw's
+ * own container for it, so the thresholds Excalidraw uses are not guessed here.
+ */
+.elysion-canvas:has(.mobile-misc-tools-container) .elysion-toolbar {
+  bottom: 72px;
+}
+
+/* ...and the minimap would then sit on the toolbar, so a compact canvas has none. */
+.elysion-canvas:has(.mobile-misc-tools-container) .elysion-minimap {
+  display: none;
 }
 
 .elysion-toolbar__group {
