@@ -94,6 +94,10 @@ services:
       dockerfile: apps/realtime/Dockerfile
     environment:
       REDIS_URL: redis://valkey:6379
+      # Board documents are stored by the business backend (ADR 0011); without it no board opens.
+      BUSINESS_BACKEND_URL: http://business-backend:8080
+    depends_on:
+      - business-backend
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.realtime.rule=PathPrefix(`/yjs`)'

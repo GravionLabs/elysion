@@ -35,7 +35,7 @@ Connection string is in `appsettings.Development.json` (`ConnectionStrings:Elysi
 ## Conventions
 
 - New entities go in `Entities/`, DbContext is `Data/ElysionDbContext.cs` — add a `DbSet<T>` there and generate a migration, don't hand-write SQL.
-- Controllers in `Controllers/`, `[ApiController]` + `[Route(...)]` pattern (see `HealthController`). Request and response types are records in `Contracts/`; never return an entity (see `BoardsController`).
+- New endpoints are **minimal APIs**: an `IEndpointRouteBuilder` extension method per feature in `Endpoints/` (see `BoardDocumentEndpoints`: `MapGroup`, `TypedResults`), registered in `Program.cs`. The existing controllers in `Controllers/` (`[ApiController]` + `[Route(...)]`, see `HealthController`) are legacy until #432 moves them over; do not add new ones. Request and response types are records in `Contracts/`; never return an entity (see `BoardsController`).
 - Use the injected `TimeProvider`, not `DateTimeOffset.UtcNow`, so tests can control time.
 - `TreatWarningsAsErrors` is on (`Directory.Build.props`) — a warning breaks the build, don't suppress it without a reason.
 

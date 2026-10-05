@@ -1,4 +1,5 @@
 using Elysion.BusinessBackend.Api.Data;
+using Elysion.BusinessBackend.Api.Endpoints;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,6 +36,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapBoardDocumentEndpoints();
 
 app.Run();
 

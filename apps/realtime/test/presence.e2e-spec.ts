@@ -9,6 +9,8 @@ import * as Y from 'yjs';
 import type { RawData } from 'ws';
 import { WebSocket } from 'ws';
 import { AppModule } from '../src/app.module.js';
+import { DocumentStore } from '../src/persistence/document-store.js';
+import { InMemoryDocumentStore } from '../src/persistence/in-memory-document-store.js';
 import { MESSAGE_AWARENESS } from '../src/yjs/protocol.js';
 
 /**
@@ -101,7 +103,10 @@ function waitUntil(check: () => boolean, timeoutMs = 4000): Promise<void> {
 async function startInstance(): Promise<{ app: INestApplication; baseUrl: string }> {
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [AppModule],
-  }).compile();
+  })
+    .overrideProvider(DocumentStore)
+    .useValue(new InMemoryDocumentStore())
+    .compile();
 
   const app = moduleFixture.createNestApplication();
   app.useWebSocketAdapter(new WsAdapter(app));

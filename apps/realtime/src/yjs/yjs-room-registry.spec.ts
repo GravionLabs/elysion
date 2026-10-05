@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import * as Y from 'yjs';
 import type { WebSocket } from 'ws';
+import { InMemoryDocumentStore } from '../persistence/in-memory-document-store.js';
 import { PresenceRelay } from '../presence/presence-relay.js';
 import { YjsRoomRegistry } from './yjs-room-registry.js';
 
@@ -27,10 +28,10 @@ function encodeRemoteState(clientId: number, state: Record<string, unknown> | nu
 }
 
 describe('YjsRoomRegistry presence persistence', () => {
-  it('persists a new client awareness state to Redis via PresenceRelay.recordState', () => {
+  it('persists a new client awareness state to Redis via PresenceRelay.recordState', async () => {
     const presence = fakePresence();
-    const registry = new YjsRoomRegistry(presence);
-    const room = registry.getOrCreate('board-1');
+    const registry = new YjsRoomRegistry(presence, new InMemoryDocumentStore());
+    const room = await registry.getOrLoad('board-1');
 
     const update = encodeRemoteState(42, { name: 'Ada', cursor: { x: 1, y: 2 } });
     awarenessProtocol.applyAwarenessUpdate(room.awareness, update, 'test');
@@ -47,10 +48,10 @@ describe('YjsRoomRegistry presence persistence', () => {
     expect(readBack.getStates().get(42)).toEqual({ name: 'Ada', cursor: { x: 1, y: 2 } });
   });
 
-  it('removes a client from Redis when its awareness state is cleared', () => {
+  it('removes a client from Redis when its awareness state is cleared', async () => {
     const presence = fakePresence();
-    const registry = new YjsRoomRegistry(presence);
-    const room = registry.getOrCreate('board-2');
+    const registry = new YjsRoomRegistry(presence, new InMemoryDocumentStore());
+    const room = await registry.getOrLoad('board-2');
 
     awarenessProtocol.applyAwarenessUpdate(
       room.awareness,
@@ -64,16 +65,16 @@ describe('YjsRoomRegistry presence persistence', () => {
     expect(presence.removeState).toHaveBeenCalledWith('board-2', 7);
   });
 
-  it('returns the same room instance for repeated calls with the same board id', () => {
-    const registry = new YjsRoomRegistry(fakePresence());
-    expect(registry.getOrCreate('board-3')).toBe(registry.getOrCreate('board-3'));
+  it('returns the same room instance for repeated calls with the same board id', async () => {
+    const registry = new YjsRoomRegistry(fakePresence(), new InMemoryDocumentStore());
+    expect(await registry.getOrLoad('board-3')).toBe(await registry.getOrLoad('board-3'));
   });
 });
 
 describe('YjsRoomRegistry awareness ownership', () => {
-  it('remembers which awareness ids a socket announced and forgets the ones it removed', () => {
-    const registry = new YjsRoomRegistry(fakePresence());
-    const room = registry.getOrCreate('board-own');
+  it('remembers which awareness ids a socket announced and forgets the ones it removed', async () => {
+    const registry = new YjsRoomRegistry(fakePresence(), new InMemoryDocumentStore());
+    const room = await registry.getOrLoad('board-own');
     const socket = {} as WebSocket;
     room.clients.add(socket);
 
@@ -85,9 +86,9 @@ describe('YjsRoomRegistry awareness ownership', () => {
     expect([...(room.awarenessIdsBySocket.get(socket) ?? [])]).toEqual([6]);
   });
 
-  it('does not attribute updates from other origins to a socket', () => {
-    const registry = new YjsRoomRegistry(fakePresence());
-    const room = registry.getOrCreate('board-other');
+  it('does not attribute updates from other origins to a socket', async () => {
+    const registry = new YjsRoomRegistry(fakePresence(), new InMemoryDocumentStore());
+    const room = await registry.getOrLoad('board-other');
     const socket = {} as WebSocket;
     room.clients.add(socket);
 
