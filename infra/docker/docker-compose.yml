@@ -53,6 +53,49 @@ services:
     networks:
       - elysion
 
+  # Creates Keycloak's own database in the existing Postgres. A script in /docker-entrypoint-initdb.d
+  # would only run on an empty data volume; this is idempotent, so it also works on an existing one.
+  keycloak-db:
+    image: postgres:18-alpine
+    environment:
+      PGPASSWORD: elysion
+    command:
+      - sh
+      - -c
+      - >-
+        psql -h postgres -U elysion -d elysion -tAc "SELECT 1 FROM pg_database WHERE datname = 'keycloak'" | grep -q 1
+        || psql -h postgres -U elysion -d elysion -c "CREATE DATABASE keycloak"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+    networks:
+      - elysion
+
+  # The identity provider (ADR 0014). Elysion-specific, so it lives here and not in local-infra (ADR 0006).
+  # Host port 8081 because Traefik's dashboard owns 8080. The realm comes from infra/keycloak, so a clean
+  # checkout has the same provider every time. Dev mode (HTTP, no hostname checks): never a production setup.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6
+    command: ['start-dev', '--import-realm']
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: elysion
+      KC_DB_PASSWORD: elysion
+      KC_HTTP_PORT: '8080'
+    ports:
+      - '${KEYCLOAK_PORT:-8081}:8080'
+    volumes:
+      - ../keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      keycloak-db:
+        condition: service_completed_successfully
+    networks:
+      - elysion
+
   # --- Application services ---
   # Behind the `apps` profile: `pnpm dev:infra` starts only the infrastructure above (for running the
   # apps on the host), `pnpm dev:stack` adds these. Needs local-infra running (Valkey, ADR 0006).

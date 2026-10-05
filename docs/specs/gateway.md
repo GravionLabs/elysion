@@ -6,7 +6,7 @@ Infra
 
 ## Responsibilities
 
-TLS termination, OIDC/JWT auth validation, CORS, rate limiting, routing, observability. See ADR 0001.
+TLS termination, OIDC/JWT auth validation (provider: Keycloak, ADR 0014), CORS, rate limiting, routing, observability. See ADR 0001.
 
 ## Routes
 
@@ -26,4 +26,5 @@ routes over the `elysion_elysion` network because some services also join `local
 
 ## Open questions
 
+- Authentication: the identity provider is Keycloak and services only validate tokens ([ADR 0014](../adr/0014-keycloak-identity-provider.md)); how the edge enforces it is #121.
 - Final choice between Traefik-only vs. dedicated API gateway (Kong/APIM) for production.
