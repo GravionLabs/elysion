@@ -15,6 +15,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ../traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ../traefik/dynamic:/etc/traefik/dynamic:ro
     networks:
       - elysion
 
@@ -134,6 +135,8 @@ services:
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.bff.rule=PathPrefix(`/api`)'
+      # Edge authentication: the token is verified by the BFF before the request is let through (#121).
+      - 'traefik.http.routers.bff.middlewares=bff-auth@file'
       - 'traefik.http.services.bff.loadbalancer.server.port=3000'
     networks:
       - elysion

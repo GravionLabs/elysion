@@ -1,0 +1,16 @@
+# Dynamic configuration (file provider, watched): middlewares that routers refer to as `<name>@file`.
+http:
+  middlewares:
+    # Edge authentication (docs/specs/identity.md). Traefik's open-source edition has no JWT middleware, so each
+    # request on a protected router is first sent to the BFF's verify endpoint with its headers: a 2xx lets the
+    # request through, anything else (401) is returned to the caller as it is.
+    bff-auth:
+      forwardAuth:
+        address: 'http://bff:3000/api/auth/verify'
+        # Copied onto the request that goes on, replacing a header of the same name the caller sent (it is removed
+        # first, so a caller cannot pass a spoofed identity on).
+        authResponseHeaders:
+          - 'X-Auth-User-Id'
+          - 'X-Auth-User-Email'
+        # Do not take X-Forwarded-* from the caller: Traefik is the edge here.
+        trustForwardHeader: false
