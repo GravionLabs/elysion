@@ -103,4 +103,58 @@ describe('WS token at the handshake (e2e)', () => {
       expect(await client.closed).toBe(1005);
     }
   });
+
+  describe('viewers are read-only', () => {
+    it("does not let a viewer's edit reach an editor, but the editor's edit reaches the viewer", async () => {
+      const id = board();
+      const editor = new SyncClient(boardUrl(url, id, { sub: 'ed', role: 'editor' }));
+      const viewer = new SyncClient(boardUrl(url, id, { sub: 'vi', role: 'viewer' }));
+      await Promise.all([editor.waitForOpen(), viewer.waitForOpen()]);
+
+      viewer.doc.getMap('elements').set('from-viewer', { type: 'rectangle' });
+      editor.doc.getMap('elements').set('from-editor', { type: 'ellipse' });
+
+      await waitUntil(() => viewer.doc.getMap('elements').has('from-editor'));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(editor.doc.getMap('elements').has('from-viewer')).toBe(false);
+      expect(viewer.doc.getMap('elements').has('from-editor')).toBe(true);
+      editor.close();
+      viewer.close();
+    });
+
+    it("keeps a viewer's edit out of the stored board", async () => {
+      const id = board();
+      const editor = new SyncClient(boardUrl(url, id, { sub: 'ed', role: 'editor' }));
+      const viewer = new SyncClient(boardUrl(url, id, { sub: 'vi', role: 'viewer' }));
+      await Promise.all([editor.waitForOpen(), viewer.waitForOpen()]);
+      editor.doc.getMap('elements').set('kept', 1);
+      viewer.doc.getMap('elements').set('dropped', 1);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      editor.close();
+      viewer.close();
+      await waitUntil(() => store.documents.has(id));
+
+      const reader = new SyncClient(boardUrl(url, id, { sub: 'ed2', role: 'owner' }));
+      await reader.waitForOpen();
+      await waitUntil(() => reader.doc.getMap('elements').has('kept'));
+
+      expect(reader.doc.getMap('elements').has('dropped')).toBe(false);
+      reader.close();
+    });
+
+    it('lets a viewer open a board that already has content', async () => {
+      const id = board();
+      const owner = new SyncClient(boardUrl(url, id, { role: 'owner' }));
+      await owner.waitForOpen();
+      owner.doc.getMap('elements').set('rect-1', { type: 'rectangle' });
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const viewer = new SyncClient(boardUrl(url, id, { sub: 'vi', role: 'viewer' }));
+      await viewer.waitForOpen();
+
+      await waitUntil(() => viewer.doc.getMap('elements').has('rect-1'));
+      owner.close();
+      viewer.close();
+    });
+  });
 });
