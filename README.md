@@ -102,7 +102,7 @@ The repository is a pnpm workspace (`apps/*`, `packages/*`); the root scripts ru
 
 ## Project tracking
 
-Work is tracked on the [project board](https://github.com/users/GravionLabs/projects/7) as Epic → Feature → PBI → Task (Bug → Task), with [GitHub's native sub-issues](https://github.com/GravionLabs/elysion/issues) for parent/child links — see the issue templates in [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE).
+Work is tracked on the [project board](https://github.com/users/GravionLabs/projects/7) as Epic → Feature → PBI → Task (Bug → Task), with [GitHub's native sub-issues](https://github.com/GravionLabs/elysion/issues) for parent/child links — see the issue templates in [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE). The order in which the open backlog is built is in [docs/roadmap.md](docs/roadmap.md); the board's **Phase** field mirrors it.
 
 ## Contributing
 
