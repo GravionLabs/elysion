@@ -12,6 +12,8 @@ export interface YjsRoom {
   readonly doc: Y.Doc;
   readonly awareness: awarenessProtocol.Awareness;
   readonly clients: Set<WebSocket>;
+  /** The awareness client ids each socket announced, so they can be removed when it goes away. */
+  readonly awarenessIdsBySocket: Map<WebSocket, Set<number>>;
 }
 
 /**
@@ -36,7 +38,13 @@ export class YjsRoomRegistry {
 
     const doc = new Y.Doc();
     const awareness = new awarenessProtocol.Awareness(doc);
-    const room: YjsRoom = { boardId, doc, awareness, clients: new Set() };
+    const room: YjsRoom = {
+      boardId,
+      doc,
+      awareness,
+      clients: new Set(),
+      awarenessIdsBySocket: new Map(),
+    };
 
     doc.on('update', (update: Uint8Array, origin: unknown) => {
       const encoder = encoding.createEncoder();
@@ -57,7 +65,18 @@ export class YjsRoomRegistry {
     // locally-received client updates and for this instance's own removals.
     awareness.on(
       'update',
-      ({ added, updated, removed }: { added: number[]; updated: number[]; removed: number[] }) => {
+      (
+        { added, updated, removed }: { added: number[]; updated: number[]; removed: number[] },
+        origin: unknown,
+      ) => {
+        // Remember which socket owns which awareness client id (an update applied for a socket has it as origin).
+        const socket = [...room.clients].find((client) => client === origin);
+        if (socket) {
+          const owned = room.awarenessIdsBySocket.get(socket) ?? new Set<number>();
+          for (const clientId of [...added, ...updated]) owned.add(clientId);
+          for (const clientId of removed) owned.delete(clientId);
+          room.awarenessIdsBySocket.set(socket, owned);
+        }
         for (const clientId of [...added, ...updated]) {
           this.presence
             .recordState(

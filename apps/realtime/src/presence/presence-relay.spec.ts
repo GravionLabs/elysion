@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Redis } from 'ioredis';
-import { PresenceRelay } from './presence-relay.js';
+import { PRESENCE_ENTRY_TTL_MS, PresenceRelay } from './presence-relay.js';
 
 /**
  * A minimal in-memory stand-in for ioredis pub/sub: publishing on any
@@ -40,6 +40,47 @@ class FakeRedisClient extends EventEmitter {
 
   async subscribe(channel: string): Promise<void> {
     this.subscribedChannels.add(channel);
+  }
+
+  readonly hashes = new Map<string, Map<string, string>>();
+  readonly expirations = new Map<string, number>();
+
+  async hset(key: string, field: string, value: string): Promise<number> {
+    const hash = this.hashes.get(key) ?? new Map<string, string>();
+    hash.set(field, value);
+    this.hashes.set(key, hash);
+    return 1;
+  }
+
+  async hdel(key: string, ...fields: string[]): Promise<number> {
+    const hash = this.hashes.get(key);
+    return fields.filter((field) => hash?.delete(field)).length;
+  }
+
+  async hgetall(key: string): Promise<Record<string, string>> {
+    return Object.fromEntries(this.hashes.get(key) ?? []);
+  }
+
+  async expire(key: string, seconds: number): Promise<number> {
+    this.expirations.set(key, seconds);
+    return 1;
+  }
+
+  /** Just enough of ioredis' pipeline: queued hset/expire calls run on exec(). */
+  multi() {
+    const queue: Array<() => Promise<unknown>> = [];
+    const pipeline = {
+      hset: (key: string, field: string, value: string) => {
+        queue.push(() => this.hset(key, field, value));
+        return pipeline;
+      },
+      expire: (key: string, seconds: number) => {
+        queue.push(() => this.expire(key, seconds));
+        return pipeline;
+      },
+      exec: async () => Promise.all(queue.map((run) => run())),
+    };
+    return pipeline;
   }
 
   disconnect(): void {
@@ -107,8 +148,7 @@ describe('PresenceRelay', () => {
 
   it('namespaces channels and state keys with elysion: because Valkey is shared with other projects', async () => {
     const bus = new FakeRedisBus();
-    const hset = vi.fn().mockResolvedValue(1);
-    const pub = Object.assign(new FakeRedisClient(bus), { hset });
+    const pub = new FakeRedisClient(bus);
     const sub = new FakeRedisClient(bus);
     const relay = new PresenceRelay(pub as unknown as Redis, sub as unknown as Redis);
 
@@ -116,6 +156,57 @@ describe('PresenceRelay', () => {
     await relay.recordState('board-1', 7, new Uint8Array([1]));
 
     expect([...sub.subscribedChannels]).toEqual(['elysion:presence:board-1']);
-    expect(hset.mock.calls[0][0]).toBe('elysion:presence:state:board-1');
+    expect([...pub.hashes.keys()]).toEqual(['elysion:presence:state:board-1']);
+  });
+
+  describe('state entries', () => {
+    afterEach(() => vi.useRealTimers());
+
+    function relayWithClient() {
+      const pub = new FakeRedisClient(new FakeRedisBus());
+      const relay = new PresenceRelay(
+        pub as unknown as Redis,
+        new FakeRedisClient(new FakeRedisBus()) as unknown as Redis,
+      );
+      return { relay, pub };
+    }
+
+    it('lets a board hash expire a day after its last write, so leaked keys do not pile up', async () => {
+      const { relay, pub } = relayWithClient();
+
+      await relay.recordState('board-1', 7, new Uint8Array([1]));
+
+      expect(pub.expirations.get('elysion:presence:state:board-1')).toBe(24 * 60 * 60);
+    });
+
+    it('returns the entries that are still fresh', async () => {
+      const { relay } = relayWithClient();
+
+      await relay.recordState('board-1', 7, new Uint8Array([1, 2, 3]));
+
+      expect(await relay.snapshot('board-1')).toEqual([new Uint8Array([1, 2, 3])]);
+    });
+
+    it('drops and deletes entries older than the awareness timeout, keeping refreshed ones', async () => {
+      vi.useFakeTimers();
+      const { relay, pub } = relayWithClient();
+      await relay.recordState('board-1', 1, new Uint8Array([1]));
+      await relay.recordState('board-1', 2, new Uint8Array([2]));
+
+      vi.advanceTimersByTime(PRESENCE_ENTRY_TTL_MS - 1000);
+      await relay.recordState('board-1', 2, new Uint8Array([22])); // client 2 announced itself again
+      vi.advanceTimersByTime(2000);
+
+      expect(await relay.snapshot('board-1')).toEqual([new Uint8Array([22])]);
+      expect([...(pub.hashes.get('elysion:presence:state:board-1')?.keys() ?? [])]).toEqual(['2']);
+    });
+
+    it('deletes entries written before timestamps existed', async () => {
+      const { relay, pub } = relayWithClient();
+      await pub.hset('elysion:presence:state:board-1', '9', 'AQID'); // old format: bare base64
+
+      expect(await relay.snapshot('board-1')).toEqual([]);
+      expect(pub.hashes.get('elysion:presence:state:board-1')?.size).toBe(0);
+    });
   });
 });
