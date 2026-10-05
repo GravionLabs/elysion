@@ -27,6 +27,12 @@ This is what makes collaboration links possible (#101).
 
 The top bar of the board page links back: the brand and an "All boards" button (an icon only below 640 px) both go to `/`.
 
+### Renaming a board
+
+The board's title in the top bar is a button when the board is a stored one (a room such as `default` has no name to change and stays plain text). Clicking it turns the title into a field with the name selected; **Enter** or leaving the field saves, **Escape** cancels, and a name that did not change sends nothing. An empty name is refused: Enter keeps the field open with "A board needs a name.", leaving the field with an empty name just cancels. The field takes up to 120 characters, the backend's limit.
+
+Saving is optimistic: `Board.rename` shows the new name at once and sends `PATCH /api/boards/:id` (`BoardApi.rename`); the name in the answer (trimmed by the backend) replaces it. If the request fails the previous name comes back and the banner says "The board could not be renamed." The browser tab is named after the board, `<name> · Elysion` (`Elysion` for a room without a name, `Boards · Elysion` on the list).
+
 ## Top bar and the element contract
 
 [ADR 0010](../adr/0010-shell-controls-the-canvas.md): the Angular shell owns the top bar (`topbar/top-bar.ts`, after ariadne's `.topbar`: brand, board name, sync status, theme toggle), the canvas stays free of board logic.

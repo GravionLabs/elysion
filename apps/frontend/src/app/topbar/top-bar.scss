@@ -60,6 +60,56 @@
   white-space: nowrap;
 }
 
+// The title of a stored board is a button that turns into a field, so it can be renamed in place.
+.title-button,
+.title-input {
+  max-width: 100%;
+  margin: 0 -6px;
+  padding: 3px 6px;
+  color: inherit;
+  font: inherit;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+}
+
+.title-button {
+  overflow: hidden;
+  background: transparent;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+
+  &:hover {
+    border-color: var(--c-border);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 1px;
+  }
+}
+
+.title-input {
+  box-sizing: border-box;
+  width: min(32ch, 60vw);
+  background: var(--c-surface-2);
+  border-color: var(--c-primary);
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--c-danger);
+  }
+}
+
+.title-error {
+  flex-shrink: 0;
+  color: var(--c-danger);
+  font-size: 12px;
+}
+
 .status {
   display: inline-flex;
   flex-shrink: 0;

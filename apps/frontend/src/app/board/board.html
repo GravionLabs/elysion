@@ -1,10 +1,12 @@
 <app-top-bar
   [boardId]="boardId()"
   [boardName]="boardName()"
+  [canRename]="boardName() !== null"
   [status]="syncStatus()"
   [theme]="theme()"
   [libraryOpen]="libraryOpen()"
   [hasSelection]="selectionCount() > 0"
+  (renameRequested)="rename($event)"
   (themeToggle)="toggleTheme()"
   (libraryToggle)="toggleLibrary()"
   (exportRequested)="exportBoard($event)"

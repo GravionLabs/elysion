@@ -2,11 +2,15 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   Component,
   ElementRef,
+  computed,
+  effect,
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { map, switchMap } from 'rxjs';
 import { Theme, ThemeService } from '../theme/theme.service';
@@ -32,6 +36,7 @@ export class Board {
   readonly #canvasElementSrc = inject(CANVAS_ELEMENT_SRC);
   readonly #themeService = inject(ThemeService);
   readonly #api = inject(BoardApi);
+  readonly #pageTitle = inject(Title);
 
   /** Passed to <elysion-canvas> as the `board-id` attribute. */
   readonly boardId = input('default');
@@ -63,8 +68,8 @@ export class Board {
   /** The Yjs connection, from the element's `status` event. */
   readonly syncStatus = signal<SyncStatus>('connecting');
 
-  /** The board's name, or `null` while it loads and for a room without a stored board. */
-  readonly boardName = toSignal(
+  /** The board's name as loaded, or `null` while it loads and for a room without a stored board. */
+  readonly #loadedName = toSignal(
     toObservable(this.boardId).pipe(
       switchMap((id) => this.#api.get(id)),
       map((board) => board?.name ?? null),
@@ -72,8 +77,36 @@ export class Board {
     { initialValue: null },
   );
 
+  /** A name the user just gave the board, shown at once (and rolled back if saving fails). */
+  readonly #renamedTo = signal<string | null>(null);
+
+  /** The board's name, or `null` while it loads and for a room without a stored board. */
+  readonly boardName = computed(() => this.#renamedTo() ?? this.#loadedName());
+
   constructor() {
     this.#loader.load(this.#canvasElementSrc).catch(() => this.status.set('error'));
+    // Another board in the same page starts without the previous one's new name.
+    effect(() => {
+      this.boardId();
+      untracked(() => this.#renamedTo.set(null));
+    });
+    effect(() => {
+      const name = this.boardName();
+      this.#pageTitle.setTitle(name ? `${name} · Elysion` : 'Elysion');
+    });
+  }
+
+  /** The user confirmed a new name in the top bar: show it at once, save it, undo it if saving fails. */
+  rename(name: string): void {
+    const before = this.#renamedTo();
+    this.#renamedTo.set(name);
+    this.#api.rename(this.boardId(), name).subscribe({
+      next: (board) => this.#renamedTo.set(board.name),
+      error: () => {
+        this.#renamedTo.set(before);
+        this.notice.set('The board could not be renamed.');
+      },
+    });
   }
 
   onCanvasReady(): void {

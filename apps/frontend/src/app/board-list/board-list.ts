@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, ElementRef, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
 import { ThemeService } from '../theme/theme.service';
 import { BoardApi, BoardInfo, MAX_BOARD_NAME_LENGTH } from '../board/board-api';
@@ -19,6 +20,7 @@ type CreateState = 'closed' | 'editing' | 'saving';
 export class BoardList {
   readonly #api = inject(BoardApi);
   readonly #router = inject(Router);
+  readonly #pageTitle = inject(Title);
   // Injected so the theme is applied to the page, which the board page does through its top bar.
   readonly #theme = inject(ThemeService);
 
@@ -35,6 +37,7 @@ export class BoardList {
   private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
 
   constructor() {
+    this.#pageTitle.setTitle('Boards · Elysion');
     this.load();
     // Put the cursor in the name field, with the default selected, when the form opens.
     effect(() => {

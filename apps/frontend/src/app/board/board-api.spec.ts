@@ -91,4 +91,23 @@ describe('BoardApi', () => {
 
     await expect(result).rejects.toMatchObject({ status: 400 });
   });
+
+  it('renames a board with a PATCH', async () => {
+    const result = firstValueFrom(api.rename(id, 'Planning'));
+
+    const request = http.expectOne(`/api/boards/${id}`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ name: 'Planning' });
+    request.flush({ ...board, name: 'Planning' });
+
+    expect((await result).name).toBe('Planning');
+  });
+
+  it('does not hide a failing rename', async () => {
+    const result = firstValueFrom(api.rename(id, 'Planning'));
+
+    http.expectOne(`/api/boards/${id}`).flush('', { status: 404, statusText: 'Not Found' });
+
+    await expect(result).rejects.toMatchObject({ status: 404 });
+  });
 });

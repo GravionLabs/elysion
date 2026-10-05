@@ -1,7 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By, Title } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
+import { TopBar } from '../topbar/top-bar';
 import { ThemeService } from '../theme/theme.service';
 import { Board } from './board';
 import { CanvasElementLoader } from './canvas-element-loader';
@@ -333,6 +335,105 @@ describe('Board', () => {
       fixture.detectChanges();
 
       expect(title()).toContain(id);
+    });
+
+    describe('renaming', () => {
+      const flushName = async (name: string) => {
+        http.expectOne(`/api/boards/${id}`).flush({ id, name, createdAt: '', path: '' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+      };
+      const rename = async (name: string) => {
+        const bar = fixture.debugElement.query(By.directive(TopBar)).componentInstance as TopBar;
+        bar.renameRequested.emit(name);
+        await fixture.whenStable();
+        fixture.detectChanges();
+      };
+
+      beforeEach(async () => {
+        fixture.componentRef.setInput('boardId', id);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        await flushName('Q3 planning');
+      });
+
+      it('shows the new name at once and keeps it after the server confirms', async () => {
+        await rename('Q4 planning');
+
+        expect(title()).toContain('Q4 planning'); // before the PATCH is answered
+        const request = http.expectOne(`/api/boards/${id}`);
+        expect(request.request.method).toBe('PATCH');
+        expect(request.request.body).toEqual({ name: 'Q4 planning' });
+        request.flush({ id, name: 'Q4 planning', createdAt: '', path: '' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(title()).toContain('Q4 planning');
+        expect(fixture.nativeElement.querySelector('.board-banner')).toBeNull();
+      });
+
+      it('shows the name the server stored, which is trimmed', async () => {
+        await rename('Q4 planning');
+
+        http
+          .expectOne(`/api/boards/${id}`)
+          .flush({ id, name: 'Q4 planning (stored)', createdAt: '', path: '' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(title()).toContain('Q4 planning (stored)');
+      });
+
+      it('puts the old name back and says so when saving fails', async () => {
+        await rename('Q4 planning');
+
+        http.expectOne(`/api/boards/${id}`).flush('', { status: 502, statusText: 'Bad Gateway' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(title()).toContain('Q3 planning');
+        expect(fixture.nativeElement.querySelector('.board-banner')?.textContent).toContain(
+          'could not be renamed',
+        );
+      });
+
+      it('goes back to the name before, not to the loaded one, when a second rename fails', async () => {
+        await rename('Q4 planning');
+        http
+          .expectOne(`/api/boards/${id}`)
+          .flush({ id, name: 'Q4 planning', createdAt: '', path: '' });
+        await rename('Q5 planning');
+
+        http.expectOne(`/api/boards/${id}`).flush('', { status: 400, statusText: 'Bad Request' });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(title()).toContain('Q4 planning');
+      });
+
+      it('names the browser tab after the board', async () => {
+        expect(TestBed.inject(Title).getTitle()).toBe('Q3 planning · Elysion');
+
+        await rename('Q4 planning');
+        http
+          .expectOne(`/api/boards/${id}`)
+          .flush({ id, name: 'Q4 planning', createdAt: '', path: '' });
+        await fixture.whenStable();
+
+        expect(TestBed.inject(Title).getTitle()).toBe('Q4 planning · Elysion');
+      });
+
+      it('offers the rename only for a stored board', async () => {
+        expect(fixture.nativeElement.querySelector('.title-button')).not.toBeNull();
+
+        fixture.componentRef.setInput('boardId', 'default');
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelector('.title-button')).toBeNull();
+        expect(TestBed.inject(Title).getTitle()).toBe('Elysion');
+      });
     });
 
     it('does not ask the BFF about a room such as default', async () => {

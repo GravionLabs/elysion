@@ -43,4 +43,9 @@ export class BoardApi {
   create(name: string): Observable<BoardInfo> {
     return this.#http.post<BoardInfo>('/api/boards', { name });
   }
+
+  /** Renames a board; the backend trims the name and checks it (1 to 120 characters). */
+  rename(id: string, name: string): Observable<BoardInfo> {
+    return this.#http.patch<BoardInfo>(`/api/boards/${encodeURIComponent(id)}`, { name });
+  }
 }

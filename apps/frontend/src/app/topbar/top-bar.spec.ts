@@ -143,4 +143,134 @@ describe('TopBar', () => {
       (el().querySelector('input[type="checkbox"]') as HTMLInputElement | null)?.disabled,
     ).not.toBe(true);
   });
+
+  describe('renaming', () => {
+    const titleButton = () => el().querySelector('.title-button') as HTMLButtonElement | null;
+    const field = () => el().querySelector('.title-input') as HTMLInputElement | null;
+    const emitted = () => {
+      const names: string[] = [];
+      fixture.componentInstance.renameRequested.subscribe((name) => names.push(name));
+      return names;
+    };
+    const type = async (value: string) => {
+      field()!.value = value;
+      field()!.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+    };
+    const press = async (key: string) => {
+      field()!.dispatchEvent(new KeyboardEvent('keydown', { key }));
+      await fixture.whenStable();
+    };
+
+    beforeEach(async () => {
+      fixture.componentRef.setInput('boardName', 'Q3 planning');
+      fixture.componentRef.setInput('canRename', true);
+      await fixture.whenStable();
+    });
+
+    it('is plain text for a room that is not a stored board', async () => {
+      fixture.componentRef.setInput('canRename', false);
+      await fixture.whenStable();
+
+      expect(titleButton()).toBeNull();
+      expect(el().querySelector('.board-title')?.textContent).toContain('Q3 planning');
+    });
+
+    it('shows the name as a button that is labelled for screen readers', () => {
+      expect(titleButton()?.textContent).toContain('Q3 planning');
+      expect(titleButton()?.getAttribute('aria-label')).toBe('Rename the board Q3 planning');
+      expect(el().querySelector('h1')?.contains(titleButton())).toBe(true);
+    });
+
+    it('turns into a focused field with the name selected when clicked', async () => {
+      titleButton()!.click();
+      await fixture.whenStable();
+
+      expect(titleButton()).toBeNull();
+      expect(field()!.value).toBe('Q3 planning');
+      expect(field()!.maxLength).toBe(120);
+      expect(document.activeElement).toBe(field());
+    });
+
+    it('saves the trimmed name on Enter', async () => {
+      const names = emitted();
+      titleButton()!.click();
+      await fixture.whenStable();
+
+      await type('  Q4 planning  ');
+      await press('Enter');
+
+      expect(names).toEqual(['Q4 planning']);
+      expect(field()).toBeNull();
+    });
+
+    it('saves on blur', async () => {
+      const names = emitted();
+      titleButton()!.click();
+      await fixture.whenStable();
+
+      await type('Q4 planning');
+      field()!.dispatchEvent(new Event('blur'));
+      await fixture.whenStable();
+
+      expect(names).toEqual(['Q4 planning']);
+    });
+
+    it('drops the change on Escape, even though closing the field can blur it', async () => {
+      const names = emitted();
+      titleButton()!.click();
+      await fixture.whenStable();
+      const input = field()!;
+
+      await type('Something else');
+      await press('Escape');
+      input.dispatchEvent(new Event('blur'));
+      await fixture.whenStable();
+
+      expect(names).toEqual([]);
+      expect(titleButton()?.textContent).toContain('Q3 planning');
+    });
+
+    it('does not ask for a save when the name did not change', async () => {
+      const names = emitted();
+      titleButton()!.click();
+      await fixture.whenStable();
+
+      await type('  Q3 planning ');
+      await press('Enter');
+
+      expect(names).toEqual([]);
+      expect(field()).toBeNull();
+    });
+
+    it('refuses an empty name on Enter: the field stays open with a message', async () => {
+      const names = emitted();
+      titleButton()!.click();
+      await fixture.whenStable();
+
+      await type('   ');
+      await press('Enter');
+
+      expect(names).toEqual([]);
+      expect(field()).not.toBeNull();
+      expect(field()!.getAttribute('aria-invalid')).toBe('true');
+      expect(el().querySelector('[role="alert"]')?.textContent).toContain('needs a name');
+
+      await type('Back again'); // typing clears the message
+      expect(el().querySelector('[role="alert"]')).toBeNull();
+    });
+
+    it('treats leaving the field with an empty name as a cancel', async () => {
+      const names = emitted();
+      titleButton()!.click();
+      await fixture.whenStable();
+
+      await type('');
+      field()!.dispatchEvent(new Event('blur'));
+      await fixture.whenStable();
+
+      expect(names).toEqual([]);
+      expect(titleButton()?.textContent).toContain('Q3 planning');
+    });
+  });
 });
