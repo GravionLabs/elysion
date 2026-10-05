@@ -1,6 +1,6 @@
 # ADR 0011: Board document persistence
 
-- Status: proposed (waiting for the product owner; see "Decisions for the owner")
+- Status: accepted
 - Date: 2026-10-05
 - Issues: #98, #266, #267, #268
 - Builds on: [ADR 0003](0003-net10-business-backend.md), [ADR 0006](0006-shared-local-infrastructure.md), [ADR 0007](0007-rustfs-replaces-minio.md)
@@ -135,13 +135,12 @@ Snapshot or update log, for any of the options:
 - The decision can change later without rework outside the store implementation, because everything else
   talks to the `load`, `save` and `delete` interface.
 
-## Decisions for the owner
+## Owner decision
 
-Accepting this ADR means agreeing to:
+Accepted by the product owner on 2026-10-05:
 
 1. Persistence **in the business backend** (A), not in realtime (B) or object storage (C).
 2. **Full snapshots** in Postgres, without an update log and without compaction for now.
 3. **Failing closed** when a room cannot load its state (users see an error instead of an empty board).
 
-Set the status to accepted and remove the `needs-decision` label from #266 to release #269, which implements
-this.
+#269 implements this.

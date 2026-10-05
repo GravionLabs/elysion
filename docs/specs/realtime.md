@@ -14,9 +14,9 @@ WebSocket gateway for Yjs CRDT sync, Redis-backed presence service, JWT validati
 - One `Y.Doc` per board id, held in memory for the process lifetime (`YjsRoomRegistry`) — no persistence, and no cross-instance _doc content_ broadcast yet. Horizontal scaling for doc updates (Redis-backed doc broadcast across instances) is a follow-up, not yet scoped to an issue — presence (below) already solves the analogous problem for awareness state.
 - WS handshake auth (JWT/short-lived token validation) is not implemented yet — see Feature #18.
 
-## Persistence (proposed, not built)
+## Persistence (decided, not built yet)
 
-[ADR 0011](../adr/0011-board-document-persistence.md) proposes how board documents survive a restart; it is waiting for the product owner. Until it is accepted and implemented (#269), documents live only in memory and a restart of `realtime` loses every board. The proposal:
+[ADR 0011](../adr/0011-board-document-persistence.md) (accepted) decides how board documents survive a restart. Until it is implemented (#269), documents live only in memory and a restart of `realtime` loses every board. The design:
 
 - The business backend stores one full Yjs snapshot per board (table `BoardDocuments`, `bytea`, with a version) and offers `GET/PUT/DELETE /internal/boards/{id}/document`; realtime reaches it through a document store interface (`load`, `save`, `delete`).
 - A room loads its stored state before the first sync step is answered. If the load fails, the connection is closed; an unloaded room is never served as an empty board.
