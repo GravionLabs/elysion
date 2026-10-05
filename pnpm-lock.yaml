@@ -109,9 +109,18 @@ importers:
 
   .:
     devDependencies:
+      lint-staged:
+        specifier: ^17.6.0
+        version: 17.6.0
+      oxlint:
+        specifier: ^1.81.0
+        version: 1.81.0
       prettier:
         specifier: ^3.8.1
         version: 3.9.6
+      simple-git-hooks:
+        specifier: ^2.14.0
+        version: 2.14.0
 
   apps/bff:
     dependencies:
@@ -209,7 +218,7 @@ importers:
     devDependencies:
       '@angular/build':
         specifier: ^22.1.7
-        version: 22.1.7(@angular/compiler-cli@22.1.5(@angular/compiler@22.1.5)(typescript@6.0.3))(@angular/compiler@22.1.5)(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2))(@angular/platform-browser@22.1.5(@angular/common@22.1.5(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2)))(@types/node@24.13.3)(chokidar@5.0.0)(postcss@8.5.28)(supports-color@7.2.0)(tslib@2.8.1)(typescript@6.0.3)(vitest@4.1.11)
+        version: 22.1.7(@angular/compiler-cli@22.1.5(@angular/compiler@22.1.5)(typescript@6.0.3))(@angular/compiler@22.1.5)(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2))(@angular/platform-browser@22.1.5(@angular/common@22.1.5(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2)))(@types/node@24.13.3)(chokidar@5.0.0)(postcss@8.5.28)(supports-color@7.2.0)(tslib@2.8.1)(typescript@6.0.3)(vitest@4.1.11)(yaml@2.9.1)
       '@angular/cli':
         specifier: ^22.1.7
         version: 22.1.7(@types/node@24.13.3)(chokidar@5.0.0)(supports-color@7.2.0)
@@ -273,7 +282,7 @@ importers:
         version: 8.18.1
       '@vitejs/plugin-react':
         specifier: ^5.0.4
-        version: 5.2.0(supports-color@7.2.0)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0))
+        version: 5.2.0(supports-color@7.2.0)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1))
       jsdom:
         specifier: ^28.0.0
         version: 28.1.0(@noble/hashes@1.8.0)(supports-color@7.2.0)
@@ -285,10 +294,10 @@ importers:
         version: 6.0.3
       vite:
         specifier: ^8.2.2
-        version: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)
+        version: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1)
       vite-plugin-css-injected-by-js:
         specifier: ^5.0.2
-        version: 5.0.2(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0))
+        version: 5.0.2(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1))
       vitest:
         specifier: ^4.0.8
         version: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(jsdom@28.1.0(@noble/hashes@1.8.0)(supports-color@7.2.0))(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0))
@@ -3890,6 +3899,11 @@ packages:
     resolution: {integrity: sha512-WkUDrojuJs0xkgGf2udWxa3yGBRxPtxUkB79i6aCZLRgc7PM8fZe9TosfPDcvEpQZbuFASnHYmRLBLUbmLOIIA==}
     engines: {node: '>= 12.0.0'}
 
+  lint-staged@17.6.0:
+    resolution: {integrity: sha512-nOhBfYkZEwkFtNzD5pK9s9LkcWoxJ+whLzEnhqi9nl7zTB5n7tg8+9iYgMGx2Wm3VlLu8cbNj0RACzY+nWi5iQ==}
+    engines: {node: '>=22.22.1'}
+    hasBin: true
+
   listr2@11.0.0:
     resolution: {integrity: sha512-8K88S0aSrcSXdJfiZtEy5BQMnR+TyjrCGLcgAvQs6ta0NEnIm0RJ72/Pv67Jvg07cfBhDbuN74V81lSSVYEFEw==}
     engines: {node: '>=22.13.0'}
@@ -4502,6 +4516,10 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
+  simple-git-hooks@2.14.0:
+    resolution: {integrity: sha512-kkTORPAuxQz2g1QUuN0J8yGWT28tjGBfPOdJ4xT7Vbeu30veKUZQIoID2qGgCDAakaQn59UeZJJ4cFGB8PVP2A==}
+    hasBin: true
+
   skin-tone@2.0.0:
     resolution: {integrity: sha512-kUMbT1oBJCpgrnKoSr0o6wPtvRWT9W9UKvGLwfJYO2WuahZRHOpEyL1ckyMGgMWh0UdpmaoFqKKD29WTomNEGA==}
     engines: {node: '>=8'}
@@ -4552,6 +4570,10 @@ packages:
 
   strictdom@1.0.1:
     resolution: {integrity: sha512-cEmp9QeXXRmjj/rVp9oyiqcvyocWab/HaoN4+bwFeZ7QzykJD6L3yD4v12K1x0tHpqRqVpJevN3gW7kyM39Bqg==}
+
+  string-argv@0.3.2:
+    resolution: {integrity: sha512-aqD2Q0144Z+/RqG52NeHEkZauTAUWJO8c6yTftGJKO3Tja5tUgIfmIl6kExvhtxSDP7fXB6DvzkfMpCd/F3G+Q==}
+    engines: {node: '>=0.6.19'}
 
   string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
@@ -5020,6 +5042,11 @@ packages:
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
+  yaml@2.9.1:
+    resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   yargs-parser@22.0.0:
     resolution: {integrity: sha512-rwu/ClNdSMpkSrUb+d6BRsSkLUq1fmfsY6TOpYzTwvwkg1/NRG85KBy3kq++A8LKQwX6lsu+aWad+2khvuXrqw==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
@@ -5129,7 +5156,7 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@angular/build@22.1.7(@angular/compiler-cli@22.1.5(@angular/compiler@22.1.5)(typescript@6.0.3))(@angular/compiler@22.1.5)(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2))(@angular/platform-browser@22.1.5(@angular/common@22.1.5(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2)))(@types/node@24.13.3)(chokidar@5.0.0)(postcss@8.5.28)(supports-color@7.2.0)(tslib@2.8.1)(typescript@6.0.3)(vitest@4.1.11)':
+  '@angular/build@22.1.7(@angular/compiler-cli@22.1.5(@angular/compiler@22.1.5)(typescript@6.0.3))(@angular/compiler@22.1.5)(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2))(@angular/platform-browser@22.1.5(@angular/common@22.1.5(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2)))(@types/node@24.13.3)(chokidar@5.0.0)(postcss@8.5.28)(supports-color@7.2.0)(tslib@2.8.1)(typescript@6.0.3)(vitest@4.1.11)(yaml@2.9.1)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@angular-devkit/architect': 0.2201.7(chokidar@5.0.0)
@@ -5139,7 +5166,7 @@ snapshots:
       '@babel/helper-annotate-as-pure': 8.0.0
       '@babel/helper-split-export-declaration': 7.24.7
       '@inquirer/confirm': 6.1.1(@types/node@24.13.3)
-      '@vitejs/plugin-basic-ssl': 2.3.0(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0))
+      '@vitejs/plugin-basic-ssl': 2.3.0(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1))
       beasties: 0.4.3
       browserslist: 4.28.9
       esbuild: 0.28.2
@@ -5159,7 +5186,7 @@ snapshots:
       tinyglobby: 0.2.17
       tslib: 2.8.1
       typescript: 6.0.3
-      vite: 8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)
+      vite: 8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1)
       watchpack: 2.5.2
     optionalDependencies:
       '@angular/core': 22.1.5(@angular/compiler@22.1.5)(rxjs@7.8.2)
@@ -7087,11 +7114,11 @@ snapshots:
       d3-selection: 3.0.0
       d3-transition: 3.0.1(d3-selection@3.0.0)
 
-  '@vitejs/plugin-basic-ssl@2.3.0(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0))':
+  '@vitejs/plugin-basic-ssl@2.3.0(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1))':
     dependencies:
-      vite: 8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)
+      vite: 8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1)
 
-  '@vitejs/plugin-react@5.2.0(supports-color@7.2.0)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0))':
+  '@vitejs/plugin-react@5.2.0(supports-color@7.2.0)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1))':
     dependencies:
       '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/plugin-transform-react-jsx-self': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))
@@ -7099,7 +7126,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-rc.3
       '@types/babel__core': 7.20.5
       react-refresh: 0.18.0
-      vite: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)
+      vite: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -7132,7 +7159,7 @@ snapshots:
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)
+      vite: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1)
 
   '@vitest/pretty-format@4.1.11':
     dependencies:
@@ -8323,6 +8350,14 @@ snapshots:
       lightningcss-win32-arm64-msvc: 1.33.0
       lightningcss-win32-x64-msvc: 1.33.0
 
+  lint-staged@17.6.0:
+    dependencies:
+      picomatch: 4.0.7
+      string-argv: 0.3.2
+      tinyexec: 1.3.1
+    optionalDependencies:
+      yaml: 2.9.1
+
   listr2@11.0.0:
     dependencies:
       cli-truncate: 6.1.1
@@ -9038,6 +9073,8 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
+  simple-git-hooks@2.14.0: {}
+
   skin-tone@2.0.0:
     dependencies:
       unicode-emoji-modifier-base: 1.0.0
@@ -9073,6 +9110,8 @@ snapshots:
   streamsearch@1.1.0: {}
 
   strictdom@1.0.1: {}
+
+  string-argv@0.3.2: {}
 
   string-width@4.2.3:
     dependencies:
@@ -9270,9 +9309,9 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite-plugin-css-injected-by-js@5.0.2(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)):
+  vite-plugin-css-injected-by-js@5.0.2(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1)):
     dependencies:
-      vite: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)
+      vite: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1)
 
   vite-tsconfig-paths@5.1.4(supports-color@7.2.0)(typescript@6.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)):
     dependencies:
@@ -9280,12 +9319,12 @@ snapshots:
       globrex: 0.1.2
       tsconfck: 3.1.6(typescript@6.0.3)
     optionalDependencies:
-      vite: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)
+      vite: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0):
+  vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -9297,8 +9336,9 @@ snapshots:
       esbuild: 0.28.2
       fsevents: 2.3.3
       sass: 1.101.0
+      yaml: 2.9.1
 
-  vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0):
+  vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -9310,6 +9350,7 @@ snapshots:
       esbuild: 0.28.2
       fsevents: 2.3.3
       sass: 1.101.0
+      yaml: 2.9.1
 
   vitest-canvas-mock@1.2.0(vitest@4.1.11):
     dependencies:
@@ -9337,7 +9378,7 @@ snapshots:
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.1
-      vite: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)
+      vite: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0)(yaml@2.9.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 24.13.3
@@ -9434,6 +9475,9 @@ snapshots:
   y18n@5.0.8: {}
 
   yallist@3.1.1: {}
+
+  yaml@2.9.1:
+    optional: true
 
   yargs-parser@22.0.0: {}
 

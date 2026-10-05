@@ -10,6 +10,8 @@ allowBuilds:
   esbuild: true
   lmdb: true
   msgpackr-extract: true
+  # The root `prepare` script installs the hook, so its postinstall is not needed.
+  simple-git-hooks: false
 
 onlyBuiltDependencies:
   - '@parcel/watcher'
