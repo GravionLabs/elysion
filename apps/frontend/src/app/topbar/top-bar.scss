@@ -175,7 +175,11 @@
 }
 
 // The way back to the list stays as an icon where the bar is short of room.
-@media (max-width: 640px) {
+.all-boards span {
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
   .all-boards span {
     display: none;
   }

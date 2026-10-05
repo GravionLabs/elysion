@@ -144,4 +144,62 @@ describe('CanvasApp', () => {
     const again = JSON.parse(await ((await controls.exportBoard('excalidraw')) as Blob).text());
     expect(again.elements.map((e: { id: string }) => e.id).sort()).toEqual([...ids].sort());
   });
+
+  it('zooms from the toolbar in steps of 10% and resets to 100%', async () => {
+    render(<CanvasApp boardId="test-board" />);
+    await screen.findByTestId('toolbar-rectangle');
+    const level = () => screen.getByTestId('elysion-zoom-reset').textContent;
+    expect(level()).toBe('100%');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    await waitFor(() => expect(level()).toBe('110%'));
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    await waitFor(() => expect(level()).toBe('120%'));
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
+    await waitFor(() => expect(level()).toBe('110%'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset zoom to 100%' }));
+    await waitFor(() => expect(level()).toBe('100%'));
+  });
+
+  it('does not zoom out below 10%', async () => {
+    render(<CanvasApp boardId="test-board" />);
+    await screen.findByTestId('toolbar-rectangle');
+
+    for (let i = 0; i < 12; i++) {
+      fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
+    }
+
+    await waitFor(() => expect(screen.getByTestId('elysion-zoom-reset').textContent).toBe('10%'));
+  });
+
+  it('fits an empty board back to 100%', async () => {
+    render(<CanvasApp boardId="test-board" />);
+    await screen.findByTestId('toolbar-rectangle');
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    await waitFor(() => expect(screen.getByTestId('elysion-zoom-reset').textContent).toBe('110%'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom to fit' }));
+
+    await waitFor(() => expect(screen.getByTestId('elysion-zoom-reset').textContent).toBe('100%'));
+  });
+
+  it('undoes and redoes through the toolbar, the way the keyboard shortcut does', async () => {
+    const onControls = vi.fn();
+    const { container } = render(<CanvasApp boardId="test-board" onControls={onControls} />);
+    await screen.findByTestId('toolbar-rectangle');
+    await excalidrawReady(container);
+    const controls = onControls.mock.calls[0][0];
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sticky note' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Amber sticky note' }));
+    expect(await controls.exportBoard('excalidraw')).not.toBeNull();
+
+    // By test id: Excalidraw's own (CSS-hidden) Undo is in the DOM too, which jsdom does not hide.
+    fireEvent.click(screen.getByTestId('elysion-undo'));
+    await waitFor(async () => expect(await controls.exportBoard('excalidraw')).toBeNull());
+
+    fireEvent.click(screen.getByTestId('elysion-redo'));
+    await waitFor(async () => expect(await controls.exportBoard('excalidraw')).not.toBeNull());
+  });
 });

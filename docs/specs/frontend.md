@@ -25,7 +25,7 @@ This is what makes collaboration links possible (#101).
 
 **New board** opens an inline form (no browser dialog) with the name preset to "Untitled board", focused and selected; Enter or Create sends `POST /api/boards` (the name is trimmed; blank or longer than 120 characters is refused before the request), Escape or Cancel closes it. While the request runs the form is disabled; if it fails the form stays open with a message so the user can retry. On success the app opens the new board. Until the identity epic lands the list shows every board; with the authorization policies (#117) it shows only the user's boards, without changes here.
 
-The top bar of the board page links back: the brand and an "All boards" button (an icon only below 640 px) both go to `/`.
+The top bar of the board page links back: the brand and an "All boards" button (an icon only below 860 px) both go to `/`.
 
 ### Duplicating a board
 
@@ -108,6 +108,10 @@ Excalidraw's own top tool island is hidden (`.shapes-section`, in `styles/toolba
 - The active button is derived from `appState.activeTool.type` in `onChange`, so shortcuts and any other tool change stay in sync.
 - The pill is a `role="toolbar"` with `aria-label`, `aria-pressed` and `title="<name> (<shortcut>)"` per button and a `:focus-visible` outline.
 - Excalidraw handles shortcuts only while its own container has focus (`handleKeyboardGlobally` is off); the toolbar does not change that.
+- **Undo, redo and zoom** are in the pill too (undo and redo before the tools, zoom out, the zoom level, zoom in and fit after them), so Excalidraw's own cluster in the bottom-left corner (`.layer-ui__wrapper__footer-left`, an internal class like `.shapes-section`, so an Excalidraw upgrade can bring it back) is hidden and the corner belongs to the minimap. The shortcuts are unchanged.
+  - **Zoom** uses the public API: `updateScene` with a new zoom and a scroll that keeps the middle of the view where it is (`zoom.ts`, unit-tested), in Excalidraw's own steps of 10% between 10% and 3000%. The level button resets to 100%; **fit** is `scrollToContent` with `fitToViewport` (90% of the view), and on an empty board it resets the zoom.
+  - **Undo and redo** have no public API in Excalidraw 0.18 (`api.history` only has `clear`). The buttons therefore press the shortcut on the canvas (a `keydown` for Ctrl or Cmd + Z, with Shift for redo, on the `.excalidraw` container), so Excalidraw's own handler does exactly what the keyboard does and keeps the history in one place. The buttons cannot show that nothing is left to undo, because that state is internal too; pressing one then does nothing.
+  - In Excalidraw's compact layout (a phone, a short window) its own bottom bar already has undo and redo, so the toolbar hides its pair there (and the divider after it); the zoom buttons stay, because that bar has none.
 
 ## Minimap
 
@@ -116,7 +120,7 @@ Excalidraw's own top tool island is hidden (`.shapes-section`, in `styles/toolba
 - `CanvasApp` copies the live elements and the scroll, zoom and canvas size from `onChange` into a `SceneStore`, which lives outside React state: a drag on the canvas then re-renders only the minimap, not `CanvasApp` and Excalidraw. Redraws are throttled to one per animation frame.
 - `minimap-geometry.ts` holds the maths, unit-tested without a DOM: scene bounds (elements plus viewport, so the frame never leaves the minimap, and at least two viewports wide and high, like ariadne's `fMinSize`, so the frame stays at most about half the minimap instead of filling it when the content is small), the scale, and the mapping back to scene points. Bounds use a loop, because spreading hundreds of thousands of elements into `Math.min` overflows the call stack. Layout plus mapping took 4 ms for 5,000 and 9 ms for 50,000 elements.
 - Clicking or dragging in it pans the canvas: the picked scene point is scrolled to the center through `updateScene({ appState: { scrollX, scrollY } })`. Scroll is local state and is not written to Yjs. While dragging, the mapping (scale and origin) is frozen, because it includes the viewport and would otherwise rescale under the pointer, but the frame keeps following the view (`followViewport`); the elements therefore stay where they are until release; the pointer is clamped to the minimap, so dragging out stops at its edge instead of flying the view away from the content. On release the layout is unfrozen and the minimap re-fits to the current scene (it must redraw then even if no scene change follows, #190).
-- It is hidden while the scene is empty. It sits above Excalidraw's zoom and undo controls (`--elysion-minimap-bottom`, 72px) and below Excalidraw's UI layer, so the property panel is never covered; once those controls move into the toolbar (#181) the bottom is 16px like ariadne's.
+- It is hidden while the scene is empty. It sits in the bottom-left corner, 16px from the edges like ariadne's (`--elysion-minimap-bottom`), since the zoom and undo controls moved into the toolbar, and below Excalidraw's UI layer, so the property panel is never covered. Next to it the toolbar wraps instead of running under it (its `max-width` leaves 192px on each side), and on a canvas up to 1100px wide the minimap moves above the toolbar (112px, room for two rows).
 - jsdom does not fire Excalidraw's `onChange` after `updateScene`, so the wiring into `CanvasApp` is checked in the browser, not in a unit test.
 
 ## Canvas element style
