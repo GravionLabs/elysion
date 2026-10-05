@@ -75,7 +75,7 @@ with FluentValidation for request validation.
 4. **Validation:** request records carry DataAnnotations and `AddValidation()` turns failures into the
    existing `400` problem details; rules that need more than attributes (trimming, uniqueness) stay in the
    handler. Whether to keep the current explicit check for the board name is decided while moving
-   `BoardsController` (#434), as long as the response stays the same.
+   `BoardsController` (#434), as long as the response stays the same. (#434 kept the explicit check: the board name needs trimming, and it answers the same `400` with `errors.name`.)
 5. **Revisit Carter** if the endpoint count grows past a few dozen and registering features by hand becomes a
    burden, or if the backend needs form or file uploads. Because a `Map…Endpoints` method and a Carter module
    have the same shape, adopting it later is a mechanical change.

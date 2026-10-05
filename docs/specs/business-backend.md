@@ -17,7 +17,7 @@ Domain logic, persistence (PostgreSQL), templates, export service (PNG/PDF). Int
 
 ## Board API
 
-`BoardsController` (`/boards`) is the Board service. It returns and accepts DTOs (`Contracts/BoardContracts.cs`); the `Board` entity is never exposed. Reached through the BFF only.
+The board endpoints (`/boards`, minimal APIs in `Endpoints/BoardEndpoints.cs`) are the Board service. It returns and accepts DTOs (`Contracts/BoardContracts.cs`); the `Board` entity is never exposed. Reached through the BFF only.
 
 | Request                                  | Result                                       |
 | ---------------------------------------- | -------------------------------------------- |

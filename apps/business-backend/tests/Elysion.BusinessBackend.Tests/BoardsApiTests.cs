@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Elysion.BusinessBackend.Api.Contracts;
-using Elysion.BusinessBackend.Api.Controllers;
+using Elysion.BusinessBackend.Api.Endpoints;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Shouldly;
@@ -69,7 +69,7 @@ public class BoardsApiTests
     [Test]
     public async Task Create_accepts_a_name_of_exactly_the_maximum_length_and_rejects_one_more()
     {
-        var longest = new string('x', BoardsController.MaxNameLength);
+        var longest = new string('x', BoardEndpoints.MaxNameLength);
 
         (await CreateAsync(longest)).Name.ShouldBe(longest);
 
@@ -198,5 +198,35 @@ public class BoardsApiTests
     public async Task Delete_of_an_unknown_board_is_404()
     {
         (await _client.DeleteAsync($"/boards/{Guid.NewGuid()}")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Test]
+    public async Task Rename_without_a_json_body_is_rejected()
+    {
+        var created = await CreateAsync("Keep me");
+
+        var response = await _client.PatchAsync($"/boards/{created.Id}", content: null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.UnsupportedMediaType);
+    }
+
+    [Test]
+    public async Task Create_with_malformed_json_is_a_bad_request()
+    {
+        var content = new StringContent("{ not json", System.Text.Encoding.UTF8, "application/json");
+
+        var response = await _client.PostAsync("/boards", content);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Test]
+    public async Task Create_with_an_empty_json_body_is_rejected_like_a_missing_name()
+    {
+        var content = new StringContent("", System.Text.Encoding.UTF8, "application/json");
+
+        var response = await _client.PostAsync("/boards", content);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 }
