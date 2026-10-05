@@ -6,7 +6,7 @@ board ([GravionLabs project 7](https://github.com/users/GravionLabs/projects/7))
 holds the phase and the items are sorted in this order. Each phase is a GitHub milestone
 (M1 to M7) holding its features, PBIs and tasks; epics span several phases and have no milestone.
 
-Refined on 2026-10-05. When the backlog changes, update this file and the board together.
+Refined on 2026-10-05; open PBIs only, finished ones drop out (last refreshed 2026-10-05). When the backlog changes, update this file and the board together.
 
 ## M1 Foundation
 
@@ -14,11 +14,7 @@ Milestone: [M1 Foundation](https://github.com/GravionLabs/elysion/milestone/1)
 
 Cheap groundwork that every later PR benefits from: one command verifies the whole repository including .NET, every TypeScript app is linted, CI runs on every PR, and the whole stack runs behind Traefik (which the gateway auth work in M5 needs for its checks).
 
-1. #246 chore: run the .NET build, tests and format check from the root scripts (Feature #106)
-2. #249 chore: lint the Angular and canvas apps with oxlint (Feature #107)
-3. #253 chore: format and lint staged files on commit (Feature #107)
-4. #256 ci: verify every push and pull request with GitHub Actions (Feature #29)
-5. #261 feat: run bff, realtime, business backend and frontend in the dev compose behind Traefik (Feature #28)
+All PBIs of this phase are done.
 
 ## M2 Durable boards
 
@@ -26,11 +22,7 @@ Milestone: [M2 Durable boards](https://github.com/GravionLabs/elysion/milestone/
 
 The largest functional gap: today a realtime restart wipes every board, and two realtime instances diverge on content. The persistence ADR comes first; deleting and duplicating boards in M3 build on its storage.
 
-1. #266 docs: decide where board documents are persisted and record it as an ADR (Feature #98)
-2. #269 feat: persist board documents and restore them after a restart (Feature #98)
-3. #282 fix: remove the presence of clients that dropped without closing (Feature #100)
-4. #279 feat: unload idle board rooms after their last client leaves (Feature #100)
-5. #274 feat: relay document updates between realtime instances through Valkey (Feature #99)
+All PBIs of this phase are done.
 
 ## M3 Board management
 
