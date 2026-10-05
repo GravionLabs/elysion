@@ -30,7 +30,7 @@ The board endpoints (`/boards`, minimal APIs in `Endpoints/BoardEndpoints.cs`) a
 
 A board is `{ id, name, createdAt }`. The name is trimmed and must be 1 to 120 characters; otherwise the answer is `400` with problem details (`errors.name`). A route id that is not a GUID is a `404`. `createdAt` is cut to microseconds, which is what Postgres keeps, so a create and every later read show the same value.
 
-There is no owner and no authorization yet: every caller sees every board. Users, board membership and policies come with the identity epic (#91); the identity provider is Keycloak and this service only validates tokens ([ADR 0014](../adr/0014-keycloak-identity-provider.md), [token flow](identity.md)).
+Board access is governed by roles, see "Board authorization" below: the list holds only the caller's boards, and every other board endpoint needs a role on the board.
 
 **Duplicate** creates a board named "<name> (copy)" (the name is cut short, to 120 characters, when the suffix would not fit) and copies the source's stored document byte for byte as a fresh document (version 1), so the two boards are independent from then on. The copy is what was last saved: changes still inside a room's save window (a few seconds) are not in it yet. A board without content gets a copy without a document.
 
@@ -68,6 +68,24 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $TOKEN" http:
 | `preferred_username`, else `name`, else `email`, else `sub` | `User.DisplayName`: never blank, whichever optional claims are missing |
 
 A new `sub` inserts a row; a known `sub` is updated only when the email or display name changed (an unchanged token writes nothing). Names and emails longer than the model keeps are cut; a `sub` longer than 255 characters is refused (`401`) instead of being stored cut. **Two first requests of the same person** race on the unique index of `Subject`: `IUserRepository.GetOrAddAsync` inserts, and when the insert fails because the subject exists now it returns the winner's row; there is no check-then-insert. Any other failed insert is not swallowed.
+
+## Board authorization
+
+Resource-based authorization over `BoardMembership` (`Authorization/`). Three named policies, declared by the endpoints with `RequireAuthorization`:
+
+| Policy            | Needs                 | Endpoints                                                                           |
+| ----------------- | --------------------- | ----------------------------------------------------------------------------------- |
+| `BoardRead`       | Viewer, Editor, Owner | `GET /boards/{id}`, `GET /boards/{id}/membership/me`, `POST /boards/{id}/duplicate` |
+| `BoardWrite`      | Editor, Owner         | `PATCH /boards/{id}`                                                                |
+| `BoardAdminister` | Owner                 | `DELETE /boards/{id}`                                                               |
+
+`BoardAuthorizationHandler` takes the board id from the route (`{id}`) and the caller from `ICurrentUser`, and compares the caller's role on the board (`IBoardRepository.GetRoleAsync`) with the policy's minimum, by an explicit rank (so reordering the enum cannot change a decision). **The board's owner is an Owner even without a membership row**, so a board is usable before anyone was invited; creating a board (or duplicating one: the copy is the caller's own) makes the caller its owner and adds the explicit Owner membership as well. `GET /boards` returns only boards the caller owns or is a member of.
+
+**A caller with no role on a board gets `404`, not `403`**, and so does a board that does not exist: otherwise anyone could probe ids to learn which boards exist. `BoardAuthorizationResultHandler` turns that one failure into 404; a member whose role is too low (an Editor deleting, a Viewer renaming) gets `403`, a missing token `401`. This is deliberate; do not "fix" it.
+
+`GET /boards/{id}/membership/me` answers `{ boardId, role }` (`Owner`, `Editor` or `Viewer`) for the BFF's WS token check (#120), `404` for non-members.
+
+**Boards from before users existed have no owner** and no membership, so nobody has a role on them: they are invisible (404) and not listed. In a development database give such a board to a user with `UPDATE "Boards" SET "OwnerId" = '<user id>' WHERE "Id" = '<board id>'` (users appear in `"Users"` after their first request). Sharing and invitations are #245.
 
 ## Repositories
 

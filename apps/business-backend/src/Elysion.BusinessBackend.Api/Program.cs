@@ -1,3 +1,4 @@
+using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Endpoints;
@@ -12,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 // Keycloak access tokens are the only way in; endpoints that must stay open say so (docs/specs/identity.md).
 builder.Services.AddElysionAuthentication();
+builder.Services.AddBoardAuthorization();
 
 builder.Services.AddDbContext<ElysionDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Elysion")));
