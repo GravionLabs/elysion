@@ -1,5 +1,5 @@
-// Runs `dotnet <args>` for this app and fails with a readable message when the .NET SDK is missing,
-// so the root `pnpm build|test|lint` (pnpm -r) covers the business backend too.
+// Runs `dotnet build|test|format` for this app and fails with a readable message when the .NET SDK is
+// missing. The root `pnpm build|test|lint` call it through `build:dotnet`, `test:dotnet` and `lint:dotnet`.
 import { spawnSync } from 'node:child_process';
 
 const SOLUTION = 'Elysion.BusinessBackend.slnx';

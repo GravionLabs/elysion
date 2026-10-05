@@ -3,7 +3,6 @@ packages:
   - 'apps/frontend-canvas'
   - 'apps/bff'
   - 'apps/realtime'
-  - 'apps/business-backend'
   - 'packages/*'
 
 allowBuilds:
