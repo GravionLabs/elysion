@@ -11,7 +11,7 @@ WebSocket gateway for Yjs CRDT sync, Redis-backed presence service, JWT validati
 ## Protocol
 
 - `YjsGateway` (`src/yjs/`) speaks the standard Yjs sync sub-protocol (`y-protocols/sync`) over a raw WebSocket at a fixed path, `/yjs`. The board id is **not** a path segment — `@nestjs/platform-ws`'s `WsAdapter` routes an upgrade to a gateway by exact pathname match, with no wildcard/pattern support, so a dynamic per-board path isn't possible without a custom adapter. Instead, the board id travels as a query parameter: `ws://<host>/yjs?board=<board-id>`.
-- One `Y.Doc` per board id, held in memory (`YjsRoomRegistry`) and persisted through the business backend (see Persistence); there is no cross-instance _doc content_ broadcast yet. Horizontal scaling for doc updates (Redis-backed doc broadcast across instances) is a follow-up, not yet scoped to an issue — presence (below) already solves the analogous problem for awareness state.
+- One `Y.Doc` per board id, held in memory (`YjsRoomRegistry`) and persisted through the business backend (see Persistence); document updates are relayed between instances through Valkey (see Document relay). Horizontal scaling for doc updates (Redis-backed doc broadcast across instances) is a follow-up, not yet scoped to an issue — presence (below) already solves the analogous problem for awareness state.
 - WS handshake auth (JWT/short-lived token validation) is not implemented yet — see Feature #18.
 
 ## Persistence
@@ -23,9 +23,18 @@ Board documents survive a restart ([ADR 0011](../adr/0011-board-document-persist
 - `YjsRoomRegistry.getOrLoad` loads a room's stored state before the first sync step is answered; connections arriving during the load are queued, and concurrent first connections share one load. **If the load fails the connection is closed with code 1011** (`Board could not be loaded`): an empty board is never served in place of an unloaded one, because the next save would overwrite the real content.
 - A changed room is saved 2 s after its last change (at the latest 10 s after the first unsaved change), when its last client leaves, and when the process stops (`enableShutdownHooks`). A save names the version it is based on. If another instance saved first (`409`), realtime merges the stored state in with `Y.applyUpdate` and saves the union. A failed save is retried after 1 s, doubling up to 30 s, and logged as an error; the room stays in memory meanwhile. An unchanged room is never saved.
 - **Unloading idle rooms:** when the last client of a room leaves, the room is saved at once and unloaded 30 s later (`ROOM_EVICT_AFTER_MS` changes the grace period): its `Y.Doc` and `Awareness` are destroyed and its presence channel is unsubscribed. A client that connects during the grace period keeps the room; one that connects later gets the stored state. If the final save keeps failing the room stays in memory (its content is the only copy) and unloading is retried every grace period.
-- Updates are not relayed between instances yet (#274); until then two instances serving one board converge only through the store (on conflict).
+- Instances do not rely on the store to see each other's edits: the document relay (below) does that within milliseconds, the store only matters across restarts and as the conflict check.
 - Sizes: the state is about the size of the live elements' JSON (a typical board is a few hundred KB, a large one a few MB) and grows by about 1 KB per two seconds of dragging because of Yjs tombstones; see the ADR for the measurements.
 - A room that is open when its board is deleted can save its document again. Such orphans are not swept yet.
+
+## Document relay
+
+Two `realtime` instances serving one board show the same content: `DocumentRelay` (`src/document/`) publishes every Yjs update that a client sent to an instance on the Valkey channel `elysion:doc:<boardId>` (the `elysion:` prefix keeps the shared Valkey tidy, ADR 0006), and every other instance that has the room open applies it. It has the same shape as `PresenceRelay`: each envelope carries the sender's instance id, so an instance ignores its own messages, and one subscription shares the two Valkey connections.
+
+- Updates that arrive from the relay are applied with their own transaction origin: they are sent to the receiving instance's clients, but not published again (no ping-pong) and not saved by the receiver. The instance whose client made the change saves it (see Persistence); if that instance dies inside the save window the client still has the change and resends it when it reconnects.
+- A lost update must not leave instances diverged, so the relay heals itself. Whenever an instance starts following a board (a room is loaded) and whenever Valkey reconnects after an outage, it publishes `hello` with its Yjs state vector. Every peer answers with the update the sender lacks and with its own state vector (`hello-ack`); the sender answers that with the update the peer lacks. An exchange ends after one round, and it works in both directions, so changes made on either side during an outage are exchanged.
+- Valkey being unreachable never stops editing: publishing failures are logged and the room keeps working and saving on its own; the hello after the reconnect catches up.
+- An unloaded room (see Persistence) unsubscribes from the channel; when someone returns it loads from the store and says hello.
 
 ## Presence
 
@@ -43,4 +52,3 @@ Cursor/avatar presence (Yjs awareness, message type 1) is broadcast cross-instan
 ## Open questions
 
 - Short-lived WS-token issuance flow (BFF vs gateway).
-- How doc updates get broadcast across multiple `realtime` instances once this needs to scale horizontally (Redis pub/sub, most likely — see `PresenceRelay` for the now-solved analogous case for presence).

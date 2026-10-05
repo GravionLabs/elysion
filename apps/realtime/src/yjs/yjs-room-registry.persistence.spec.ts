@@ -7,6 +7,7 @@ import {
   type StoredDocument,
 } from '../persistence/document-store.js';
 import { InMemoryDocumentStore } from '../persistence/in-memory-document-store.js';
+import { inertDocumentRelay } from '../testing/fake-document-relay.js';
 import type { PresenceRelay } from '../presence/presence-relay.js';
 import { YjsRoomRegistry } from './yjs-room-registry.js';
 
@@ -71,7 +72,7 @@ describe('YjsRoomRegistry persistence', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     store = new ScriptedStore();
-    registry = new YjsRoomRegistry(fakePresence(), store, OPTIONS);
+    registry = new YjsRoomRegistry(fakePresence(), store, inertDocumentRelay(), OPTIONS);
   });
   afterEach(() => vi.useRealTimers());
 
@@ -245,7 +246,7 @@ describe('YjsRoomRegistry persistence', () => {
 
     it('saves a room whose last client left and unloads it after the grace period', async () => {
       const presence = fakePresence();
-      registry = new YjsRoomRegistry(presence, store, OPTIONS);
+      registry = new YjsRoomRegistry(presence, store, inertDocumentRelay(), OPTIONS);
       const room = await registry.getOrLoad('b');
       const leave = connect(room);
       room.doc.getMap('elements').set('a', '1');
@@ -291,7 +292,7 @@ describe('YjsRoomRegistry persistence', () => {
 
     it('keeps the content while the final save keeps failing, and unloads once it works', async () => {
       const presence = fakePresence();
-      registry = new YjsRoomRegistry(presence, store, OPTIONS);
+      registry = new YjsRoomRegistry(presence, store, inertDocumentRelay(), OPTIONS);
       const room = await registry.getOrLoad('b');
       connect(room)();
       room.doc.getMap('elements').set('a', 'precious');
@@ -315,7 +316,7 @@ describe('YjsRoomRegistry persistence', () => {
 
     it('does not unload anything while a client is still connected', async () => {
       const presence = fakePresence();
-      registry = new YjsRoomRegistry(presence, store, OPTIONS);
+      registry = new YjsRoomRegistry(presence, store, inertDocumentRelay(), OPTIONS);
       const room = await registry.getOrLoad('b');
       connect(room);
 
@@ -328,12 +329,17 @@ describe('YjsRoomRegistry persistence', () => {
 
   it('round-trips through the in-memory store: a second registry sees what the first saved', async () => {
     const shared = new InMemoryDocumentStore();
-    const first = new YjsRoomRegistry(fakePresence(), shared, OPTIONS);
+    const first = new YjsRoomRegistry(fakePresence(), shared, inertDocumentRelay(), OPTIONS);
     const room = await first.getOrLoad('b');
     room.doc.getMap('elements').set('a', 'kept');
     await first.flush(room);
 
-    const second = await new YjsRoomRegistry(fakePresence(), shared, OPTIONS).getOrLoad('b');
+    const second = await new YjsRoomRegistry(
+      fakePresence(),
+      shared,
+      inertDocumentRelay(),
+      OPTIONS,
+    ).getOrLoad('b');
 
     expect(elementsOf(second.doc)).toEqual({ a: 'kept' });
   });
