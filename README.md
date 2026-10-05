@@ -102,6 +102,12 @@ docs/
 
 The repository is a pnpm workspace (`apps/*`, `packages/*`); the root scripts run across all of it. The .NET backend is not part of the workspace and builds with `dotnet`.
 
+## Pre-commit hook
+
+`pnpm install` installs a git pre-commit hook (`simple-git-hooks`, configured in the root `package.json`) that runs [lint-staged](lint-staged.config.mjs) on the staged files only: Prettier rewrites them, and oxlint with the app's own `oxlint.json` checks staged TypeScript files and blocks the commit on any finding. It takes a second or two. C# files are not checked in the hook, because `dotnet format` needs about eight seconds just to load the solution; `pnpm lint` and CI cover them.
+
+In an emergency, skip the hook with `git commit --no-verify`; CI runs the same checks, so the problem will show up there.
+
 ## Project tracking
 
 Work is tracked on the [project board](https://github.com/users/GravionLabs/projects/7) as Epic → Feature → PBI → Task (Bug → Task), with [GitHub's native sub-issues](https://github.com/GravionLabs/elysion/issues) for parent/child links — see the issue templates in [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE). The order in which the open backlog is built is in [docs/roadmap.md](docs/roadmap.md); the board's **Phase** field mirrors it. How issues are written, when they are ready, and how that is enforced is in [AGENTS.md → Issue conventions](AGENTS.md#issue-conventions).
