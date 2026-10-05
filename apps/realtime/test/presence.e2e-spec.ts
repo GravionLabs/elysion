@@ -71,6 +71,16 @@ class TestPresenceClient {
   close(): void {
     this.socket.close();
   }
+
+  /** Drops the connection without a WebSocket close frame, like a killed browser or a lost network. */
+  terminate(): void {
+    this.socket.terminate();
+  }
+
+  /** The awareness client ids this client currently knows about, besides its own. */
+  remoteClientIds(): number[] {
+    return [...this.awareness.getStates().keys()].filter((id) => id !== this.awareness.clientID);
+  }
 }
 
 function waitUntil(check: () => boolean, timeoutMs = 4000): Promise<void> {
@@ -154,5 +164,41 @@ describe('Presence across realtime instances (e2e)', () => {
 
     clientA.close();
     clientC.close();
+  });
+
+  it('removes a client that drops without a close frame, for peers on both instances and for later joiners', async () => {
+    const boardId = `presence-${Date.now()}-ghost`;
+    const ghost = new TestPresenceClient(`${instanceA.baseUrl}?board=${boardId}`);
+    const peerSameInstance = new TestPresenceClient(`${instanceA.baseUrl}?board=${boardId}`);
+    const peerOtherInstance = new TestPresenceClient(`${instanceB.baseUrl}?board=${boardId}`);
+    await Promise.all([
+      ghost.waitForOpen(),
+      peerSameInstance.waitForOpen(),
+      peerOtherInstance.waitForOpen(),
+    ]);
+    ghost.setState({ name: 'Ghost' });
+    await waitUntil(
+      () =>
+        peerSameInstance.remoteClientIds().includes(ghost.awareness.clientID) &&
+        peerOtherInstance.remoteClientIds().includes(ghost.awareness.clientID),
+    );
+
+    ghost.terminate();
+
+    await waitUntil(
+      () =>
+        !peerSameInstance.remoteClientIds().includes(ghost.awareness.clientID) &&
+        !peerOtherInstance.remoteClientIds().includes(ghost.awareness.clientID),
+    );
+
+    // A client joining afterwards is caught up from Valkey and must not be told about the ghost.
+    const late = new TestPresenceClient(`${instanceB.baseUrl}?board=${boardId}`);
+    await late.waitForOpen();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(late.remoteClientIds()).not.toContain(ghost.awareness.clientID);
+
+    peerSameInstance.close();
+    peerOtherInstance.close();
+    late.close();
   });
 });

@@ -31,8 +31,7 @@ asked for port 9000, which Portainer owns.
   `AGENTS.md` say so.
 - Other projects use the same Valkey. Pub/sub channels are not isolated by database number, so the
   prefix is the only protection; new code must prefix every key and channel.
-- The realtime end-to-end tests write into the shared instance. They use prefixed, per-run keys but do
-  not delete them afterwards.
+- The realtime end-to-end tests write into the shared instance. They use prefixed, per-run keys; presence hashes expire a day after their last write, so the tests leave nothing behind for long.
 - Valkey is Redis-protocol compatible, not identical to Redis 7. `ioredis` works against it; features
   Elysion adds later should be checked against Valkey, not assumed.
 - RabbitMQ is available if Elysion needs messaging, with a vhost of its own as local-infra prescribes.

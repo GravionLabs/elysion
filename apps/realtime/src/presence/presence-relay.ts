@@ -9,6 +9,13 @@ export type PresenceHandler = (message: Uint8Array) => void;
 const CHANNEL_PREFIX = 'elysion:presence:';
 const STATE_KEY_PREFIX = 'elysion:presence:state:';
 
+// Matches y-protocols' Awareness `outdatedTimeout`: a client that has not been heard from for this long is
+// gone. Clients re-announce themselves about every half of it, and every announcement refreshes the entry.
+export const PRESENCE_ENTRY_TTL_MS = 30_000;
+// A board's whole hash expires after a day without any presence activity, so keys left behind by crashed
+// instances, tests or deleted boards do not pile up in the shared Valkey.
+const STATE_KEY_TTL_SECONDS = 24 * 60 * 60;
+
 /**
  * Relays Yjs awareness (presence) messages between `realtime` instances via
  * Redis pub/sub, one channel per board id.
@@ -47,13 +54,19 @@ export class PresenceRelay implements OnModuleDestroy {
     }
   }
 
-  /** Persists one client's current awareness state, keyed by board id + client id, so a client joining on any instance can be caught up. */
+  /**
+   * Persists one client's current awareness state, keyed by board id + client id, so a client joining on any
+   * instance can be caught up. The entry carries the time it was written: {@link snapshot} drops entries older
+   * than {@link PRESENCE_ENTRY_TTL_MS}, which is how clients of a crashed instance disappear.
+   */
   async recordState(boardId: string, clientId: number, update: Uint8Array): Promise<void> {
-    await this.pub.hset(
-      this.stateKeyFor(boardId),
-      String(clientId),
-      Buffer.from(update).toString('base64'),
-    );
+    const key = this.stateKeyFor(boardId);
+    const value = `${Date.now()}:${Buffer.from(update).toString('base64')}`;
+    await this.pub
+      .multi()
+      .hset(key, String(clientId), value)
+      .expire(key, STATE_KEY_TTL_SECONDS)
+      .exec();
   }
 
   /** Drops a client's persisted state — call when that client goes offline (its awareness state is set to `null`). */
@@ -61,10 +74,30 @@ export class PresenceRelay implements OnModuleDestroy {
     await this.pub.hdel(this.stateKeyFor(boardId), String(clientId));
   }
 
-  /** All persisted per-client awareness updates for a board, each independently decodable via `applyAwarenessUpdate`. */
+  /**
+   * All persisted per-client awareness updates for a board that are still fresh, each independently decodable via
+   * `applyAwarenessUpdate`. Stale entries (and entries in the format from before timestamps existed) are deleted
+   * on the way, so a joining client is never sent a collaborator who is gone.
+   */
   async snapshot(boardId: string): Promise<Uint8Array[]> {
-    const raw = await this.pub.hgetall(this.stateKeyFor(boardId));
-    return Object.values(raw).map((base64) => new Uint8Array(Buffer.from(base64, 'base64')));
+    const key = this.stateKeyFor(boardId);
+    const raw = await this.pub.hgetall(key);
+    const now = Date.now();
+    const stale: string[] = [];
+    const fresh: Uint8Array[] = [];
+    for (const [clientId, value] of Object.entries(raw)) {
+      const separator = value.indexOf(':');
+      const writtenAt = separator > 0 ? Number(value.slice(0, separator)) : NaN;
+      if (!Number.isFinite(writtenAt) || now - writtenAt > PRESENCE_ENTRY_TTL_MS) {
+        stale.push(clientId);
+      } else {
+        fresh.push(new Uint8Array(Buffer.from(value.slice(separator + 1), 'base64')));
+      }
+    }
+    if (stale.length > 0) {
+      await this.pub.hdel(key, ...stale);
+    }
+    return fresh;
   }
 
   async onModuleDestroy(): Promise<void> {

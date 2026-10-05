@@ -67,8 +67,43 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: WebSocket): void {
     const room = this.roomByClient.get(client);
-    room?.clients.delete(client);
     this.roomByClient.delete(client);
+    if (!room) {
+      return;
+    }
+    room.clients.delete(client);
+    this.removeAwarenessOf(room, client);
+  }
+
+  /**
+   * Whatever the reason a socket went away (a clean close, a network drop, a killed browser), the
+   * collaborators it announced are gone too: remove them here, from Valkey (the awareness listener of
+   * {@link YjsRoomRegistry} does that) and tell every other client, locally and on other instances.
+   */
+  private removeAwarenessOf(room: YjsRoom, client: WebSocket): void {
+    const owned = room.awarenessIdsBySocket.get(client);
+    room.awarenessIdsBySocket.delete(client);
+    const clientIds = [...(owned ?? [])].filter((clientId) =>
+      room.awareness.getStates().has(clientId),
+    );
+    if (clientIds.length === 0) {
+      return;
+    }
+
+    awarenessProtocol.removeAwarenessStates(room.awareness, clientIds, 'disconnect');
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, MESSAGE_AWARENESS);
+    encoding.writeVarUint8Array(
+      encoder,
+      awarenessProtocol.encodeAwarenessUpdate(room.awareness, clientIds),
+    );
+    const message = encoding.toUint8Array(encoder);
+    this.broadcastToRoom(room, message);
+    this.presence
+      .publish(room.boardId, message)
+      .catch((error: unknown) =>
+        this.logger.warn(`Presence publish failed for board ${room.boardId}: ${String(error)}`),
+      );
   }
 
   private readBoardId(request: IncomingMessage): string | null {
