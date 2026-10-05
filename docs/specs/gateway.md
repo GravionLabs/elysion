@@ -26,5 +26,5 @@ routes over the `elysion_elysion` network because some services also join `local
 
 ## Open questions
 
-- Authentication: the identity provider is Keycloak and services only validate tokens ([ADR 0014](../adr/0014-keycloak-identity-provider.md)); how the edge enforces it is #121.
+- Authentication: the identity provider is Keycloak and services only validate tokens ([ADR 0014](../adr/0014-keycloak-identity-provider.md)); how the edge enforces it (forwardAuth to the BFF, since Traefik OSS has no JWT middleware) is in [identity.md](identity.md), implemented in #121.
 - Final choice between Traefik-only vs. dedicated API gateway (Kong/APIM) for production.
