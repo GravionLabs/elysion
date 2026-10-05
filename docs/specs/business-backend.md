@@ -38,3 +38,8 @@ There is no owner and no authorization yet: every caller sees every board. Users
 ## Open questions
 
 - REST vs gRPC for internal BFF <-> business-backend calls (packages/proto reserved for this).
+
+## Configuration
+
+- `ConnectionStrings:Elysion` — the Postgres connection string.
+- `Database:MigrateOnStartup` (default `false`) — when `true`, the app applies pending EF Core migrations at startup. The dev stack's container sets it, because it starts against an empty database; local runs use `dotnet ef database update`.

@@ -6,6 +6,7 @@ WORKDIR /workspace
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/frontend apps/frontend
 COPY apps/frontend-canvas apps/frontend-canvas
+COPY packages/design-tokens packages/design-tokens
 RUN pnpm install --frozen-lockfile --filter @elysion/frontend... --filter @elysion/frontend-canvas...
 RUN pnpm --filter @elysion/frontend build
 

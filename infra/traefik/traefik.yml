@@ -10,6 +10,8 @@ providers:
   docker:
     endpoint: 'unix:///var/run/docker.sock'
     exposedByDefault: false
+    # Services also join other networks (local-infra); route over this one.
+    network: elysion_elysion
 
 log:
   level: INFO

@@ -12,7 +12,10 @@ If a feature ever needs custom gateway logic that Traefik's dynamic config/middl
 ## Routing convention
 
 - `/api/*` → BFF
-- `/realtime/*` → realtime backend
-- `/internal/*` → business backend (internal only)
+- `/yjs` → realtime backend (WebSocket; the canvas connects to `/yjs?board=<id>`)
+- `/internal` → no edge route; the business backend is reachable only on the compose network (`http://business-backend:8080`)
+- `/` → frontend (priority 1, so every more specific route wins)
 
-Verify routing changes with `docker compose up -d traefik <target-service>` and `curl` against the routed path — the Traefik dashboard (`:8080/dashboard/`) shows registered routers if something isn't matching.
+Services also join `local-infra`, so Traefik is told to route over `elysion_elysion` (`providers.docker.network` in `traefik.yml`); a new routed service needs `traefik.enable=true`, a router rule and `loadbalancer.server.port` labels.
+
+Verify routing changes with `pnpm dev:stack` and `curl` against `http://localhost/...` — the Traefik dashboard (`:8080/dashboard/`) shows registered routers if something isn't matching.
