@@ -7,6 +7,7 @@ import type { WebSocket } from 'ws';
 import { DocumentRelay, type DocumentMessage } from '../document/document-relay.js';
 import { DocumentStore } from '../persistence/document-store.js';
 import { PresenceRelay } from '../presence/presence-relay.js';
+import type { BoardRole } from '@elysion/shared-types';
 import { MESSAGE_SYNC } from './protocol.js';
 
 export interface PersistenceOptions {
@@ -70,6 +71,16 @@ export interface YjsRoom {
   readonly clients: Set<WebSocket>;
   /** The awareness client ids each socket announced, so they can be removed when it goes away. */
   readonly awarenessIdsBySocket: Map<WebSocket, Set<number>>;
+  /** Who each connected socket is and what it may do, from its verified WS token. */
+  readonly memberBySocket: Map<WebSocket, ConnectionMember>;
+}
+
+/** The identity bound to a connection at the handshake. */
+export interface ConnectionMember {
+  /** The user's id at the identity provider. */
+  readonly sub: string;
+  /** The role on this board; a viewer is read-only. */
+  readonly role: BoardRole;
 }
 
 /**
@@ -280,6 +291,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
       awareness,
       clients: new Set(),
       awarenessIdsBySocket: new Map(),
+      memberBySocket: new Map(),
     };
 
     doc.on('update', (update: Uint8Array, origin: unknown) => {

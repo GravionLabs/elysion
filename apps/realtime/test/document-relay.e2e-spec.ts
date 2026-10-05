@@ -1,6 +1,7 @@
 import * as Y from 'yjs';
 import { InMemoryDocumentStore } from '../src/persistence/in-memory-document-store.js';
 import { SyncClient, startInstance, waitUntil } from './helpers.js';
+import { boardUrl } from './ws-token.js';
 
 /**
  * Two realtime instances on one Valkey (REDIS_URL, by default the shared local-infra Valkey) serve the same
@@ -14,8 +15,8 @@ describe('Document relay across realtime instances (e2e)', () => {
     const boardId = `relay-${Date.now()}`;
     const instanceA = await startInstance(store, slowSaves);
     const instanceB = await startInstance(store, slowSaves);
-    const clientA = new SyncClient(`${instanceA.url}?board=${boardId}`);
-    const clientB = new SyncClient(`${instanceB.url}?board=${boardId}`);
+    const clientA = new SyncClient(boardUrl(instanceA.url, boardId));
+    const clientB = new SyncClient(boardUrl(instanceB.url, boardId));
     await Promise.all([clientA.waitForOpen(), clientB.waitForOpen()]);
     await new Promise((resolve) => setTimeout(resolve, 300)); // both rooms follow the relay
 
@@ -36,14 +37,14 @@ describe('Document relay across realtime instances (e2e)', () => {
     const store = new InMemoryDocumentStore();
     const boardId = `relay-late-${Date.now()}`;
     const instanceA = await startInstance(store, slowSaves);
-    const clientA = new SyncClient(`${instanceA.url}?board=${boardId}`);
+    const clientA = new SyncClient(boardUrl(instanceA.url, boardId));
     await clientA.waitForOpen();
     clientA.doc.getMap('elements').set('rect', 'unsaved so far');
     await new Promise((resolve) => setTimeout(resolve, 200));
     expect(store.documents.has(boardId)).toBe(false);
 
     const instanceB = await startInstance(store, slowSaves);
-    const clientB = new SyncClient(`${instanceB.url}?board=${boardId}`);
+    const clientB = new SyncClient(boardUrl(instanceB.url, boardId));
     await clientB.waitForOpen();
     await waitUntil(() => clientB.doc.getMap('elements').has('rect'));
 
@@ -58,8 +59,8 @@ describe('Document relay across realtime instances (e2e)', () => {
     const boardId = `relay-once-${Date.now()}`;
     const instanceA = await startInstance(store, slowSaves);
     const instanceB = await startInstance(store, slowSaves);
-    const clientA = new SyncClient(`${instanceA.url}?board=${boardId}`);
-    const clientB = new SyncClient(`${instanceB.url}?board=${boardId}`);
+    const clientA = new SyncClient(boardUrl(instanceA.url, boardId));
+    const clientB = new SyncClient(boardUrl(instanceB.url, boardId));
     await Promise.all([clientA.waitForOpen(), clientB.waitForOpen()]);
     await new Promise((resolve) => setTimeout(resolve, 300));
     let updatesAtB = 0;

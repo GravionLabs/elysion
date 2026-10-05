@@ -147,6 +147,8 @@ services:
       REDIS_URL: redis://valkey:6379
       # Board documents are stored by the business backend (ADR 0011); without it no board opens.
       BUSINESS_BACKEND_URL: http://business-backend:8080
+      # Verifies the WS tokens the BFF issues; the same value as the BFF's. Development value only.
+      WS_TOKEN_SECRET: dev-only-ws-token-secret-change-me-0123456789
     depends_on:
       - business-backend
     labels:

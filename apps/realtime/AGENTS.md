@@ -18,6 +18,10 @@ Uses `@nestjs/platform-ws` (plain `ws`), **not** `@nestjs/platform-socket.io` �
 
 `src/yjs/yjs.gateway.ts` is the Yjs CRDT sync gateway (Feature #16) — one `Y.Doc` per board id (`YjsRoomRegistry`), joined via `ws://.../yjs?board=<board-id>` (query param, not a path segment — see `docs/specs/realtime.md` for why). Presence (#17) and WS auth (#18) are separate, not-yet-implemented features that plug into this gateway later.
 
+## Authentication
+
+Every `/yjs` connection needs `?token=` (the BFF's board-scoped WS token): `src/auth/` verifies it locally and `YjsGateway.admit` closes with 4401 (no usable token) or 4403 (token for another board) before the board is loaded; the verified `sub` and `role` are in `YjsRoom.memberBySocket`. The token contract lives in `packages/shared-types` (rebuild it with `pnpm --filter @elysion/shared-types build` after editing). The service does not start without `WS_TOKEN_SECRET`: copy `.env.example` to `.env` for local runs; tests get theirs from `vitest.config*.ts`, and `test/ws-token.ts` signs tokens (`boardUrl(base, boardId, options)` builds a connection URL) so an e2e client is one call. Never accept a connection without a token "for testing".
+
 ## Document relay
 
 `src/document/document-relay.ts` relays Yjs updates between instances on `elysion:doc:<boardId>` and heals gaps with a `hello` / `hello-ack` state-vector exchange (details in `docs/specs/realtime.md`). Unit tests put several registries on one `FakeRedisBus` (`src/testing/fake-redis.ts`); `test/document-relay.e2e-spec.ts` runs two real instances against the shared Valkey. Shared e2e helpers (`SyncClient`, `startInstance`) are in `test/helpers.ts`.

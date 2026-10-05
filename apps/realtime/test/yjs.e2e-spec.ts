@@ -12,6 +12,7 @@ import { AppModule } from '../src/app.module.js';
 import { DocumentStore } from '../src/persistence/document-store.js';
 import { InMemoryDocumentStore } from '../src/persistence/in-memory-document-store.js';
 import { MESSAGE_SYNC } from '../src/yjs/protocol.js';
+import { boardUrl } from './ws-token.js';
 
 function toUint8Array(data: RawData): Uint8Array {
   if (Array.isArray(data)) {
@@ -114,8 +115,8 @@ describe('Yjs sync gateway (e2e)', () => {
 
   it('converges two clients on the same board after either applies an update', async () => {
     const boardId = `board-${Date.now()}`;
-    const clientA = new TestYjsClient(`${baseUrl}?board=${boardId}`);
-    const clientB = new TestYjsClient(`${baseUrl}?board=${boardId}`);
+    const clientA = new TestYjsClient(boardUrl(baseUrl, boardId));
+    const clientB = new TestYjsClient(boardUrl(baseUrl, boardId));
     await Promise.all([clientA.waitForOpen(), clientB.waitForOpen()]);
 
     clientA.doc.getMap('board').set('hello', 'world');
@@ -131,8 +132,8 @@ describe('Yjs sync gateway (e2e)', () => {
   });
 
   it('keeps different boards independent', async () => {
-    const clientA = new TestYjsClient(`${baseUrl}?board=board-a-${Date.now()}`);
-    const clientB = new TestYjsClient(`${baseUrl}?board=board-b-${Date.now()}`);
+    const clientA = new TestYjsClient(boardUrl(baseUrl, `board-a-${Date.now()}`));
+    const clientB = new TestYjsClient(boardUrl(baseUrl, `board-b-${Date.now()}`));
     await Promise.all([clientA.waitForOpen(), clientB.waitForOpen()]);
 
     clientA.doc.getMap('board').set('only', 'a');

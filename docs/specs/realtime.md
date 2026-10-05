@@ -12,7 +12,16 @@ WebSocket gateway for Yjs CRDT sync, Redis-backed presence service, JWT validati
 
 - `YjsGateway` (`src/yjs/`) speaks the standard Yjs sync sub-protocol (`y-protocols/sync`) over a raw WebSocket at a fixed path, `/yjs`. The board id is **not** a path segment — `@nestjs/platform-ws`'s `WsAdapter` routes an upgrade to a gateway by exact pathname match, with no wildcard/pattern support, so a dynamic per-board path isn't possible without a custom adapter. Instead, the board id travels as a query parameter: `ws://<host>/yjs?board=<board-id>`.
 - One `Y.Doc` per board id, held in memory (`YjsRoomRegistry`) and persisted through the business backend (see Persistence); document updates are relayed between instances through Valkey (see Document relay). Horizontal scaling for doc updates (Redis-backed doc broadcast across instances) is a follow-up, not yet scoped to an issue — presence (below) already solves the analogous problem for awareness state.
-- WS handshake auth (a short-lived HS256 token in the `token` query parameter, issued by the BFF; close codes 4401 and 4403) is specified in [identity.md](identity.md) and not implemented yet — see Feature #18.
+- WS handshake auth: every connection needs a WS token for its board (see Authentication below).
+
+## Authentication
+
+`?board=<id>&token=<ws token>`: the token is the board-scoped credential the BFF issues ([identity.md](identity.md), `POST /api/realtime/token`). `src/auth/WsTokenVerifier` checks it **locally**: HS256 with `WS_TOKEN_SECRET` (shared with the BFF), issuer `elysion-bff`, audience `elysion-realtime`, expiry (5 s of clock tolerance) and the claims `sub`, `boardId` and `role` (`owner`, `editor`, `viewer`), typed by `@elysion/shared-types`. There is no call to the BFF or Keycloak, so a handshake never depends on either.
+
+- **Admission** (`YjsGateway.admit`) happens before the board is loaded: a token that is missing, malformed, expired, signed with another key or without valid claims closes the socket with **4401**; a valid token whose `boardId` is not the `board` of the URL closes it with **4403** (otherwise one valid token would open every board); a failure of the check itself closes with 1011, never lets the connection in. A missing `board` is still 1008. These are the contract's codes (`WS_CLOSE_UNAUTHORIZED`, `WS_CLOSE_FORBIDDEN` in `@elysion/shared-types`), in the private 4000 range instead of the generic 1008. Messages that arrive while the token is checked and the board loads are handled in order afterwards.
+- **Bound to the connection:** the verified `sub` and `role` are kept per socket in `YjsRoom.memberBySocket` (removed when the socket goes away), for read-only viewers (#303) and presence identity. Presence and the document relay are unchanged for admitted connections.
+- A token is checked once, at the handshake: an open connection outlives it. The client asks the BFF for a new token on every connect.
+- **Fail closed:** the service does not start without `WS_TOKEN_SECRET` (at least 32 characters; `src/config/`). For local runs copy `apps/realtime/.env.example` to `apps/realtime/.env` (loaded at startup).
 
 ## Persistence
 

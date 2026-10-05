@@ -93,8 +93,8 @@ A short-lived JWT, signed by the BFF and verified by the realtime service with a
 - **Refusal:** the gateway closes the socket right after the upgrade with code `4401` (missing, malformed,
   expired or wrongly signed token) or `4403` (the token is valid but for another board). The canvas reports
   that as the element's `error` event; it does not retry with the same token.
-- **Without a token** (development without the identity stack) the gateway keeps accepting connections only
-  while `WS_TOKEN_SECRET` is unset; setting it turns the check on for every connection.
+- **Fail closed:** the realtime service does not start without `WS_TOKEN_SECRET` (at least 32 characters), so a
+  missing setting can never leave the gateway open. Every connection needs a token.
 
 How the shell hands the token to the canvas element (an attribute, a method or a changed URL) is decided in
 #312; this document ends at the URL the canvas connects to.
