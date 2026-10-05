@@ -11,18 +11,20 @@ WebSocket gateway for Yjs CRDT sync, Redis-backed presence service, JWT validati
 ## Protocol
 
 - `YjsGateway` (`src/yjs/`) speaks the standard Yjs sync sub-protocol (`y-protocols/sync`) over a raw WebSocket at a fixed path, `/yjs`. The board id is **not** a path segment — `@nestjs/platform-ws`'s `WsAdapter` routes an upgrade to a gateway by exact pathname match, with no wildcard/pattern support, so a dynamic per-board path isn't possible without a custom adapter. Instead, the board id travels as a query parameter: `ws://<host>/yjs?board=<board-id>`.
-- One `Y.Doc` per board id, held in memory for the process lifetime (`YjsRoomRegistry`) — no persistence, and no cross-instance _doc content_ broadcast yet. Horizontal scaling for doc updates (Redis-backed doc broadcast across instances) is a follow-up, not yet scoped to an issue — presence (below) already solves the analogous problem for awareness state.
+- One `Y.Doc` per board id, held in memory (`YjsRoomRegistry`) and persisted through the business backend (see Persistence); there is no cross-instance _doc content_ broadcast yet. Horizontal scaling for doc updates (Redis-backed doc broadcast across instances) is a follow-up, not yet scoped to an issue — presence (below) already solves the analogous problem for awareness state.
 - WS handshake auth (JWT/short-lived token validation) is not implemented yet — see Feature #18.
 
-## Persistence (decided, not built yet)
+## Persistence
 
-[ADR 0011](../adr/0011-board-document-persistence.md) (accepted) decides how board documents survive a restart. Until it is implemented (#269), documents live only in memory and a restart of `realtime` loses every board. The design:
+Board documents survive a restart ([ADR 0011](../adr/0011-board-document-persistence.md)).
 
-- The business backend stores one full Yjs snapshot per board (table `BoardDocuments`, `bytea`, with a version) and offers `GET/PUT/DELETE /internal/boards/{id}/document`; realtime reaches it through a document store interface (`load`, `save`, `delete`).
-- A room loads its stored state before the first sync step is answered. If the load fails, the connection is closed; an unloaded room is never served as an empty board.
-- A room saves a few seconds after its last change (debounced, with a maximum wait) and when its last client leaves; failed saves are retried and logged.
-- A save carries the version it is based on. On a version conflict (another instance saved meanwhile) the backend answers `409` with the current state, realtime merges it with `Y.applyUpdate` and saves again.
+- The business backend stores one full Yjs snapshot per board (table `BoardDocuments`, `bytea`, with a version) behind `GET/PUT/DELETE /internal/boards/{id}/document` (minimal API endpoints in `Endpoints/BoardDocumentEndpoints.cs`). `PUT` needs `If-Match: "<version>"`, or `If-None-Match: *` for the first save; a stale version answers `409` with the stored state, no precondition `428`. The route is not exposed at the edge. Deleting a board (`DELETE /boards/{id}`) deletes its document; the document table has no foreign key to `Boards`, because ids such as `default` have no board row.
+- Realtime reaches it through the `DocumentStore` interface (`src/persistence/`: `load`, `save`, `delete`); `HttpDocumentStore` is the implementation, configured with `BUSINESS_BACKEND_URL` (default `http://localhost:5174`).
+- `YjsRoomRegistry.getOrLoad` loads a room's stored state before the first sync step is answered; connections arriving during the load are queued, and concurrent first connections share one load. **If the load fails the connection is closed with code 1011** (`Board could not be loaded`): an empty board is never served in place of an unloaded one, because the next save would overwrite the real content.
+- A changed room is saved 2 s after its last change (at the latest 10 s after the first unsaved change), when its last client leaves, and when the process stops (`enableShutdownHooks`). A save names the version it is based on. If another instance saved first (`409`), realtime merges the stored state in with `Y.applyUpdate` and saves the union. A failed save is retried after 1 s, doubling up to 30 s, and logged as an error; the room stays in memory meanwhile. An unchanged room is never saved.
+- Rooms are not unloaded yet (#279), and updates are not relayed between instances (#274); until then two instances serving one board converge only through the store (on conflict).
 - Sizes: the state is about the size of the live elements' JSON (a typical board is a few hundred KB, a large one a few MB) and grows by about 1 KB per two seconds of dragging because of Yjs tombstones; see the ADR for the measurements.
+- A room that is open when its board is deleted can save its document again. Such orphans are not swept yet.
 
 ## Presence
 

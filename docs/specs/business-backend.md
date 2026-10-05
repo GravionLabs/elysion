@@ -39,6 +39,10 @@ There is no owner and no authorization yet: every caller sees every board. Users
 
 - REST vs gRPC for internal BFF <-> business-backend calls (packages/proto reserved for this).
 
+## Board documents (internal)
+
+`GET/PUT/DELETE /internal/boards/{boardId}/document` store the Yjs state of a board for the realtime service, one full snapshot per board with a version (ADR 0011; protocol in docs/specs/realtime.md). `boardId` is a string of at most 200 characters (not necessarily a GUID); states up to 32 MB are accepted. The endpoints are minimal APIs in `Endpoints/BoardDocumentEndpoints.cs` and are not routed at the edge.
+
 ## Configuration
 
 - `ConnectionStrings:Elysion` — the Postgres connection string.

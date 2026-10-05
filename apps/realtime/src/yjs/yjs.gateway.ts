@@ -46,22 +46,44 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const room = this.registry.getOrCreate(boardId);
+    // Messages can arrive while the board's stored state is still loading (the browser sends its first sync
+    // step on open); handling them in order after the load keeps them from being dropped.
+    const ready = this.registry.getOrLoad(boardId);
+    let queue: Promise<void> = ready.then(
+      (room) => this.join(client, room),
+      (error: unknown) => {
+        // Fail closed: serving an empty board in place of the real one would let the next save overwrite it.
+        this.logger.error(`Board ${boardId} could not be loaded: ${String(error)}`);
+        client.close(1011, 'Board could not be loaded');
+      },
+    );
+    client.on('message', (data: RawData) => {
+      queue = queue.then(async () => {
+        const room = this.roomByClient.get(client);
+        if (room) {
+          this.handleMessage(client, room, data);
+        }
+      });
+    });
+  }
+
+  private join(client: WebSocket, room: YjsRoom): void {
+    if (client.readyState !== client.OPEN) {
+      return; // gone while the board was loading
+    }
     room.clients.add(client);
     this.roomByClient.set(client, room);
 
     // Idempotent per board id — a no-op for every connection after the room's first.
     this.presence
-      .subscribe(boardId, (message) => this.broadcastToRoom(room, message))
+      .subscribe(room.boardId, (message) => this.broadcastToRoom(room, message))
       .catch((error: unknown) =>
-        this.logger.warn(`Presence subscribe failed for board ${boardId}: ${String(error)}`),
+        this.logger.warn(`Presence subscribe failed for board ${room.boardId}: ${String(error)}`),
       );
-
-    client.on('message', (data: RawData) => this.handleMessage(client, room, data));
 
     this.sendSyncStep1(client, room);
     this.sendPresenceSnapshot(client, room).catch((error: unknown) =>
-      this.logger.warn(`Presence snapshot failed for board ${boardId}: ${String(error)}`),
+      this.logger.warn(`Presence snapshot failed for board ${room.boardId}: ${String(error)}`),
     );
   }
 
@@ -73,6 +95,25 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     room.clients.delete(client);
     this.removeAwarenessOf(room, client);
+    if (room.clients.size === 0) {
+      this.registry
+        .flush(room)
+        .catch((error: unknown) =>
+          this.logger.error(`Saving board ${room.boardId} failed: ${String(error)}`),
+        );
+    }
+  }
+
+  private readBoardId(request: IncomingMessage): string | null {
+    const url = new URL(request.url ?? '', 'http://localhost');
+    return url.searchParams.get('board');
+  }
+
+  private sendSyncStep1(client: WebSocket, room: YjsRoom): void {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, MESSAGE_SYNC);
+    syncProtocol.writeSyncStep1(encoder, room.doc);
+    this.send(client, encoding.toUint8Array(encoder));
   }
 
   /**
@@ -104,18 +145,6 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       .catch((error: unknown) =>
         this.logger.warn(`Presence publish failed for board ${room.boardId}: ${String(error)}`),
       );
-  }
-
-  private readBoardId(request: IncomingMessage): string | null {
-    const url = new URL(request.url ?? '', 'http://localhost');
-    return url.searchParams.get('board');
-  }
-
-  private sendSyncStep1(client: WebSocket, room: YjsRoom): void {
-    const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, MESSAGE_SYNC);
-    syncProtocol.writeSyncStep1(encoder, room.doc);
-    this.send(client, encoding.toUint8Array(encoder));
   }
 
   private handleMessage(client: WebSocket, room: YjsRoom, data: RawData): void {

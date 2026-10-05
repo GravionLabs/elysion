@@ -124,7 +124,8 @@ Snapshot or update log, for any of the options:
 
 - The backend gains a table, a migration, three internal endpoints and tests; realtime gains a document store
   interface with an HTTP implementation and a new setting for the backend's URL (`BUSINESS_BACKEND_URL`).
-  Realtime now depends on the backend being up to open a board, and says so in its health reporting.
+  Realtime now depends on the backend being up to open a board; it logs an error and closes the connection
+  (code 1011) for every board it cannot load.
 - Tombstones make the state grow with editing. A drag adds about 1 KB, so a long-lived board stays in the low
   megabytes. Compaction is not safe to do casually: a rebuilt document has new item ids, and a client that
   reconnects with an older copy would merge its history into it. If it is ever needed, it has to happen while

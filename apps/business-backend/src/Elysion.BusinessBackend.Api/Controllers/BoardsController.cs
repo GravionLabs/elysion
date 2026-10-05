@@ -76,6 +76,13 @@ public class BoardsController(ElysionDbContext db, TimeProvider time) : Controll
         }
 
         db.Boards.Remove(board);
+        // The canvas content goes with the board (ADR 0011).
+        var document = await db.BoardDocuments.FirstOrDefaultAsync(d => d.BoardId == id.ToString(), cancellationToken);
+        if (document is not null)
+        {
+            db.BoardDocuments.Remove(document);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return NoContent();
     }

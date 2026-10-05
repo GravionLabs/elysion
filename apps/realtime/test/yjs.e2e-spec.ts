@@ -9,6 +9,8 @@ import * as Y from 'yjs';
 import type { RawData } from 'ws';
 import { WebSocket } from 'ws';
 import { AppModule } from '../src/app.module.js';
+import { DocumentStore } from '../src/persistence/document-store.js';
+import { InMemoryDocumentStore } from '../src/persistence/in-memory-document-store.js';
 import { MESSAGE_SYNC } from '../src/yjs/protocol.js';
 
 function toUint8Array(data: RawData): Uint8Array {
@@ -93,7 +95,10 @@ describe('Yjs sync gateway (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(DocumentStore)
+      .useValue(new InMemoryDocumentStore())
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useWebSocketAdapter(new WsAdapter(app));
