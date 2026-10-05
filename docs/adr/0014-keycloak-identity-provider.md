@@ -71,8 +71,8 @@ discovery document answers, and the password grant returns a token whose `iss` i
 
 - One more container in the development infrastructure (about 500 MB of memory); the first start takes
   half a minute while Keycloak builds and imports.
-- The access token has no `aud` for the BFF yet. Which audience the services require is decided in the token
-  flow specification (#112), together with the environment variable names.
+- The access token carries `aud: elysion-bff`, added by an audience mapper on `elysion-frontend` (#116); the services
+  require it (docs/specs/identity.md).
 - Keycloak is not routed through Traefik: the browser talks to it directly on port 8081, which matches the
   issuer URL in the tokens. Putting it behind the edge (and changing the issuer) is a later decision.
 - The realm file is the one place that defines clients and roles; a change needs an import into a fresh

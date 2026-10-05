@@ -73,6 +73,7 @@ Keycloak, tokens and authorization end to end, in dependency order: provider and
 18. #320 feat: manage board members through the API (Feature #245)
 19. #324 feat: share a board from the top bar and open it read-only as a viewer (Feature #245)
 20. #317 refactor: decide on NgRx SignalStore once session, presence and board list exist (Feature #97)
+21. #475 feat: authenticate the realtime service's calls to the internal document API (Feature #20)
 
 ## M6 Templates
 

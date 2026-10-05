@@ -6,9 +6,16 @@
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "roles": {
-    "realm": [{ "name": "board-user", "description": "Can create and open boards" }]
+    "realm": [
+      {
+        "name": "board-user",
+        "description": "Can create and open boards"
+      }
+    ]
   },
-  "defaultRole": { "name": "default-roles-elysion" },
+  "defaultRole": {
+    "name": "default-roles-elysion"
+  },
   "clients": [
     {
       "clientId": "elysion-frontend",
@@ -24,7 +31,20 @@
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:4200/*##http://localhost/*"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-elysion-bff",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "elysion-bff",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     },
     {
       "clientId": "elysion-bff",
@@ -46,7 +66,13 @@
       "firstName": "Dev",
       "lastName": "User",
       "enabled": true,
-      "credentials": [{ "type": "password", "value": "dev", "temporary": false }],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev",
+          "temporary": false
+        }
+      ],
       "realmRoles": ["board-user"]
     }
   ]

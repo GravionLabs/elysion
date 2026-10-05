@@ -1,6 +1,7 @@
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Endpoints;
+using Elysion.BusinessBackend.Api.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,9 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-// UseAuthorization below needs its services; AddControllers used to register them. Authentication and
-// the policies come with the identity epic (#91).
-builder.Services.AddAuthorization();
+// Keycloak access tokens are the only way in; endpoints that must stay open say so (docs/specs/identity.md).
+builder.Services.AddElysionAuthentication();
 
 builder.Services.AddDbContext<ElysionDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Elysion")));
@@ -36,11 +36,13 @@ if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.UseHttpsRedirection();
 
+// Authentication has to run first: authorization only looks at the user it has established.
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthEndpoints();

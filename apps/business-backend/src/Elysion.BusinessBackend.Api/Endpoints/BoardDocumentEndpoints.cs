@@ -22,7 +22,10 @@ public static class BoardDocumentEndpoints
 
     public static IEndpointRouteBuilder MapBoardDocumentEndpoints(this IEndpointRouteBuilder routes)
     {
-        var group = routes.MapGroup("/internal/boards/{boardId}/document").WithTags("Board documents");
+        // Anonymous on purpose, for now: the realtime service calls this without a token, and `/internal` is reachable
+        // only on the compose network (the edge does not route it). Authenticating that service-to-service call is
+        // its own piece of work; until it exists the fallback policy must not shut the realtime service out.
+        var group = routes.MapGroup("/internal/boards/{boardId}/document").WithTags("Board documents").AllowAnonymous();
 
         group.MapGet("", Get).WithName("GetBoardDocument");
         group.MapPut("", Put)

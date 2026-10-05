@@ -109,6 +109,8 @@ the service at startup with a clear message (the BFF's config module is #118).
 | `WS_TOKEN_TTL_SECONDS` | BFF                              | Lifetime of a WS token, `60` by default                                                                                                                                                                                             |
 | `OIDC_JWKS_URI`        | BFF, business backend (optional) | Where to fetch the signing keys; default `<OIDC_ISSUER_URL>/protocol/openid-connect/certs`. Needed inside the compose network, where Keycloak is `http://keycloak:8080` but the issuer in the tokens is `http://localhost:8081/...` |
 
+The access token's audience is added by an audience mapper on `elysion-frontend` in the realm file (`aud: elysion-bff`); the business backend checks it (#116).
+
 The last row is the one trap of the setup: the _issuer_ is a name inside the token and has to match what the
 browser used, the _JWKS address_ is where a service can actually reach Keycloak. In the containers they differ,
 so the services must not derive the key address from the issuer there.

@@ -16,7 +16,7 @@ public class DuplicateBoardApiTests
     public void SetUp()
     {
         _factory = new ApiFactory();
-        _client = _factory.CreateClient();
+        _client = _factory.CreateAuthenticatedClient();
     }
 
     [TearDown]
