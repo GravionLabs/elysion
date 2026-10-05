@@ -4,6 +4,7 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
 import type { WebSocket } from 'ws';
+import { DocumentRelay, type DocumentMessage } from '../document/document-relay.js';
 import { DocumentStore } from '../persistence/document-store.js';
 import { PresenceRelay } from '../presence/presence-relay.js';
 import { MESSAGE_SYNC } from './protocol.js';
@@ -38,6 +39,12 @@ export function persistenceOptionsFromEnv(): PersistenceOptions {
     ...(Number.isFinite(evictAfterMs) && process.env.ROOM_EVICT_AFTER_MS ? { evictAfterMs } : {}),
   };
 }
+
+/**
+ * Origin of updates that came from another instance. They are broadcast to this instance's clients but neither
+ * published again (no ping-pong) nor saved: the instance that received them from a client saves them.
+ */
+const RELAY_ORIGIN = 'document-relay';
 
 /** Origin of updates merged in from the store; they are broadcast to clients but not saved again by themselves. */
 const STORE_ORIGIN = 'document-store';
@@ -82,6 +89,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
   constructor(
     private readonly presence: PresenceRelay,
     private readonly store: DocumentStore,
+    private readonly relay: DocumentRelay,
     @Optional() @Inject(PERSISTENCE_OPTIONS) options?: Partial<PersistenceOptions>,
   ) {
     this.options = { ...DEFAULT_PERSISTENCE_OPTIONS, ...options };
@@ -165,6 +173,11 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     this.saves.delete(room.boardId);
     room.awareness.destroy();
     room.doc.destroy();
+    await this.relay
+      .unsubscribe(room.boardId)
+      .catch((error: unknown) =>
+        this.logger.warn(`Document unsubscribe failed for board ${room.boardId}: ${String(error)}`),
+      );
     await this.presence
       .unsubscribe(room.boardId)
       .catch((error: unknown) =>
@@ -195,7 +208,64 @@ export class YjsRoomRegistry implements OnModuleDestroy {
       usage: 0,
     });
     this.rooms.set(boardId, room);
+    this.followRelay(room);
     return room;
+  }
+
+  /**
+   * Starts exchanging document updates with the other instances serving this board. Not awaited: while Valkey
+   * is unreachable the room works on its own (and keeps saving to the store), and the hello exchange heals
+   * whatever was missed once the relay is back.
+   */
+  private followRelay(room: YjsRoom): void {
+    const hello = () =>
+      this.relay
+        .publish(room.boardId, { type: 'hello', data: Y.encodeStateVector(room.doc) })
+        .catch((error: unknown) =>
+          this.logger.warn(`Document hello failed for board ${room.boardId}: ${String(error)}`),
+        );
+    this.relay
+      .subscribe(room.boardId, {
+        onMessage: (message) => this.handleRelayMessage(room, message),
+        onReconnect: () => void hello(),
+      })
+      .then(hello)
+      .catch((error: unknown) =>
+        this.logger.warn(`Document subscribe failed for board ${room.boardId}: ${String(error)}`),
+      );
+  }
+
+  private handleRelayMessage(room: YjsRoom, message: DocumentMessage): void {
+    if (this.rooms.get(room.boardId) !== room) {
+      return; // unloaded meanwhile
+    }
+    try {
+      switch (message.type) {
+        case 'update':
+          Y.applyUpdate(room.doc, message.data, RELAY_ORIGIN);
+          break;
+        case 'hello':
+          // The peer sends what it has; answer with what it lacks, and ask for what we lack.
+          this.publishSafely(room, 'update', Y.encodeStateAsUpdate(room.doc, message.data));
+          this.publishSafely(room, 'hello-ack', Y.encodeStateVector(room.doc));
+          break;
+        case 'hello-ack':
+          this.publishSafely(room, 'update', Y.encodeStateAsUpdate(room.doc, message.data));
+          break;
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Document message for board ${room.boardId} could not be applied: ${String(error)}`,
+      );
+    }
+  }
+
+  private publishSafely(room: YjsRoom, type: DocumentMessage['type'], data: Uint8Array): void {
+    this.relay
+      .publish(room.boardId, { type, data })
+      .catch((error: unknown) =>
+        this.logger.warn(`Document ${type} failed for board ${room.boardId}: ${String(error)}`),
+      );
   }
 
   private createRoom(boardId: string, storedState: Uint8Array | null): YjsRoom {
@@ -213,8 +283,13 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     };
 
     doc.on('update', (update: Uint8Array, origin: unknown) => {
-      if (origin !== STORE_ORIGIN) {
+      if (origin !== STORE_ORIGIN && origin !== RELAY_ORIGIN) {
         this.markDirty(room);
+        this.relay
+          .publish(boardId, { type: 'update', data: update })
+          .catch((error: unknown) =>
+            this.logger.warn(`Document publish failed for board ${boardId}: ${String(error)}`),
+          );
       }
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, MESSAGE_SYNC);

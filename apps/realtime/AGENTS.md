@@ -18,6 +18,10 @@ Uses `@nestjs/platform-ws` (plain `ws`), **not** `@nestjs/platform-socket.io` �
 
 `src/yjs/yjs.gateway.ts` is the Yjs CRDT sync gateway (Feature #16) — one `Y.Doc` per board id (`YjsRoomRegistry`), joined via `ws://.../yjs?board=<board-id>` (query param, not a path segment — see `docs/specs/realtime.md` for why). Presence (#17) and WS auth (#18) are separate, not-yet-implemented features that plug into this gateway later.
 
+## Document relay
+
+`src/document/document-relay.ts` relays Yjs updates between instances on `elysion:doc:<boardId>` and heals gaps with a `hello` / `hello-ack` state-vector exchange (details in `docs/specs/realtime.md`). Unit tests put several registries on one `FakeRedisBus` (`src/testing/fake-redis.ts`); `test/document-relay.e2e-spec.ts` runs two real instances against the shared Valkey. Shared e2e helpers (`SyncClient`, `startInstance`) are in `test/helpers.ts`.
+
 ## Persistence
 
 `src/persistence/` holds the `DocumentStore` interface (`load`, `save`, `delete`) and `HttpDocumentStore` (ADR 0011; protocol in `docs/specs/realtime.md`). `YjsRoomRegistry.getOrLoad` is async and fails when the store does; A room without clients is saved and unloaded after a grace period (`ROOM_EVICT_AFTER_MS`, default 30000; `YjsRoomRegistry.release`); the e2e suites shorten the registry's timings by overriding `PERSISTENCE_OPTIONS`. `InMemoryDocumentStore` is for tests: the e2e suites replace `DocumentStore` with it (`overrideProvider(DocumentStore)`), `test/persistence.e2e-spec.ts` covers a restart.
