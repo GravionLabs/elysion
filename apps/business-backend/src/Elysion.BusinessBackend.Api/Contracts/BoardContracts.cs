@@ -8,5 +8,5 @@ public sealed record BoardDto(Guid Id, string Name, DateTimeOffset CreatedAt)
     public static BoardDto From(Board board) => new(board.Id, board.Name, board.CreatedAt);
 }
 
-/// <summary>Body for creating and for renaming a board. The name is checked and trimmed by the controller.</summary>
+/// <summary>Body for creating and for renaming a board. The name is checked and trimmed by the endpoint.</summary>
 public sealed record BoardNameRequest(string? Name);

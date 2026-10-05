@@ -6,9 +6,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+// UseAuthorization below needs its services; AddControllers used to register them. Authentication and
+// the policies come with the identity epic (#91).
+builder.Services.AddAuthorization();
 
 builder.Services.AddDbContext<ElysionDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Elysion")));
@@ -35,7 +37,8 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapHealthEndpoints();
+app.MapBoardEndpoints();
 app.MapBoardDocumentEndpoints();
 
 app.Run();
