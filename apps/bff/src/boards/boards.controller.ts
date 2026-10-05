@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { AccessToken } from '../auth/access-token.decorator.js';
 import { Board, BusinessBackendClient } from './business-backend.client.js';
 
 /** A board as the UI wants it: the backend's fields plus the route that opens it. */
@@ -39,33 +40,43 @@ export class BoardsController {
   constructor(private readonly backend: BusinessBackendClient) {}
 
   @Get()
-  async list(): Promise<BoardResponse[]> {
-    return (await this.backend.listBoards()).map(toResponse);
+  async list(@AccessToken() token: string): Promise<BoardResponse[]> {
+    return (await this.backend.listBoards(token)).map(toResponse);
   }
 
   @Get(':id')
-  async get(@Param('id', boardId) id: string): Promise<BoardResponse> {
-    return toResponse(await this.backend.getBoard(id));
+  async get(
+    @AccessToken() token: string,
+    @Param('id', boardId) id: string,
+  ): Promise<BoardResponse> {
+    return toResponse(await this.backend.getBoard(token, id));
   }
 
   @Post()
-  async create(@Body() body: unknown): Promise<BoardResponse> {
-    return toResponse(await this.backend.createBoard(nameFrom(body)));
+  async create(@AccessToken() token: string, @Body() body: unknown): Promise<BoardResponse> {
+    return toResponse(await this.backend.createBoard(token, nameFrom(body)));
   }
 
   @Patch(':id')
-  async rename(@Param('id', boardId) id: string, @Body() body: unknown): Promise<BoardResponse> {
-    return toResponse(await this.backend.renameBoard(id, nameFrom(body)));
+  async rename(
+    @AccessToken() token: string,
+    @Param('id', boardId) id: string,
+    @Body() body: unknown,
+  ): Promise<BoardResponse> {
+    return toResponse(await this.backend.renameBoard(token, id, nameFrom(body)));
   }
 
   @Post(':id/duplicate')
-  async duplicate(@Param('id', boardId) id: string): Promise<BoardResponse> {
-    return toResponse(await this.backend.duplicateBoard(id));
+  async duplicate(
+    @AccessToken() token: string,
+    @Param('id', boardId) id: string,
+  ): Promise<BoardResponse> {
+    return toResponse(await this.backend.duplicateBoard(token, id));
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id', boardId) id: string): Promise<void> {
-    await this.backend.deleteBoard(id);
+  async remove(@AccessToken() token: string, @Param('id', boardId) id: string): Promise<void> {
+    await this.backend.deleteBoard(token, id);
   }
 }
