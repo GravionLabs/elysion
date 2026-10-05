@@ -113,6 +113,33 @@ describe('BusinessBackendClient', () => {
     expect(lastCall().init.method).toBe('DELETE');
   });
 
+  it("asks for the caller's role and lower-cases it", async () => {
+    fetchMock.mockResolvedValue(respond(200, { boardId: board.id, role: 'Editor' }));
+
+    await expect(client.getMyRole(TOKEN, board.id)).resolves.toBe('editor');
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/membership/me`);
+    expect((lastCall().init.headers as Record<string, string>).authorization).toBe(
+      `Bearer ${TOKEN}`,
+    );
+  });
+
+  it('has no role when the backend answers 404', async () => {
+    fetchMock.mockResolvedValue(respond(404));
+
+    await expect(client.getMyRole(TOKEN, board.id)).resolves.toBeNull();
+  });
+
+  it('does not make up a role: an unknown one, a 401 and a failure are errors', async () => {
+    fetchMock.mockResolvedValue(respond(200, { boardId: board.id, role: 'Superuser' }));
+    await expect(client.getMyRole(TOKEN, board.id)).rejects.toBeInstanceOf(BadGatewayException);
+
+    fetchMock.mockResolvedValue(respond(401));
+    await expect(client.getMyRole(TOKEN, board.id)).rejects.toBeInstanceOf(UnauthorizedException);
+
+    fetchMock.mockResolvedValue(respond(500));
+    await expect(client.getMyRole(TOKEN, board.id)).rejects.toBeInstanceOf(BadGatewayException);
+  });
+
   it('keeps a 401 as 401: the backend did not accept the token', async () => {
     fetchMock.mockResolvedValue(respond(401));
 

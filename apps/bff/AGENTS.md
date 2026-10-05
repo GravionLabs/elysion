@@ -31,6 +31,10 @@ pnpm --filter @elysion/bff test:e2e     # vitest (e2e, against a fake business b
 
 `src/auth/` (docs/specs/bff.md, "Authentication"): a global `AuthGuard` makes every route need a Keycloak token; only `@Public()` routes (health) are open. A handler that needs the caller's token takes `@AccessToken()` and passes it on; the business backend decides what the user may do, the BFF does not re-derive roles. Tests never reach a live Keycloak: `test/test-auth.ts` signs tokens with a local key pair, and e2e tests `overrideProvider(TokenVerifier).useValue(testVerifier())`. Never weaken the verifier (algorithm, issuer, audience, expiry) for a test or a local run.
 
+## WS tokens and shared types
+
+`src/realtime/` issues the board-scoped WS token (docs/specs/identity.md): it checks the caller's role with the business backend first and never signs a token for a caller without one. The token's shape (claims, issuer, audience, algorithm, roles, close codes) is defined once in `packages/shared-types` and imported from `@elysion/shared-types`; change it there, not here. That package is compiled by its `prepare` script (`pnpm install` builds it; run `pnpm --filter @elysion/shared-types build` after editing it) and the Dockerfiles copy it in before installing.
+
 ## Configuration
 
 `src/config/`: `validateEnv` (the schema, with defaults) and `AppConfigService` (typed accessor). Read configuration only through `AppConfigService`, never from `process.env`; a new variable goes into `AppConfig`, `validateEnv`, its spec, `.env.example`, the table in `docs/specs/bff.md` and (if the container needs it) the compose file. For local runs copy `apps/bff/.env.example` to `apps/bff/.env` (git-ignored): `WS_TOKEN_SECRET` has no default, so without it the BFF refuses to start and says so. Do not use `ConfigService.get('PORT')` for these values: it prefers the raw string in `process.env` over the validated one. The tests get their `WS_TOKEN_SECRET` from `vitest.config*.ts`.

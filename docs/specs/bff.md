@@ -38,6 +38,10 @@ Every route needs a Keycloak access token (`Authorization: Bearer ...`; [identit
 
 In tests the verifier is replaced by one that trusts a locally generated key pair (`test/test-auth.ts`: `signToken`, `bearer`, `testVerifier`); everything else about the check is the production code.
 
+## WS tokens
+
+`POST /api/realtime/token` (`src/realtime/`, body `{ "boardId": "<uuid>" }`, answer `{ token, expiresAt }`, [identity.md](identity.md)) mints the board-scoped credential for the realtime service: the caller's role on the board is looked up with their own token (`BusinessBackendClient.getMyRole`, the backend's `membership/me`), no role is `403`, a missing `boardId` is `400`, a backend failure `502`. `WsTokenService` signs HS256 with `WS_TOKEN_SECRET` for `WS_TOKEN_TTL_SECONDS` (60); claims are `sub`, `boardId`, `role`, `iss: elysion-bff`, `aud: elysion-realtime`, `iat`, `exp`, typed by `@elysion/shared-types`. Renewal is the client's business: it asks again on every (re)connect (#312).
+
 ## Configuration
 
 Read once at startup by `src/config/` (`@nestjs/config`, validated by `validateEnv`) and used through the typed `AppConfigService` (`config.get('PORT')` is a number); nothing else reads `process.env`. A missing or malformed variable stops the process before it listens, with a message that names every problem. For local runs copy `apps/bff/.env.example` to `apps/bff/.env`; the compose file sets what the container needs.
@@ -52,7 +56,7 @@ Read once at startup by `src/config/` (`@nestjs/config`, validated by `validateE
 | `WS_TOKEN_SECRET`      | **none, required**                     | HS256 secret of the WS token, at least 32 characters, the same as in the realtime service |
 | `WS_TOKEN_TTL_SECONDS` | `60`                                   | lifetime of a WS token                                                                    |
 
-`OIDC_*` are used by the token verifier; `WS_TOKEN_*` are only declared so far (the WS token comes with #120).
+`OIDC_*` are used by the token verifier, `WS_TOKEN_*` by `WsTokenService`.
 
 ## Open questions
 

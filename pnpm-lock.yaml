@@ -124,6 +124,9 @@ importers:
 
   apps/bff:
     dependencies:
+      '@elysion/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@nestjs/common':
         specifier: ^12.0.1
         version: 12.0.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0)
@@ -322,6 +325,9 @@ importers:
 
   apps/realtime:
     dependencies:
+      '@elysion/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@nestjs/common':
         specifier: ^12.0.1
         version: 12.0.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0)
@@ -409,6 +415,15 @@ importers:
         version: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(jsdom@28.1.0(@noble/hashes@1.8.0)(supports-color@7.2.0))(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(sass@1.101.0))
 
   packages/design-tokens: {}
+
+  packages/shared-types:
+    devDependencies:
+      oxlint:
+        specifier: ^1.81.0
+        version: 1.81.0
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
 
 packages:
 

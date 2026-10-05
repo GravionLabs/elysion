@@ -12,7 +12,7 @@ Each `apps/*` subdirectory has its own `AGENTS.md` with service-specific detail 
 - `apps/bff` — NestJS BFF, TypeScript 6
 - `apps/realtime` — NestJS WebSocket gateway (Yjs sync, presence), TypeScript 6
 - `apps/business-backend` — ASP.NET Core Web API, .NET 10
-- `packages/shared-types` — cross-app TS types, compiled to plain JS/d.ts (not consumed as raw `.ts`)
+- `packages/shared-types` — cross-app TS types and constants (the WS token contract), compiled to plain JS/d.ts by its `prepare` script (not consumed as raw `.ts`); rebuild with `pnpm --filter @elysion/shared-types build` after editing it
 - `infra/` — docker-compose, Traefik config, Kubernetes manifests (future)
 - `docs/adr/` — architecture decision records; `docs/specs/` — per-service specs. Read these before making an architectural change, and add/update an ADR when you make one.
 
