@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { TopBar } from './top-bar';
 
 describe('TopBar', () => {
@@ -6,11 +7,23 @@ describe('TopBar', () => {
   const el = () => fixture.nativeElement as HTMLElement;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [TopBar] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [TopBar],
+      providers: [provideRouter([])],
+    }).compileComponents();
     fixture = TestBed.createComponent(TopBar);
     fixture.componentRef.setInput('boardId', 'team-retro');
     fixture.componentRef.setInput('theme', 'light');
     await fixture.whenStable();
+  });
+
+  it('links back to the board list from the brand and from "All boards"', () => {
+    const brand = el().querySelector('a.brand') as HTMLAnchorElement;
+    const back = el().querySelector('a.all-boards') as HTMLAnchorElement;
+
+    expect(brand.getAttribute('href')).toBe('/');
+    expect(back.getAttribute('href')).toBe('/');
+    expect(back.textContent).toContain('All boards');
   });
 
   it('shows the app title', () => {

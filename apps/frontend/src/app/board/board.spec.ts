@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { ThemeService } from '../theme/theme.service';
 import { Board } from './board';
 import { CanvasElementLoader } from './canvas-element-loader';
@@ -21,6 +22,7 @@ describe('Board', () => {
         { provide: CanvasElementLoader, useValue: loader },
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
       ],
     }).compileComponents();
 

@@ -56,4 +56,39 @@ describe('BoardApi', () => {
 
     http.expectNone(() => true);
   });
+
+  it('lists the boards', async () => {
+    const result = firstValueFrom(api.list());
+
+    http.expectOne('/api/boards').flush([board]);
+
+    expect(await result).toEqual([board]);
+  });
+
+  it('does not hide a failing list: the page shows its error state', async () => {
+    const result = firstValueFrom(api.list());
+
+    http.expectOne('/api/boards').flush('', { status: 502, statusText: 'Bad Gateway' });
+
+    await expect(result).rejects.toMatchObject({ status: 502 });
+  });
+
+  it('creates a board with the given name', async () => {
+    const result = firstValueFrom(api.create('Retro'));
+
+    const request = http.expectOne('/api/boards');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ name: 'Retro' });
+    request.flush(board);
+
+    expect(await result).toEqual(board);
+  });
+
+  it('does not hide a failing create', async () => {
+    const result = firstValueFrom(api.create('Retro'));
+
+    http.expectOne('/api/boards').flush('', { status: 400, statusText: 'Bad Request' });
+
+    await expect(result).rejects.toMatchObject({ status: 400 });
+  });
 });
