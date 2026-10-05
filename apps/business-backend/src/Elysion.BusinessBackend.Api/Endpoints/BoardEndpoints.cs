@@ -13,7 +13,7 @@ namespace Elysion.BusinessBackend.Api.Endpoints;
 /// </summary>
 public static class BoardEndpoints
 {
-    public const int MaxNameLength = 120;
+    public const int MaxNameLength = Board.MaxNameLength;
 
     public static IEndpointRouteBuilder MapBoardEndpoints(this IEndpointRouteBuilder routes)
     {
@@ -46,12 +46,12 @@ public static class BoardEndpoints
     private static async Task<Results<Created<BoardDto>, ValidationProblem>> Create(
         BoardNameRequest? request, HttpRequest http, ElysionDbContext db, TimeProvider time, CancellationToken cancellationToken)
     {
-        if (!TryNormalizeName(request?.Name, out var name))
+        if (!Board.TryNormalizeName(request?.Name, out var name))
         {
             return InvalidName();
         }
 
-        var board = new Board { Id = Guid.CreateVersion7(), Name = name, CreatedAt = TruncateToMicroseconds(time.GetUtcNow()) };
+        var board = Board.Create(Guid.CreateVersion7(), name, TruncateToMicroseconds(time.GetUtcNow()));
         db.Boards.Add(board);
         await db.SaveChangesAsync(cancellationToken);
         // An absolute Location, as CreatedAtAction produced.
@@ -62,7 +62,7 @@ public static class BoardEndpoints
     private static async Task<Results<Ok<BoardDto>, NotFound, ValidationProblem>> Rename(
         Guid id, BoardNameRequest? request, ElysionDbContext db, CancellationToken cancellationToken)
     {
-        if (!TryNormalizeName(request?.Name, out var name))
+        if (!Board.TryNormalizeName(request?.Name, out var name))
         {
             return InvalidName();
         }
@@ -92,7 +92,7 @@ public static class BoardEndpoints
         }
 
         var now = TruncateToMicroseconds(time.GetUtcNow());
-        var copy = new Board { Id = Guid.CreateVersion7(), Name = CopyName(source.Name), CreatedAt = now };
+        var copy = Board.Create(Guid.CreateVersion7(), CopyName(source.Name), now);
         db.Boards.Add(copy);
 
         var document = await db.BoardDocuments.AsNoTracking().FirstOrDefaultAsync(d => d.BoardId == id.ToString(), cancellationToken);
@@ -145,12 +145,6 @@ public static class BoardEndpoints
     // every later read of the same board.
     private static DateTimeOffset TruncateToMicroseconds(DateTimeOffset value) =>
         new(value.Ticks - value.Ticks % 10, value.Offset);
-
-    private static bool TryNormalizeName(string? raw, out string name)
-    {
-        name = raw?.Trim() ?? string.Empty;
-        return name.Length is >= 1 and <= MaxNameLength;
-    }
 
     private static ValidationProblem InvalidName() =>
         TypedResults.ValidationProblem(new Dictionary<string, string[]>

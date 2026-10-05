@@ -1,3 +1,5 @@
+using Ardalis.GuardClauses;
+
 namespace Elysion.BusinessBackend.Api.Entities;
 
 /// <summary>
@@ -26,4 +28,27 @@ public class User
     public DateTimeOffset CreatedAt { get; set; }
 
     public List<BoardMembership> Memberships { get; set; } = [];
+
+    /// <summary>A user with a subject, a display name and (optionally) an email that fit the model.</summary>
+    public static User Create(Guid id, string subject, string displayName, string? email, DateTimeOffset createdAt)
+    {
+        Guard.Against.Default(id);
+        Guard.Against.NullOrWhiteSpace(subject);
+        Guard.Against.InvalidInput(subject, nameof(subject), s => s.Length <= MaxSubjectLength);
+        Guard.Against.NullOrWhiteSpace(displayName);
+        Guard.Against.InvalidInput(displayName, nameof(displayName), n => n.Trim().Length <= MaxDisplayNameLength);
+        if (email is not null)
+        {
+            Guard.Against.InvalidInput(email, nameof(email), e => e.Length <= MaxEmailLength);
+        }
+
+        return new User
+        {
+            Id = id,
+            Subject = subject,
+            DisplayName = displayName.Trim(),
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
+            CreatedAt = createdAt,
+        };
+    }
 }

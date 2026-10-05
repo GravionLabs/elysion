@@ -34,6 +34,10 @@ There is no owner and no authorization yet: every caller sees every board. Users
 
 **Duplicate** creates a board named "<name> (copy)" (the name is cut short, to 120 characters, when the suffix would not fit) and copies the source's stored document byte for byte as a fresh document (version 1), so the two boards are independent from then on. The copy is what was last saved: changes still inside a room's save window (a few seconds) are not in it yet. A board without content gets a copy without a document.
 
+## Guard clauses
+
+Entities are created through factories that guard their invariants with `Ardalis.GuardClauses`: `Board.Create` (name trimmed, 1 to 120 characters, non-empty ids), `User.Create` (subject and display name not blank, lengths within the model's limits, optional email) and `BoardMembership.Create` (non-empty ids, a defined role). A violation throws, and is a programming error; requests are validated before that and answered with `400`, using the same rule (`Board.TryNormalizeName`), so there is one source for each limit.
+
 ## Users and memberships (data model)
 
 The model for the identity epic (#91); no endpoint uses it yet.
