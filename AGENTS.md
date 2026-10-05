@@ -34,4 +34,21 @@ Each `apps/*` subdirectory has its own `AGENTS.md` with service-specific detail 
 
 ## Issue tracking
 
-Work is tracked on GitHub as Epic → Feature → PBI → Task (Bug → Task), using GitHub's **native sub-issues** (not manual checklists) for parent/child links — see `.github/ISSUE_TEMPLATE/`. When creating child issues, link them via the sub-issues panel/API, not a markdown checklist.
+Work is tracked on GitHub as Epic → Feature → PBI → Task (Bug → Task), using GitHub's **native sub-issues** (not manual checklists) for parent/child links — see `.github/ISSUE_TEMPLATE/`. When creating child issues, link them via the sub-issues panel/API, not a markdown checklist. The build order is in `docs/roadmap.md`.
+
+### Issue conventions
+
+These apply to every issue, including issues created with `gh` or the API (which skip the issue forms). Write them in US English.
+
+- **Labels:** exactly one level label (`epic`, `feature`, `pbi`, `task`, `bug`) and one `area:*` label.
+- **Title:** `[Epic] `, `[Feature] `, `[PBI] `, `[Task] ` or `[Bug] ` matching the level label. PBIs and tasks continue with a conventional-commit title: `[PBI] feat: board list home page with New board`, `[Task] test: two clients converge`.
+- **PBI body:** `### Parent Feature`, `### Acceptance criteria`, `### Depends on`, `### Verification` (commands run from the repo root), `### Sub-issues`. Add a `### How to work on this` section when the order of tasks or the AGENTS.md files to read are not obvious.
+- **Task body:** `### Parent PBI or Bug`, `### Implementation notes`, `### Files`, `### Done when` (checkboxes ending with the PBI's verification). A task that needs a browser check adds `### Manual check` with how to start the stack and the exact steps.
+- **Links:** parents and children as native sub-issues; dependencies between PBIs as native "blocked by" dependencies, and also listed under `### Depends on`. Refer to other issues by number, never as "the X PBI under #n".
+- **ADRs:** never fix an ADR number in an issue; write "the next free ADR number" (the highest in `docs/adr/` plus one when the ADR is written).
+- **Decisions:** an issue whose outcome is a product or architecture decision gets `needs-decision`. Prepare it fully and write the ADR with **Status: Proposed**; the owner accepts it and removes the label.
+- **Project board:** every issue is on [project 7](https://github.com/users/GravionLabs/projects/7) with Level, Area, Status, Phase, Start date and Target date set; features, PBIs and tasks get their phase's milestone (`M1 Foundation` … `M7 Operations`), epics none.
+
+**Definition of ready:** a PBI or task can be started when it has no `needs-refinement` or `needs-decision` label and nothing it is blocked by is still open.
+
+**Enforcement:** the `Issue conventions` workflow (`.github/workflows/issue-conventions.yml`) fixes the title prefix and labels PBIs and tasks that miss required sections with `needs-refinement` (with a comment naming them). The `PR readiness` workflow (`.github/workflows/pr-ready.yml`) fails a pull request whose `Closes #n` issue is not ready; after a decision is accepted or a blocker is closed, re-run it. The rules live in `.github/scripts/` and are tested by `pnpm test:repo`.
