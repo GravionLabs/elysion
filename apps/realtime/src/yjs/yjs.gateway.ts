@@ -67,24 +67,28 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  private join(client: WebSocket, room: YjsRoom): void {
+  private async join(client: WebSocket, room: YjsRoom): Promise<void> {
     if (client.readyState !== client.OPEN) {
       return; // gone while the board was loading
     }
     room.clients.add(client);
     this.roomByClient.set(client, room);
-
-    // Idempotent per board id — a no-op for every connection after the room's first.
-    this.presence
-      .subscribe(room.boardId, (message) => this.broadcastToRoom(room, message))
-      .catch((error: unknown) =>
-        this.logger.warn(`Presence subscribe failed for board ${room.boardId}: ${String(error)}`),
-      );
-
     this.sendSyncStep1(client, room);
-    this.sendPresenceSnapshot(client, room).catch((error: unknown) =>
-      this.logger.warn(`Presence snapshot failed for board ${room.boardId}: ${String(error)}`),
-    );
+
+    // Subscribe first and wait for it, then read the snapshot. Every announcement is recorded in Valkey
+    // before it is published, so one published before the subscription is active is in the snapshot, and one
+    // published after reaches the subscription: nothing can fall in between. (Idempotent per board id: later
+    // connections wait for the subscription the first one started.)
+    try {
+      await this.presence.subscribe(room.boardId, (message) => this.broadcastToRoom(room, message));
+    } catch (error) {
+      this.logger.warn(`Presence subscribe failed for board ${room.boardId}: ${String(error)}`);
+    }
+    try {
+      await this.sendPresenceSnapshot(client, room);
+    } catch (error) {
+      this.logger.warn(`Presence snapshot failed for board ${room.boardId}: ${String(error)}`);
+    }
   }
 
   handleDisconnect(client: WebSocket): void {

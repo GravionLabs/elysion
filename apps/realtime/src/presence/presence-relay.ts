@@ -29,6 +29,8 @@ const STATE_KEY_TTL_SECONDS = 24 * 60 * 60;
 export class PresenceRelay implements OnModuleDestroy {
   private readonly instanceId = randomUUID();
   private readonly handlersByBoard = new Map<string, PresenceHandler>();
+  /** The subscription of each board, kept while it is under way so a second caller waits for it too. */
+  private readonly subscriptions = new Map<string, Promise<void>>();
 
   constructor(
     @Inject(REDIS_PUB_CLIENT) private readonly pub: Redis,
@@ -45,13 +47,20 @@ export class PresenceRelay implements OnModuleDestroy {
     await this.pub.publish(this.channelFor(boardId), envelope);
   }
 
-  /** Idempotent: re-subscribing the same board id with a new handler replaces the old one. */
-  async subscribe(boardId: string, handler: PresenceHandler): Promise<void> {
-    const alreadySubscribed = this.handlersByBoard.has(boardId);
+  /**
+   * Idempotent: re-subscribing the same board id with a new handler replaces the old one. Every call resolves
+   * once the board's subscription is active, also a call that arrives while the first one is still under way;
+   * after a failed subscription the next call tries again.
+   */
+  subscribe(boardId: string, handler: PresenceHandler): Promise<void> {
     this.handlersByBoard.set(boardId, handler);
-    if (!alreadySubscribed) {
-      await this.sub.subscribe(this.channelFor(boardId));
+    let subscription = this.subscriptions.get(boardId);
+    if (!subscription) {
+      subscription = this.sub.subscribe(this.channelFor(boardId)).then(() => undefined);
+      this.subscriptions.set(boardId, subscription);
+      subscription.catch(() => this.subscriptions.delete(boardId));
     }
+    return subscription;
   }
 
   /**
