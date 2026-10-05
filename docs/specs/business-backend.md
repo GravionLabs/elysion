@@ -87,6 +87,22 @@ Resource-based authorization over `BoardMembership` (`Authorization/`). Three na
 
 **Boards from before users existed have no owner** and no membership, so nobody has a role on them: they are invisible (404) and not listed. In a development database give such a board to a user with `UPDATE "Boards" SET "OwnerId" = '<user id>' WHERE "Id" = '<board id>'` (users appear in `"Users"` after their first request). Sharing and invitations are #245.
 
+## Board members
+
+`/boards/{id}/members`, all behind the **administer** policy (an Owner): somebody with a lower role gets `403`, somebody with no role `404`, as for every board endpoint.
+
+| Request                                          | Result                                                                                                                                                                      |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /boards/{id}/members`                       | `200`, `[{ userId, displayName, email, role }]`: the creator first, then in the order roles were given                                                                      |
+| `POST /boards/{id}/members` `{ email, role }`    | `201` with the member; `404` if no user has that email; `409` if they are a member already; `400` for a missing email or a `role` that is not `Owner`, `Editor` or `Viewer` |
+| `PATCH /boards/{id}/members/{userId}` `{ role }` | `200` with the member; `404` if the user is no member; `409` for the creator and for the last Owner; `400` for a bad role                                                   |
+| `DELETE /boards/{id}/members/{userId}`           | `204`; `404` if the user is no member; `409` for the creator and for the last Owner                                                                                         |
+
+- **By email:** only somebody who has logged in to Elysion at least once exists as a user (provisioning, "Users are created from the token"), so an unknown email is `404` with the message that they have to log in first, never a `500`. The email is matched without regard to case; two users with the same email make the invitation `409` ("ambiguous") instead of a guess. A role is read by its name only (`"1"` is refused).
+- **The creator** (`Board.OwnerId`) is an Owner whatever a membership row says (`GetRoleAsync`), so their role cannot be changed or removed (`409`): it would have no effect, and pretending it had would be worse. The member list shows the creator as Owner even when no row exists.
+- **The last Owner** (the set of Owner memberships plus the creator) cannot be removed or demoted (`409`). With the creator protected this matters for a board without a creator, which nobody can reach through the API today; the rule is in `BoardMemberService` and tested there.
+- Changes take effect at once: the next request of a removed or demoted member is evaluated against the new role. A connection that is open keeps its token until the next reconnect (identity.md).
+
 ## Repositories
 
 [ADR 0015](../adr/0015-business-backend-repositories.md): the endpoints reach the database through `IBoardRepository` (`ListNewestFirstAsync`, `FindAsync`, `FindForUpdateAsync`, `Add`, `Remove`) and `IBoardDocumentRepository` (`FindAsync`, `SaveAsync`, `Add`, `RemoveAsync`), and commit through `IUnitOfWork` (the scoped `ElysionDbContext`). Repositories hand out untracked copies unless asked for an update, never `IQueryable`. `Add`, `Remove` and `RemoveAsync` stage; the unit of work commits, which makes duplicating a board (a board and a document) and deleting one (the board and its canvas content) single transactions. `IBoardDocumentRepository.SaveAsync` is the versioned save of ADR 0011 and commits itself: `Saved` with the new version, `NotFound` for an update of a missing document, `Conflict` with the stored document when the version moved on, a first save met an existing document, or another writer won the race. The HTTP behavior did not change; the repositories have their own tests (`BoardRepositoryTests`, `BoardDocumentRepositoryTests`) on SQLite, with `DateTimeOffset` stored as a number in the test context because SQLite cannot order by it.

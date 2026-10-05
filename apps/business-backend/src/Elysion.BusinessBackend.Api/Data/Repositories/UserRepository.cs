@@ -12,6 +12,19 @@ public sealed class UserRepository(ElysionDbContext db) : IUserRepository
         return await db.Users.FirstOrDefaultAsync(u => u.Subject == subject, cancellationToken);
     }
 
+    public async Task<User?> FindAsync(Guid id, CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(id);
+        return await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<User>> FindByEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        Guard.Against.NullOrWhiteSpace(email);
+        var lowered = email.Trim().ToLowerInvariant();
+        return await db.Users.AsNoTracking().Where(u => u.Email != null && u.Email.ToLower() == lowered).ToListAsync(cancellationToken);
+    }
+
     public async Task<User> GetOrAddAsync(User user, CancellationToken cancellationToken)
     {
         Guard.Against.Null(user);

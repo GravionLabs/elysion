@@ -38,6 +38,10 @@ Every route needs a Keycloak access token (`Authorization: Bearer ...`; [identit
 
 In tests the verifier is replaced by one that trusts a locally generated key pair (`test/test-auth.ts`: `signToken`, `bearer`, `testVerifier`); everything else about the check is the production code.
 
+## Board members
+
+`/api/boards/:id/members` (`GET`, `POST { email, role }`, `PATCH :userId { role }`, `DELETE :userId`; `MembersController`) passes on to the business backend's member API with the caller's own token ([business-backend.md](business-backend.md), "Board members"). The BFF only checks the shape: ids that are not UUIDs are `404` and a body without a string `email` or `role` is `400`, both without a call to the backend. The backend's answers come back with its message: `403` (a lower role), `404` (a board the caller cannot see, an unknown email, not a member), `409` (already a member, the creator, the last owner), `400` (a bad role).
+
 ## WS tokens
 
 `POST /api/realtime/token` (`src/realtime/`, body `{ "boardId": "<uuid>" }`, answer `{ token, expiresAt }`, [identity.md](identity.md)) mints the board-scoped credential for the realtime service: the caller's role on the board is looked up with their own token (`BusinessBackendClient.getMyRole`, the backend's `membership/me`), no role is `403`, a missing `boardId` is `400`, a backend failure `502`. `WsTokenService` signs HS256 with `WS_TOKEN_SECRET` for `WS_TOKEN_TTL_SECONDS` (60); claims are `sub`, `boardId`, `role`, `iss: elysion-bff`, `aud: elysion-realtime`, `iat`, `exp`, typed by `@elysion/shared-types`. Renewal is the client's business: it asks again on every (re)connect (#312).

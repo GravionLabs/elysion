@@ -145,6 +145,11 @@ public class UserProvisioningTests
         public Task<User?> FindBySubjectForUpdateAsync(string subject, CancellationToken cancellationToken) =>
             Task.FromResult<User?>(null);
 
+        public Task<User?> FindAsync(Guid id, CancellationToken cancellationToken) => inner.FindAsync(id, cancellationToken);
+
+        public Task<IReadOnlyList<User>> FindByEmailAsync(string email, CancellationToken cancellationToken) =>
+            inner.FindByEmailAsync(email, cancellationToken);
+
         public Task<User> GetOrAddAsync(User user, CancellationToken cancellationToken) =>
             inner.GetOrAddAsync(user, cancellationToken);
     }

@@ -2,6 +2,7 @@ import type { BoardRole } from '@elysion/shared-types';
 import {
   BadGatewayException,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -17,6 +18,14 @@ export interface Board {
   id: string;
   name: string;
   createdAt: string;
+}
+
+/** A member of a board as the business backend's member API returns it. */
+export interface BoardMember {
+  userId: string;
+  displayName: string;
+  email: string | null;
+  role: 'Owner' | 'Editor' | 'Viewer';
 }
 
 const TIMEOUT_MS = 5000;
@@ -50,6 +59,29 @@ export class BusinessBackendClient {
 
   duplicateBoard(token: string, id: string): Promise<Board> {
     return this.request<Board>(token, 'POST', `/boards/${id}/duplicate`);
+  }
+
+  listMembers(token: string, boardId: string): Promise<BoardMember[]> {
+    return this.request<BoardMember[]>(token, 'GET', `/boards/${boardId}/members`);
+  }
+
+  addMember(token: string, boardId: string, email: string, role: string): Promise<BoardMember> {
+    return this.request<BoardMember>(token, 'POST', `/boards/${boardId}/members`, { email, role });
+  }
+
+  changeMemberRole(
+    token: string,
+    boardId: string,
+    userId: string,
+    role: string,
+  ): Promise<BoardMember> {
+    return this.request<BoardMember>(token, 'PATCH', `/boards/${boardId}/members/${userId}`, {
+      role,
+    });
+  }
+
+  async removeMember(token: string, boardId: string, userId: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/boards/${boardId}/members/${userId}`);
   }
 
   /**
@@ -107,7 +139,11 @@ export class BusinessBackendClient {
       throw new ForbiddenException();
     }
     if (response.status === 404) {
-      throw new NotFoundException();
+      // A board that is not visible has no body; the member API says why (an unknown email, not a member).
+      throw new NotFoundException(await problemDetail(response));
+    }
+    if (response.status === 409) {
+      throw new ConflictException(await problemDetail(response));
     }
     if (response.status === 400) {
       throw new BadRequestException(await validationMessage(response));
@@ -123,6 +159,16 @@ function toBoardRole(role: string): BoardRole {
     return lower;
   }
   throw new BadGatewayException(`The business backend answered an unknown role "${role}".`);
+}
+
+/** The `detail` of an ASP.NET problem-details body, or `undefined` when there is none. */
+async function problemDetail(response: Response): Promise<string | undefined> {
+  try {
+    const problem = (await response.json()) as { detail?: unknown };
+    return typeof problem.detail === 'string' ? problem.detail : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** The messages of an ASP.NET problem-details body, or a generic text if it has none. */
