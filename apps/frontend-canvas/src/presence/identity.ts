@@ -53,3 +53,25 @@ export interface PresenceState {
   /** The ids of the elements this client has selected. */
   readonly selectedElementIds?: Readonly<Record<string, true>>;
 }
+
+/** The longest name shown next to a cursor. */
+export const MAX_NAME_LENGTH = 40;
+
+/**
+ * The identity a host asks for with the `user-name` and `user-color` attributes, on top of the session's:
+ * a blank name or a color that is not `#rrggbb` is ignored and the generated one stays.
+ */
+export function withHostIdentity(
+  session: SessionIdentity,
+  name: string | undefined,
+  color: string | undefined,
+): SessionIdentity {
+  const trimmed = name?.trim().slice(0, MAX_NAME_LENGTH);
+  return {
+    id: session.id,
+    name: trimmed || session.name,
+    color: color && HEX_COLOR.test(color) ? color : session.color,
+  };
+}
+
+export const HEX_COLOR = /^#[0-9a-f]{6}$/i;

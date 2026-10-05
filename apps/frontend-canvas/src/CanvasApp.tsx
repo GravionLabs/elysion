@@ -17,7 +17,8 @@ import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/t
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
 import { YjsWebsocketClient, type YjsConnectionStatus } from './yjs/YjsWebsocketClient.js';
-import { createSessionIdentity } from './presence/identity';
+import { createSessionIdentity, withHostIdentity } from './presence/identity';
+import type { PresentUser } from './presence/collaborators';
 import { PresenceSync } from './presence/presence';
 
 /** What the host can ask the canvas to do; the element exposes these as methods. */
@@ -54,6 +55,14 @@ export interface CanvasAppProps {
   onLibraryChange?: (open: boolean) => void;
   /** The number of selected elements changed. */
   onSelectionCount?: (count: number) => void;
+  /** The other people on the board changed (somebody joined, left or was renamed); settled, not per pointer move. */
+  onPresenceChange?: (users: PresentUser[]) => void;
+  /** The connection to the board server failed; the canvas keeps retrying, so this is news, not the end. */
+  onError?: (error: Error) => void;
+  /** The name shown next to this user's cursor on other screens; a generated guest name when unset. */
+  userName?: string;
+  /** The color of this user's cursor, `#rrggbb`; one picked from the palette when unset or not valid. */
+  userColor?: string;
 }
 
 function defaultYjsServerUrl(): string {
@@ -78,6 +87,10 @@ export function CanvasApp({
   onControls,
   onLibraryChange,
   onSelectionCount,
+  onPresenceChange,
+  onError,
+  userName,
+  userColor,
 }: CanvasAppProps) {
   const resolvedTheme = useResolvedTheme(theme);
   // What is shown right now: a toggle inside Excalidraw changes it, and so does a new `theme`
@@ -101,11 +114,18 @@ export function CanvasApp({
   const selectionCallback = useRef(onSelectionCount);
   selectionCallback.current = onSelectionCount;
   const selectionCount = useRef(0);
+  const presenceCallback = useRef(onPresenceChange);
+  const errorCallback = useRef(onError);
+  presenceCallback.current = onPresenceChange;
+  errorCallback.current = onError;
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
   const presenceRef = useRef<PresenceSync | null>(null);
   // Who this tab is, made once: a re-render must not make a new collaborator.
   const identityRef = useRef(createSessionIdentity());
+  const identity = withHostIdentity(identityRef.current, userName, userColor);
+  const identityNow = useRef(identity);
+  identityNow.current = identity;
   const sceneStoreRef = useRef(new SceneStore());
   const [activeTool, setActiveTool] = useState<ToolType | 'custom'>('selection');
   const [zoomPercent, setZoomPercent] = useState(100);
@@ -131,9 +151,15 @@ export function CanvasApp({
     url.searchParams.set('board', boardId);
     const client = new YjsWebsocketClient(url.toString(), doc, {
       onStatusChange: (status) => statusCallback.current?.(status),
+      onError: (error) => errorCallback.current?.(error),
     });
 
-    const presence = new PresenceSync(client.awareness, identityRef.current, () => apiRef.current);
+    const presence = new PresenceSync(
+      client.awareness,
+      identityNow.current,
+      () => apiRef.current,
+      (users) => presenceCallback.current?.(users),
+    );
     presenceRef.current = presence;
 
     return () => {
@@ -145,6 +171,11 @@ export function CanvasApp({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // The host changed the name or color after the canvas started.
+  useEffect(() => {
+    presenceRef.current?.identityChanged(identityNow.current);
+  }, [identity.name, identity.color]);
 
   const panTo = (center: { x: number; y: number }) => {
     const snapshot = sceneStoreRef.current.get();

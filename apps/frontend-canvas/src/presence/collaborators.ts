@@ -1,5 +1,5 @@
 import type { Collaborator, SocketId } from '@excalidraw/excalidraw/types';
-import { IDENTITY_COLORS, type PresenceState } from './identity';
+import { HEX_COLOR, IDENTITY_COLORS, MAX_NAME_LENGTH, type PresenceState } from './identity';
 
 const isNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
@@ -49,10 +49,10 @@ export function toCollaborators(
     }
     const { user } = state;
     // Anything that is not a color of the palette would be drawn as given; only hex colors pass.
-    const accent = /^#[0-9a-f]{6}$/i.test(user.color) ? user.color : IDENTITY_COLORS[0];
+    const accent = HEX_COLOR.test(user.color) ? user.color : IDENTITY_COLORS[0];
     collaborators.set(String(clientId) as SocketId, {
       id: user.id,
-      username: user.name.slice(0, 40),
+      username: user.name.slice(0, MAX_NAME_LENGTH),
       color: { background: accent, stroke: accent },
       pointer: pointerOf(state.pointer),
       button: state.button === 'down' ? 'down' : 'up',
@@ -60,4 +60,34 @@ export function toCollaborators(
     });
   }
   return collaborators;
+}
+
+/** One other client on the board, as the shell is told about it. */
+export interface PresentUser {
+  id: string;
+  name: string;
+  color: string;
+}
+
+/**
+ * The other clients with a valid identity (the same rules as `toCollaborators`), ordered by name and id so
+ * the list only changes when somebody comes or goes or renames, not when somebody moves the pointer.
+ */
+export function presentUsers(
+  states: ReadonlyMap<number, unknown>,
+  localClientId: number,
+): PresentUser[] {
+  const users: PresentUser[] = [];
+  for (const [clientId, raw] of states) {
+    const user = (raw as Partial<PresenceState> | null)?.user;
+    if (clientId === localClientId || !isIdentity(user)) {
+      continue;
+    }
+    users.push({
+      id: user.id,
+      name: user.name.slice(0, MAX_NAME_LENGTH),
+      color: HEX_COLOR.test(user.color) ? user.color : IDENTITY_COLORS[0],
+    });
+  }
+  return users.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 }

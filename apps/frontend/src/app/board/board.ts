@@ -22,6 +22,7 @@ import { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename, type ExportFormat } from './download';
 import { ExportRequest } from '../topbar/export-menu';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
+import { PresenceStore } from './presence-store';
 
 export type CanvasStatus = 'loading' | 'ready' | 'error';
 
@@ -31,6 +32,7 @@ const PENDING: BoardLookup | { status: 'pending' } = { status: 'pending' };
 @Component({
   imports: [AppBrand, RouterLink, TopBar],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  providers: [PresenceStore],
   selector: 'app-board',
   styleUrl: './board.scss',
   templateUrl: './board.html',
@@ -41,6 +43,7 @@ export class Board {
   readonly #themeService = inject(ThemeService);
   readonly #api = inject(BoardApi);
   readonly #pageTitle = inject(Title);
+  protected readonly presence = inject(PresenceStore);
 
   /** Passed to <elysion-canvas> as the `board-id` attribute. */
   readonly boardId = input('default');
@@ -142,7 +145,16 @@ export class Board {
   }
 
   onSyncStatus(event: Event): void {
-    this.syncStatus.set((event as CustomEvent<{ status: SyncStatus }>).detail.status);
+    const { status } = (event as CustomEvent<{ status: SyncStatus }>).detail;
+    this.syncStatus.set(status);
+    if (status === 'connected' && this.status() === 'error') {
+      // The canvas reports connection failures as `error` and keeps retrying: once it is connected again it is fine.
+      this.status.set('ready');
+    }
+  }
+
+  onPresence(event: Event): void {
+    this.presence.setFromEvent((event as CustomEvent).detail);
   }
 
   /** The user switched the theme inside the canvas; it becomes the app's explicit choice. */

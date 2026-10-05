@@ -46,6 +46,80 @@ describe('YjsWebsocketClient', () => {
     client.destroy();
   });
 
+  describe('failures', () => {
+    const options = { WebSocketImpl, reconnectDelayMs: 30 };
+
+    it('reports a connection that cannot be opened once, not on every retry', async () => {
+      const unused = await startTestYjsServer();
+      const url = unused.url;
+      await unused.close(); // nobody listens on this port now
+      const errors: Error[] = [];
+      const client = new YjsWebsocketClient(url, new Y.Doc(), {
+        ...options,
+        onError: (error) => errors.push(error),
+      });
+
+      await waitUntil(() => errors.length > 0);
+      await new Promise((resolve) => setTimeout(resolve, 200)); // several retries later
+      client.destroy();
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].message).toContain('connection');
+    });
+
+    it('reports a failure again after the connection was up in between', async () => {
+      const errors: Error[] = [];
+      const statuses: string[] = [];
+      const client = new YjsWebsocketClient(`${server.url}?board=failing`, new Y.Doc(), {
+        ...options,
+        onStatusChange: (status) => statuses.push(status),
+        onError: (error) => errors.push(error),
+      });
+      await waitUntil(() => statuses.includes('connected'));
+
+      server.closeConnections(1011);
+      await waitUntil(() => errors.length === 1);
+      await waitUntil(() => statuses.filter((status) => status === 'connected').length === 2);
+      server.closeConnections(1011);
+      await waitUntil(() => errors.length === 2);
+
+      client.destroy();
+    });
+
+    it('says the server could not serve the board when it closes with 1011', async () => {
+      const errors: Error[] = [];
+      const client = new YjsWebsocketClient(`${server.url}?board=unloadable`, new Y.Doc(), {
+        ...options,
+        onError: (error) => errors.push(error),
+      });
+      await waitUntil(() => client.awareness.getStates().size > 0);
+
+      server.closeConnections(1011);
+      await waitUntil(() => errors.length > 0);
+
+      expect(errors[0].message).toContain('could not serve the board');
+      client.destroy();
+    });
+
+    it('does not call it a failure when the connection just drops or the caller leaves', async () => {
+      const errors: Error[] = [];
+      const statuses: string[] = [];
+      const client = new YjsWebsocketClient(`${server.url}?board=dropping`, new Y.Doc(), {
+        ...options,
+        onStatusChange: (status) => statuses.push(status),
+        onError: (error) => errors.push(error),
+      });
+      await waitUntil(() => statuses.includes('connected'));
+
+      server.dropConnections();
+      await waitUntil(() => statuses.includes('disconnected'));
+      client.destroy();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(errors).toEqual([]);
+    });
+  });
+
   describe('awareness', () => {
     const options = { WebSocketImpl, reconnectDelayMs: 50 };
     const board = (name: string) => `${server.url}?board=${name}`;

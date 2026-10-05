@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toCollaborators } from './collaborators';
+import { presentUsers, toCollaborators } from './collaborators';
 import { IDENTITY_COLORS } from './identity';
 
 const user = (id: string, name = 'Ada', color = '#3b82f6') => ({ id, name, color });
@@ -123,5 +123,57 @@ describe('toCollaborators', () => {
 
   it('is empty for an empty board', () => {
     expect(toCollaborators(states([]), 1).size).toBe(0);
+  });
+});
+
+describe('presentUsers', () => {
+  it('lists the other clients with a valid identity, without the local one and without invalid states', () => {
+    const result = presentUsers(
+      states([
+        [1, { user: user('me') }],
+        [2, { user: user('b', 'Bea', '#14b8a6') }],
+        [3, { user: { id: 'x' } }],
+        [4, null],
+        [5, { user: user('a', 'Ada', 'red') }],
+      ]),
+      1,
+    );
+
+    expect(result).toEqual([
+      { id: 'a', name: 'Ada', color: IDENTITY_COLORS[0] },
+      { id: 'b', name: 'Bea', color: '#14b8a6' },
+    ]);
+  });
+
+  it('does not change when somebody only moves the pointer or selects something', () => {
+    const before = presentUsers(states([[2, { user: user('b') }]]), 1);
+    const after = presentUsers(
+      states([
+        [
+          2,
+          {
+            user: user('b'),
+            pointer: { x: 9, y: 9, tool: 'pointer' },
+            selectedElementIds: { a: true },
+          },
+        ],
+      ]),
+      1,
+    );
+
+    expect(after).toEqual(before);
+  });
+
+  it('orders by name, then id, whatever the order of the client ids', () => {
+    const result = presentUsers(
+      states([
+        [9, { user: user('2', 'Sam') }],
+        [3, { user: user('1', 'Sam') }],
+        [5, { user: user('0', 'Al') }],
+      ]),
+      1,
+    );
+
+    expect(result.map((u) => `${u.name}${u.id}`)).toEqual(['Al0', 'Sam1', 'Sam2']);
   });
 });

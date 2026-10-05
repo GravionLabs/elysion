@@ -184,3 +184,35 @@
     display: none;
   }
 }
+
+.presence {
+  display: flex;
+  align-items: center;
+  margin: 0 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.avatar {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  margin-left: -6px;
+  place-items: center;
+  color: #11131a; /* the colors are the same in both themes, so is the text on them */
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--c-border-muted);
+  border: 2px solid var(--c-bg);
+  border-radius: 50%;
+  user-select: none;
+}
+
+.avatar:first-child {
+  margin-left: 0;
+}
+
+.avatar.more {
+  color: var(--c-text-subtle);
+  background: var(--c-border);
+}

@@ -5,7 +5,13 @@ import { parseTheme } from './useResolvedTheme';
 
 export const ELEMENT_TAG_NAME = 'elysion-canvas';
 
-const OBSERVED_ATTRIBUTES = ['board-id', 'yjs-server-url', 'theme'] as const;
+const OBSERVED_ATTRIBUTES = [
+  'board-id',
+  'yjs-server-url',
+  'theme',
+  'user-name',
+  'user-color',
+] as const;
 
 class ElysionCanvasElement extends HTMLElement {
   static get observedAttributes(): readonly string[] {
@@ -60,6 +66,10 @@ class ElysionCanvasElement extends HTMLElement {
         onControls={(controls) => (this.#controls = controls)}
         onLibraryChange={(open) => this.#emit('librarychange', { open })}
         onSelectionCount={(count) => this.#emit('selectioncount', { count })}
+        onPresenceChange={(users) => this.#emit('presence', { users })}
+        onError={(error) => this.#emit('error', { message: error.message })}
+        userName={this.getAttribute('user-name') ?? undefined}
+        userColor={this.getAttribute('user-color') ?? undefined}
         boardId={this.getAttribute('board-id') ?? undefined}
         yjsServerUrl={this.getAttribute('yjs-server-url') ?? undefined}
         theme={parseTheme(this.getAttribute('theme'))}

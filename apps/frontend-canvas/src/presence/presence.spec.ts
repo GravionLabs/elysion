@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import * as Y from 'yjs';
 import { identityFor } from './identity';
-import { POINTER_INTERVAL_MS, PresenceSync } from './presence';
+import { POINTER_INTERVAL_MS, PRESENT_DEBOUNCE_MS, PresenceSync } from './presence';
 
 /** Two awareness instances that see each other, as two clients of one board do through the server. */
 function pair() {
@@ -153,6 +153,106 @@ describe('PresenceSync', () => {
       vi.advanceTimersByTime(500);
 
       expect((a.getLocalState() as { pointer: { x: number } }).pointer.x).toBe(1);
+    });
+  });
+  describe('telling the shell who is here', () => {
+    const names = (users: { name: string }[]) => users.map((user) => user.name);
+
+    it('says nothing at the start, when nobody else is here', () => {
+      const { a } = pair();
+      const onPresent = vi.fn();
+      join(a, identityFor('me'), () => null, onPresent);
+
+      vi.advanceTimersByTime(1000);
+
+      expect(onPresent).not.toHaveBeenCalled();
+    });
+
+    it('reports somebody who joins, once things have settled, and again when they leave', () => {
+      const { a, b } = pair();
+      const onPresent = vi.fn();
+      join(b, identityFor('me'), () => null, onPresent);
+
+      join(a, identityFor('ada'), () => null);
+      expect(onPresent).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(PRESENT_DEBOUNCE_MS);
+      expect(names(onPresent.mock.calls[0][0])).toEqual([identityFor('ada').name]);
+
+      awarenessProtocol.removeAwarenessStates(a, [a.clientID], 'test');
+      vi.advanceTimersByTime(PRESENT_DEBOUNCE_MS);
+      expect(onPresent).toHaveBeenLastCalledWith([]);
+    });
+
+    it('folds several people joining at once into one report', () => {
+      const { a, b } = pair();
+      const onPresent = vi.fn();
+      join(b, identityFor('me'), () => null, onPresent);
+      const c = new awarenessProtocol.Awareness(new Y.Doc());
+      c.on('update', () =>
+        awarenessProtocol.applyAwarenessUpdate(
+          b,
+          awarenessProtocol.encodeAwarenessUpdate(c, [c.clientID]),
+          'relay',
+        ),
+      );
+
+      join(a, identityFor('ada'), () => null);
+      join(c, identityFor('bea'), () => null);
+      vi.advanceTimersByTime(PRESENT_DEBOUNCE_MS);
+
+      expect(onPresent).toHaveBeenCalledOnce();
+      expect(onPresent.mock.calls[0][0]).toHaveLength(2);
+    });
+
+    it('does not report a moving pointer or a selection of somebody else', () => {
+      const { a, b } = pair();
+      const onPresent = vi.fn();
+      join(b, identityFor('me'), () => null, onPresent);
+      const ada = new PresenceSync(a, identityFor('ada'), () => null);
+      vi.advanceTimersByTime(PRESENT_DEBOUNCE_MS);
+      onPresent.mockClear();
+
+      ada.pointerMoved({ pointer: { x: 5, y: 5, tool: 'pointer' }, button: 'up' });
+      ada.selectionChanged({ r1: true });
+      vi.advanceTimersByTime(1000);
+
+      expect(onPresent).not.toHaveBeenCalled();
+    });
+
+    it('reports a new name of somebody else', () => {
+      const { a, b } = pair();
+      const onPresent = vi.fn();
+      join(b, identityFor('me'), () => null, onPresent);
+      const ada = new PresenceSync(a, identityFor('ada'), () => null);
+      vi.advanceTimersByTime(PRESENT_DEBOUNCE_MS);
+
+      ada.identityChanged({ ...identityFor('ada'), name: 'Ada L.' });
+      vi.advanceTimersByTime(PRESENT_DEBOUNCE_MS);
+
+      expect(names(onPresent.mock.calls.at(-1)![0])).toEqual(['Ada L.']);
+    });
+
+    it('does not report after it was destroyed', () => {
+      const { a, b } = pair();
+      const onPresent = vi.fn();
+      const presence = new PresenceSync(b, identityFor('me'), () => null, onPresent);
+      join(a, identityFor('ada'), () => null);
+
+      presence.destroy();
+      vi.advanceTimersByTime(1000);
+
+      expect(onPresent).not.toHaveBeenCalled();
+    });
+  });
+
+  it('publishes a new identity for the others', () => {
+    const { a, b } = pair();
+    const presence = new PresenceSync(a, identityFor('ada'), () => null);
+
+    presence.identityChanged({ id: identityFor('ada').id, name: 'Ada', color: '#14b8a6' });
+
+    expect(b.getStates().get(a.clientID)).toMatchObject({
+      user: { name: 'Ada', color: '#14b8a6' },
     });
   });
 });

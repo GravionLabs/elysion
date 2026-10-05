@@ -14,10 +14,13 @@ import { MAX_BOARD_NAME_LENGTH } from '../board/board-api';
 import { AppBrand } from '../shared/app-brand';
 import { Theme } from '../theme/theme.service';
 import { ExportFormat } from '../board/download';
+import type { PresentUser } from '../board/presence-store';
 import { ExportMenu, ExportRequest } from './export-menu';
 
 /** The Yjs connection of the canvas, as its `status` event reports it. */
 export type SyncStatus = 'connecting' | 'connected' | 'disconnected';
+
+const MAX_AVATARS = 3;
 
 const STATUS_LABEL: Record<SyncStatus, string> = {
   connecting: 'Connecting…',
@@ -46,6 +49,8 @@ export class TopBar {
   readonly exporting = input<ExportFormat | null>(null);
   /** Whether the library sidebar is open. */
   readonly libraryOpen = input(false);
+  /** The other people on the board. */
+  readonly users = input<readonly PresentUser[]>([]);
 
   /** The user confirmed a new name (trimmed, different from the current one). */
   readonly renameRequested = output<string>();
@@ -126,6 +131,27 @@ export class TopBar {
     if (file) {
       this.importChosen.emit(file);
     }
+  }
+
+  /** At most this many avatars are shown; the rest are a count. */
+  protected readonly visibleUsers = computed(() => this.users().slice(0, MAX_AVATARS));
+  protected readonly hiddenUsers = computed(() => Math.max(0, this.users().length - MAX_AVATARS));
+  protected readonly presenceLabel = computed(() => {
+    const names = this.users().map((user) => user.name);
+    return names.length === 1
+      ? `${names[0]} is on this board`
+      : `On this board: ${names.join(', ')}`;
+  });
+
+  protected initialsOf(name: string): string {
+    return (
+      name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((word) => [...word][0].toUpperCase())
+        .join('') || '?'
+    );
   }
 
   protected readonly title = computed(() => this.boardName() ?? this.boardId());

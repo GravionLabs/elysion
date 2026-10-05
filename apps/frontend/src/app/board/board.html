@@ -15,6 +15,7 @@
     [libraryOpen]="libraryOpen()"
     [hasSelection]="selectionCount() > 0"
     [exporting]="exporting()"
+    [users]="presence.users()"
     (renameRequested)="rename($event)"
     (themeToggle)="toggleTheme()"
     (libraryToggle)="toggleLibrary()"
@@ -46,6 +47,7 @@
       (themechange)="onCanvasThemeChange($event)"
       (librarychange)="onLibraryChange($event)"
       (selectioncount)="onSelectionCount($event)"
+      (presence)="onPresence($event)"
     ></elysion-canvas>
   }
 }

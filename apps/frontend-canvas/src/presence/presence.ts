@@ -1,7 +1,7 @@
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { CaptureUpdateAction } from '@excalidraw/excalidraw';
 import type { Awareness } from 'y-protocols/awareness';
-import { toCollaborators } from './collaborators';
+import { presentUsers, toCollaborators, type PresentUser } from './collaborators';
 import type { PresenceState, SessionIdentity } from './identity';
 import { throttle } from './throttle';
 
@@ -13,6 +13,9 @@ type PointerUpdate = {
   button: 'up' | 'down';
 };
 
+/** How long the list of present users must stay unchanged before the shell hears of it. */
+export const PRESENT_DEBOUNCE_MS = 150;
+
 /**
  * Connects the awareness of a board with the canvas: this client's identity, pointer and selection go
  * out through the awareness, and the other clients' states become Excalidraw's `collaborators`, so
@@ -21,8 +24,11 @@ type PointerUpdate = {
 export class PresenceSync {
   readonly #awareness: Awareness;
   readonly #api: () => ExcalidrawImperativeAPI | null;
+  readonly #onPresent?: (users: PresentUser[]) => void;
   #selection = '';
   #destroyed = false;
+  #presentKey = '[]'; // nobody else is here at the start; that is not news
+  #presentTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly #publishPointer = throttle((update: PointerUpdate) => {
     if (this.#destroyed) return;
@@ -34,11 +40,38 @@ export class PresenceSync {
     awareness: Awareness,
     identity: SessionIdentity,
     api: () => ExcalidrawImperativeAPI | null,
+    onPresent?: (users: PresentUser[]) => void,
   ) {
     this.#awareness = awareness;
     this.#api = api;
+    this.#onPresent = onPresent;
     awareness.setLocalState({ user: identity } satisfies PresenceState);
     awareness.on('change', this.#onChange);
+    this.#announcePresent();
+  }
+
+  /** The host asked for another name or color (the `user-name` and `user-color` attributes). */
+  identityChanged(identity: SessionIdentity): void {
+    if (this.#destroyed) return;
+    this.#awareness.setLocalStateField('user', identity);
+  }
+
+  /**
+   * Tells the shell who is here, but only when that list changed (a moving pointer does not change it)
+   * and once it has settled: several people joining at once make one call.
+   */
+  #announcePresent(): void {
+    if (!this.#onPresent) return;
+    const users = presentUsers(this.#awareness.getStates(), this.#awareness.clientID);
+    const key = JSON.stringify(users);
+    if (key === this.#presentKey && this.#presentTimer === null) return;
+    if (this.#presentTimer !== null) clearTimeout(this.#presentTimer);
+    this.#presentTimer = setTimeout(() => {
+      this.#presentTimer = null;
+      if (this.#destroyed || key === this.#presentKey) return;
+      this.#presentKey = key;
+      this.#onPresent?.(users);
+    }, PRESENT_DEBOUNCE_MS);
   }
 
   /** The pointer moved on the canvas (Excalidraw's `onPointerUpdate`). */
@@ -71,6 +104,7 @@ export class PresenceSync {
     const own = this.#awareness.clientID;
     if ([...added, ...updated, ...removed].some((clientId) => clientId !== own)) {
       this.refresh();
+      this.#announcePresent();
     }
   };
 
@@ -87,6 +121,7 @@ export class PresenceSync {
   destroy(): void {
     this.#destroyed = true;
     this.#publishPointer.cancel();
+    if (this.#presentTimer !== null) clearTimeout(this.#presentTimer);
     this.#awareness.off('change', this.#onChange);
   }
 }
