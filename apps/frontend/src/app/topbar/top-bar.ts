@@ -22,8 +22,11 @@ export class TopBar {
   readonly boardName = input<string | null>(null);
   readonly status = input<SyncStatus>('connecting');
   readonly theme = input.required<Theme>();
+  /** Whether the library sidebar is open. */
+  readonly libraryOpen = input(false);
 
   readonly themeToggle = output<void>();
+  readonly libraryToggle = output<void>();
 
   protected readonly title = computed(() => this.boardName() ?? this.boardId());
   protected readonly statusLabel = computed(() => STATUS_LABEL[this.status()]);

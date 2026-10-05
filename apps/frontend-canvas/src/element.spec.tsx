@@ -31,4 +31,25 @@ describe('elysion-canvas custom element', () => {
 
     document.body.removeChild(el);
   });
+
+  it('exposes toggleLibrary() and announces the sidebar as a librarychange event', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & { toggleLibrary(): void };
+    const changes: boolean[] = [];
+    el.addEventListener('librarychange', (event) =>
+      changes.push((event as CustomEvent).detail.open),
+    );
+
+    // Before the canvas is up, the method is there and harmless.
+    expect(() => el.toggleLibrary()).not.toThrow();
+
+    document.body.appendChild(el);
+    await waitFor(() => expect(el.querySelector('[data-testid="toolbar-rectangle"]')).toBeTruthy());
+
+    el.toggleLibrary();
+    await waitFor(() => expect(changes).toEqual([true]));
+    el.toggleLibrary();
+    await waitFor(() => expect(changes).toEqual([true, false]));
+
+    document.body.removeChild(el);
+  });
 });

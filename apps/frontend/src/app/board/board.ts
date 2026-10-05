@@ -1,9 +1,18 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Component, inject, input, signal } from '@angular/core';
+import {
+  CUSTOM_ELEMENTS_SCHEMA,
+  Component,
+  ElementRef,
+  inject,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { map, switchMap } from 'rxjs';
 import { Theme, ThemeService } from '../theme/theme.service';
 import { SyncStatus, TopBar } from '../topbar/top-bar';
 import { BoardApi } from './board-api';
+import { CanvasElement } from './canvas-element';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
 
 export type CanvasStatus = 'loading' | 'ready' | 'error';
@@ -33,6 +42,12 @@ export class Board {
 
   /** Whether the canvas script loaded and the element started. */
   readonly status = signal<CanvasStatus>('loading');
+
+  /** The element, to call its methods. (`private`, not `#`: Angular's queries cannot be ES-private.) */
+  private readonly canvas = viewChild<ElementRef<CanvasElement>>('canvas');
+
+  /** Whether the library sidebar is open, from the element's `librarychange` event. */
+  readonly libraryOpen = signal(false);
 
   /** The Yjs connection, from the element's `status` event. */
   readonly syncStatus = signal<SyncStatus>('connecting');
@@ -65,6 +80,14 @@ export class Board {
   /** The user switched the theme inside the canvas; it becomes the app's explicit choice. */
   onCanvasThemeChange(event: Event): void {
     this.#themeService.set((event as CustomEvent<{ theme: Theme }>).detail.theme);
+  }
+
+  onLibraryChange(event: Event): void {
+    this.libraryOpen.set((event as CustomEvent<{ open: boolean }>).detail.open);
+  }
+
+  toggleLibrary(): void {
+    this.canvas()?.nativeElement.toggleLibrary?.();
   }
 
   toggleTheme(): void {

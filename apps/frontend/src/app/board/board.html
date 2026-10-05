@@ -3,9 +3,12 @@
   [boardName]="boardName()"
   [status]="syncStatus()"
   [theme]="theme()"
+  [libraryOpen]="libraryOpen()"
   (themeToggle)="toggleTheme()"
+  (libraryToggle)="toggleLibrary()"
 />
 <elysion-canvas
+  #canvas
   class="board-canvas"
   [attr.board-id]="boardId()"
   [attr.yjs-server-url]="yjsServerUrl()"
@@ -14,4 +17,5 @@
   (error)="onCanvasError()"
   (status)="onSyncStatus($event)"
   (themechange)="onCanvasThemeChange($event)"
+  (librarychange)="onLibraryChange($event)"
 ></elysion-canvas>

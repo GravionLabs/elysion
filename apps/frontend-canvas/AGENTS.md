@@ -33,7 +33,7 @@ The canvas follows ariadne's design: the tokens come from `packages/design-token
 
 ## Element contract
 
-Attributes in (`board-id`, `yjs-server-url`, `theme`), events out (`ready`, `error`, `status`, `themechange`): see "Top bar and the element contract" in `docs/specs/frontend.md` and ADR 0010. A new capability the shell needs is a new event or method there, with a test on both sides. The root fills the element it is in (`position: absolute; inset: 0`), so the host must size `<elysion-canvas>`.
+Attributes in (`board-id`, `yjs-server-url`, `theme`), events out (`ready`, `error`, `status`, `themechange`, `librarychange`), methods (`toggleLibrary()`): see "Top bar and the element contract" in `docs/specs/frontend.md` and ADR 0010. A new capability the shell needs is a new event or method there, with a test on both sides. The root fills the element it is in (`position: absolute; inset: 0`), so the host must size `<elysion-canvas>`.
 
 ## Verifying changes
 

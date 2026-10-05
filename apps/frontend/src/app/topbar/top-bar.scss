@@ -119,4 +119,14 @@
     outline: 2px solid var(--c-focus);
     outline-offset: -2px;
   }
+
+  // An open panel, like ariadne's active toolbar buttons.
+  &.active {
+    color: var(--c-primary);
+    background: var(--c-primary-soft);
+
+    svg {
+      stroke: var(--c-primary);
+    }
+  }
 }

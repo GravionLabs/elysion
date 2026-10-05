@@ -63,4 +63,25 @@ describe('TopBar', () => {
 
     expect(toggled).toHaveBeenCalledTimes(1);
   });
+
+  it('has a Library button that reflects whether the sidebar is open', async () => {
+    const button = () => el().querySelector('.library-toggle') as HTMLButtonElement;
+    expect(button().textContent).toContain('Library');
+    expect(button().getAttribute('aria-pressed')).toBe('false');
+
+    fixture.componentRef.setInput('libraryOpen', true);
+    await fixture.whenStable();
+
+    expect(button().getAttribute('aria-pressed')).toBe('true');
+    expect(button().classList).toContain('active');
+  });
+
+  it('emits when the Library button is clicked', () => {
+    const toggled = vi.fn();
+    fixture.componentInstance.libraryToggle.subscribe(toggled);
+
+    (el().querySelector('.library-toggle') as HTMLButtonElement).click();
+
+    expect(toggled).toHaveBeenCalledTimes(1);
+  });
 });

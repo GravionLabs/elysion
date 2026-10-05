@@ -6,7 +6,7 @@ import { Toolbar, type ToolbarTool } from './Toolbar';
 import { ELEMENT_DEFAULTS, VIEW_BACKGROUND_COLOR } from './element-style';
 import { createStickyNote, type StickyColor } from './sticky-note';
 import { useResolvedTheme, type CanvasTheme } from './useResolvedTheme';
-import { CaptureUpdateAction, Excalidraw } from '@excalidraw/excalidraw';
+import { CaptureUpdateAction, DefaultSidebar, Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import '@elysion/design-tokens/tokens.css';
 import './styles/excalidraw-theme.css';
@@ -15,6 +15,12 @@ import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/t
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
 import { YjsWebsocketClient, type YjsConnectionStatus } from './yjs/YjsWebsocketClient.js';
+
+/** What the host can ask the canvas to do; the element exposes these as methods. */
+export interface CanvasControls {
+  /** Opens Excalidraw's library sidebar, or closes it when it is open. */
+  toggleLibrary(): void;
+}
 
 export interface CanvasAppProps {
   boardId?: string;
@@ -34,6 +40,10 @@ export interface CanvasAppProps {
    * sets `theme` or the system preference changes: the host already knows about those.
    */
   onThemeChange?: (theme: CanvasTheme) => void;
+  /** Called once when the canvas is ready to be controlled. */
+  onControls?: (controls: CanvasControls) => void;
+  /** The library sidebar opened or closed, by the host or by the user. */
+  onLibraryChange?: (open: boolean) => void;
 }
 
 function defaultYjsServerUrl(): string {
@@ -45,12 +55,18 @@ function defaultYjsServerUrl(): string {
 // (the host or the system decides), so the toggle has to be switched on explicitly.
 const UI_OPTIONS = { canvasActions: { toggleTheme: true } };
 
+// Excalidraw's own library: the default sidebar, on its library tab.
+const LIBRARY_SIDEBAR = 'default';
+const LIBRARY_TAB = 'library';
+
 export function CanvasApp({
   boardId = 'default',
   yjsServerUrl,
   theme,
   onStatusChange,
   onThemeChange,
+  onControls,
+  onLibraryChange,
 }: CanvasAppProps) {
   const resolvedTheme = useResolvedTheme(theme);
   // What is shown right now: a toggle inside Excalidraw changes it, and so does a new `theme`
@@ -66,6 +82,11 @@ export function CanvasApp({
   const themeCallback = useRef(onThemeChange);
   statusCallback.current = onStatusChange;
   themeCallback.current = onThemeChange;
+  const controlsCallback = useRef(onControls);
+  const libraryCallback = useRef(onLibraryChange);
+  controlsCallback.current = onControls;
+  libraryCallback.current = onLibraryChange;
+  const libraryOpen = useRef(false);
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
   const sceneStoreRef = useRef(new SceneStore());
@@ -142,10 +163,18 @@ export function CanvasApp({
         excalidrawAPI={(api) => {
           apiRef.current = api;
           bindingRef.current?.attach(api);
+          controlsCallback.current?.({
+            toggleLibrary: () => api.toggleSidebar({ name: LIBRARY_SIDEBAR, tab: LIBRARY_TAB }),
+          });
         }}
         onChange={(elements, appState) => {
           bindingRef.current?.onLocalChange(elements);
           setActiveTool(appState.activeTool.type);
+          const open = appState.openSidebar?.name === LIBRARY_SIDEBAR;
+          if (open !== libraryOpen.current) {
+            libraryOpen.current = open;
+            libraryCallback.current?.(open);
+          }
           if (appState.theme !== lastReportedTheme.current) {
             lastReportedTheme.current = appState.theme;
             if (appState.theme !== activeTheme) {
@@ -162,7 +191,10 @@ export function CanvasApp({
             height: appState.height,
           });
         }}
-      />
+      >
+        {/* Our own trigger replaces Excalidraw's floating Library button; the top bar opens the library. */}
+        <DefaultSidebar.Trigger style={{ display: 'none' }} aria-hidden="true" />
+      </Excalidraw>
       <Minimap store={sceneStoreRef.current} onPan={panTo} />
       <Toolbar
         activeTool={activeTool}
