@@ -75,6 +75,10 @@
     </form>
   }
 
+  @if (duplicateError(); as message) {
+    <p class="field-error duplicate-error" role="alert">{{ message }}</p>
+  }
+
   @switch (state()) {
     @case ('loading') {
       <p class="message" role="status">Loading boards…</p>
@@ -106,7 +110,19 @@
               </a>
               <button
                 type="button"
-                class="delete-button"
+                class="icon-button duplicate-button"
+                [attr.aria-label]="'Duplicate the board ' + board.name"
+                [title]="duplicatingId() === board.id ? 'Duplicating…' : 'Duplicate this board'"
+                [disabled]="duplicatingId() !== null"
+                (click)="duplicate(board)"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 9h10v10H9zM5 15V5h10" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="icon-button delete-button"
                 [attr.aria-label]="'Delete the board ' + board.name"
                 title="Delete this board"
                 (click)="askDelete(board)"

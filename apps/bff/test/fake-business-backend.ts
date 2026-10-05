@@ -44,9 +44,10 @@ export class FakeBusinessBackend {
       res.writeHead(status, { 'content-type': 'application/json' });
       res.end(body === undefined ? undefined : JSON.stringify(body));
     };
-    const match = /^\/boards(?:\/([^/]+))?$/.exec(req.url ?? '');
+    const match = /^\/boards(?:\/([^/]+?)(\/duplicate)?)?$/.exec(req.url ?? '');
     if (!match) return send(404);
     const id = match[1];
+    const duplicate = match[2] === '/duplicate';
 
     const chunks: Buffer[] = [];
     for await (const chunk of req) chunks.push(chunk as Buffer);
@@ -67,6 +68,15 @@ export class FakeBusinessBackend {
     }
     const board = id ? this.boards.get(id) : undefined;
     if (id && !board) return send(404);
+    if (duplicate && req.method === 'POST') {
+      const copy = {
+        id: randomUUID(),
+        name: `${board!.name} (copy)`,
+        createdAt: new Date().toISOString(),
+      };
+      this.boards.set(copy.id, copy);
+      return send(201, copy);
+    }
     if (req.method === 'GET') return send(200, board);
     if (req.method === 'PATCH') {
       if (name.length < 1 || name.length > 120) return invalid();

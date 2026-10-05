@@ -18,6 +18,7 @@ Under `/api`, the prefix the gateway routes to the BFF. Backed by the business b
 | `GET /api/boards/:id`                       | `200` or `404`                         |
 | `POST /api/boards` `{ "name": "..." }`      | `201` with the board                   |
 | `PATCH /api/boards/:id` `{ "name": "..." }` | `200` with the renamed board, or `404` |
+| `POST /api/boards/:id/duplicate`            | `201` with the copy, or `404`          |
 | `DELETE /api/boards/:id`                    | `204` or `404`                         |
 
 A board is `{ id, name, createdAt, path }`: the backend's fields plus `path`, the frontend route that opens it (`/board/:id`).

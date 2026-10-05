@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -39,6 +40,28 @@ describe('Boards (e2e, against a fake business backend)', () => {
       createdAt: expect.any(String),
       path: `/board/${body.id}`,
     });
+  });
+
+  it('duplicates a board and answers in the UI shape with the route of the copy', async () => {
+    const source = (await request(server()).post('/api/boards').send({ name: 'Retro' })).body;
+
+    const { body } = await request(server()).post(`/api/boards/${source.id}/duplicate`).expect(201);
+
+    expect(body).toEqual({
+      id: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      name: 'Retro (copy)',
+      createdAt: expect.any(String),
+      path: `/board/${body.id}`,
+    });
+    expect(body.id).not.toBe(source.id);
+  });
+
+  it('answers 404 when duplicating an unknown board, without asking the backend for a bad id', async () => {
+    await request(server()).post(`/api/boards/${randomUUID()}/duplicate`).expect(404);
+
+    const before = upstream.requests;
+    await request(server()).post('/api/boards/not-a-uuid/duplicate').expect(404);
+    expect(upstream.requests).toBe(before);
   });
 
   it('lists, reads, renames and deletes', async () => {

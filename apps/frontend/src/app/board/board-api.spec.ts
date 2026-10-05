@@ -142,6 +142,26 @@ describe('BoardApi', () => {
     });
   });
 
+  it('duplicates a board with a POST', async () => {
+    const result = firstValueFrom(api.duplicate(id));
+
+    const request = http.expectOne(`/api/boards/${id}/duplicate`);
+    expect(request.request.method).toBe('POST');
+    request.flush({ ...board, name: 'Retro (copy)' });
+
+    expect((await result).name).toBe('Retro (copy)');
+  });
+
+  it('does not hide a failing duplicate', async () => {
+    const result = firstValueFrom(api.duplicate(id));
+
+    http
+      .expectOne(`/api/boards/${id}/duplicate`)
+      .flush('', { status: 404, statusText: 'Not Found' });
+
+    await expect(result).rejects.toMatchObject({ status: 404 });
+  });
+
   it('deletes a board', async () => {
     const result = firstValueFrom(api.delete(id));
 

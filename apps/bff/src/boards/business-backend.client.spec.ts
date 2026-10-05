@@ -63,6 +63,18 @@ describe('BusinessBackendClient', () => {
     expect(lastCall().init.body).toBe(JSON.stringify({ name: 'New' }));
   });
 
+  it('duplicates with POST and no body', async () => {
+    fetchMock.mockResolvedValue(respond(201, { ...board, name: 'Retro (copy)' }));
+
+    const copy = await client.duplicateBoard(board.id);
+
+    expect(copy.name).toBe('Retro (copy)');
+    const { url, init } = lastCall();
+    expect(url).toBe(`http://backend.test:5174/boards/${board.id}/duplicate`);
+    expect(init.method).toBe('POST');
+    expect(init.body).toBeUndefined();
+  });
+
   it('deletes and accepts the empty 204 answer', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
 

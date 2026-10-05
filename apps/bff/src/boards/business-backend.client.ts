@@ -43,6 +43,10 @@ export class BusinessBackendClient {
     return this.request<Board>('PATCH', `/boards/${id}`, { name });
   }
 
+  duplicateBoard(id: string): Promise<Board> {
+    return this.request<Board>('POST', `/boards/${id}/duplicate`);
+  }
+
   async deleteBoard(id: string): Promise<void> {
     await this.request<void>('DELETE', `/boards/${id}`);
   }

@@ -75,6 +75,11 @@ export class BoardApi {
     return this.#http.patch<BoardInfo>(`/api/boards/${encodeURIComponent(id)}`, { name });
   }
 
+  /** A new board named "<name> (copy)" with a copy of the board's stored content. */
+  duplicate(id: string): Observable<BoardInfo> {
+    return this.#http.post<BoardInfo>(`/api/boards/${encodeURIComponent(id)}/duplicate`, null);
+  }
+
   /** Deletes a board and, in the business backend, its stored content. */
   delete(id: string): Observable<void> {
     return this.#http.delete<void>(`/api/boards/${encodeURIComponent(id)}`);

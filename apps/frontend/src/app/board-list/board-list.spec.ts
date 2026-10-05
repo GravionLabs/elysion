@@ -251,4 +251,64 @@ describe('BoardList', () => {
       expect(text()).toContain('No boards yet');
     });
   });
+
+  describe('duplicating a board', () => {
+    beforeEach(async () => {
+      await respondWith([board('b2', 'Sprint review'), board('b1', 'Retro')]);
+    });
+
+    const duplicateButton = (name: string) =>
+      el().querySelector(`button[aria-label="Duplicate the board ${name}"]`) as HTMLButtonElement;
+
+    it('offers a labelled Duplicate next to every board, not inside its link', () => {
+      const buttons = [...el().querySelectorAll('.duplicate-button')];
+
+      expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
+        'Duplicate the board Sprint review',
+        'Duplicate the board Retro',
+      ]);
+      expect(buttons.every((b) => !b.closest('a'))).toBe(true);
+    });
+
+    it('duplicates the chosen board and opens the copy', async () => {
+      const navigate = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+      duplicateButton('Retro').click();
+      await fixture.whenStable();
+      const request = http.expectOne('/api/boards/b1/duplicate');
+      expect(request.request.method).toBe('POST');
+      expect(duplicateButton('Retro').disabled).toBe(true); // no second click while it runs
+      expect(duplicateButton('Sprint review').disabled).toBe(true);
+      request.flush(board('b9', 'Retro (copy)'));
+      await fixture.whenStable();
+
+      expect(navigate).toHaveBeenCalledWith('/board/b9');
+    });
+
+    it('says so and stays on the list when duplicating fails, and allows another try', async () => {
+      const navigate = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+      duplicateButton('Retro').click();
+      await fixture.whenStable();
+      http
+        .expectOne('/api/boards/b1/duplicate')
+        .flush('', { status: 502, statusText: 'Bad Gateway' });
+      await fixture.whenStable();
+
+      expect(el().querySelector('.duplicate-error')?.textContent).toContain(
+        'could not be duplicated',
+      );
+      expect(el().querySelector('.duplicate-error')?.textContent).toContain('Retro');
+      expect(navigate).not.toHaveBeenCalled();
+      expect(duplicateButton('Retro').disabled).toBe(false);
+
+      duplicateButton('Retro').click();
+      await fixture.whenStable();
+      http.expectOne('/api/boards/b1/duplicate').flush(board('b9', 'Retro (copy)'));
+      await fixture.whenStable();
+
+      expect(el().querySelector('.duplicate-error')).toBeNull();
+      expect(navigate).toHaveBeenCalledWith('/board/b9');
+    });
+  });
 });

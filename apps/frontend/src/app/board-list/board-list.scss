@@ -261,7 +261,7 @@
   position: relative;
 }
 
-.delete-button {
+.icon-button {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -286,8 +286,8 @@
     stroke-linejoin: round;
   }
 
-  &:hover {
-    color: var(--c-danger);
+  &:hover:not(:disabled) {
+    color: var(--c-text);
     background: var(--c-surface-3);
   }
 
@@ -295,9 +295,26 @@
     outline: 2px solid var(--c-focus);
     outline-offset: 1px;
   }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
 }
 
-// Room for the delete button next to a long name.
+.duplicate-button {
+  right: 40px;
+}
+
+.delete-button:hover:not(:disabled) {
+  color: var(--c-danger);
+}
+
+.duplicate-error {
+  margin-bottom: 12px;
+}
+
+// Room for the two buttons next to a long name.
 .board-name {
-  padding-right: 28px;
+  padding-right: 64px;
 }

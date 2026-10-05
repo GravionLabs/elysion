@@ -19,17 +19,20 @@ Domain logic, persistence (PostgreSQL), templates, export service (PNG/PDF). Int
 
 The board endpoints (`/boards`, minimal APIs in `Endpoints/BoardEndpoints.cs`) are the Board service. It returns and accepts DTOs (`Contracts/BoardContracts.cs`); the `Board` entity is never exposed. Reached through the BFF only.
 
-| Request                                  | Result                                       |
-| ---------------------------------------- | -------------------------------------------- |
-| `POST /boards` `{ "name": "..." }`       | `201` with a `Location` header and the board |
-| `GET /boards`                            | `200`, all boards, newest first              |
-| `GET /boards/{id}`                       | `200` or `404`                               |
-| `PATCH /boards/{id}` `{ "name": "..." }` | `200` with the renamed board, or `404`       |
-| `DELETE /boards/{id}`                    | `204` or `404`                               |
+| Request                                  | Result                                                |
+| ---------------------------------------- | ----------------------------------------------------- |
+| `POST /boards` `{ "name": "..." }`       | `201` with a `Location` header and the board          |
+| `GET /boards`                            | `200`, all boards, newest first                       |
+| `GET /boards/{id}`                       | `200` or `404`                                        |
+| `PATCH /boards/{id}` `{ "name": "..." }` | `200` with the renamed board, or `404`                |
+| `POST /boards/{id}/duplicate`            | `201` with the copy and a `Location` header, or `404` |
+| `DELETE /boards/{id}`                    | `204` or `404`                                        |
 
 A board is `{ id, name, createdAt }`. The name is trimmed and must be 1 to 120 characters; otherwise the answer is `400` with problem details (`errors.name`). A route id that is not a GUID is a `404`. `createdAt` is cut to microseconds, which is what Postgres keeps, so a create and every later read show the same value.
 
-There is no owner and no authorization yet: every caller sees every board. Users, board membership and policies come with the identity epic (#91). Duplicating a board is not part of this API because the content lives in the Yjs document of the realtime service, not in Postgres.
+There is no owner and no authorization yet: every caller sees every board. Users, board membership and policies come with the identity epic (#91).
+
+**Duplicate** creates a board named "<name> (copy)" (the name is cut short, to 120 characters, when the suffix would not fit) and copies the source's stored document byte for byte as a fresh document (version 1), so the two boards are independent from then on. The copy is what was last saved: changes still inside a room's save window (a few seconds) are not in it yet. A board without content gets a copy without a document.
 
 ## Tests
 

@@ -58,6 +58,11 @@ export class BoardsController {
     return toResponse(await this.backend.renameBoard(id, nameFrom(body)));
   }
 
+  @Post(':id/duplicate')
+  async duplicate(@Param('id', boardId) id: string): Promise<BoardResponse> {
+    return toResponse(await this.backend.duplicateBoard(id));
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', boardId) id: string): Promise<void> {
