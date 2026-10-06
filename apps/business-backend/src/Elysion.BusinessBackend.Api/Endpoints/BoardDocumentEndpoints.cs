@@ -56,7 +56,8 @@ public static class BoardDocumentEndpoints
 
         var ifMatch = request.Headers.IfMatch.ToString();
         var create = request.Headers.IfNoneMatch.ToString() == "*";
-        if (!create && !TryParseVersion(ifMatch, out _))
+        long expected = 0;
+        if (!create && !TryParseVersion(ifMatch, out expected))
         {
             return TypedResults.Problem(
                 "Send If-Match with the version the state is based on, or If-None-Match: * for the first save.",
@@ -67,7 +68,6 @@ public static class BoardDocumentEndpoints
         await request.Body.CopyToAsync(buffer, cancellationToken);
         var state = buffer.ToArray();
 
-        TryParseVersion(ifMatch, out var expected);
         var result = await documents.SaveAsync(boardId, state, create ? null : expected, time.GetUtcNow(), cancellationToken);
         return result switch
         {

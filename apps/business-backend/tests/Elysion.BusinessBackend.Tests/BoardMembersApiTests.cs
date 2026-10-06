@@ -54,7 +54,7 @@ public class BoardMembersApiTests
             name,
             [new System.Security.Claims.Claim("sub", name), new("email", $"{name}@example.com"), new("preferred_username", name)]);
 
-    private async Task<string> ProblemDetailAsync(HttpResponseMessage response) =>
+    private static async Task<string> ProblemDetailAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("detail").GetString()!;
 
     [TestCase("owner", HttpStatusCode.OK)]

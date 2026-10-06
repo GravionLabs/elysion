@@ -73,7 +73,7 @@ public static class BoardMemberEndpoints
     }
 
     /// <summary>Why the request was refused, as a problem with a message the UI can show.</summary>
-    private static IResult Refusal(MemberResult result) => result.Outcome switch
+    private static ProblemHttpResult Refusal(MemberResult result) => result.Outcome switch
     {
         MemberOutcome.UnknownEmail => Problem(StatusCodes.Status404NotFound, "No user with this email has logged in to Elysion yet. They have to log in once before they can be added."),
         MemberOutcome.NotAMember => Problem(StatusCodes.Status404NotFound, "This user is not a member of the board."),
@@ -84,7 +84,7 @@ public static class BoardMemberEndpoints
         _ => throw new InvalidOperationException($"Unhandled outcome {result.Outcome}."),
     };
 
-    private static IResult Problem(int status, string detail) => TypedResults.Problem(detail, statusCode: status);
+    private static ProblemHttpResult Problem(int status, string detail) => TypedResults.Problem(detail, statusCode: status);
 
     private static MemberDto ToDto(MemberView member) => new(member.UserId, member.DisplayName, member.Email, member.Role.ToString());
 }

@@ -22,7 +22,11 @@ public sealed class UserRepository(ElysionDbContext db) : IUserRepository
     {
         Guard.Against.NullOrWhiteSpace(email);
         var lowered = email.Trim().ToLowerInvariant();
+        // `ToLower()` is translated to `lower(...)` in SQL; the `string.Equals(.., StringComparison)` overloads that CA1862 asks for
+        // are not translated by EF Core, so the analyzer's advice does not apply inside a query.
+#pragma warning disable CA1862
         return await db.Users.AsNoTracking().Where(u => u.Email != null && u.Email.ToLower() == lowered).ToListAsync(cancellationToken);
+#pragma warning restore CA1862
     }
 
     public async Task<User> GetOrAddAsync(User user, CancellationToken cancellationToken)
