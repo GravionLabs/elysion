@@ -127,6 +127,15 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     return load;
   }
 
+  /** What is held in memory right now: the rooms and the connections admitted to them (for the metrics). */
+  stats(): { rooms: number; connections: number } {
+    let connections = 0;
+    for (const room of this.rooms.values()) {
+      connections += room.clients.size;
+    }
+    return { rooms: this.rooms.size, connections };
+  }
+
   /** Saves the room now if it has unsaved changes (used when its last client leaves). */
   async flush(room: YjsRoom): Promise<void> {
     await this.save(room);

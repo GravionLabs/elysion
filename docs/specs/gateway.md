@@ -49,6 +49,21 @@ curl -si http://localhost/api/boards -H 'Origin: http://evil.example' | grep -i 
 for i in $(seq 1 200); do curl -s -o /dev/null -w '%{http_code}\n' http://localhost/api/boards; done | sort | uniq -c
 ```
 
+## Logs and metrics
+
+Which scraper or dashboards run is not decided here; this is what the services provide (#347).
+
+- **Access logs** (Traefik, `accessLog` in `infra/traefik/traefik.yml`): one JSON object per request on stdout (`docker logs elysion-traefik-1`), with the client address, method, router and service, status, size and duration. **Redacted on purpose:** `RequestPath` is dropped, because Traefik writes it with the query string and the `/yjs` URL carries the WS token there (`?board=...&token=...`); the route is still known from `RouterName`. Request headers (`Authorization`, `Cookie`) are not logged either. Application logs (BFF, realtime, business backend) go to stdout of their containers as before.
+- **Metrics**, Prometheus text format, all on the compose network only (nothing is published to the host, and `/metrics` is not routed at the edge):
+
+| Service  | URL                            | What                                                                                                                                                                                                 |
+| -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Traefik  | `http://traefik:8082/metrics`  | own entry point `metrics` (`:8082`); requests, durations and open connections per entry point, router and service (`traefik_router_requests_total`, `traefik_service_request_duration_seconds`, ...) |
+| BFF      | `http://bff:3000/metrics`      | process metrics, `elysion_bff_http_requests_total` and `elysion_bff_http_request_duration_seconds` by method, route pattern and status (also the requests the auth guard refuses)                    |
+| Realtime | `http://realtime:3000/metrics` | process metrics, `elysion_realtime_websocket_connections` (admitted connections), `elysion_realtime_rooms` (boards held in memory)                                                                   |
+
+The BFF's route label is the route pattern (`/api/boards/:id`), never the URL, so ids and query strings cannot become label values; URLs no route matches share the label `unmatched`. The business backend has no metrics endpoint yet.
+
 In the dev stack (`pnpm dev:stack`) the routes are Docker labels in `infra/docker/docker-compose.yml`; Traefik
 routes over the `elysion_elysion` network because some services also join `local-infra`.
 

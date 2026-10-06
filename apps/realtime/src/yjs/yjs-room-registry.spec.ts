@@ -118,3 +118,21 @@ describe('YjsRoomRegistry awareness ownership', () => {
     expect(room.awarenessIdsBySocket.get(socket)).toBeUndefined();
   });
 });
+
+describe('YjsRoomRegistry stats', () => {
+  it('counts the rooms held in memory and the connections in them', async () => {
+    const registry = new YjsRoomRegistry(
+      fakePresence(),
+      new InMemoryDocumentStore(),
+      inertDocumentRelay(),
+    );
+    expect(registry.stats()).toEqual({ rooms: 0, connections: 0 });
+
+    const one = await registry.getOrLoad('board-1');
+    await registry.getOrLoad('board-2');
+    one.clients.add({} as WebSocket);
+    one.clients.add({} as WebSocket);
+
+    expect(registry.stats()).toEqual({ rooms: 2, connections: 2 });
+  });
+});

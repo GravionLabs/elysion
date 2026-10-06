@@ -2,7 +2,7 @@
 
 This directory is currently empty. Elysion's gateway is Traefik, not a custom service — its config lives in:
 
-- `infra/traefik/traefik.yml` — static config (dashboard, entrypoints, docker provider, file provider)
+- `infra/traefik/traefik.yml` — static config (dashboard, entrypoints incl. the internal `metrics` one, docker provider, file provider, JSON access log, Prometheus metrics)
 - `infra/traefik/dynamic/middlewares.yml` — middlewares routers refer to as `<name>@file` (`bff-auth`: forwardAuth to the BFF)
 - `infra/docker/docker-compose.yml` — the `traefik` service, plus `traefik.enable`/router labels on each routed service; the `cors` and `rate-limit` middlewares are labels on the `bff` service (they read `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_AVERAGE`, `RATE_LIMIT_BURST` from the environment, which the dynamic file cannot)
 
@@ -22,3 +22,7 @@ A new route is public unless it says otherwise: decide for each one whether it g
 Services also join `local-infra`, so Traefik is told to route over `elysion_elysion` (`providers.docker.network` in `traefik.yml`); a new routed service needs `traefik.enable=true`, a router rule and `loadbalancer.server.port` labels.
 
 Verify routing changes with `pnpm dev:stack` and `curl` against `http://localhost/...` — the Traefik dashboard (`:8080/dashboard/`) shows registered routers if something isn't matching.
+
+## Logs and metrics
+
+Access logs are JSON on stdout and **must not contain query strings**: the `/yjs` URL carries the WS token, and Traefik's `RequestPath` includes the query, so that field is dropped (`accessLog.fields.names`). Do not add it back, nor request headers. The Prometheus metrics of Traefik (`:8082`, entry point `metrics`), the BFF and realtime (`/metrics`) are for the compose network only; see "Logs and metrics" in `docs/specs/gateway.md`. Static config changes need `docker compose restart traefik` (the dynamic file is watched, `traefik.yml` is not).
