@@ -143,6 +143,61 @@
   }
 }
 
+.templates {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    padding: 0;
+    margin-bottom: 6px;
+    color: var(--c-text-subtle);
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+
+.create .template-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: baseline;
+  padding: 8px 10px;
+  color: var(--c-text);
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+
+  &:has(input:checked) {
+    border-color: var(--c-primary);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 1px;
+  }
+
+  input {
+    grid-row: 1 / span 2;
+    margin: 0;
+  }
+
+  .template-name {
+    font-weight: 600;
+  }
+
+  .template-description {
+    grid-column: 2;
+    color: var(--c-text-subtle);
+    font-size: 12px;
+  }
+}
+
 .field-error {
   margin: 0;
   color: var(--c-danger);

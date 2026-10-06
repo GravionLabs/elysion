@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -828,6 +829,89 @@ describe('Board', () => {
 
       http.expectNone('/api/boards/default/membership/me');
       expect(canvas()).toBeTruthy();
+    });
+  });
+
+  describe('a template chosen when the board was created', () => {
+    const uuid = '0197a8d2-1c3e-7a10-8000-000000000002';
+    const SCENE = '{"type":"excalidraw","version":2,"elements":[]}';
+    let importFile: ReturnType<typeof vi.fn>;
+
+    /** Opens a new stored board the way the board list does: the template travels in the history state. */
+    const openNewBoard = async (state: unknown = { templateId: 't1' }, role = 'owner') => {
+      TestBed.inject(Location).replaceState('/', '', state);
+      fixture = TestBed.createComponent(Board);
+      component = fixture.componentInstance;
+      fixture.componentRef.setInput('boardId', uuid);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      http
+        .expectOne(`/api/boards/${uuid}`)
+        .flush({ id: uuid, name: 'New', createdAt: '', path: '' });
+      http.expectOne(`/api/boards/${uuid}/membership/me`).flush({ boardId: uuid, role });
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const canvas: HTMLElement & { importFile?: unknown } =
+        fixture.nativeElement.querySelector('elysion-canvas');
+      importFile = vi.fn().mockResolvedValue(3);
+      canvas.importFile = importFile;
+      return canvas;
+    };
+
+    const connect = async (canvas: HTMLElement) => {
+      canvas.dispatchEvent(new CustomEvent('ready'));
+      canvas.dispatchEvent(new CustomEvent('status', { detail: { status: 'connected' } }));
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+
+    it('writes the template into the canvas once it is connected, and only once', async () => {
+      const canvas = await openNewBoard();
+
+      await connect(canvas);
+      http.expectOne('/api/templates/t1').flush({ id: 't1', scene: SCENE });
+      await fixture.whenStable();
+
+      expect(importFile).toHaveBeenCalledOnce();
+      const blob = importFile.mock.calls[0][0] as Blob;
+      expect(await blob.text()).toBe(SCENE);
+
+      // A reconnect does not apply it again, and a reload finds no marker in the history any more.
+      canvas.dispatchEvent(new CustomEvent('status', { detail: { status: 'disconnected' } }));
+      await connect(canvas);
+      http.expectNone('/api/templates/t1');
+      expect(importFile).toHaveBeenCalledOnce();
+      expect(
+        (TestBed.inject(Location).getState() as Record<string, unknown>)['templateId'],
+      ).toBeUndefined();
+    });
+
+    it('waits for the connection', async () => {
+      await openNewBoard();
+
+      http.expectNone('/api/templates/t1');
+      expect(importFile).not.toHaveBeenCalled();
+    });
+
+    it('does nothing for a board opened without a template, as everybody else does', async () => {
+      const canvas = await openNewBoard({});
+
+      await connect(canvas);
+
+      http.expectNone('/api/templates/t1');
+      expect(importFile).not.toHaveBeenCalled();
+    });
+
+    it('tells the user when the template cannot be applied', async () => {
+      const canvas = await openNewBoard();
+
+      await connect(canvas);
+      http.expectOne('/api/templates/t1').flush(null, { status: 502, statusText: 'Bad Gateway' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(importFile).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.textContent).toContain('The template could not be applied');
     });
   });
 });

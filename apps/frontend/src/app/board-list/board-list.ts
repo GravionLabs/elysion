@@ -7,6 +7,7 @@ import { SessionService } from '../auth/session.service';
 import { UserMenu } from '../topbar/user-menu';
 import { ThemeService } from '../theme/theme.service';
 import { BoardApi, BoardInfo, MAX_BOARD_NAME_LENGTH } from '../board/board-api';
+import { TEMPLATE_STATE_KEY, TemplateApi, TemplateInfo } from '../board/template-api';
 
 export const DEFAULT_NEW_BOARD_NAME = 'Untitled board';
 
@@ -23,6 +24,7 @@ type CreateState = 'closed' | 'editing' | 'saving';
 export class BoardList {
   protected readonly session = inject(SessionService);
   readonly #api = inject(BoardApi);
+  readonly #templateApi = inject(TemplateApi);
   readonly #router = inject(Router);
   readonly #pageTitle = inject(Title);
   // Injected so the theme is applied to the page, which the board page does through its top bar.
@@ -37,6 +39,12 @@ export class BoardList {
   protected readonly createState = signal<CreateState>('closed');
   protected readonly draftName = signal(DEFAULT_NEW_BOARD_NAME);
   protected readonly createError = signal<string | null>(null);
+
+  /** The catalog for the New board form; empty until it loaded and when it failed (then only Blank is offered). */
+  protected readonly templates = signal<TemplateInfo[]>([]);
+
+  /** The template chosen in the New board form; `null` is a blank board. */
+  protected readonly selectedTemplateId = signal<string | null>(null);
 
   /** The board the user is being asked about; `null` when no deletion is pending. */
   protected readonly deleteTarget = signal<BoardInfo | null>(null);
@@ -78,7 +86,19 @@ export class BoardList {
   protected openCreate(): void {
     this.draftName.set(DEFAULT_NEW_BOARD_NAME);
     this.createError.set(null);
+    this.selectedTemplateId.set(null);
     this.createState.set('editing');
+    if (this.templates().length === 0) {
+      // A catalog that cannot be loaded only takes the choice away: a blank board is always possible.
+      this.#templateApi.list().subscribe({
+        next: (templates) => this.templates.set(templates),
+        error: () => this.templates.set([]),
+      });
+    }
+  }
+
+  protected selectTemplate(id: string | null): void {
+    this.selectedTemplateId.set(id);
   }
 
   protected cancelCreate(): void {
@@ -108,7 +128,13 @@ export class BoardList {
 
     this.createState.set('saving');
     this.#api.create(name).subscribe({
-      next: (board) => void this.#router.navigateByUrl(board.path),
+      next: (board) => {
+        // The board page applies the template once it is connected (see Board); the choice travels in the history state.
+        const templateId = this.selectedTemplateId();
+        void (templateId
+          ? this.#router.navigateByUrl(board.path, { state: { [TEMPLATE_STATE_KEY]: templateId } })
+          : this.#router.navigateByUrl(board.path));
+      },
       error: () => {
         this.createState.set('editing');
         this.createError.set('The board could not be created. Try again.');
