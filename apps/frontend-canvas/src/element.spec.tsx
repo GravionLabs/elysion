@@ -68,6 +68,45 @@ describe('elysion-canvas custom element', () => {
     document.body.removeChild(el);
   });
 
+  it('has a tokenProvider property that is used for the connection and can be set later', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
+      tokenProvider?: () => Promise<string | null>;
+    };
+    el.setAttribute('yjs-server-url', 'ws://127.0.0.1:1/yjs'); // nothing listens: the point is that the provider is asked
+    const asked = vi.fn(async () => null); // null: the host does not want a connection
+    expect(el.tokenProvider).toBeUndefined();
+
+    el.tokenProvider = asked;
+    document.body.appendChild(el);
+
+    await waitFor(() => expect(asked).toHaveBeenCalled());
+    expect(el.tokenProvider).toBe(asked);
+    document.body.removeChild(el);
+  });
+
+  it('takes a tokenProvider that was set before the element was upgraded (the script loads lazily)', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
+      tokenProvider?: () => Promise<string | null>;
+    };
+    el.setAttribute('yjs-server-url', 'ws://127.0.0.1:1/yjs');
+    const asked = vi.fn(async () => null);
+    // What a host's property binding leaves on an element that is not upgraded yet: an own data property.
+    Object.defineProperty(el, 'tokenProvider', {
+      value: asked,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+    expect(Object.getOwnPropertyDescriptor(el, 'tokenProvider')?.value).toBe(asked);
+
+    document.body.appendChild(el);
+
+    await waitFor(() => expect(asked).toHaveBeenCalled());
+    expect(Object.getOwnPropertyDescriptor(el, 'tokenProvider')).toBeUndefined(); // the accessor is in charge again
+    expect(el.tokenProvider).toBe(asked);
+    document.body.removeChild(el);
+  });
+
   it('exposes toggleLibrary() and announces the sidebar as a librarychange event', async () => {
     const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & { toggleLibrary(): void };
     const changes: boolean[] = [];

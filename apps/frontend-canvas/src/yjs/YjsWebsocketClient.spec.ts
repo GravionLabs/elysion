@@ -46,6 +46,161 @@ describe('YjsWebsocketClient', () => {
     client.destroy();
   });
 
+  describe('token provider', () => {
+    const options = { WebSocketImpl, reconnectDelayMs: 30 };
+    const tokenOf = (url: string) => new URL(url, 'http://x').searchParams.get('token');
+
+    it('asks for a token before connecting and puts it on the URL', async () => {
+      const client = new YjsWebsocketClient(`${server.url}?board=b1`, new Y.Doc(), {
+        ...options,
+        tokenProvider: async () => 'token-1',
+      });
+
+      await waitUntil(() => server.connectionUrls().length === 1);
+
+      expect(server.connectionUrls()[0]).toContain('board=b1');
+      expect(tokenOf(server.connectionUrls()[0])).toBe('token-1');
+      client.destroy();
+    });
+
+    it('asks again before every reconnect: a token of a minute would be useless at the next one', async () => {
+      let issued = 0;
+      const statuses: string[] = [];
+      const client = new YjsWebsocketClient(`${server.url}?board=b1`, new Y.Doc(), {
+        ...options,
+        onStatusChange: (status) => statuses.push(status),
+        tokenProvider: async () => `token-${++issued}`,
+      });
+      await waitUntil(() => statuses.includes('connected'));
+
+      server.dropConnections();
+      await waitUntil(() => server.connectionUrls().length === 2);
+
+      expect(server.connectionUrls().map(tokenOf)).toEqual(['token-1', 'token-2']);
+      client.destroy();
+    });
+
+    it('does not open the socket before the token is there, and shows it as connecting meanwhile', async () => {
+      let release!: (token: string) => void;
+      const statuses: string[] = [];
+      const client = new YjsWebsocketClient(`${server.url}?board=b1`, new Y.Doc(), {
+        ...options,
+        onStatusChange: (status) => statuses.push(status),
+        tokenProvider: () => new Promise((resolve) => (release = resolve)),
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(server.connectionUrls()).toEqual([]);
+      expect(statuses).toEqual(['connecting']);
+
+      release('late-token');
+      await waitUntil(() => statuses.includes('connected'));
+      expect(tokenOf(server.connectionUrls()[0])).toBe('late-token');
+      client.destroy();
+    });
+
+    it('connects without a token when the provider has none to give (a gateway without authentication)', async () => {
+      const client = new YjsWebsocketClient(`${server.url}?board=b1`, new Y.Doc(), {
+        ...options,
+        tokenProvider: async () => undefined,
+      });
+
+      await waitUntil(() => server.connectionUrls().length === 1);
+
+      expect(tokenOf(server.connectionUrls()[0])).toBeNull();
+      client.destroy();
+    });
+
+    it('replaces a token that is on the URL already, and keeps the other parameters', async () => {
+      const client = new YjsWebsocketClient(`${server.url}?board=b1&token=old&x=1`, new Y.Doc(), {
+        ...options,
+        tokenProvider: async () => 'fresh',
+      });
+
+      await waitUntil(() => server.connectionUrls().length === 1);
+
+      const url = new URL(server.connectionUrls()[0], 'http://x');
+      expect([...url.searchParams.getAll('token')]).toEqual(['fresh']);
+      expect(url.searchParams.get('board')).toBe('b1');
+      expect(url.searchParams.get('x')).toBe('1');
+      client.destroy();
+    });
+
+    it('encodes a token that needs it', async () => {
+      const client = new YjsWebsocketClient(`${server.url}?board=b1`, new Y.Doc(), {
+        ...options,
+        tokenProvider: async () => 'a b&c=d',
+      });
+
+      await waitUntil(() => server.connectionUrls().length === 1);
+
+      expect(tokenOf(server.connectionUrls()[0])).toBe('a b&c=d');
+      client.destroy();
+    });
+
+    it('stays disconnected, and does not retry, when the provider says null: the host does not want a connection', async () => {
+      const statuses: string[] = [];
+      let asked = 0;
+      const client = new YjsWebsocketClient(`${server.url}?board=b1`, new Y.Doc(), {
+        ...options,
+        onStatusChange: (status) => statuses.push(status),
+        tokenProvider: async () => {
+          asked += 1;
+          return null;
+        },
+      });
+
+      await waitUntil(() => statuses.includes('disconnected'));
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      expect(statuses).toEqual(['connecting', 'disconnected']);
+      expect(asked).toBe(1);
+      expect(server.connectionUrls()).toEqual([]);
+      client.destroy();
+    });
+
+    it('retries with a growing delay when the provider fails, reports it once, and connects when it works again', async () => {
+      let calls = 0;
+      const callTimes: number[] = [];
+      const errors: Error[] = [];
+      const client = new YjsWebsocketClient(`${server.url}?board=b1`, new Y.Doc(), {
+        WebSocketImpl,
+        reconnectDelayMs: 40,
+        onError: (error) => errors.push(error),
+        tokenProvider: async () => {
+          callTimes.push(Date.now());
+          calls += 1;
+          if (calls <= 3) throw new Error('the BFF is down');
+          return 'token-ok';
+        },
+      });
+
+      await waitUntil(() => server.connectionUrls().length === 1, 5000);
+
+      expect(calls).toBe(4);
+      const gaps = callTimes.slice(1).map((t, i) => t - callTimes[i]);
+      expect(gaps[1]).toBeGreaterThan(gaps[0]); // 40 ms, then 80 ms, then 160 ms
+      expect(gaps[2]).toBeGreaterThan(gaps[1]);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].message).toContain('token');
+      client.destroy();
+    });
+
+    it('does not connect after it was destroyed while waiting for the token', async () => {
+      let release!: (token: string) => void;
+      const client = new YjsWebsocketClient(`${server.url}?board=b1`, new Y.Doc(), {
+        ...options,
+        tokenProvider: () => new Promise((resolve) => (release = resolve)),
+      });
+
+      client.destroy();
+      release('too-late');
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(server.connectionUrls()).toEqual([]);
+    });
+  });
+
   describe('failures', () => {
     const options = { WebSocketImpl, reconnectDelayMs: 30 };
 

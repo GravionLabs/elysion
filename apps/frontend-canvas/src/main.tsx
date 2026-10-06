@@ -8,8 +8,11 @@ if (!container) {
   throw new Error('Missing #root element');
 }
 
-// Dev-only knobs: ?theme=light|dark, ?board=<id>, ?yjs=ws://localhost:3001/yjs (the realtime gateway).
+// Dev-only knobs: ?theme=light|dark, ?board=<id>, ?yjs=ws://localhost:3001/yjs (the realtime gateway), ?token=<ws token>
+// (the gateway needs one: get it from `POST /api/realtime/token`; it lives for about a minute, so only the first
+// connection of this page works, a reload needs a new one).
 const params = new URLSearchParams(location.search);
+const token = params.get('token');
 
 createRoot(container).render(
   <StrictMode>
@@ -17,6 +20,7 @@ createRoot(container).render(
       boardId={params.get('board') ?? 'dev'}
       yjsServerUrl={params.get('yjs') ?? undefined}
       theme={parseTheme(params.get('theme'))}
+      tokenProvider={token ? async () => token : undefined}
     />
   </StrictMode>,
 );

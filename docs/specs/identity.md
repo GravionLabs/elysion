@@ -96,8 +96,7 @@ A short-lived JWT, signed by the BFF and verified by the realtime service with a
 - **Fail closed:** the realtime service does not start without `WS_TOKEN_SECRET` (at least 32 characters), so a
   missing setting can never leave the gateway open. Every connection needs a token.
 
-How the shell hands the token to the canvas element (an attribute, a method or a changed URL) is decided in
-#312; this document ends at the URL the canvas connects to.
+The shell hands the token to the canvas through the element's `tokenProvider` property (#312, ADR 0010): the canvas asks it before every connection, the shell answers by calling `POST /api/realtime/token`.
 
 ## Configuration names
 

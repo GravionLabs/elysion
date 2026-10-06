@@ -28,6 +28,14 @@ theme, and later the Library sidebar, export and import.
      the theme inside the canvas, not when the host sets it), `presence` (`{ users: [{ id, name, color }] }`,
      the other people on the board, only when that list changes, #110). `error` (`{ message }`) is sent
      when the connection to the board server fails, once per outage; the canvas keeps retrying.
+   - _Provided by the host_, as a property: `tokenProvider`, an async function the canvas calls **before every
+     connection** to the board server, the first and each reconnect, for the board-scoped WS token it puts on
+     the `/yjs` URL (#312). It resolves with the token, or `null` when the host does not want a connection (it has
+     shown why, e.g. the user lost access: the canvas then stays disconnected and does not retry); a rejection is
+     retried with a growing delay (1x, 2x, 4x the reconnect delay, at most 30 s) and reported once as `error`.
+     A property and not an attribute because it is a function, and because a token lives for about a minute: a
+     token given once would be useless at the next reconnect. Without a provider the canvas connects without a token
+     (a gateway that does not check one, which the realtime service no longer is).
    - _Commands_, as methods on the element, added when a feature needs one (`toggleLibrary()`,
      `exportBoard(format)`, `importFile(file)` come with their PBIs; `exportBoard` takes `png`, `svg`, `pdf`
      (ADR 0013) or `excalidraw`). Methods rather than attributes,

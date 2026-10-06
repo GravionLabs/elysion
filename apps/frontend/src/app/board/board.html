@@ -43,6 +43,7 @@
       [attr.board-id]="boardId()"
       [attr.yjs-server-url]="yjsServerUrl()"
       [attr.theme]="theme()"
+      [tokenProvider]="wsTokenProvider"
       [attr.user-name]="session.user()?.name"
       [attr.user-color]="session.user()?.color"
       (ready)="onCanvasReady()"

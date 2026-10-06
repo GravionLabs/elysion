@@ -111,6 +111,27 @@ describe('BoardApi', () => {
     await expect(result).rejects.toMatchObject({ status: 404 });
   });
 
+  describe('realtimeToken', () => {
+    it('asks the BFF for a token for the board', async () => {
+      const result = firstValueFrom(api.realtimeToken(id));
+
+      const request = http.expectOne('/api/realtime/token');
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({ boardId: id });
+      request.flush({ token: 'abc', expiresAt: '2026-10-05T12:01:00Z' });
+
+      expect(await result).toEqual({ token: 'abc', expiresAt: '2026-10-05T12:01:00Z' });
+    });
+
+    it('does not hide a refusal: a 403 means no role on the board', async () => {
+      const result = firstValueFrom(api.realtimeToken(id)).catch((e: unknown) => e);
+
+      http.expectOne('/api/realtime/token').flush(null, { status: 403, statusText: 'Forbidden' });
+
+      expect(await result).toMatchObject({ status: 403 });
+    });
+  });
+
   describe('find', () => {
     it('is a room, without a request, for an id that cannot be a stored board', async () => {
       expect(await firstValueFrom(api.find('default'))).toEqual({ status: 'room' });
