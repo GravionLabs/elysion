@@ -1,6 +1,6 @@
 # ADR 0017: How the realtime service authenticates to the business backend's internal API
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-06
 - Issues: #475, #476 (Feature #20); implemented in #477 and #478
 - Builds on: [ADR 0011](0011-board-document-persistence.md), [ADR 0014](0014-keycloak-identity-provider.md)
@@ -76,7 +76,7 @@ never travels, tokens expire (a recorded request stops working), and no other se
 | Reuses what exists                      | The IdP                                               | -                             | -               | `jose`, `shared-types`, the WS-token pattern   |
 | Secret management                       | One more client secret                                | One more shared secret        | -               | One more shared secret (`INTERNAL_API_SECRET`) |
 
-## Decision (proposed)
+## Decision
 
 1. **Option D: the realtime service presents a short-lived signed service token.** It is made and checked like the WS
    token, so there is nothing new to learn, and it needs neither Keycloak nor a new network path to keep persistence
@@ -111,5 +111,5 @@ never travels, tokens expire (a recorded request stops working), and no other se
 
 ## Owner decision
 
-To be filled in when accepted. Open for the owner: **D (recommended)**, A, B, or C. Until this ADR is Accepted, #477 and #478
-do not start and the `needs-decision` label stays on #475.
+Accepted by the product owner on 2026-10-06: **option D, a short-lived signed service token**, as recommended above. #477
+(the backend) and #478 (the realtime service) implement it.
