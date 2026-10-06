@@ -5,6 +5,20 @@ import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
 import { MESSAGE_AWARENESS, MESSAGE_SYNC } from './protocol.js';
 
+/** The longest wait between attempts to get a token. */
+const MAX_BACKOFF_MS = 30_000;
+
+/** The URL with `token` as a query parameter, replacing one that is there. */
+function withToken(url: string, token: string): string {
+  try {
+    const result = new URL(url);
+    result.searchParams.set('token', token);
+    return result.toString();
+  } catch {
+    return `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+  }
+}
+
 /** The code the gateway closes a socket with when it cannot load the board (apps/realtime). */
 const SERVER_ERROR_CLOSE_CODE = 1011;
 
@@ -20,6 +34,15 @@ export interface YjsWebsocketClientOptions {
    * only after the connection was up in between. The client keeps retrying on its own.
    */
   onError?: (error: Error) => void;
+  /**
+   * Asked before every connection attempt, the first and each reconnect, for the token to put on the URL as
+   * `?token=` (the board-scoped WS token, which lives for about a minute, so one fetched once would be useless
+   * at the next reconnect). It resolves with the token; `undefined` when no token is needed (a gateway without
+   * authentication); `null` when the host does not want a connection (it has shown why, e.g. no access any
+   * more): the client then stays disconnected and does not retry. A rejection is a failure to get a token
+   * (the network, the BFF): it is reported once per outage and retried with a growing delay.
+   */
+  tokenProvider?: () => Promise<string | null | undefined>;
   /**
    * Overrides the WebSocket constructor used to connect — the global
    * `WebSocket` by default. Mainly for tests: Node's native `WebSocket`
@@ -58,6 +81,8 @@ export class YjsWebsocketClient {
   #onStatusChange?: (status: YjsConnectionStatus) => void;
   #onError?: (error: Error) => void;
   #failureReported = false;
+  #tokenProvider?: () => Promise<string | null | undefined>;
+  #tokenFailures = 0;
   #WebSocketImpl: typeof WebSocket;
 
   constructor(url: string, doc: Y.Doc = new Y.Doc(), options: YjsWebsocketClientOptions = {}) {
@@ -66,6 +91,7 @@ export class YjsWebsocketClient {
     this.#reconnectDelayMs = options.reconnectDelayMs ?? 1000;
     this.#onStatusChange = options.onStatusChange;
     this.#onError = options.onError;
+    this.#tokenProvider = options.tokenProvider;
     this.#WebSocketImpl = options.WebSocketImpl ?? WebSocket;
 
     this.awareness = new awarenessProtocol.Awareness(doc);
@@ -97,7 +123,42 @@ export class YjsWebsocketClient {
     }
 
     this.#onStatusChange?.('connecting');
-    const socket = new this.#WebSocketImpl(this.#url);
+    void this.#open();
+  }
+
+  /** Gets a token if there is a provider, then opens the socket with it. */
+  async #open(): Promise<void> {
+    let token: string | null | undefined;
+    if (this.#tokenProvider) {
+      try {
+        token = await this.#tokenProvider();
+      } catch {
+        if (this.#destroyed) {
+          return;
+        }
+        this.#tokenFailures += 1;
+        this.#reportFailure('Could not get a token for the board.');
+        this.#onStatusChange?.('disconnected');
+        // 1x, 2x, 4x ... the normal delay, at most 30 s: the BFF may be down or the user may have lost access.
+        this.#scheduleReconnect(
+          Math.min(this.#reconnectDelayMs * 2 ** (this.#tokenFailures - 1), MAX_BACKOFF_MS),
+        );
+        return;
+      }
+    }
+    if (this.#destroyed) {
+      return;
+    }
+    if (token === null) {
+      this.#onStatusChange?.('disconnected'); // the host does not want a connection; it said why
+      return;
+    }
+    this.#tokenFailures = 0;
+    this.#openSocket(token === undefined ? this.#url : withToken(this.#url, token));
+  }
+
+  #openSocket(url: string): void {
+    const socket = new this.#WebSocketImpl(url);
     socket.binaryType = 'arraybuffer';
     this.#socket = socket;
 
@@ -159,14 +220,14 @@ export class YjsWebsocketClient {
     this.awareness.setLocalState(state);
   }
 
-  #scheduleReconnect(): void {
+  #scheduleReconnect(delayMs = this.#reconnectDelayMs): void {
     if (this.#destroyed || this.#reconnectTimer !== null) {
       return;
     }
     this.#reconnectTimer = setTimeout(() => {
       this.#reconnectTimer = null;
       this.#connect();
-    }, this.#reconnectDelayMs);
+    }, delayMs);
   }
 
   #handleMessage(message: Uint8Array): void {

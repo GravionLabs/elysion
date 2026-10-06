@@ -652,4 +652,81 @@ describe('Board', () => {
       expect(session().logoutCalls).toBe(1);
     });
   });
+
+  describe('the token for the realtime connection', () => {
+    const canvas = () =>
+      fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement & {
+        tokenProvider?: () => Promise<string | null>;
+      };
+    const flushLookup = () =>
+      http.match((req) => req.url.startsWith('/api/boards/')).forEach((r) => r.flush({}));
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('boardId', 'team-retro');
+      fixture.detectChanges();
+    });
+
+    it('is given to the canvas as a property, so it can ask again for every connection', () => {
+      expect(typeof canvas().tokenProvider).toBe('function');
+    });
+
+    it('asks the BFF for a token for this board and hands it over', async () => {
+      const token = canvas().tokenProvider!();
+
+      const request = http.expectOne('/api/realtime/token');
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({ boardId: 'team-retro' });
+      request.flush({ token: 'ws-token-1', expiresAt: '2026-10-05T12:01:00Z' });
+
+      expect(await token).toBe('ws-token-1');
+      expect(component.notice()).toBeNull();
+      flushLookup();
+    });
+
+    it('fetches a new token on every call: one token would be useless at the next reconnect', async () => {
+      const first = canvas().tokenProvider!();
+      http.expectOne('/api/realtime/token').flush({ token: 'one', expiresAt: 'x' });
+      const second = canvas().tokenProvider!();
+      http.expectOne('/api/realtime/token').flush({ token: 'two', expiresAt: 'x' });
+
+      expect([await first, await second]).toEqual(['one', 'two']);
+      flushLookup();
+    });
+
+    it('uses the board that is open now, also after the page was given another id', async () => {
+      fixture.componentRef.setInput('boardId', 'other-board');
+      fixture.detectChanges();
+      flushLookup();
+
+      const token = canvas().tokenProvider!();
+      const request = http.expectOne('/api/realtime/token');
+      expect(request.request.body).toEqual({ boardId: 'other-board' });
+      request.flush({ token: 't', expiresAt: 'x' });
+      await token;
+    });
+
+    it('says so, and tells the canvas not to connect, when the user has no access (403)', async () => {
+      const token = canvas().tokenProvider!();
+
+      http.expectOne('/api/realtime/token').flush(null, { status: 403, statusText: 'Forbidden' });
+
+      expect(await token).toBeNull();
+      expect(component.notice()).toBe('You no longer have access to this board.');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.board-banner')?.textContent).toContain(
+        'You no longer have access to this board.',
+      );
+      flushLookup();
+    });
+
+    it('passes any other failure on for the canvas to retry, without telling the user they lost access', async () => {
+      const token = canvas().tokenProvider!().catch((e: unknown) => e);
+
+      http.expectOne('/api/realtime/token').flush(null, { status: 502, statusText: 'Bad Gateway' });
+
+      expect(await token).toMatchObject({ status: 502 });
+      expect(component.notice()).toBeNull();
+      flushLookup();
+    });
+  });
 });

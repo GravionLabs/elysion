@@ -59,6 +59,11 @@ export interface CanvasAppProps {
   onPresenceChange?: (users: PresentUser[]) => void;
   /** The connection to the board server failed; the canvas keeps retrying, so this is news, not the end. */
   onError?: (error: Error) => void;
+  /**
+   * Asked before every connection to the board server (the first and each reconnect) for the token that goes on the
+   * URL; see `YjsWebsocketClientOptions.tokenProvider` for what it may return. Without one, no token is sent.
+   */
+  tokenProvider?: () => Promise<string | null | undefined>;
   /** The name shown next to this user's cursor on other screens; a generated guest name when unset. */
   userName?: string;
   /** The color of this user's cursor, `#rrggbb`; one picked from the palette when unset or not valid. */
@@ -89,6 +94,7 @@ export function CanvasApp({
   onSelectionCount,
   onPresenceChange,
   onError,
+  tokenProvider,
   userName,
   userColor,
 }: CanvasAppProps) {
@@ -118,6 +124,8 @@ export function CanvasApp({
   const errorCallback = useRef(onError);
   presenceCallback.current = onPresenceChange;
   errorCallback.current = onError;
+  const tokenProviderRef = useRef(tokenProvider);
+  tokenProviderRef.current = tokenProvider;
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
   const presenceRef = useRef<PresenceSync | null>(null);
@@ -152,6 +160,9 @@ export function CanvasApp({
     const client = new YjsWebsocketClient(url.toString(), doc, {
       onStatusChange: (status) => statusCallback.current?.(status),
       onError: (error) => errorCallback.current?.(error),
+      // Read at every connect, so a provider the host sets later (after the element started) is used for the next
+      // attempt; none set: no token (a gateway without authentication).
+      tokenProvider: () => tokenProviderRef.current?.() ?? Promise.resolve(undefined),
     });
 
     const presence = new PresenceSync(

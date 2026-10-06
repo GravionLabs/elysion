@@ -17,6 +17,8 @@ export interface TestYjsServer {
   dropConnections: () => void;
   /** Closes every socket with a close code, like the gateway does when it cannot load a board (1011). */
   closeConnections: (code: number) => void;
+  /** The URL of every connection the server has accepted, in order (to see which token each one carried). */
+  connectionUrls: () => string[];
 }
 
 interface Room {
@@ -64,7 +66,9 @@ export function startTestYjsServer(): Promise<TestYjsServer> {
     return room;
   }
 
+  const connectionUrls: string[] = [];
   wss.on('connection', (client, request) => {
+    connectionUrls.push(request.url ?? '');
     const boardId =
       new URL(request.url ?? '', 'http://localhost').searchParams.get('board') ?? 'default';
     const room = getOrCreateRoom(boardId);
@@ -147,6 +151,7 @@ export function startTestYjsServer(): Promise<TestYjsServer> {
         dropConnections: () => {
           for (const client of wss.clients) client.terminate();
         },
+        connectionUrls: () => [...connectionUrls],
         closeConnections: (code) => {
           for (const client of wss.clients) client.close(code);
         },

@@ -10,6 +10,12 @@ export type CanvasElement = HTMLElement & {
   toggleLibrary?(): void;
   /** The board (or the selection) as a file, or `null` when there is nothing to export. */
   exportBoard?(format: ExportFormat, options?: { selectionOnly?: boolean }): Promise<Blob | null>;
+  /**
+   * Asked by the canvas before every connection to the board server for the board-scoped WS token: it resolves with
+   * the token, or `null` when no connection is wanted (the shell has shown why); a rejection is retried with a
+   * growing delay. A property, not an attribute: a token lives for about a minute.
+   */
+  tokenProvider?: () => Promise<string | null>;
   /** Replaces the board with an .excalidraw file; resolves with the number of elements in it. */
   importFile?(file: Blob): Promise<number>;
 };

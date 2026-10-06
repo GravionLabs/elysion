@@ -3,6 +3,9 @@ import { CanvasApp, type CanvasControls } from './CanvasApp';
 import type { ExportFormat, ExportOptions } from './board-io';
 import { parseTheme } from './useResolvedTheme';
 
+/** What the host gives the canvas to get a WS token. */
+export type TokenProvider = () => Promise<string | null>;
+
 export const ELEMENT_TAG_NAME = 'elysion-canvas';
 
 const OBSERVED_ATTRIBUTES = [
@@ -20,11 +23,39 @@ class ElysionCanvasElement extends HTMLElement {
 
   #root: Root | null = null;
   #controls: CanvasControls | null = null;
+  #tokenProvider: TokenProvider | undefined;
+
+  /**
+   * Asked before every connection to the board server for the board-scoped WS token (docs/specs/identity.md): it
+   * resolves with the token, or `null` when the host does not want a connection (and has said why itself). A
+   * rejection is retried with a growing delay. Not an attribute: it is a function, and a token lives for about a
+   * minute, so one given once would be useless at the next reconnect.
+   */
+  get tokenProvider(): TokenProvider | undefined {
+    return this.#tokenProvider;
+  }
+
+  set tokenProvider(provider: TokenProvider | undefined) {
+    this.#tokenProvider = provider;
+    this.#render();
+  }
 
   connectedCallback(): void {
+    // A host may set properties on the element before it is upgraded (the script loads lazily, so on the first visit
+    // the element can exist before this class does). That leaves an own property that hides the accessor above, and
+    // the value would never arrive: move it onto the accessor.
+    this.#adoptEarlyProperty('tokenProvider');
     this.#root = createRoot(this);
     this.#render();
     this.dispatchEvent(new CustomEvent('ready', { bubbles: true, composed: true }));
+  }
+
+  #adoptEarlyProperty(name: 'tokenProvider'): void {
+    if (Object.prototype.hasOwnProperty.call(this, name)) {
+      const value = (this as unknown as Record<string, unknown>)[name];
+      delete (this as unknown as Record<string, unknown>)[name];
+      this[name] = value as TokenProvider | undefined;
+    }
   }
 
   disconnectedCallback(): void {
@@ -68,6 +99,7 @@ class ElysionCanvasElement extends HTMLElement {
         onSelectionCount={(count) => this.#emit('selectioncount', { count })}
         onPresenceChange={(users) => this.#emit('presence', { users })}
         onError={(error) => this.#emit('error', { message: error.message })}
+        tokenProvider={this.#tokenProvider}
         userName={this.getAttribute('user-name') ?? undefined}
         userColor={this.getAttribute('user-color') ?? undefined}
         boardId={this.getAttribute('board-id') ?? undefined}

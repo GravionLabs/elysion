@@ -31,6 +31,13 @@ export type BoardLookup =
   /** The BFF failed: carry on without a name rather than break the page. */
   | { status: 'unavailable' };
 
+/** The answer of `POST /api/realtime/token`: the board-scoped credential for the realtime service. */
+export interface RealtimeToken {
+  token: string;
+  /** When it expires, ISO 8601: it lives for about a minute, so one is fetched for every connection. */
+  expiresAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class BoardApi {
   readonly #http = inject(HttpClient);
@@ -58,6 +65,14 @@ export class BoardApi {
    */
   get(id: string): Observable<BoardInfo | null> {
     return this.find(id).pipe(map((lookup) => (lookup.status === 'found' ? lookup.board : null)));
+  }
+
+  /**
+   * A short-lived token that lets the canvas open this board's realtime connection. The BFF only gives one to a
+   * user who has a role on the board: no role is a 403 (`HttpErrorResponse`), which callers must not retry.
+   */
+  realtimeToken(boardId: string): Observable<RealtimeToken> {
+    return this.#http.post<RealtimeToken>('/api/realtime/token', { boardId });
   }
 
   /** All boards, newest first. Fails when the BFF does: the list page has an error state for that. */

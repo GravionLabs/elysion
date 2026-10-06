@@ -10,9 +10,10 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Title } from '@angular/platform-browser';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { startWith, switchMap } from 'rxjs';
+import { firstValueFrom, startWith, switchMap } from 'rxjs';
 import { Theme, ThemeService } from '../theme/theme.service';
 import { SyncStatus, TopBar } from '../topbar/top-bar';
 import { RouterLink } from '@angular/router';
@@ -137,6 +138,24 @@ export class Board {
       },
     });
   }
+
+  /**
+   * What the canvas calls before every connection (a token lives for about a minute, so one per reconnect). No role
+   * on the board is a 403: the user is told, and `null` makes the canvas stay disconnected instead of asking
+   * again and again. Any other failure (the BFF is down) is passed on, and the canvas retries with a growing delay;
+   * a 401 has already restarted the login (the interceptor).
+   */
+  protected readonly wsTokenProvider = async (): Promise<string | null> => {
+    try {
+      return (await firstValueFrom(this.#api.realtimeToken(this.boardId()))).token;
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 403) {
+        this.notice.set('You no longer have access to this board.');
+        return null;
+      }
+      throw error;
+    }
+  };
 
   onCanvasReady(): void {
     this.status.set('ready');
