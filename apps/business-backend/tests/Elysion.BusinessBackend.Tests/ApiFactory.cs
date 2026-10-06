@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -109,6 +110,15 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", CreateToken(subject, claims: claims));
         return client;
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+        // The in-memory provider has no migrations: creating the database is what applies the seed data (the built-in templates).
+        using var scope = host.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<ElysionDbContext>().Database.EnsureCreated();
+        return host;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

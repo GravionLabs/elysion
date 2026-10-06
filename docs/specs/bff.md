@@ -21,6 +21,9 @@ Under `/api`, the prefix the gateway routes to the BFF. Backed by the business b
 | `POST /api/boards/:id/duplicate`            | `201` with the copy, or `404`          |
 | `DELETE /api/boards/:id`                    | `204` or `404`                         |
 
+| `GET /api/templates` | `200`, the template catalog without scenes |
+| `GET /api/templates/:id` | `200` with the template and its `scene` (the text of an `.excalidraw` file), or `404` |
+
 A board is `{ id, name, createdAt, path }`: the backend's fields plus `path`, the frontend route that opens it (`/board/:id`).
 
 Errors: an id that is not a UUID is a `404` without a call to the backend; a body without a string `name` is a `400`; a name the backend rejects (blank, over 120 characters) stays a `400` with the backend's message; an unknown board stays `404`; an unreachable or failing backend is a `502` (`The business backend is not reachable.`), while `/health` stays up.

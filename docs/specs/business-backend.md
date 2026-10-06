@@ -34,6 +34,17 @@ Board access is governed by roles, see "Board authorization" below: the list hol
 
 **Duplicate** creates a board named "<name> (copy)" (the name is cut short, to 120 characters, when the suffix would not fit) and copies the source's stored document byte for byte as a fresh document (version 1), so the two boards are independent from then on. The copy is what was last saved: changes still inside a room's save window (a few seconds) are not in it yet. A board without content gets a copy without a document.
 
+## Template API
+
+Templates (`Template`: `Id`, `Name`, `Description`, `Scene`, `IsBuiltIn`, `CreatedAt`) are starting points for boards. `Scene` is the text of an `.excalidraw` file. Minimal APIs in `Endpoints/TemplateEndpoints.cs`, any signed-in user may read:
+
+| Request               | Result                                                                  |
+| --------------------- | ----------------------------------------------------------------------- |
+| `GET /templates`      | `200`, built-in templates first, then by name; each without its `scene` |
+| `GET /templates/{id}` | `200` with the template including `scene`, or `404` (a non-GUID id too) |
+
+The built-in templates (Retrospective, Kanban, Brainstorming) are seeded by the `AddTemplates` migration from the embedded `Templates/*.excalidraw` files (made of the canvas's sticky notes), with fixed ids, so every database has the same ones. Changing a built-in scene means a new migration (`dotnet ef migrations add ...` updates the seed through `HasData`).
+
 ## Authentication
 
 Every endpoint requires a Keycloak access token (`Authorization: Bearer ...`, [identity.md](identity.md), [ADR 0014](../adr/0014-keycloak-identity-provider.md)): JWT bearer authentication runs before authorization, and the fallback policy demands an authenticated user for anything that does not say `AllowAnonymous`. A request without a valid token is `401` with `WWW-Authenticate: Bearer`. The service validates tokens and never issues them.

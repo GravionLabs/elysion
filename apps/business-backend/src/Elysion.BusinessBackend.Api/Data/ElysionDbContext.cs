@@ -10,6 +10,7 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
     public DbSet<BoardDocument> BoardDocuments => Set<BoardDocument>();
     public DbSet<User> Users => Set<User>();
     public DbSet<BoardMembership> BoardMemberships => Set<BoardMembership>();
+    public DbSet<Template> Templates => Set<Template>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,6 +20,13 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
             document.Property(d => d.BoardId).HasMaxLength(BoardDocument.MaxBoardIdLength);
             // The database rejects an UPDATE whose version moved on, even when two requests race.
             document.Property(d => d.Version).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<Template>(template =>
+        {
+            template.Property(t => t.Name).HasMaxLength(Template.MaxNameLength);
+            template.Property(t => t.Description).HasMaxLength(Template.MaxDescriptionLength);
+            template.HasData(BuiltInTemplates.All());
         });
 
         modelBuilder.Entity<User>(user =>

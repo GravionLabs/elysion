@@ -20,6 +20,20 @@ export interface Board {
   createdAt: string;
 }
 
+/** A template in the list of the backend's template catalog: no scene. */
+export interface TemplateSummary {
+  id: string;
+  name: string;
+  description: string;
+  isBuiltIn: boolean;
+  createdAt: string;
+}
+
+/** One template with its scene, the text of an `.excalidraw` file. */
+export interface Template extends TemplateSummary {
+  scene: string;
+}
+
 /** A member of a board as the business backend's member API returns it. */
 export interface BoardMember {
   userId: string;
@@ -59,6 +73,14 @@ export class BusinessBackendClient {
 
   duplicateBoard(token: string, id: string): Promise<Board> {
     return this.request<Board>(token, 'POST', `/boards/${id}/duplicate`);
+  }
+
+  listTemplates(token: string): Promise<TemplateSummary[]> {
+    return this.request<TemplateSummary[]>(token, 'GET', '/templates');
+  }
+
+  getTemplate(token: string, id: string): Promise<Template> {
+    return this.request<Template>(token, 'GET', `/templates/${id}`);
   }
 
   listMembers(token: string, boardId: string): Promise<BoardMember[]> {

@@ -26,6 +26,7 @@ builder.Services.AddScoped<IBoardRepository, BoardRepository>();
 builder.Services.AddScoped<IBoardDocumentRepository, BoardDocumentRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMembershipRepository, MembershipRepository>();
+builder.Services.AddScoped<ITemplateRepository, TemplateRepository>();
 builder.Services.AddScoped<BoardMemberService>();
 
 // The caller as a local user, provisioned from the token once per authenticated request.
@@ -62,6 +63,7 @@ app.MapHealthEndpoints();
 app.MapBoardEndpoints();
 app.MapBoardMemberEndpoints();
 app.MapBoardDocumentEndpoints();
+app.MapTemplateEndpoints();
 
 app.Run();
 
