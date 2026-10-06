@@ -15,7 +15,7 @@ public class BoardDocumentsApiTests
     public void SetUp()
     {
         _factory = new ApiFactory();
-        _client = _factory.CreateClient(); // the realtime service sends no token (the internal API is anonymous)
+        _client = _factory.CreateInternalClient(); // the realtime service's own token (ADR 0017)
     }
 
     [TearDown]

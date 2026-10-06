@@ -1,14 +1,21 @@
 import { Injectable } from '@nestjs/common';
+import type { InternalTokenSigner } from '../auth/internal-token-signer.js';
 import { DocumentStore, type SaveResult, type StoredDocument } from './document-store.js';
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
-/** The business backend's `/internal/boards/{id}/document` API (ADR 0011). */
+/**
+ * The business backend's `/internal/boards/{id}/document` API (ADR 0011). Every call carries a short-lived service
+ * token (ADR 0017), signed locally: the API accepts nothing else.
+ */
 @Injectable()
 export class HttpDocumentStore extends DocumentStore {
   private readonly baseUrl: string;
 
-  constructor(baseUrl = process.env.BUSINESS_BACKEND_URL ?? 'http://localhost:5174') {
+  constructor(
+    private readonly tokens: InternalTokenSigner,
+    baseUrl = process.env.BUSINESS_BACKEND_URL ?? 'http://localhost:5174',
+  ) {
     super();
     this.baseUrl = baseUrl.replace(/\/+$/, '');
   }
@@ -43,9 +50,10 @@ export class HttpDocumentStore extends DocumentStore {
     this.expect(response, 204);
   }
 
-  private request(boardId: string, init: RequestInit): Promise<Response> {
+  private async request(boardId: string, init: RequestInit): Promise<Response> {
     const url = `${this.baseUrl}/internal/boards/${encodeURIComponent(boardId)}/document`;
-    return fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    const headers = { ...init.headers, authorization: `Bearer ${await this.tokens.sign()}` };
+    return fetch(url, { ...init, headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   }
 
   private expect(response: Response, status: number): void {

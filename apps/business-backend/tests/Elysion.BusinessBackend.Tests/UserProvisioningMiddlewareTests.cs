@@ -71,9 +71,11 @@ public class UserProvisioningMiddlewareTests
     public async Task Anonymous_endpoints_are_not_provisioned_even_with_a_valid_token()
     {
         using var client = _factory.CreateAuthenticatedClient("kc-1");
+        using var internalClient = _factory.CreateInternalClient();
 
         (await client.GetAsync("/health")).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await client.GetAsync("/internal/boards/some-board/document")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        // The realtime service is no user: its token opens the internal API and creates nobody.
+        (await internalClient.GetAsync("/internal/boards/some-board/document")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
 
         (await UsersAsync()).ShouldBeEmpty();
     }

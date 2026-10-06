@@ -112,15 +112,6 @@ public class AuthenticationTests
     }
 
     [Test]
-    public async Task The_internal_document_api_stays_open_for_the_realtime_service()
-    {
-        using var client = _factory.CreateClient();
-
-        // 404, not 401: the request got to the handler, there is just no document yet.
-        (await client.GetAsync("/internal/boards/some-board/document")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
-    }
-
-    [Test]
     public void Options_without_an_issuer_or_audience_stop_the_application_at_startup()
     {
         using var factory = new ApiFactory().WithWebHostBuilder(builder =>
@@ -128,6 +119,16 @@ public class AuthenticationTests
             builder.UseSetting(OidcOptions.IssuerSetting, "");
             builder.UseSetting(OidcOptions.AudienceSetting, "");
         });
+
+        Should.Throw<Exception>(() => factory.CreateClient());
+    }
+
+    [TestCase("")]
+    [TestCase("too-short")]
+    public void A_missing_or_short_internal_secret_stops_the_application_at_startup(string secret)
+    {
+        using var factory = new ApiFactory().WithWebHostBuilder(builder =>
+            builder.UseSetting(InternalApiOptions.SecretSetting, secret));
 
         Should.Throw<Exception>(() => factory.CreateClient());
     }

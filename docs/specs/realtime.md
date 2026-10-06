@@ -14,6 +14,10 @@ WebSocket gateway for Yjs CRDT sync, Redis-backed presence service, JWT validati
 - One `Y.Doc` per board id, held in memory (`YjsRoomRegistry`) and persisted through the business backend (see Persistence); document updates are relayed between instances through Valkey (see Document relay). Horizontal scaling for doc updates (Redis-backed doc broadcast across instances) is a follow-up, not yet scoped to an issue — presence (below) already solves the analogous problem for awareness state.
 - WS handshake auth: every connection needs a WS token for its board (see Authentication below).
 
+## Authentication to the business backend
+
+Every call to the document API carries `Authorization: Bearer <service token>` ([ADR 0017](../adr/0017-internal-api-authentication.md)): `InternalTokenSigner` signs a JWT locally (HS256 with `INTERNAL_API_SECRET`, issuer `elysion-realtime`, audience `elysion-backend-internal`, valid for 60 seconds, a new one for each call), so there is no call to anybody to get it and persistence does not depend on Keycloak. The service does not start without `INTERNAL_API_SECRET` (at least 32 characters, and not the value of `WS_TOKEN_SECRET`: one leaked secret must not forge both kinds of token). A 401 from the backend (a different secret on the two sides) is a failed call like any other: the board is not loaded, saves are retried, and the logs say `Document store answered 401`.
+
 ## Authentication
 
 `?board=<id>&token=<ws token>`: the token is the board-scoped credential the BFF issues ([identity.md](identity.md), `POST /api/realtime/token`). `src/auth/WsTokenVerifier` checks it **locally**: HS256 with `WS_TOKEN_SECRET` (shared with the BFF), issuer `elysion-bff`, audience `elysion-realtime`, expiry (5 s of clock tolerance) and the claims `sub`, `boardId` and `role` (`owner`, `editor`, `viewer`), typed by `@elysion/shared-types`. There is no call to the BFF or Keycloak, so a handshake never depends on either.
