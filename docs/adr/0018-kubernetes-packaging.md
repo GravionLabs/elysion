@@ -1,6 +1,6 @@
 # ADR 0018: Kubernetes packaging: Kustomize or a Helm chart
 
-- Status: Proposed
+- Status: Accepted (option B, Helm)
 - Date: 2026-10-06
 - Issues: #356 (Feature #30, PBI #355)
 - Builds on: [ADR 0001](0001-gateway-and-bff.md), [ADR 0006](0006-shared-local-infrastructure.md), [ADR 0014](0014-keycloak-identity-provider.md)
@@ -56,7 +56,7 @@ references; the same operator options as A.
 | Traefik `Middleware` / `IngressRoute` CRDs | Plain YAML                                         | Plain YAML inside templates                             |
 | Check before deploying                     | `kubectl apply -k ... --dry-run=client`            | `helm lint`, `helm template \| kubectl apply --dry-run` |
 
-## Recommendation
+## Recommendation (not followed)
 
 **Option A, Kustomize.** The deployment is four small services with few environment differences, no one outside the
 project installs it, and the base manifests stay ordinary YAML that the dry-run check in the issue applies directly.
@@ -77,5 +77,17 @@ Consequences if accepted:
 
 ## Decision
 
-Pending: the owner chooses A or B (or another approach). Dependent work (#357 manifests, #358 deploy to `kind`) does
-not start before this ADR is Accepted.
+**Option B, a Helm chart** (the owner's decision, 2026-10-06), instead of the recommended Kustomize. The reasons the
+owner gave are not recorded here; the trade-offs above stand. What follows from it:
+
+- The chart lives in `infra/helm/elysion`: one `values.yaml` for the shared defaults, `values-kind.yaml` for the local
+  cluster, a template per service (Deployment, Service, probes, resources) and one for the edge (Traefik `Middleware`
+  and `IngressRoute`, or a plain `Ingress` when the controller is not Traefik).
+- External services (Postgres, Valkey, object store, Keycloak) are values (`externalServices.*`), never subcharts.
+- **Secrets are never in the chart's values files that are committed.** Each secret is referenced by name
+  (`secrets.existingSecret` per service, keys documented in the chart README); the `kind` check creates them with
+  `kubectl create secret` from untracked files, a shared environment from its secret operator. The chart can also
+  render a Secret from values for throwaway installs, off by default. `WS_TOKEN_SECRET` and `INTERNAL_API_SECRET`
+  must differ.
+- Checks: `helm lint`, and `helm template ... | kubectl apply --dry-run=client -f -` (CI can run both).
+- Release history and rollback come from Helm (`helm upgrade --install`, `helm rollback`).
