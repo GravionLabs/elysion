@@ -30,7 +30,15 @@ Errors: an id that is not a UUID is a `404` without a call to the backend; a bod
 
 JSON bodies up to 6 MB are accepted (`src/http-limits.ts`), so a template's scene gets through; the backend limits the scene itself.
 
-No caching.
+No caching, on purpose (#351): measured through the edge (Traefik, forwardAuth, BFF, business backend, Postgres) on the dev stack, sequential requests with a token, 60 each:
+
+| Boards of the user | `GET /api/boards` p50 / p95 | response | `GET /api/templates` p50 / p95 | `.../membership/me` (floor) p50 / p95 |
+| ------------------ | --------------------------- | -------- | ------------------------------ | ------------------------------------- |
+| 1                  | 6.6 / 10.6 ms               | 0.2 kB   | 6.0 / 7.3 ms                   | 5.8 / 7.0 ms                          |
+| 101                | 5.0 / 5.4 ms                | 16 kB    | 4.5 / 4.9 ms                   | 4.8 / 5.3 ms                          |
+| 1001               | 7.4 / 8.2 ms                | 160 kB   | 4.1 / 4.4 ms                   | 4.8 / 5.2 ms                          |
+
+Even with a thousand boards the list costs about 3 ms more than the cheapest authenticated call, which is the fixed price of the edge (forwardAuth plus two hops). A Valkey cache would save part of that 3 ms at the cost of invalidation on every create, rename, delete and membership change (and per-user keys): not worth it. The trigger to revisit: a measured list latency above roughly 100 ms, or a list that needs paging or search (which a cache would not fix either).
 
 ## Authentication
 
