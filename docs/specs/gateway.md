@@ -10,12 +10,12 @@ TLS termination, OIDC/JWT auth validation (provider: Keycloak, ADR 0014), CORS, 
 
 ## Routes
 
-| Path        | Target                        | Notes                                                                                |
-| ----------- | ----------------------------- | ------------------------------------------------------------------------------------ |
-| `/api/*`    | BFF                           | **authenticated at the edge**: `forwardAuth` to the BFF's `GET /api/auth/verify`     |
-| `/yjs`      | Realtime backend (WebSocket)  | not forwardAuth'd: the WS token in the URL is checked by the realtime service itself |
-| `/internal` | none (business backend)       | internal only: not routed at the edge; the BFF calls `http://business-backend:8080`  |
-| `/`         | Frontend (nginx, Angular app) | lowest priority: every more specific route wins                                      |
+| Path        | Target                        | Middlewares (in order)           | Notes                                                                                |
+| ----------- | ----------------------------- | -------------------------------- | ------------------------------------------------------------------------------------ |
+| `/api/*`    | BFF                           | `cors`, `rate-limit`, `bff-auth` | **authenticated at the edge**: `forwardAuth` to the BFF's `GET /api/auth/verify`     |
+| `/yjs`      | Realtime backend (WebSocket)  | `cors`                           | not forwardAuth'd: the WS token in the URL is checked by the realtime service itself |
+| `/internal` | none (business backend)       | none                             | internal only: not routed at the edge; the BFF calls `http://business-backend:8080`  |
+| `/`         | Frontend (nginx, Angular app) | none                             | lowest priority: every more specific route wins                                      |
 
 The canvas builds its WebSocket URL from the page's host (`/yjs`), and `YjsGateway` listens on `path: '/yjs'`, so
 no path rewriting is needed. Traefik passes WebSocket upgrades through natively. Earlier drafts named the
@@ -27,8 +27,27 @@ Traefik's open-source edition has no JWT middleware, so the `/api` router has a 
 
 - **Public on purpose:** `/` (the Angular app has to load to start the login) and `/yjs`. A browser WebSocket cannot send an `Authorization` header, so `/yjs` is protected by the board-scoped WS token in its URL, which the realtime service verifies at the handshake ([identity.md](identity.md)); forwardAuth would only reject it. WebSocket upgrades pass through Traefik natively; a check of the dev stack connects two clients through the edge and syncs.
 - **Not routed:** `/internal` (the business backend is reachable only on the compose network).
-- **Out of scope here:** TLS, rate limiting and CORS (#9), observability (#10). Note for CORS: a browser preflight (`OPTIONS`) carries no token, so #9 has to answer it before this middleware or exempt it.
+- **Out of scope here:** TLS, observability (#10). CORS and the rate limit are in front of this middleware, see "CORS and rate limiting".
 - **Changing it:** the dynamic file is watched, so an edit applies without restarting Traefik (check the middleware under `http://localhost:8080/dashboard/` or `http://localhost:8080/api/http/middlewares`). A wrong `address` turns every `/api` request into the answer of that address, which is also a quick way to see that the middleware is in the path.
+
+## CORS and rate limiting
+
+Two middlewares in front of the routes (#344). They are defined by labels on the `bff` service in `infra/docker/docker-compose.yml` and not in the dynamic file: the file provider cannot read the environment, and the allowed origins and the limit are compose variables.
+
+- **`cors`** (headers middleware; `/api` and `/yjs`): the origins in `CORS_ALLOWED_ORIGINS` (comma-separated; default `http://localhost,http://localhost:4200`) get `Access-Control-Allow-Origin` and may use `GET, POST, PATCH, PUT, DELETE, OPTIONS` with the headers `Authorization` and `Content-Type` (preflight cached for 10 minutes). Any other origin gets no `Access-Control-Allow-Origin`, so its browser refuses the answer; the request itself is still handled (CORS is a browser rule, not authentication, which is `bff-auth`). No credentials: the API takes bearer tokens, no cookies. The Angular app is served from the same origin as the API and needs none of this; it is for another front end or a dev server on another port. A preflight carries no token, so `cors` is first in the chain and answers it itself; it never reaches `bff-auth`.
+- **`rate-limit`** (`/api` only): `RATE_LIMIT_AVERAGE` requests per second (default 50) and client address, with a burst of `RATE_LIMIT_BURST` (default 100); over it Traefik answers `429` and the BFF never sees the request. It sits before `bff-auth` so that an unauthenticated flood does not turn into a flood of verify calls. Clients behind one NAT share a budget. `/yjs` has no rate limit: it would count connects, not messages, and a reconnecting canvas must not lock itself out; limiting connects can follow if they turn out to be abused.
+
+Check it (dev stack running):
+
+```sh
+# an allowed origin gets the headers, also for a preflight (200, no token needed)
+curl -si -X OPTIONS http://localhost/api/boards -H 'Origin: http://localhost:4200' \
+  -H 'Access-Control-Request-Method: POST' | grep -i '^access-control'
+# a disallowed origin gets no Access-Control-Allow-Origin
+curl -si http://localhost/api/boards -H 'Origin: http://evil.example' | grep -i '^access-control'
+# a burst over the limit: some answers are 429 (401 is the normal answer without a token)
+for i in $(seq 1 200); do curl -s -o /dev/null -w '%{http_code}\n' http://localhost/api/boards; done | sort | uniq -c
+```
 
 In the dev stack (`pnpm dev:stack`) the routes are Docker labels in `infra/docker/docker-compose.yml`; Traefik
 routes over the `elysion_elysion` network because some services also join `local-infra`.
