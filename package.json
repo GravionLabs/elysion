@@ -20,6 +20,8 @@
     "dev:infra:down": "docker compose -f infra/docker/docker-compose.yml --profile apps down",
     "dev:stack": "node scripts/dev-stack.mjs up",
     "dev:stack:down": "node scripts/dev-stack.mjs down",
+    "kind:up": "bash infra/kind/deploy.sh up",
+    "kind:down": "bash infra/kind/deploy.sh down",
     "prepare": "simple-git-hooks"
   },
   "devDependencies": {

@@ -1,0 +1,5 @@
+{{- $env := list
+  (dict "name" "OIDC_ISSUER_URL" "value" (required "oidc.issuerUrl is required" .Values.oidc.issuerUrl))
+  (dict "name" "OIDC_CLIENT_ID" "value" .Values.oidc.clientId)
+-}}
+{{ include "elysion.component" (dict "root" . "name" "frontend" "image" "frontend" "port" 80 "probe" "/" "env" $env) }}

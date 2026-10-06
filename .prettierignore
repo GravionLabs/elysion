@@ -6,3 +6,6 @@ pnpm-lock.yaml
 apps/frontend/public/canvas
 apps/business-backend
 infra/docker/data
+
+# Helm templates are Go templates, not YAML.
+infra/helm/*/templates/

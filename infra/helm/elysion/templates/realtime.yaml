@@ -1,0 +1,8 @@
+{{- $env := list
+  (dict "name" "PORT" "value" "3000")
+  (dict "name" "BUSINESS_BACKEND_URL" "value" (printf "http://%s-business-backend:8080" (include "elysion.fullname" .)))
+  (include "elysion.secretEnv" (dict "root" . "name" "REDIS_URL") | fromYaml)
+  (include "elysion.secretEnv" (dict "root" . "name" "WS_TOKEN_SECRET") | fromYaml)
+  (include "elysion.secretEnv" (dict "root" . "name" "INTERNAL_API_SECRET") | fromYaml)
+-}}
+{{ include "elysion.component" (dict "root" . "name" "realtime" "image" "realtime" "port" 3000 "probe" "/health" "env" $env) }}

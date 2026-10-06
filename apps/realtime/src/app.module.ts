@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.js';
+import { HealthController } from './health.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { MetricsController } from './metrics/metrics.controller.js';
@@ -17,7 +18,7 @@ import {
 
 @Module({
   imports: [AuthModule, RedisModule, PersistenceModule],
-  controllers: [AppController, MetricsController],
+  controllers: [AppController, HealthController, MetricsController],
   providers: [
     AppService,
     MetricsService,

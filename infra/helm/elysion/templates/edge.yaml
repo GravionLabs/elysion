@@ -1,0 +1,83 @@
+{{- if .Values.edge.enabled }}
+{{- $full := include "elysion.fullname" . }}
+{{- $host := ternary (printf "Host(`%s`) && " .Values.edge.host) "" (ne .Values.edge.host "") }}
+# Middlewares, in the order the routes use them (docs/specs/gateway.md): cors, rate-limit, bff-auth.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $full }}-bff-auth
+  labels:
+    {{- include "elysion.labels" . | nindent 4 }}
+spec:
+  # Every /api request is first sent to the BFF's verify endpoint: 2xx lets it through, anything else is the answer.
+  # The address carries the namespace: Traefik runs in its own.
+  forwardAuth:
+    address: http://{{ $full }}-bff.{{ .Release.Namespace }}.svc:3000/api/auth/verify
+    authResponseHeaders: [X-Auth-User-Id, X-Auth-User-Email]
+    trustForwardHeader: false
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $full }}-cors
+  labels:
+    {{- include "elysion.labels" . | nindent 4 }}
+spec:
+  headers:
+    accessControlAllowOriginList:
+      {{- toYaml .Values.edge.corsAllowedOrigins | nindent 6 }}
+    accessControlAllowMethods: [GET, POST, PATCH, PUT, DELETE, OPTIONS]
+    accessControlAllowHeaders: [Authorization, Content-Type]
+    accessControlMaxAge: 600
+    addVaryHeader: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $full }}-rate-limit
+  labels:
+    {{- include "elysion.labels" . | nindent 4 }}
+spec:
+  rateLimit:
+    average: {{ .Values.edge.rateLimit.average }}
+    burst: {{ .Values.edge.rateLimit.burst }}
+    period: 1s
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $full }}
+  labels:
+    {{- include "elysion.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    {{- toYaml .Values.edge.entryPoints | nindent 4 }}
+  routes:
+    - kind: Rule
+      match: {{ $host }}PathPrefix(`/api`)
+      middlewares:
+        - name: {{ $full }}-cors
+        - name: {{ $full }}-rate-limit
+        - name: {{ $full }}-bff-auth
+      services:
+        - name: {{ $full }}-bff
+          port: 3000
+    # WebSocket: the token in the URL is checked by the realtime service itself, so no forwardAuth, no rate limit.
+    - kind: Rule
+      match: {{ $host }}PathPrefix(`/yjs`)
+      middlewares:
+        - name: {{ $full }}-cors
+      services:
+        - name: {{ $full }}-realtime
+          port: 3000
+    - kind: Rule
+      match: {{ $host }}PathPrefix(`/`)
+      priority: 1
+      services:
+        - name: {{ $full }}-frontend
+          port: 80
+  {{- if .Values.edge.tlsSecretName }}
+  tls:
+    secretName: {{ .Values.edge.tlsSecretName }}
+  {{- end }}
+{{- end }}

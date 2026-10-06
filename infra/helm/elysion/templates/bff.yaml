@@ -1,0 +1,9 @@
+{{- $env := list
+  (dict "name" "PORT" "value" "3000")
+  (dict "name" "BUSINESS_BACKEND_URL" "value" (printf "http://%s-business-backend:8080" (include "elysion.fullname" .)))
+  (dict "name" "OIDC_ISSUER_URL" "value" (required "oidc.issuerUrl is required" .Values.oidc.issuerUrl))
+  (dict "name" "OIDC_AUDIENCE" "value" .Values.oidc.audience)
+-}}
+{{- if .Values.oidc.jwksUri }}{{ $env = append $env (dict "name" "OIDC_JWKS_URI" "value" .Values.oidc.jwksUri) }}{{ end }}
+{{- $env = append $env (include "elysion.secretEnv" (dict "root" . "name" "WS_TOKEN_SECRET") | fromYaml) -}}
+{{ include "elysion.component" (dict "root" . "name" "bff" "image" "bff" "port" 3000 "probe" "/health" "env" $env) }}
