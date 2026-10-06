@@ -1,6 +1,6 @@
 # ADR 0016: Which OIDC library the Angular app uses to log in
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-05
 - Issues: #307 (Task of #306, Feature #97)
 - Builds on: [ADR 0014](0014-keycloak-identity-provider.md), [ADR 0009](0009-angular-shell-state.md)
@@ -42,7 +42,7 @@ All three work with Angular 22, standalone APIs and PKCE.
 Angular lifecycle: we would write the provider, guard, interceptor and refresh scheduling ourselves, which is
 what A and C already do for Angular.
 
-## Decision (proposed)
+## Decision
 
 **A: `angular-auth-oidc-client`.**
 
@@ -75,6 +75,5 @@ what A and C already do for Angular.
 
 ## Owner decision
 
-To be filled in when accepted. Open for the owner: **A (recommended)**, B (`angular-oauth2-oidc`), C
-(`keycloak-angular`), or D. Until this ADR is Accepted, #306's implementation (#308 and later) does not start and
-`needs-decision` stays on #307.
+Accepted by the product owner on 2026-10-06: **option A, `angular-auth-oidc-client`**, as recommended above. #306's
+implementation (#308 to #311) can start; where the tokens are kept is decided there (see Consequences).
