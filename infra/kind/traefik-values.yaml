@@ -1,0 +1,30 @@
+# Traefik as the cluster's ingress controller for the kind check (chart: traefik/traefik).
+deployment:
+  replicas: 1
+nodeSelector:
+  ingress-ready: 'true'
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+ports:
+  web:
+    hostPort: 80
+  websecure:
+    expose:
+      default: false
+service:
+  spec:
+    type: ClusterIP
+providers:
+  kubernetesCRD:
+    enabled: true
+  kubernetesIngress:
+    enabled: false
+# JSON access log on stdout, without query strings (the /yjs URL carries the WS token): as in the dev stack.
+accessLog:
+  enabled: true
+  format: json
+  fields:
+    queryParameters:
+      defaultMode: drop

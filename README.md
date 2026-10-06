@@ -26,6 +26,7 @@ You need Node.js (see `.nvmrc`), [pnpm](https://pnpm.io) (pinned via `packageMan
 
 ```sh
 pnpm install      # JS/TS workspace dependencies (frontend, frontend-canvas, bff, realtime)
+pnpm kind:up      # the same services on a local kind cluster with the Helm chart (infra/kind/README.md)
 pnpm dev:infra    # Elysion's own infrastructure: Traefik, Postgres, RustFS, Keycloak (http://localhost:8081, realm `elysion`, dev user `dev` / `dev`, ADR 0014)
 pnpm dev:stack    # the whole stack in containers behind Traefik: http://localhost/
 ```

@@ -1,0 +1,14 @@
+# The local `kind` cluster (infra/kind/README.md). Postgres and Keycloak are the compose stack's, Valkey runs in the
+# cluster as a stand-in; the identity provider is the dev Keycloak.
+images:
+  frontend: { repository: elysion/frontend, tag: kind, pullPolicy: Never }
+  bff: { repository: elysion/bff, tag: kind, pullPolicy: Never }
+  realtime: { repository: elysion/realtime, tag: kind, pullPolicy: Never }
+  businessBackend: { repository: elysion/business-backend, tag: kind, pullPolicy: Never }
+
+oidc:
+  issuerUrl: http://localhost:8081/realms/elysion
+  # jwksUri: set by infra/kind/deploy.sh (the host's address as the kind nodes see it)
+
+edge:
+  corsAllowedOrigins: []

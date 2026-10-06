@@ -37,6 +37,10 @@ jobs:
       # Also runs the .NET tests and the repo scripts' tests (see the root package.json).
       - run: pnpm test
       - run: pnpm build
+      # The Helm chart (ADR 0018) renders and lints with the kind values; the deploy script parses.
+      - run: helm lint infra/helm/elysion -f infra/helm/elysion/values-kind.yaml
+      - run: helm template elysion infra/helm/elysion -f infra/helm/elysion/values-kind.yaml > /dev/null
+      - run: bash -n infra/kind/deploy.sh
 
   dotnet-coverage:
     name: .NET coverage

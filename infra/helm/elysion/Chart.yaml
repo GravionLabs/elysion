@@ -1,0 +1,6 @@
+apiVersion: v2
+name: elysion
+description: 'Elysion, frontend, BFF, realtime and business backend with the Traefik edge resources (ADR 0018)'
+type: application
+version: 0.1.0
+appVersion: '0.1.0'

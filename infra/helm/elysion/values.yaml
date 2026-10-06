@@ -1,0 +1,61 @@
+# Defaults for every environment; values-<env>.yaml overrides what differs. Never put a secret in a committed values
+# file: the secrets are referenced by name (see `secrets` below and the README).
+
+images:
+  # Built from the repository's Dockerfiles; the registry is yours to set (`kind load docker-image` for kind).
+  frontend: { repository: elysion/frontend, tag: latest, pullPolicy: IfNotPresent }
+  bff: { repository: elysion/bff, tag: latest, pullPolicy: IfNotPresent }
+  realtime: { repository: elysion/realtime, tag: latest, pullPolicy: IfNotPresent }
+  businessBackend: { repository: elysion/business-backend, tag: latest, pullPolicy: IfNotPresent }
+
+replicas:
+  frontend: 1
+  bff: 1
+  # More than one is fine: rooms are kept in step through Valkey (ADR 0011), no sticky sessions needed.
+  realtime: 1
+  businessBackend: 1
+
+resources:
+  frontend: { requests: { cpu: 25m, memory: 32Mi }, limits: { memory: 128Mi } }
+  bff: { requests: { cpu: 50m, memory: 96Mi }, limits: { memory: 256Mi } }
+  realtime: { requests: { cpu: 50m, memory: 128Mi }, limits: { memory: 512Mi } }
+  businessBackend: { requests: { cpu: 100m, memory: 160Mi }, limits: { memory: 512Mi } }
+
+# The identity provider (Keycloak, ADR 0014) is external: where tokens come from and what they are for.
+oidc:
+  # The issuer exactly as it appears in the tokens (the address the browser logs in at).
+  issuerUrl: ''
+  audience: elysion-bff
+  clientId: elysion-frontend
+  # Optional: where the services fetch the realm's keys when that differs from the issuer (e.g. a cluster-internal address).
+  jwksUri: ''
+
+# The business backend applies its migrations itself at start-up; turn off when a pipeline migrates.
+migrateOnStartup: true
+
+# External services are not part of this chart. Their addresses (and passwords) are in the Secret below.
+secrets:
+  # An existing Secret with these keys:
+  #   WS_TOKEN_SECRET              HS256 secret of the board WS tokens (BFF and realtime), at least 32 characters
+  #   INTERNAL_API_SECRET          HS256 secret of the internal API token (realtime and business backend), at least 32 characters, a different value
+  #   POSTGRES_CONNECTION_STRING   Npgsql connection string of the business backend
+  #   REDIS_URL                    redis://... of the Valkey instance (realtime)
+  existingSecret: elysion-secrets
+  # For throwaway installs only: render the Secret from `values` (which then sit in the release). Off by default.
+  create: false
+  values: {}
+
+edge:
+  # The edge is Traefik (ADR 0001): the chart renders its Middleware and IngressRoute resources (traefik.io/v1alpha1).
+  # The Traefik controller and its CRDs have to be installed in the cluster.
+  enabled: true
+  # The host the routes answer for; empty matches every host.
+  host: ''
+  entryPoints: [web]
+  # Origins that get CORS headers on /api and /yjs (the app itself is same-origin and needs none).
+  corsAllowedOrigins: []
+  rateLimit:
+    average: 50
+    burst: 100
+  # A Secret of type kubernetes.io/tls to terminate TLS at the entry point; empty: none.
+  tlsSecretName: ''

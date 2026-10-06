@@ -67,6 +67,10 @@ The BFF's route label is the route pattern (`/api/boards/:id`), never the URL, s
 In the dev stack (`pnpm dev:stack`) the routes are Docker labels in `infra/docker/docker-compose.yml`; Traefik
 routes over the `elysion_elysion` network because some services also join `local-infra`.
 
+## In Kubernetes
+
+The same routes and middlewares are rendered by the Helm chart (`infra/helm/elysion`, [ADR 0018](../adr/0018-kubernetes-packaging.md)) as Traefik `Middleware` and `IngressRoute` resources (`edge.*` values); the forwardAuth address carries the namespace of the BFF's Service, because Traefik runs in its own. A local `kind` deployment is described in `infra/kind/README.md`.
+
 ## Open questions
 
 - Authentication: the identity provider is Keycloak and services only validate tokens ([ADR 0014](../adr/0014-keycloak-identity-provider.md)); how the edge enforces it (forwardAuth to the BFF, since Traefik OSS has no JWT middleware) is in [identity.md](identity.md), implemented in #121 (see "Edge authentication").

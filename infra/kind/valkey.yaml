@@ -1,0 +1,30 @@
+# A throwaway Valkey for the kind check, standing in for the external Valkey a real environment provides (the chart
+# does not deploy one). Not part of the chart on purpose.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valkey
+  namespace: elysion-external
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: valkey }
+  template:
+    metadata:
+      labels: { app: valkey }
+    spec:
+      containers:
+        - name: valkey
+          image: valkey/valkey:8-alpine
+          ports:
+            - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey
+  namespace: elysion-external
+spec:
+  selector: { app: valkey }
+  ports:
+    - port: 6379
