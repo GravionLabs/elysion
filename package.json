@@ -13,6 +13,7 @@
     "test:repo": "node --test \".github/scripts/*.test.mjs\"",
     "lint": "pnpm -r --if-present run lint && pnpm lint:dotnet",
     "lint:dotnet": "node apps/business-backend/run-dotnet.mjs lint",
+    "format:dotnet": "node apps/business-backend/run-dotnet.mjs format",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "dev:infra": "docker compose -f infra/docker/docker-compose.yml up -d",
