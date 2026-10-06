@@ -24,15 +24,15 @@ providers:
 log:
   level: INFO
 
-# One JSON line per request on stdout (docs/specs/gateway.md). `RequestPath` is dropped: Traefik writes it with the
-# query string, and the /yjs URL carries the WS token there (`?board=...&token=...`). The route is still in
-# `RouterName`/`ServiceName`. Request headers (Authorization, Cookie) are dropped, which is also the default.
+# One JSON line per request on stdout (docs/specs/gateway.md). The /yjs URL carries the WS token in its query string
+# (`?board=...&token=...`) and Traefik writes `RequestPath` with the query: the query parameters are dropped (Traefik
+# 3.7.3 or later), the path stays. Request headers (Authorization, Cookie) are dropped, which is also the default.
 accessLog:
   format: json
   fields:
     defaultMode: keep
-    names:
-      RequestPath: drop
+    queryParameters:
+      defaultMode: drop
     headers:
       defaultMode: drop
 
