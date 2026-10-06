@@ -3,6 +3,8 @@ import { Component, ElementRef, effect, inject, signal, untracked, viewChild } f
 import { Title } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
 import { AppBrand } from '../shared/app-brand';
+import { SessionService } from '../auth/session.service';
+import { UserMenu } from '../topbar/user-menu';
 import { ThemeService } from '../theme/theme.service';
 import { BoardApi, BoardInfo, MAX_BOARD_NAME_LENGTH } from '../board/board-api';
 
@@ -13,12 +15,13 @@ type CreateState = 'closed' | 'editing' | 'saving';
 
 /** The home page: the boards, newest first, and a way to start a new one. */
 @Component({
-  imports: [AppBrand, DatePipe, RouterLink],
+  imports: [AppBrand, DatePipe, RouterLink, UserMenu],
   selector: 'app-board-list',
   styleUrl: './board-list.scss',
   templateUrl: './board-list.html',
 })
 export class BoardList {
+  protected readonly session = inject(SessionService);
   readonly #api = inject(BoardApi);
   readonly #router = inject(Router);
   readonly #pageTitle = inject(Title);

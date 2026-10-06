@@ -1,0 +1,25 @@
+<button
+  type="button"
+  class="user-button"
+  aria-haspopup="menu"
+  [attr.aria-expanded]="open()"
+  [title]="'Signed in as ' + user().name"
+  (click)="toggle()"
+>
+  <span class="user-avatar" [style.background-color]="user().color" aria-hidden="true">{{
+    initials()
+  }}</span>
+  <span class="user-name">{{ user().name }}</span>
+</button>
+
+@if (open()) {
+  <div class="menu" role="menu" aria-label="Account">
+    <div class="menu-header">
+      <span class="menu-name">{{ user().name }}</span>
+      @if (user().email; as email) {
+        <span class="menu-email">{{ email }}</span>
+      }
+    </div>
+    <button type="button" class="menu-item" role="menuitem" (click)="logout()">Log out</button>
+  </div>
+}

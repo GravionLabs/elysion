@@ -329,4 +329,30 @@ describe('TopBar', () => {
       expect(avatars()[0].textContent?.trim()).toBe('?');
     });
   });
+
+  describe('the signed-in user', () => {
+    const user = { id: 'kc-1', name: 'ada', email: 'ada@example.com', color: '#14b8a6' };
+
+    it('shows the user menu for a signed-in user, and nothing without one', async () => {
+      expect(el().querySelector('app-user-menu')).toBeNull();
+
+      fixture.componentRef.setInput('user', user);
+      await fixture.whenStable();
+
+      expect(el().querySelector('app-user-menu .user-name')?.textContent).toContain('ada');
+    });
+
+    it('passes Log out on', async () => {
+      let logouts = 0;
+      fixture.componentInstance.logoutRequested.subscribe(() => (logouts += 1));
+      fixture.componentRef.setInput('user', user);
+      await fixture.whenStable();
+
+      (el().querySelector('.user-button') as HTMLButtonElement).click();
+      await fixture.whenStable();
+      (el().querySelector('[role="menuitem"]') as HTMLButtonElement).click();
+
+      expect(logouts).toBe(1);
+    });
+  });
 });

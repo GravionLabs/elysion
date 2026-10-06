@@ -3,7 +3,9 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { routes } from './app.routes';
+import { autoLoginPartialRoutesGuard } from 'angular-auth-oidc-client';
+import { buildRoutes, routes } from './app.routes';
+import { provideFakeSession } from './auth/testing';
 import { Board } from './board/board';
 import { CanvasElementLoader } from './board/canvas-element-loader';
 import { BoardList } from './board-list/board-list';
@@ -15,7 +17,11 @@ describe('routes', () => {
   beforeEach(async () => {
     TestBed.configureTestingModule({
       providers: [
-        provideRouter(routes, withComponentInputBinding()),
+        provideRouter(
+          buildRoutes(() => true),
+          withComponentInputBinding(),
+        ),
+        provideFakeSession(),
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: CanvasElementLoader, useValue: { load: () => Promise.resolve() } },
@@ -62,5 +68,41 @@ describe('routes', () => {
     const board = await harness.navigateByUrl('/board/default', Board);
 
     expect(board.boardId()).toBe('default');
+  });
+
+  describe('the login guard', () => {
+    it("is on every page of the app, and the real routes use the login library's guard", () => {
+      const pages = (list: ReturnType<typeof buildRoutes>) =>
+        list.filter((route) => route.component);
+
+      expect(pages(routes).length).toBe(2);
+      for (const route of pages(routes)) {
+        expect(route.canActivate).toContain(autoLoginPartialRoutesGuard);
+      }
+    });
+
+    it('keeps a user who is not signed in off the pages', async () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter(
+            buildRoutes(() => false),
+            withComponentInputBinding(),
+          ),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideFakeSession(),
+          { provide: CanvasElementLoader, useValue: { load: () => Promise.resolve() } },
+        ],
+      });
+      const denied = await RouterTestingHarness.create();
+
+      await denied.navigateByUrl('/board/team-retro');
+      await denied.navigateByUrl('/');
+
+      expect(denied.routeNativeElement?.querySelector('elysion-canvas') ?? null).toBeNull();
+      expect(denied.routeNativeElement?.querySelector('app-top-bar') ?? null).toBeNull();
+      expect(denied.routeNativeElement?.querySelector('main') ?? null).toBeNull();
+    });
   });
 });

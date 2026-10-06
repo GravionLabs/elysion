@@ -16,10 +16,12 @@
     [hasSelection]="selectionCount() > 0"
     [exporting]="exporting()"
     [users]="presence.users()"
+    [user]="session.user()"
     (renameRequested)="rename($event)"
     (themeToggle)="toggleTheme()"
     (libraryToggle)="toggleLibrary()"
     (exportRequested)="exportBoard($event)"
+    (logoutRequested)="logout()"
     (importChosen)="chooseImport($event)"
   />
   @if (pendingImport(); as file) {
@@ -41,6 +43,8 @@
       [attr.board-id]="boardId()"
       [attr.yjs-server-url]="yjsServerUrl()"
       [attr.theme]="theme()"
+      [attr.user-name]="session.user()?.name"
+      [attr.user-color]="session.user()?.color"
       (ready)="onCanvasReady()"
       (error)="onCanvasError()"
       (status)="onSyncStatus($event)"

@@ -1,0 +1,4 @@
+{
+  "authority": "http://localhost:8081/realms/elysion",
+  "clientId": "elysion-frontend"
+}

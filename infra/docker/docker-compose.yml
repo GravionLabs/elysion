@@ -167,6 +167,10 @@ services:
     build:
       context: ../..
       dockerfile: apps/frontend/Dockerfile
+    environment:
+      # Where the browser logs in (the address the browser uses, so localhost:8081) and as which client.
+      OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
+      OIDC_CLIENT_ID: elysion-frontend
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.frontend.rule=PathPrefix(`/`)'

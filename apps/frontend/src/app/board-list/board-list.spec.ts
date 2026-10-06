@@ -3,6 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { BoardInfo } from '../board/board-api';
+import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
+import { SessionService } from '../auth/session.service';
 import { BoardList } from './board-list';
 
 const board = (id: string, name: string, createdAt = '2026-10-05T10:00:00Z'): BoardInfo => ({
@@ -37,7 +39,12 @@ describe('BoardList', () => {
     localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [BoardList],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideFakeSession(),
+      ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
@@ -144,7 +151,7 @@ describe('BoardList', () => {
     });
 
     it('closes the form on Cancel and on Escape without creating anything', async () => {
-      await click('button[type="button"]:not(.new-board)');
+      await click('form button[type="button"]'); // Cancel in the form (not the user menu in the header)
       expect(el().querySelector('form')).toBeNull();
 
       await click('.new-board');
@@ -309,6 +316,21 @@ describe('BoardList', () => {
 
       expect(el().querySelector('.duplicate-error')).toBeNull();
       expect(navigate).toHaveBeenCalledWith('/board/b9');
+    });
+  });
+
+  describe('login', () => {
+    it('shows the signed-in user in the header, with Log out', async () => {
+      await respondWith([]);
+      expect(el().querySelector('.page-header app-user-menu')?.textContent).toContain(
+        FAKE_USER.name,
+      );
+
+      (el().querySelector('.page-header .user-button') as HTMLButtonElement).click();
+      await fixture.whenStable();
+      (el().querySelector('.page-header [role="menuitem"]') as HTMLButtonElement).click();
+
+      expect((TestBed.inject(SessionService) as unknown as FakeSession).logoutCalls).toBe(1);
     });
   });
 });

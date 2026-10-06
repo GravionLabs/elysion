@@ -1,5 +1,8 @@
 <header class="page-header">
   <app-brand />
+  @if (session.user(); as user) {
+    <app-user-menu class="page-user" [user]="user" (logoutRequested)="session.logout()" />
+  }
 </header>
 
 <main class="page">
