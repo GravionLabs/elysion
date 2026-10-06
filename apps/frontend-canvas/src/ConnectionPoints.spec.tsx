@@ -161,12 +161,13 @@ describe('connecting by dragging a point', () => {
       expect(container.querySelector('.elysion-connector-preview line')).toBeTruthy(),
     );
 
-    fireEvent.pointerUp(right, pointer([400, 250], 0));
+    fireEvent.pointerMove(right, pointer([180, 150]));
+    fireEvent.pointerUp(right, pointer([180, 150], 0)); // back on the source: cancelled
     await waitFor(() => expect(container.querySelector('.elysion-connector-preview')).toBeNull());
   });
 
   it('selects the new connector', async () => {
-    const { container, right } = await prepare();
+    const { container, right, scene } = await prepare();
 
     fireEvent.pointerDown(right, pointer([272, 150]));
     fireEvent.pointerMove(right, pointer([580, 350]));
@@ -174,19 +175,98 @@ describe('connecting by dragging a point', () => {
 
     // A selected arrow is not a shape: the points of the shapes go away.
     await waitFor(() => expect(points(container)).toHaveLength(0));
+    // Let Excalidraw finish with the new arrow before the test unmounts the canvas.
+    await waitFor(async () => expect((await scene()).some((e) => e.type === 'arrow')).toBe(true));
   });
 
-  it('does nothing when released on empty canvas or on the source itself', async () => {
+  it('does nothing when released on the source itself, or after a click that went nowhere', async () => {
     const { right, scene } = await prepare();
 
     fireEvent.pointerDown(right, pointer([272, 150]));
-    fireEvent.pointerMove(right, pointer([800, 100]));
-    fireEvent.pointerUp(right, pointer([800, 100], 0));
-    fireEvent.pointerDown(right, pointer([272, 150]));
     fireEvent.pointerMove(right, pointer([180, 150]));
     fireEvent.pointerUp(right, pointer([180, 150], 0));
+    fireEvent.pointerDown(right, pointer([272, 150]));
+    fireEvent.pointerUp(right, pointer([272, 150], 0)); // a click on the circle
+    fireEvent.pointerDown(right, pointer([272, 150]));
+    fireEvent.pointerMove(right, pointer([276, 152]));
+    fireEvent.pointerUp(right, pointer([276, 152], 0)); // a few pixels: not a drag
 
     expect((await scene()).filter((e) => e.type === 'arrow')).toHaveLength(0);
+    expect((await scene()).filter((e) => e.type === 'rectangle')).toHaveLength(2);
+  });
+
+  it('shows the circles of the shape it would end on, the one it would end at marked', async () => {
+    const { container, right } = await prepare();
+    const targets = () => [...container.querySelectorAll('[data-target="true"]')];
+
+    fireEvent.pointerDown(right, pointer([272, 150]));
+    fireEvent.pointerMove(right, pointer([600, 350])); // over the middle of the other rectangle
+
+    await waitFor(() => expect(targets()).toHaveLength(4));
+    const active = container.querySelectorAll('[data-active="true"]');
+    expect(active).toHaveLength(1);
+    expect((active[0] as HTMLElement).dataset['connectionPoint']).toMatch(/:left$/); // the side facing the source
+
+    fireEvent.pointerMove(right, pointer([590, 301 - 0.5])); // near its top circle: snaps to it
+    await waitFor(() =>
+      expect(
+        (container.querySelector('[data-active="true"]') as HTMLElement).dataset['connectionPoint'],
+      ).toMatch(/:top$/),
+    );
+
+    fireEvent.pointerMove(right, pointer([900, 700])); // away from everything
+    await waitFor(() => expect(targets()).toHaveLength(0));
+    fireEvent.pointerMove(right, pointer([180, 150]));
+    fireEvent.pointerUp(right, pointer([180, 150], 0)); // back on the source: cancelled
+  });
+
+  it('ends on the circle the pointer is close to', async () => {
+    const { right, scene } = await prepare();
+
+    fireEvent.pointerDown(right, pointer([272, 150]));
+    fireEvent.pointerMove(right, pointer([580, 292])); // 8 px above the top of the other rectangle: its top circle
+    fireEvent.pointerUp(right, pointer([580, 292], 0));
+
+    await waitFor(async () => expect((await scene()).some((e) => e.type === 'arrow')).toBe(true));
+    const arrow = (await scene()).find((e) => e.type === 'arrow') as unknown as {
+      endBinding: { fixedPoint: [number, number] };
+    };
+    expect(arrow.endBinding.fixedPoint[1]).toBeCloseTo(0, 1); // attached to the top side
+  });
+
+  it('makes a new sticky note connected to the source when released on empty canvas, in one undo step', async () => {
+    const { container, right, scene } = await prepare();
+
+    fireEvent.pointerDown(right, pointer([272, 150]));
+    fireEvent.pointerMove(right, pointer([400, 160]));
+    fireEvent.pointerMove(right, pointer([420, 160]));
+    fireEvent.pointerUp(right, pointer([420, 160], 0));
+
+    await waitFor(async () => expect((await scene()).some((e) => e.type === 'arrow')).toBe(true));
+    const elements = (await scene()).filter((e) => !e.isDeleted);
+    const note = elements.filter((e) => e.type === 'rectangle').at(-1)!; // the third rectangle
+    const arrow = elements.find((e) => e.type === 'arrow')!;
+    expect(elements.filter((e) => e.type === 'rectangle')).toHaveLength(3);
+    expect(elements.some((e) => e.type === 'text')).toBe(true); // the note's text
+    expect(arrow.endBinding?.elementId).toBe(note.id);
+    expect(arrow.elbowed).toBe(true);
+
+    // The note is in edit mode (Excalidraw's text editor is open): leave it before the test ends.
+    await waitFor(() =>
+      expect(container.querySelector('textarea.excalidraw-wysiwyg')).toBeTruthy(),
+    );
+    fireEvent.keyDown(container.querySelector('textarea.excalidraw-wysiwyg')!, { key: 'Escape' });
+    await waitFor(() => expect(container.querySelector('textarea.excalidraw-wysiwyg')).toBeNull());
+
+    fireEvent.click(
+      within(screen.getByRole('toolbar', { name: 'Canvas tools' })).getByRole('button', {
+        name: 'Undo',
+      }),
+    );
+    await waitFor(async () =>
+      expect((await scene()).filter((e) => !e.isDeleted && e.type !== 'rectangle')).toHaveLength(0),
+    );
+    expect((await scene()).filter((e) => !e.isDeleted && e.type === 'rectangle')).toHaveLength(2);
   });
 
   it('is cancelled by Escape', async () => {
