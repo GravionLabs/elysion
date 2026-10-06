@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Endpoints;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -42,8 +44,10 @@ public class DuplicateBoardApiTests
             Content = new ByteArrayContent(state),
         };
         request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-        if (ifMatch is null) request.Headers.TryAddWithoutValidation("If-None-Match", "*");
-        else request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
+        if (ifMatch is null)
+            request.Headers.TryAddWithoutValidation("If-None-Match", "*");
+        else
+            request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
         (await _internal.SendAsync(request)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 

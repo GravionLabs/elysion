@@ -1,7 +1,9 @@
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
+
 using Microsoft.EntityFrameworkCore;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -41,7 +43,13 @@ public class BoardRepositoryTests
         var others = Board.Create(Guid.CreateVersion7(), "others", Now, bea.Id);
         var ownerless = Board.Create(Guid.CreateVersion7(), "ownerless", Now);
         await SeedAsync(
-            ada, bea, owned, shared, newest, others, ownerless,
+            ada,
+            bea,
+            owned,
+            shared,
+            newest,
+            others,
+            ownerless,
             BoardMembership.Create(shared.Id, ada.Id, BoardRole.Viewer, Now));
         await using var db = _database.NewContext();
 
@@ -69,7 +77,11 @@ public class BoardRepositoryTests
         var stranger = NewUser("stranger");
         var board = Board.Create(Guid.CreateVersion7(), "Retro", Now, owner.Id); // no membership row for the owner
         await SeedAsync(
-            owner, editor, viewer, stranger, board,
+            owner,
+            editor,
+            viewer,
+            stranger,
+            board,
             BoardMembership.Create(board.Id, editor.Id, BoardRole.Editor, Now),
             BoardMembership.Create(board.Id, viewer.Id, BoardRole.Viewer, Now));
         await using var db = _database.NewContext();
@@ -90,7 +102,8 @@ public class BoardRepositoryTests
         await SeedAsync(owner, board, BoardMembership.Create(board.Id, owner.Id, BoardRole.Viewer, Now));
         await using var db = _database.NewContext();
 
-        (await new BoardRepository(db).GetRoleAsync(board.Id, owner.Id, CancellationToken.None)).ShouldBe(BoardRole.Owner);
+        (await new BoardRepository(db).GetRoleAsync(board.Id, owner.Id, CancellationToken.None)).ShouldBe(
+            BoardRole.Owner);
     }
 
     [Test]
@@ -167,7 +180,8 @@ public class BoardRepositoryTests
         var repository = new BoardRepository(db);
 
         await Should.ThrowAsync<ArgumentException>(() => repository.FindAsync(Guid.Empty, CancellationToken.None));
-        await Should.ThrowAsync<ArgumentException>(() => repository.FindForUpdateAsync(Guid.Empty, CancellationToken.None));
+        await Should.ThrowAsync<ArgumentException>(() =>
+            repository.FindForUpdateAsync(Guid.Empty, CancellationToken.None));
         Should.Throw<ArgumentNullException>(() => repository.Add(null!));
         Should.Throw<ArgumentNullException>(() => repository.Remove(null!));
     }

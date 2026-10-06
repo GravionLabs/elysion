@@ -28,7 +28,7 @@ public sealed class JwksConfigurationManager(Uri jwksUri, string issuer, HttpCli
         {
             var age = time.GetUtcNow() - _fetchedAt;
             var due = _configuration is null || age >= RefreshInterval
-                || (_refreshRequested && age >= MinimumRefreshInterval);
+                                             || (_refreshRequested && age >= MinimumRefreshInterval);
             if (due)
             {
                 _configuration = await FetchAsync(cancel);

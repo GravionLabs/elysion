@@ -18,7 +18,10 @@ public sealed class BoardAuthorizationResultHandler : IAuthorizationMiddlewareRe
 
     private readonly AuthorizationMiddlewareResultHandler _default = new();
 
-    public Task HandleAsync(RequestDelegate next, HttpContext context, AuthorizationPolicy policy, PolicyAuthorizationResult authorizeResult)
+    public Task HandleAsync(RequestDelegate next,
+        HttpContext context,
+        AuthorizationPolicy policy,
+        PolicyAuthorizationResult authorizeResult)
     {
         if (authorizeResult.Forbidden
             && authorizeResult.AuthorizationFailure?.FailureReasons.Any(reason => reason.Message == NotVisible) == true)

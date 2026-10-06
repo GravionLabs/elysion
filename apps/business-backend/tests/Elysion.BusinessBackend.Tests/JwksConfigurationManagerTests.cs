@@ -1,9 +1,13 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
+
 using Elysion.BusinessBackend.Api.Identity;
+
 using Microsoft.IdentityModel.Tokens;
+
 using NSubstitute;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -19,7 +23,8 @@ public class JwksConfigurationManagerTests
         public List<string> KeyIds { get; } = ["key-1"];
         public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             Requests++;
             request.RequestUri.ShouldBe(JwksUri);
@@ -36,11 +41,13 @@ public class JwksConfigurationManagerTests
                     e = Base64UrlEncoder.Encode(parameters.Exponent),
                 };
             });
-            return Task.FromResult(new HttpResponseMessage(Status) { Content = new StringContent(JsonSerializer.Serialize(new { keys })) });
+            return Task.FromResult(new HttpResponseMessage(Status)
+                { Content = new StringContent(JsonSerializer.Serialize(new { keys })) });
         }
     }
 
-    private static (JwksConfigurationManager Manager, FakeKeycloak Keycloak, TimeProvider Time, DateTimeOffset[] Now) Create()
+    private static (JwksConfigurationManager Manager, FakeKeycloak Keycloak, TimeProvider Time, DateTimeOffset[] Now)
+        Create()
     {
         var keycloak = new FakeKeycloak();
         var now = new[] { new DateTimeOffset(2026, 10, 5, 12, 0, 0, TimeSpan.Zero) };

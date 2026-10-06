@@ -1,4 +1,5 @@
 using Elysion.BusinessBackend.Api.Entities;
+
 using Microsoft.AspNetCore.Authorization;
 
 namespace Elysion.BusinessBackend.Api.Authorization;

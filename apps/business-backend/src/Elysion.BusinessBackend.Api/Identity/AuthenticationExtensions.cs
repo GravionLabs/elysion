@@ -1,4 +1,5 @@
 using System.Text;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
@@ -69,7 +70,10 @@ public static class AuthenticationExtensions
                 if (!string.IsNullOrWhiteSpace(settings.JwksUri))
                 {
                     jwt.ConfigurationManager = new JwksConfigurationManager(
-                        new Uri(settings.JwksUri), issuer, httpFactory.CreateClient(nameof(JwksConfigurationManager)), time);
+                        new Uri(settings.JwksUri),
+                        issuer,
+                        httpFactory.CreateClient(nameof(JwksConfigurationManager)),
+                        time);
                 }
 
                 // Every check is explicit and on, also in Development.
@@ -91,8 +95,9 @@ public static class AuthenticationExtensions
         services.AddAuthorizationBuilder()
             .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
             // Only the internal scheme counts here: a Keycloak token (a user's) does not open the internal API.
-            .AddPolicy(InternalApiOptions.Policy, policy =>
-                policy.AddAuthenticationSchemes(InternalApiOptions.Scheme).RequireAuthenticatedUser());
+            .AddPolicy(InternalApiOptions.Policy,
+                policy =>
+                    policy.AddAuthenticationSchemes(InternalApiOptions.Scheme).RequireAuthenticatedUser());
         return services;
     }
 }

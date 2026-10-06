@@ -1,6 +1,7 @@
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -124,9 +125,12 @@ public class BoardDocumentRepositoryTests
     public async Task Refuses_arguments_that_are_programming_errors()
     {
         await Should.ThrowAsync<ArgumentException>(() => WithRepositoryAsync((r, _) => r.FindAsync(" ", Ct)));
-        await Should.ThrowAsync<ArgumentException>(() => WithRepositoryAsync((r, _) => r.SaveAsync("", Bytes(1), null, Now, Ct)));
-        await Should.ThrowAsync<ArgumentNullException>(() => WithRepositoryAsync((r, _) => r.SaveAsync("b", null!, null, Now, Ct)));
-        await Should.ThrowAsync<ArgumentException>(() => WithRepositoryAsync((r, _) => r.SaveAsync("b", Bytes(1), 0, Now, Ct)));
+        await Should.ThrowAsync<ArgumentException>(() =>
+            WithRepositoryAsync((r, _) => r.SaveAsync("", Bytes(1), null, Now, Ct)));
+        await Should.ThrowAsync<ArgumentNullException>(() =>
+            WithRepositoryAsync((r, _) => r.SaveAsync("b", null!, null, Now, Ct)));
+        await Should.ThrowAsync<ArgumentException>(() =>
+            WithRepositoryAsync((r, _) => r.SaveAsync("b", Bytes(1), 0, Now, Ct)));
         await Should.ThrowAsync<ArgumentException>(() => WithRepositoryAsync((r, _) => r.RemoveAsync(null!, Ct)));
     }
 }

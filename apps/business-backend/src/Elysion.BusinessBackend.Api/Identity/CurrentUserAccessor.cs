@@ -15,6 +15,6 @@ public sealed class CurrentUserAccessor : ICurrentUser
     internal void Set(User user) => _user = user;
 
     private User Current => _user
-        ?? throw new InvalidOperationException(
-            "There is no current user: the request is anonymous or was not provisioned. Only endpoints that require authentication have one.");
+                            ?? throw new InvalidOperationException(
+                                "There is no current user: the request is anonymous or was not provisioned. Only endpoints that require authentication have one.");
 }

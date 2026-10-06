@@ -1,5 +1,6 @@
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Identity;
+
 using Microsoft.AspNetCore.Authorization;
 
 namespace Elysion.BusinessBackend.Api.Authorization;
@@ -11,7 +12,8 @@ namespace Elysion.BusinessBackend.Api.Authorization;
 public sealed class BoardAuthorizationHandler(IBoardRepository boards, ICurrentUser currentUser)
     : AuthorizationHandler<BoardRoleRequirement>
 {
-    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, BoardRoleRequirement requirement)
+    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context,
+        BoardRoleRequirement requirement)
     {
         // Not signed in: no verdict here, the authentication requirement of the policy produces the 401.
         if (context.User.Identity?.IsAuthenticated != true)

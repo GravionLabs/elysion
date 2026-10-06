@@ -1,7 +1,9 @@
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Entities;
+
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -80,7 +82,10 @@ public class MembershipModelTests
         var second = NewBoard(ada);
         await using var context = NewContext();
         context.AddRange(
-            ada, bea, first, second,
+            ada,
+            bea,
+            first,
+            second,
             Membership(first, ada, BoardRole.Owner),
             Membership(first, bea, BoardRole.Viewer),
             Membership(second, ada, BoardRole.Owner));

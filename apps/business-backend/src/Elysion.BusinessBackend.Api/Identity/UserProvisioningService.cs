@@ -1,5 +1,7 @@
 using System.Security.Claims;
+
 using Ardalis.GuardClauses;
+
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;

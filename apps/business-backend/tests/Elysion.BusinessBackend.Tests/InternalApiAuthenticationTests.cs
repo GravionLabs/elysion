@@ -1,13 +1,16 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Identity;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -76,26 +79,33 @@ public class InternalApiAuthenticationTests
 
     [Test]
     public async Task A_token_signed_with_another_secret_is_401() =>
-        (await GetAsync(ApiFactory.CreateInternalToken(secret: "another-secret-that-is-at-least-32-characters"))).ShouldBe(HttpStatusCode.Unauthorized);
+        (await GetAsync(ApiFactory.CreateInternalToken(secret: "another-secret-that-is-at-least-32-characters")))
+        .ShouldBe(HttpStatusCode.Unauthorized);
 
     [Test]
     public async Task A_token_of_another_issuer_or_audience_is_401()
     {
         (await GetAsync(ApiFactory.CreateInternalToken(issuer: "elysion-bff"))).ShouldBe(HttpStatusCode.Unauthorized);
-        (await GetAsync(ApiFactory.CreateInternalToken(audience: "elysion-realtime"))).ShouldBe(HttpStatusCode.Unauthorized);
+        (await GetAsync(ApiFactory.CreateInternalToken(audience: "elysion-realtime"))).ShouldBe(HttpStatusCode
+            .Unauthorized);
         (await GetAsync(ApiFactory.CreateInternalToken(audience: null))).ShouldBe(HttpStatusCode.Unauthorized);
     }
 
     [Test]
     public async Task An_expired_token_is_401() =>
-        (await GetAsync(ApiFactory.CreateInternalToken(lifetime: TimeSpan.FromMinutes(-10)))).ShouldBe(HttpStatusCode.Unauthorized);
+        (await GetAsync(ApiFactory.CreateInternalToken(lifetime: TimeSpan.FromMinutes(-10)))).ShouldBe(HttpStatusCode
+            .Unauthorized);
 
     [Test]
-    public async Task A_token_that_lives_for_a_minute_is_accepted_and_one_that_ended_a_few_seconds_ago_still_is_within_the_skew()
+    public async Task
+        A_token_that_lives_for_a_minute_is_accepted_and_one_that_ended_a_few_seconds_ago_still_is_within_the_skew()
     {
-        (await GetAsync(ApiFactory.CreateInternalToken(lifetime: TimeSpan.FromSeconds(60)))).ShouldBe(HttpStatusCode.NotFound);
-        (await GetAsync(ApiFactory.CreateInternalToken(lifetime: TimeSpan.FromSeconds(-2)))).ShouldBe(HttpStatusCode.NotFound);
-        (await GetAsync(ApiFactory.CreateInternalToken(lifetime: TimeSpan.FromSeconds(-30)))).ShouldBe(HttpStatusCode.Unauthorized);
+        (await GetAsync(ApiFactory.CreateInternalToken(lifetime: TimeSpan.FromSeconds(60)))).ShouldBe(HttpStatusCode
+            .NotFound);
+        (await GetAsync(ApiFactory.CreateInternalToken(lifetime: TimeSpan.FromSeconds(-2)))).ShouldBe(HttpStatusCode
+            .NotFound);
+        (await GetAsync(ApiFactory.CreateInternalToken(lifetime: TimeSpan.FromSeconds(-30)))).ShouldBe(HttpStatusCode
+            .Unauthorized);
     }
 
     [Test]
@@ -108,9 +118,14 @@ public class InternalApiAuthenticationTests
             .TokenValidationParameters;
         parameters.ValidAlgorithms.ShouldBe([SecurityAlgorithms.HmacSha256]);
 
-        static string B64(string json) => Convert.ToBase64String(Encoding.UTF8.GetBytes(json)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        static string B64(string json) => Convert.ToBase64String(Encoding.UTF8.GetBytes(json))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+
         var exp = DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeSeconds();
-        var unsigned = $"{B64("""{"alg":"none","typ":"JWT"}""")}.{B64($$"""{"iss":"{{InternalApiOptions.Issuer}}","aud":"{{InternalApiOptions.Audience}}","exp":{{exp}}}""")}.";
+        var unsigned =
+            $"{B64("""{"alg":"none","typ":"JWT"}""")}.{B64($$"""{"iss":"{{InternalApiOptions.Issuer}}","aud":"{{InternalApiOptions.Audience}}","exp":{{exp}}}""")}.";
         (await GetAsync(unsigned)).ShouldBe(HttpStatusCode.Unauthorized);
     }
 

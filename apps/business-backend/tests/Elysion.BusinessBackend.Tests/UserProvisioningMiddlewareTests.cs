@@ -1,11 +1,14 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Identity;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -75,7 +78,8 @@ public class UserProvisioningMiddlewareTests
 
         (await client.GetAsync("/health")).StatusCode.ShouldBe(HttpStatusCode.OK);
         // The realtime service is no user: its token opens the internal API and creates nobody.
-        (await internalClient.GetAsync("/internal/boards/some-board/document")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await internalClient.GetAsync("/internal/boards/some-board/document")).StatusCode.ShouldBe(HttpStatusCode
+            .NotFound);
 
         (await UsersAsync()).ShouldBeEmpty();
     }

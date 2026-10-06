@@ -1,10 +1,14 @@
 using System.Security.Claims;
+
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Identity;
+
 using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -28,7 +32,8 @@ public class UserProvisioningTests
     private static ClaimsPrincipal Principal(params (string Type, string Value)[] claims) =>
         new(new ClaimsIdentity(claims.Select(c => new Claim(c.Type, c.Value)), "test"));
 
-    private async Task<User?> ProvisionAsync(ClaimsPrincipal principal, Func<ElysionDbContext, IUserRepository>? repository = null)
+    private async Task<User?> ProvisionAsync(ClaimsPrincipal principal,
+        Func<ElysionDbContext, IUserRepository>? repository = null)
     {
         await using var db = _database.NewContext();
         var time = Substitute.For<TimeProvider>();
@@ -46,19 +51,26 @@ public class UserProvisioningTests
     [Test]
     public async Task A_new_subject_creates_exactly_one_user_with_the_mapped_claims()
     {
-        var user = await ProvisionAsync(Principal(("sub", "kc-1"), ("email", "ada@example.com"), ("preferred_username", "ada")));
+        var user = await ProvisionAsync(Principal(("sub", "kc-1"),
+            ("email", "ada@example.com"),
+            ("preferred_username", "ada")));
 
         var stored = (await AllUsersAsync()).ShouldHaveSingleItem();
         stored.Id.ShouldBe(user!.Id);
-        (stored.Subject, stored.Email, stored.DisplayName, stored.CreatedAt).ShouldBe(("kc-1", "ada@example.com", "ada", Now));
+        (stored.Subject, stored.Email, stored.DisplayName, stored.CreatedAt).ShouldBe(("kc-1", "ada@example.com", "ada",
+            Now));
     }
 
     [Test]
     public async Task The_same_subject_again_is_the_same_user_and_a_changed_email_or_name_updates_it()
     {
-        var first = await ProvisionAsync(Principal(("sub", "kc-1"), ("email", "old@example.com"), ("preferred_username", "ada")));
+        var first = await ProvisionAsync(Principal(("sub", "kc-1"),
+            ("email", "old@example.com"),
+            ("preferred_username", "ada")));
 
-        var second = await ProvisionAsync(Principal(("sub", "kc-1"), ("email", "new@example.com"), ("preferred_username", "ada.l")));
+        var second = await ProvisionAsync(Principal(("sub", "kc-1"),
+            ("email", "new@example.com"),
+            ("preferred_username", "ada.l")));
 
         second!.Id.ShouldBe(first!.Id);
         var stored = (await AllUsersAsync()).ShouldHaveSingleItem();
@@ -82,7 +94,9 @@ public class UserProvisioningTests
 
     [TestCase("preferred_username", "ada", "ada")]
     [TestCase("name", "Ada Lovelace", "Ada Lovelace")]
-    public async Task The_display_name_comes_from_preferred_username_then_name(string claim, string value, string expected)
+    public async Task The_display_name_comes_from_preferred_username_then_name(string claim,
+        string value,
+        string expected)
     {
         await ProvisionAsync(Principal(("sub", "kc-1"), (claim, value)));
 
@@ -145,7 +159,8 @@ public class UserProvisioningTests
         public Task<User?> FindBySubjectForUpdateAsync(string subject, CancellationToken cancellationToken) =>
             Task.FromResult<User?>(null);
 
-        public Task<User?> FindAsync(Guid id, CancellationToken cancellationToken) => inner.FindAsync(id, cancellationToken);
+        public Task<User?> FindAsync(Guid id, CancellationToken cancellationToken) =>
+            inner.FindAsync(id, cancellationToken);
 
         public Task<IReadOnlyList<User>> FindByEmailAsync(string email, CancellationToken cancellationToken) =>
             inner.FindByEmailAsync(email, cancellationToken);
@@ -185,6 +200,7 @@ public class UserProvisioningTests
     {
         // Every request gets a connection of its own: a SQLite connection is not safe to share between threads.
         using var database = new SqliteDatabase(concurrent: true);
+
         async Task<User?> Request()
         {
             await using var db = database.NewContext();

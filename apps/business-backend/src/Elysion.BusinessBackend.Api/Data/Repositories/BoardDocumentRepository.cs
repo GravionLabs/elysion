@@ -1,5 +1,7 @@
 using Ardalis.GuardClauses;
+
 using Elysion.BusinessBackend.Api.Entities;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace Elysion.BusinessBackend.Api.Data.Repositories;
@@ -13,7 +15,11 @@ public sealed class BoardDocumentRepository(ElysionDbContext db) : IBoardDocumen
     }
 
     public async Task<DocumentSaveResult> SaveAsync(
-        string boardId, byte[] state, long? expectedVersion, DateTimeOffset now, CancellationToken cancellationToken)
+        string boardId,
+        byte[] state,
+        long? expectedVersion,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
     {
         Guard.Against.NullOrWhiteSpace(boardId);
         Guard.Against.Null(state);
@@ -25,14 +31,17 @@ public sealed class BoardDocumentRepository(ElysionDbContext db) : IBoardDocumen
         var document = await db.BoardDocuments.FirstOrDefaultAsync(d => d.BoardId == boardId, cancellationToken);
         if (expectedVersion is null)
         {
-            if (document is not null) return new(DocumentSaveStatus.Conflict, document);
+            if (document is not null)
+                return new(DocumentSaveStatus.Conflict, document);
             document = new BoardDocument { BoardId = boardId, State = state, Version = 1, UpdatedAt = now };
             db.BoardDocuments.Add(document);
         }
         else
         {
-            if (document is null) return new(DocumentSaveStatus.NotFound, null);
-            if (document.Version != expectedVersion) return new(DocumentSaveStatus.Conflict, document);
+            if (document is null)
+                return new(DocumentSaveStatus.NotFound, null);
+            if (document.Version != expectedVersion)
+                return new(DocumentSaveStatus.Conflict, document);
 
             document.State = state;
             document.Version = expectedVersion.Value + 1;
@@ -47,7 +56,8 @@ public sealed class BoardDocumentRepository(ElysionDbContext db) : IBoardDocumen
         {
             // Another request saved between our read and our write: hand back what is stored now.
             db.ChangeTracker.Clear();
-            var current = await db.BoardDocuments.AsNoTracking().FirstOrDefaultAsync(d => d.BoardId == boardId, cancellationToken);
+            var current = await db.BoardDocuments.AsNoTracking()
+                .FirstOrDefaultAsync(d => d.BoardId == boardId, cancellationToken);
             return new(DocumentSaveStatus.Conflict, current);
         }
 
@@ -60,7 +70,8 @@ public sealed class BoardDocumentRepository(ElysionDbContext db) : IBoardDocumen
     {
         Guard.Against.NullOrWhiteSpace(boardId);
         var document = await db.BoardDocuments.FirstOrDefaultAsync(d => d.BoardId == boardId, cancellationToken);
-        if (document is null) return false;
+        if (document is null)
+            return false;
         db.BoardDocuments.Remove(document);
         return true;
     }

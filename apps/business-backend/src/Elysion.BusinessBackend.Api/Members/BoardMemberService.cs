@@ -1,4 +1,5 @@
 using Ardalis.GuardClauses;
+
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
@@ -72,13 +73,18 @@ public sealed class BoardMemberService(
         return members;
     }
 
-    public async Task<MemberResult> AddAsync(Guid boardId, string email, BoardRole role, CancellationToken cancellationToken)
+    public async Task<MemberResult> AddAsync(Guid boardId,
+        string email,
+        BoardRole role,
+        CancellationToken cancellationToken)
     {
         Guard.Against.NullOrWhiteSpace(email);
         Guard.Against.EnumOutOfRange(role);
         var found = await users.FindByEmailAsync(email, cancellationToken);
-        if (found.Count == 0) return new(MemberOutcome.UnknownEmail);
-        if (found.Count > 1) return new(MemberOutcome.AmbiguousEmail);
+        if (found.Count == 0)
+            return new(MemberOutcome.UnknownEmail);
+        if (found.Count > 1)
+            return new(MemberOutcome.AmbiguousEmail);
         var user = found[0];
 
         var board = await boards.FindAsync(boardId, cancellationToken);
@@ -93,11 +99,15 @@ public sealed class BoardMemberService(
         return new(MemberOutcome.Done, View(user, role));
     }
 
-    public async Task<MemberResult> ChangeRoleAsync(Guid boardId, Guid userId, BoardRole role, CancellationToken cancellationToken)
+    public async Task<MemberResult> ChangeRoleAsync(Guid boardId,
+        Guid userId,
+        BoardRole role,
+        CancellationToken cancellationToken)
     {
         Guard.Against.EnumOutOfRange(role);
         var blocked = await CheckAsync(boardId, userId, newRole: role, cancellationToken);
-        if (blocked is not null) return blocked;
+        if (blocked is not null)
+            return blocked;
 
         var membership = (await memberships.FindForUpdateAsync(boardId, userId, cancellationToken))!;
         membership.Role = role;
@@ -109,7 +119,8 @@ public sealed class BoardMemberService(
     public async Task<MemberResult> RemoveAsync(Guid boardId, Guid userId, CancellationToken cancellationToken)
     {
         var blocked = await CheckAsync(boardId, userId, newRole: null, cancellationToken);
-        if (blocked is not null) return blocked;
+        if (blocked is not null)
+            return blocked;
 
         memberships.Remove((await memberships.FindForUpdateAsync(boardId, userId, cancellationToken))!);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -117,22 +128,29 @@ public sealed class BoardMemberService(
     }
 
     /// <summary>Why a change to <paramref name="userId"/> is refused, or null when it may go ahead.</summary>
-    private async Task<MemberResult?> CheckAsync(Guid boardId, Guid userId, BoardRole? newRole, CancellationToken cancellationToken)
+    private async Task<MemberResult?> CheckAsync(Guid boardId,
+        Guid userId,
+        BoardRole? newRole,
+        CancellationToken cancellationToken)
     {
         var board = await boards.FindAsync(boardId, cancellationToken);
-        if (board?.OwnerId == userId) return new(MemberOutcome.CreatorStaysOwner);
+        if (board?.OwnerId == userId)
+            return new(MemberOutcome.CreatorStaysOwner);
 
         var all = await memberships.ListForBoardAsync(boardId, cancellationToken);
         var target = all.FirstOrDefault(m => m.UserId == userId);
-        if (target is null) return new(MemberOutcome.NotAMember);
+        if (target is null)
+            return new(MemberOutcome.NotAMember);
 
         var losesOwnership = target.Role == BoardRole.Owner && newRole != BoardRole.Owner;
         if (losesOwnership)
         {
             var owners = all.Where(m => m.Role == BoardRole.Owner).Select(m => m.UserId).ToHashSet();
-            if (board?.OwnerId is { } creator) owners.Add(creator);
+            if (board?.OwnerId is { } creator)
+                owners.Add(creator);
             owners.Remove(userId);
-            if (owners.Count == 0) return new(MemberOutcome.LastOwner);
+            if (owners.Count == 0)
+                return new(MemberOutcome.LastOwner);
         }
 
         return null;
