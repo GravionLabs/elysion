@@ -11,6 +11,9 @@ export interface BoardInfo {
   path: string;
 }
 
+/** What the user may do on a board: the shell shows Share to owners and a read-only canvas to viewers. */
+export type BoardRole = 'owner' | 'editor' | 'viewer';
+
 /** The longest name the business backend accepts. */
 export const MAX_BOARD_NAME_LENGTH = 120;
 
@@ -65,6 +68,22 @@ export class BoardApi {
    */
   get(id: string): Observable<BoardInfo | null> {
     return this.find(id).pipe(map((lookup) => (lookup.status === 'found' ? lookup.board : null)));
+  }
+
+  /**
+   * The user's role on a board, or `null`: none (a 404, which is also how a board the user may not see looks), an
+   * id that is not a stored board's, or a failing BFF. A hint for what to show; the backend enforces the rules.
+   */
+  myRole(id: string): Observable<BoardRole | null> {
+    if (!isStoredBoardId(id)) {
+      return of(null);
+    }
+    return this.#http
+      .get<{ role: BoardRole }>(`/api/boards/${encodeURIComponent(id)}/membership/me`)
+      .pipe(
+        map((membership) => membership.role),
+        catchError(() => of(null)),
+      );
   }
 
   /**

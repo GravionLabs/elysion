@@ -111,6 +111,35 @@ describe('BoardApi', () => {
     await expect(result).rejects.toMatchObject({ status: 404 });
   });
 
+  describe('myRole', () => {
+    it("asks the BFF for the user's role on a stored board", async () => {
+      const result = firstValueFrom(api.myRole(id));
+
+      const request = http.expectOne(`/api/boards/${id}/membership/me`);
+      expect(request.request.method).toBe('GET');
+      request.flush({ boardId: id, role: 'viewer' });
+
+      expect(await result).toBe('viewer');
+    });
+
+    it("is null without a role (404), when the BFF fails, and for an id that is no stored board's", async () => {
+      const none = firstValueFrom(api.myRole(id));
+      http
+        .expectOne(`/api/boards/${id}/membership/me`)
+        .flush(null, { status: 404, statusText: 'Not Found' });
+      expect(await none).toBeNull();
+
+      const failing = firstValueFrom(api.myRole(id));
+      http
+        .expectOne(`/api/boards/${id}/membership/me`)
+        .flush(null, { status: 502, statusText: 'Bad Gateway' });
+      expect(await failing).toBeNull();
+
+      expect(await firstValueFrom(api.myRole('default'))).toBeNull();
+      http.expectNone('/api/boards/default/membership/me');
+    });
+  });
+
   describe('realtimeToken', () => {
     it('asks the BFF for a token for the board', async () => {
       const result = firstValueFrom(api.realtimeToken(id));

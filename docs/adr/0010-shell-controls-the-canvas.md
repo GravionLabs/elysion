@@ -23,6 +23,9 @@ theme, and later the Library sidebar, export and import.
 2. **The canvas is controlled through its element, in both directions.**
    - _In_, as attributes: `board-id`, `yjs-server-url`, `theme` (existing), and `user-name` and `user-color`
      (#110: how this user appears to others; optional, a generated guest identity otherwise).
+     `readonly` (a boolean attribute, #324): the canvas is a viewer's, with Excalidraw's view mode, a toolbar that
+     only zooms and no import; the realtime service refuses a viewer's changes anyway, this is what the viewer
+     sees instead of tools that would silently do nothing.
    - _Out_, as events: `ready` and `error` (existing), `status` (`{ status: 'connecting' | 'connected' |
 'disconnected' }`, the Yjs connection), `themechange` (`{ theme }`, only when the user switches
      the theme inside the canvas, not when the host sets it), `presence` (`{ users: [{ id, name, color }] }`,

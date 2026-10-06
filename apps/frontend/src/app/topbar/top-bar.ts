@@ -51,6 +51,10 @@ export class TopBar {
   readonly exporting = input<ExportFormat | null>(null);
   /** Whether the library sidebar is open. */
   readonly libraryOpen = input(false);
+  /** Whether the user may share the board (an owner): the Share button is shown. */
+  readonly canShare = input(false);
+  /** A viewer: Import and Library, which only change the board, are hidden. */
+  readonly readOnly = input(false);
   /** Who is signed in; the menu with the log-out action is shown for them. */
   readonly user = input<SessionUser | null>(null);
   /** The other people on the board. */
@@ -61,6 +65,8 @@ export class TopBar {
   readonly themeToggle = output<void>();
   readonly libraryToggle = output<void>();
   readonly exportRequested = output<ExportRequest>();
+  /** The user pressed Share. */
+  readonly shareRequested = output<void>();
   /** The user chose Log out in the user menu. */
   readonly logoutRequested = output<void>();
   /** A file was picked for import; the page confirms before anything is replaced. */

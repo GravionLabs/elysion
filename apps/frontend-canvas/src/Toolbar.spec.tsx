@@ -92,3 +92,34 @@ describe('Toolbar inside CanvasApp', () => {
     expect(pressed('Rectangle')).toBe('false');
   });
 });
+
+describe('Toolbar for a viewer (readOnly)', () => {
+  const renderViewer = () =>
+    render(
+      <Toolbar
+        activeTool="selection"
+        onSelect={() => {}}
+        onAddSticky={() => {}}
+        onHistory={() => {}}
+        onZoom={() => {}}
+        zoomPercent={100}
+        readOnly
+      />,
+    );
+
+  it('has no drawing tools, no sticky notes and no undo or redo', () => {
+    renderViewer();
+
+    for (const name of ['Rectangle', 'Text', 'Sticky note', 'Undo', 'Redo', 'Eraser']) {
+      expect(screen.queryByRole('button', { name: new RegExp(name, 'i') })).toBeNull();
+    }
+  });
+
+  it('keeps the zoom, so a viewer can still look around', () => {
+    renderViewer();
+
+    expect(screen.getByRole('button', { name: 'Zoom in' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Zoom out' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Reset zoom/ })).toBeTruthy();
+  });
+});

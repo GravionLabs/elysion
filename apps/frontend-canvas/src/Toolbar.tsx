@@ -180,6 +180,8 @@ export interface ToolbarProps {
   onZoom?: (action: ZoomAction) => void;
   /** The current zoom in percent, shown on the reset button. */
   zoomPercent?: number;
+  /** A viewer: no tools, no undo and redo, no sticky notes; only the zoom is shown. */
+  readOnly?: boolean;
 }
 
 const UNDO_ICON = (
@@ -222,12 +224,13 @@ export function Toolbar({
   onHistory,
   onZoom,
   zoomPercent,
+  readOnly = false,
 }: ToolbarProps) {
   const [stickyOpen, setStickyOpen] = useState(false);
 
   return (
     <div className="elysion-toolbar" role="toolbar" aria-label="Canvas tools">
-      {onHistory && (
+      {!readOnly && onHistory && (
         <div className="elysion-toolbar__group elysion-toolbar__history">
           <button
             type="button"
@@ -251,7 +254,8 @@ export function Toolbar({
           </button>
         </div>
       )}
-      {GROUPS.map((group, index) => (
+      {/* A viewer cannot draw: only the zoom stays. */}
+      {(readOnly ? [] : GROUPS).map((group, index) => (
         <div className="elysion-toolbar__group" key={group[0].tool}>
           {(index > 0 || onHistory) && <div className="elysion-toolbar__divider" />}
           {group.map(({ tool, label, shortcut, icon }) => {
@@ -309,7 +313,7 @@ export function Toolbar({
       ))}
       {onZoom && (
         <div className="elysion-toolbar__group">
-          <div className="elysion-toolbar__divider" />
+          {!readOnly && <div className="elysion-toolbar__divider" />}
           <button
             type="button"
             className="elysion-icon-button"

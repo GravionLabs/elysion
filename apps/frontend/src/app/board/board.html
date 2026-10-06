@@ -17,11 +17,14 @@
     [exporting]="exporting()"
     [users]="presence.users()"
     [user]="session.user()"
+    [canShare]="canShare()"
+    [readOnly]="readOnly()"
     (renameRequested)="rename($event)"
     (themeToggle)="toggleTheme()"
     (libraryToggle)="toggleLibrary()"
     (exportRequested)="exportBoard($event)"
     (logoutRequested)="logout()"
+    (shareRequested)="openShare()"
     (importChosen)="chooseImport($event)"
   />
   @if (pendingImport(); as file) {
@@ -44,6 +47,7 @@
       [attr.yjs-server-url]="yjsServerUrl()"
       [attr.theme]="theme()"
       [tokenProvider]="wsTokenProvider"
+      [attr.readonly]="readOnly() ? '' : null"
       [attr.user-name]="session.user()?.name"
       [attr.user-color]="session.user()?.color"
       (ready)="onCanvasReady()"
@@ -54,5 +58,8 @@
       (selectioncount)="onSelectionCount($event)"
       (presence)="onPresence($event)"
     ></elysion-canvas>
+  }
+  @if (shareOpen() && canShare()) {
+    <app-share-dialog [boardId]="boardId()" (closed)="closeShare()" />
   }
 }

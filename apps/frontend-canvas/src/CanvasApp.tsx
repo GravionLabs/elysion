@@ -64,6 +64,12 @@ export interface CanvasAppProps {
    * URL; see `YjsWebsocketClientOptions.tokenProvider` for what it may return. Without one, no token is sent.
    */
   tokenProvider?: () => Promise<string | null | undefined>;
+  /**
+   * A viewer: Excalidraw's view mode, no drawing tools in the toolbar, no import and no "clear canvas". The
+   * realtime service refuses a viewer's changes anyway; this is what the viewer sees instead of tools that would
+   * silently do nothing.
+   */
+  readOnly?: boolean;
   /** The name shown next to this user's cursor on other screens; a generated guest name when unset. */
   userName?: string;
   /** The color of this user's cursor, `#rrggbb`; one picked from the palette when unset or not valid. */
@@ -95,6 +101,7 @@ export function CanvasApp({
   onPresenceChange,
   onError,
   tokenProvider,
+  readOnly = false,
   userName,
   userColor,
 }: CanvasAppProps) {
@@ -126,6 +133,8 @@ export function CanvasApp({
   errorCallback.current = onError;
   const tokenProviderRef = useRef(tokenProvider);
   tokenProviderRef.current = tokenProvider;
+  const readOnlyRef = useRef(readOnly);
+  readOnlyRef.current = readOnly;
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
   const presenceRef = useRef<PresenceSync | null>(null);
@@ -280,6 +289,7 @@ export function CanvasApp({
     >
       <Excalidraw
         theme={activeTheme}
+        viewModeEnabled={readOnly}
         UIOptions={UI_OPTIONS}
         initialData={{
           appState: { ...ELEMENT_DEFAULTS, viewBackgroundColor: VIEW_BACKGROUND_COLOR },
@@ -291,7 +301,10 @@ export function CanvasApp({
           controlsCallback.current?.({
             toggleLibrary: () => api.toggleSidebar({ name: LIBRARY_SIDEBAR, tab: LIBRARY_TAB }),
             exportBoard: (format, options) => exportBoard(api, format, options),
-            importFile: (file) => importFile(api, file),
+            importFile: (file) =>
+              readOnlyRef.current
+                ? Promise.reject(new Error('This board is read-only.'))
+                : importFile(api, file),
           });
         }}
         onPointerUpdate={(update) => presenceRef.current?.pointerMoved(update)}
@@ -331,7 +344,7 @@ export function CanvasApp({
         <DefaultSidebar.Trigger style={{ display: 'none' }} aria-hidden="true" />
         {/* Open, save, export and the theme are in the top bar; what is left is here. */}
         <MainMenu>
-          <MainMenu.DefaultItems.ClearCanvas />
+          {!readOnly && <MainMenu.DefaultItems.ClearCanvas />}
           <MainMenu.DefaultItems.Help />
         </MainMenu>
       </Excalidraw>
@@ -343,6 +356,7 @@ export function CanvasApp({
         onHistory={onHistory}
         onZoom={onZoom}
         zoomPercent={zoomPercent}
+        readOnly={readOnly}
       />
     </div>
   );

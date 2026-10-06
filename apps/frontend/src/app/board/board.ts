@@ -18,7 +18,8 @@ import { Theme, ThemeService } from '../theme/theme.service';
 import { SyncStatus, TopBar } from '../topbar/top-bar';
 import { RouterLink } from '@angular/router';
 import { AppBrand } from '../shared/app-brand';
-import { BoardApi, BoardLookup, isStoredBoardId } from './board-api';
+import { BoardApi, BoardLookup, BoardRole, isStoredBoardId } from './board-api';
+import { ShareDialog } from '../share/share-dialog';
 import { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename, type ExportFormat } from './download';
 import { ExportRequest } from '../topbar/export-menu';
@@ -30,9 +31,12 @@ export type CanvasStatus = 'loading' | 'ready' | 'error';
 
 const PENDING: BoardLookup | { status: 'pending' } = { status: 'pending' };
 
+/** The role is being asked for. */
+const ROLE_PENDING = 'pending';
+
 /** The board page: the top bar and the canvas element below it. */
 @Component({
-  imports: [AppBrand, RouterLink, TopBar],
+  imports: [AppBrand, RouterLink, ShareDialog, TopBar],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [PresenceStore],
   selector: 'app-board',
@@ -87,6 +91,33 @@ export class Board {
     { initialValue: PENDING },
   );
 
+  /** The user's role on this board, as the BFF says; `pending` until it answers. */
+  readonly #roleLookup = toSignal(
+    toObservable(this.boardId).pipe(
+      switchMap((id) =>
+        this.#api
+          .myRole(id)
+          .pipe(startWith(ROLE_PENDING as BoardRole | typeof ROLE_PENDING | null)),
+      ),
+    ),
+    { initialValue: ROLE_PENDING as BoardRole | typeof ROLE_PENDING | null },
+  );
+
+  /** The user's role, or `null` while it loads and for a room without a board record. */
+  readonly role = computed(() => {
+    const role = this.#roleLookup();
+    return role === ROLE_PENDING ? null : role;
+  });
+
+  /** An owner may share the board. */
+  readonly canShare = computed(() => this.role() === 'owner');
+
+  /** A viewer sees the board but cannot change it: the canvas is read-only and the top bar hides what changes it. */
+  readonly readOnly = computed(() => this.role() === 'viewer');
+
+  /** Whether the Share dialog is open. */
+  readonly shareOpen = signal(false);
+
   /** The board's name as loaded, or `null` while it loads and for a room without a stored board. */
   readonly #loadedName = computed(() => {
     const lookup = this.#lookup();
@@ -102,7 +133,12 @@ export class Board {
    */
   readonly canvasVisible = computed(
     () =>
-      !this.notFound() && !(this.#lookup().status === 'pending' && isStoredBoardId(this.boardId())),
+      !this.notFound() &&
+      // Not before the role is known, so a viewer's canvas never starts as an editor's.
+      !(
+        isStoredBoardId(this.boardId()) &&
+        (this.#lookup().status === 'pending' || this.#roleLookup() === ROLE_PENDING)
+      ),
   );
 
   /** A name the user just gave the board, shown at once (and rolled back if saving fails). */
@@ -256,6 +292,14 @@ export class Board {
 
   toggleLibrary(): void {
     this.canvas()?.nativeElement.toggleLibrary?.();
+  }
+
+  openShare(): void {
+    this.shareOpen.set(true);
+  }
+
+  closeShare(): void {
+    this.shareOpen.set(false);
   }
 
   logout(): void {

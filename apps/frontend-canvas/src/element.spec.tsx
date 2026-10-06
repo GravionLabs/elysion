@@ -107,6 +107,42 @@ describe('elysion-canvas custom element', () => {
     document.body.removeChild(el);
   });
 
+  it('shows a viewer the board in view mode: no drawing tools, no import, only the zoom', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
+      importFile(file: Blob): Promise<number>;
+    };
+    el.setAttribute('readonly', '');
+    document.body.appendChild(el);
+
+    await waitFor(() => expect(el.querySelector('.excalidraw--view-mode')).toBeTruthy());
+    expect(el.querySelector('[data-testid="elysion-tool-rectangle"]')).toBeNull();
+    expect(el.querySelector('[data-testid="elysion-tool-sticky"]')).toBeNull();
+    expect(el.querySelector('[data-testid="elysion-undo"]')).toBeNull();
+    expect(el.querySelector('[data-testid="elysion-zoom-in"]')).toBeTruthy();
+    await expect(el.importFile(new Blob(['{}']))).rejects.toThrow('read-only');
+    document.body.removeChild(el);
+  });
+
+  it('gives an editor the tools, and follows the readonly attribute when it changes', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME);
+    document.body.appendChild(el);
+    await waitFor(() =>
+      expect(el.querySelector('[data-testid="elysion-tool-rectangle"]')).toBeTruthy(),
+    );
+    expect(el.querySelector('.excalidraw--view-mode')).toBeNull();
+
+    el.setAttribute('readonly', '');
+    await waitFor(() => expect(el.querySelector('.excalidraw--view-mode')).toBeTruthy());
+    expect(el.querySelector('[data-testid="elysion-tool-rectangle"]')).toBeNull();
+
+    el.removeAttribute('readonly');
+    await waitFor(() =>
+      expect(el.querySelector('[data-testid="elysion-tool-rectangle"]')).toBeTruthy(),
+    );
+    expect(el.querySelector('.excalidraw--view-mode')).toBeNull();
+    document.body.removeChild(el);
+  });
+
   it('exposes toggleLibrary() and announces the sidebar as a librarychange event', async () => {
     const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & { toggleLibrary(): void };
     const changes: boolean[] = [];

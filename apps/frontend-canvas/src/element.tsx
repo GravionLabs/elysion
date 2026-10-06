@@ -14,6 +14,7 @@ const OBSERVED_ATTRIBUTES = [
   'theme',
   'user-name',
   'user-color',
+  'readonly',
 ] as const;
 
 class ElysionCanvasElement extends HTMLElement {
@@ -100,6 +101,7 @@ class ElysionCanvasElement extends HTMLElement {
         onPresenceChange={(users) => this.#emit('presence', { users })}
         onError={(error) => this.#emit('error', { message: error.message })}
         tokenProvider={this.#tokenProvider}
+        readOnly={this.hasAttribute('readonly')}
         userName={this.getAttribute('user-name') ?? undefined}
         userColor={this.getAttribute('user-color') ?? undefined}
         boardId={this.getAttribute('board-id') ?? undefined}

@@ -150,4 +150,41 @@ describe('Boards (e2e, against a fake business backend)', () => {
 
     expect(body.message).toContain('not reachable');
   });
+
+  describe('GET /api/boards/:id/membership/me', () => {
+    const BOARD = '0197a8d2-1c3e-7a10-8000-000000000001';
+
+    it.each([
+      ['Owner', 'owner'],
+      ['Editor', 'editor'],
+      ['Viewer', 'viewer'],
+    ])("tells a %s to the shell as %s, with the caller's token", async (backendRole, role) => {
+      upstream.roles.set(BOARD, backendRole);
+
+      const { body } = await api().get(`/api/boards/${BOARD}/membership/me`).expect(200);
+
+      expect(body).toEqual({ boardId: BOARD, role });
+      expect(upstream.authorizations.at(-1)).toBe(authorization);
+    });
+
+    it('is 404 without a role, as for every board route', async () => {
+      await api().get(`/api/boards/${BOARD}/membership/me`).expect(404);
+    });
+
+    it('is 404 for an id that is not a UUID, without asking the backend', async () => {
+      await api().get('/api/boards/not-a-uuid/membership/me').expect(404);
+
+      expect(upstream.requests).toBe(0);
+    });
+
+    it('is 401 without a token', async () => {
+      await request(server()).get(`/api/boards/${BOARD}/membership/me`).expect(401);
+    });
+
+    it('is 502 when the backend fails', async () => {
+      upstream.membershipStatus = 500;
+
+      await api().get(`/api/boards/${BOARD}/membership/me`).expect(502);
+    });
+  });
 });
