@@ -86,6 +86,13 @@ class ElysionCanvasElement extends HTMLElement {
       : Promise.reject(new Error('The canvas is not ready yet.'));
   }
 
+  /** Adds an .excalidraw file to the board with fresh ids, at the middle of the view, and selects it; one undo step. Resolves with the number of elements added. */
+  insertFile(file: Blob): Promise<number> {
+    return this.#controls
+      ? this.#controls.insertFile(file)
+      : Promise.reject(new Error('The canvas is not ready yet.'));
+  }
+
   #emit(name: string, detail: unknown): void {
     this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
   }

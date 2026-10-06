@@ -2,7 +2,15 @@ import { convertToExcalidrawElements, serializeAsJSON } from '@excalidraw/excali
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { elementsToExport, exportBoard, importFile, replaceScene } from './board-io';
+import {
+  cloneForInsertion,
+  elementsToExport,
+  exportBoard,
+  importFile,
+  insertFile,
+  replaceScene,
+} from './board-io';
+import { createStickyNote, STICKY_COLORS } from './sticky-note';
 
 // convertToExcalidrawElements ignores a given `id` and makes up its own, so ids are set afterwards.
 function rect(id: string, x = 0, y = 0, size = 10): ExcalidrawElement {
@@ -30,6 +38,11 @@ function fakeApi(scene: ExcalidrawElement[], selected: Record<string, boolean> =
   const api = {
     getAppState: () => ({
       selectedElementIds: selected,
+      scrollX: -100,
+      scrollY: -50,
+      zoom: { value: 2 },
+      width: 1000,
+      height: 600,
       viewBackgroundColor: '#ffffff',
       theme: 'light',
     }),
@@ -250,5 +263,132 @@ describe('importFile', () => {
 
     expect(updateScene.mock.calls[0][0].elements[0].isDeleted).toBe(true);
     expect(scrollToContent).not.toHaveBeenCalled();
+  });
+});
+
+describe('cloneForInsertion', () => {
+  const center = { x: 500, y: 300 };
+
+  it('gives every element a new id and keeps the text bound to its container', () => {
+    const note = labeled('n');
+
+    const [shape, text] = cloneForInsertion(note, center) as unknown as [
+      { id: string; boundElements: { id: string }[] },
+      { id: string; containerId: string },
+    ];
+
+    expect(shape.id).not.toBe('n');
+    expect(text.id).not.toBe('n-text');
+    expect(text.containerId).toBe(shape.id);
+    expect(shape.boundElements).toEqual([{ type: 'text', id: text.id }]);
+  });
+
+  it('moves the elements so that their bounding box is centered on the given point', () => {
+    const [a, b] = cloneForInsertion([rect('a', 0, 0, 100), rect('b', 200, 100, 100)], center);
+
+    // The box spans 0..300 x 0..200: its middle is (150, 100).
+    expect([a.x, a.y]).toEqual([350, 200]);
+    expect([b.x, b.y]).toEqual([550, 300]);
+  });
+
+  it('points arrows and groups at the new ids, and leaves no reference to the old ones', () => {
+    const [a, b] = [rect('a'), rect('b', 100)] as unknown as Record<string, unknown>[];
+    a['groupIds'] = ['g'];
+    b['groupIds'] = ['g'];
+    const [base] = convertToExcalidrawElements([
+      {
+        type: 'arrow',
+        x: 0,
+        y: 0,
+        points: [
+          [0, 0],
+          [50, 0],
+        ],
+      },
+    ]);
+    const arrow = {
+      ...base,
+      id: 'arrow',
+      startBinding: { elementId: 'a', focus: 0, gap: 1 },
+      endBinding: { elementId: 'gone', focus: 0, gap: 1 },
+    } as unknown as ExcalidrawElement;
+
+    const [ca, cb, carrow] = cloneForInsertion(
+      [a, b, arrow] as unknown as ExcalidrawElement[],
+      center,
+    ) as unknown as Record<string, any>[]; // eslint-disable-line
+
+    expect(carrow['startBinding'].elementId).toBe(ca['id']);
+    expect(carrow['endBinding']).toBeNull(); // its target is not part of the scene
+    expect(ca['groupIds']).toEqual(cb['groupIds']);
+    expect(ca['groupIds'][0]).not.toBe('g');
+  });
+
+  it('makes different ids for every insertion of the same scene', () => {
+    const scene = labeled('n');
+
+    const first = cloneForInsertion(scene, center).map((e) => e.id);
+    const second = cloneForInsertion(scene, center).map((e) => e.id);
+
+    expect(new Set([...first, ...second]).size).toBe(4);
+  });
+});
+
+describe('insertFile', () => {
+  const file = (els: readonly ExcalidrawElement[]) =>
+    new Blob([serializeAsJSON(els, {}, {}, 'local')], { type: 'application/json' });
+  const center = { x: 1000 / 2 / 2 + 100, y: 600 / 2 / 2 + 50 }; // the view's middle in scene coordinates
+
+  it('keeps what is on the board and adds the new elements with fresh ids around the view center', async () => {
+    const existing = rect('old', 0, 0, 10);
+    const { api, updateScene } = fakeApi([existing]);
+
+    const count = await insertFile(api, file([rect('x', 0, 0, 40), rect('y', 60, 0, 40)]));
+
+    expect(count).toBe(2);
+    const call = updateScene.mock.calls[0][0];
+    const scene = call.elements as ExcalidrawElement[];
+    expect(scene[0]).toBe(existing);
+    const added = scene.slice(1);
+    expect(added.map((e) => e.id)).not.toContain('x');
+    expect(added.map((e) => e.id)).not.toContain('y');
+    // 100 wide, 40 high: centered on the view
+    expect(added[0].x).toBe(center.x - 50);
+    expect(added[0].y).toBe(center.y - 20);
+    expect(Object.keys(call.appState.selectedElementIds).sort()).toEqual(
+      added.map((e) => e.id).sort(),
+    );
+  });
+
+  it('is one undo step: a single scene update that is recorded', async () => {
+    const { api, updateScene } = fakeApi([]);
+
+    await insertFile(api, file([rect('x')]));
+
+    expect(updateScene).toHaveBeenCalledOnce();
+    expect(updateScene.mock.calls[0][0].captureUpdate).toBe('IMMEDIATELY');
+  });
+
+  it('works with real sticky notes and selects the cards, not their texts', async () => {
+    const note = createStickyNote(STICKY_COLORS[0], { x: 0, y: 0 });
+    const { api, updateScene } = fakeApi([...createStickyNote(STICKY_COLORS[1], { x: 0, y: 0 })]);
+
+    expect(await insertFile(api, file(note))).toBe(2);
+
+    const call = updateScene.mock.calls[0][0];
+    const added = (call.elements as ExcalidrawElement[]).slice(2);
+    const [card, text] = added as unknown as [{ id: string }, { containerId: string }];
+    expect(text.containerId).toBe(card.id);
+    expect(Object.keys(call.appState.selectedElementIds)).toEqual([card.id]);
+  });
+
+  it('does not touch the board when the file is not an Excalidraw file or has no elements', async () => {
+    const { api, updateScene } = fakeApi([rect('old')]);
+
+    await expect(insertFile(api, new Blob(['nope']))).rejects.toThrow(
+      'This is not an Excalidraw file.',
+    );
+    expect(await insertFile(api, file([]))).toBe(0);
+    expect(updateScene).not.toHaveBeenCalled();
   });
 });

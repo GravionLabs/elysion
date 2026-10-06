@@ -335,6 +335,26 @@ export class Board {
     }
   }
 
+  /** The user chose a template in the top bar: it is added next to what is on the board, selected. */
+  async addTemplate(templateId: string): Promise<void> {
+    const canvas = this.canvas()?.nativeElement;
+    if (!canvas?.insertFile) {
+      this.notice.set('The canvas is not ready yet.');
+      return;
+    }
+    try {
+      const template = await firstValueFrom(this.#templates.get(templateId));
+      await canvas.insertFile(new Blob([template.scene], { type: 'application/json' }));
+      this.notice.set(null);
+    } catch (error) {
+      this.notice.set(
+        error instanceof Error && error.message !== 'The canvas is not ready yet.'
+          ? error.message
+          : 'The template could not be added.',
+      );
+    }
+  }
+
   dismissNotice(): void {
     this.notice.set(null);
   }

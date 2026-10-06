@@ -1,0 +1,35 @@
+<button
+  type="button"
+  class="menu-button"
+  aria-haspopup="menu"
+  [attr.aria-expanded]="open()"
+  title="Add a template to this board"
+  (click)="toggle()"
+>
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 5h16v5H4zM4 14h7v5H4zM15 14h5v5h-5z" />
+  </svg>
+  <span>Templates</span>
+</button>
+
+@if (open()) {
+  <div class="menu" role="menu" aria-label="Templates">
+    @switch (state()) {
+      @case ('loading') {
+        <p class="menu-note" role="status">Loading templates…</p>
+      }
+      @case ('error') {
+        <p class="menu-note" role="alert">The templates could not be loaded.</p>
+        <button type="button" class="menu-item" role="menuitem" (click)="load()">Try again</button>
+      }
+      @default {
+        @for (template of templates(); track template.id) {
+          <button type="button" class="menu-item" role="menuitem" (click)="choose(template)">
+            {{ template.name }}
+            <small>{{ template.description }}</small>
+          </button>
+        }
+      }
+    }
+  </div>
+}

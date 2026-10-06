@@ -145,6 +145,33 @@ describe('CanvasApp', () => {
     expect(again.elements.map((e: { id: string }) => e.id).sort()).toEqual([...ids].sort());
   });
 
+  it('inserts a template next to what is on the board, keeping it, as one undoable step', async () => {
+    const onControls = vi.fn();
+    render(<CanvasApp boardId="test-board" onControls={onControls} />);
+    await screen.findByTestId('toolbar-rectangle');
+    const controls = onControls.mock.calls[0][0];
+    fireEvent.click(screen.getByRole('button', { name: 'Sticky note' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Amber sticky note' }));
+    const file = (await controls.exportBoard('excalidraw')) as Blob;
+    const ids = async () =>
+      (
+        JSON.parse(await ((await controls.exportBoard('excalidraw')) as Blob).text()).elements as {
+          id: string;
+        }[]
+      ).map((e) => e.id);
+    const before = await ids();
+
+    expect(await controls.insertFile(file)).toBe(2);
+
+    const after = await ids();
+    expect(after).toHaveLength(4);
+    expect(after.filter((id) => !before.includes(id))).toHaveLength(2);
+    expect(before.every((id) => after.includes(id))).toBe(true);
+
+    fireEvent.click(screen.getByTestId('elysion-undo'));
+    await waitFor(async () => expect(await ids()).toEqual(before));
+  });
+
   it('zooms from the toolbar in steps of 10% and resets to 100%', async () => {
     render(<CanvasApp boardId="test-board" />);
     await screen.findByTestId('toolbar-rectangle');

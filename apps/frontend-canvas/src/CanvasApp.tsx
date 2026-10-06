@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { exportBoard, importFile, type ExportFormat, type ExportOptions } from './board-io';
+import {
+  exportBoard,
+  importFile,
+  insertFile,
+  type ExportFormat,
+  type ExportOptions,
+} from './board-io';
 import { Minimap } from './Minimap';
 import { SceneStore } from './scene-store';
 import { scrollToCenter } from './minimap-geometry';
@@ -29,6 +35,8 @@ export interface CanvasControls {
   exportBoard(format: ExportFormat, options?: ExportOptions): Promise<Blob | null>;
   /** Replaces the board with the contents of an .excalidraw file; resolves with its element count. */
   importFile(file: Blob): Promise<number>;
+  /** Adds the contents of an .excalidraw file next to what is on the board, around the view center; resolves with the count added. */
+  insertFile(file: Blob): Promise<number>;
 }
 
 export interface CanvasAppProps {
@@ -305,6 +313,10 @@ export function CanvasApp({
               readOnlyRef.current
                 ? Promise.reject(new Error('This board is read-only.'))
                 : importFile(api, file),
+            insertFile: (file) =>
+              readOnlyRef.current
+                ? Promise.reject(new Error('This board is read-only.'))
+                : insertFile(api, file),
           });
         }}
         onPointerUpdate={(update) => presenceRef.current?.pointerMoved(update)}

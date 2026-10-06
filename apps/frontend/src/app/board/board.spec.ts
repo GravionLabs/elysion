@@ -914,4 +914,38 @@ describe('Board', () => {
       expect(fixture.nativeElement.textContent).toContain('The template could not be applied');
     });
   });
+
+  describe('adding a template to the board', () => {
+    const SCENE = '{"type":"excalidraw","version":2,"elements":[]}';
+    const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement;
+
+    it('inserts the scene through the canvas, next to what is there', async () => {
+      const insertFile = vi.fn().mockResolvedValue(6);
+      (canvas() as unknown as { insertFile: unknown }).insertFile = insertFile;
+
+      const done = component.addTemplate('t1');
+      http.expectOne('/api/templates/t1').flush({ id: 't1', scene: SCENE });
+      await done;
+
+      expect(insertFile).toHaveBeenCalledOnce();
+      expect(await (insertFile.mock.calls[0][0] as Blob).text()).toBe(SCENE);
+    });
+
+    it('says so when the canvas is not ready, without asking for the template', async () => {
+      await component.addTemplate('t1');
+
+      http.expectNone('/api/templates/t1');
+      expect(component.notice()).toBe('The canvas is not ready yet.');
+    });
+
+    it('says so when the template cannot be fetched', async () => {
+      (canvas() as unknown as { insertFile: unknown }).insertFile = vi.fn();
+
+      const done = component.addTemplate('t1');
+      http.expectOne('/api/templates/t1').flush(null, { status: 502, statusText: 'Bad Gateway' });
+      await done;
+
+      expect(component.notice()).toBe('The template could not be added.');
+    });
+  });
 });

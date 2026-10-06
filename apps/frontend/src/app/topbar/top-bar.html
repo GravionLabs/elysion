@@ -73,6 +73,9 @@
         <span>Import</span>
       </button>
     }
+    @if (!readOnly()) {
+      <app-template-menu (templateChosen)="templateChosen.emit($event)" />
+    }
     <app-export-menu
       [hasSelection]="hasSelection()"
       [busy]="exporting()"
