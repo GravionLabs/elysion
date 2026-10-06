@@ -1,6 +1,7 @@
 import {
   BadGatewayException,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
   UnauthorizedException,
@@ -193,5 +194,62 @@ describe('BusinessBackendClient', () => {
     fetchMock.mockRejectedValue(new TypeError('fetch failed'));
 
     await expect(client.listBoards(TOKEN)).rejects.toBeInstanceOf(BadGatewayException);
+  });
+
+  describe('members', () => {
+    const member = { userId: 'u1', displayName: 'Ada', email: 'ada@example.com', role: 'Editor' };
+
+    it("lists, adds, changes and removes with the caller's token on the board's members route", async () => {
+      fetchMock.mockResolvedValueOnce(respond(200, [member]));
+      await expect(client.listMembers(TOKEN, board.id)).resolves.toEqual([member]);
+      expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/members`);
+
+      fetchMock.mockResolvedValueOnce(respond(201, member));
+      await client.addMember(TOKEN, board.id, 'ada@example.com', 'Editor');
+      expect(lastCall().init.method).toBe('POST');
+      expect(lastCall().init.body).toBe(
+        JSON.stringify({ email: 'ada@example.com', role: 'Editor' }),
+      );
+
+      fetchMock.mockResolvedValueOnce(respond(200, member));
+      await client.changeMemberRole(TOKEN, board.id, 'u1', 'Viewer');
+      expect(lastCall().init.method).toBe('PATCH');
+      expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/members/u1`);
+      expect(lastCall().init.body).toBe(JSON.stringify({ role: 'Viewer' }));
+
+      fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+      await expect(client.removeMember(TOKEN, board.id, 'u1')).resolves.toBeUndefined();
+      expect(lastCall().init.method).toBe('DELETE');
+      expect((lastCall().init.headers as Record<string, string>).authorization).toBe(
+        `Bearer ${TOKEN}`,
+      );
+    });
+
+    it("carries the backend's message on a 404 and a 409", async () => {
+      fetchMock.mockResolvedValue(
+        respond(404, { detail: 'No user with this email has logged in yet.' }),
+      );
+      const notFound = await client
+        .addMember(TOKEN, board.id, 'x@y.z', 'Viewer')
+        .catch((e: unknown) => e);
+      expect(notFound).toBeInstanceOf(NotFoundException);
+      expect((notFound as NotFoundException).message).toBe(
+        'No user with this email has logged in yet.',
+      );
+
+      fetchMock.mockResolvedValue(respond(409, { detail: 'A board needs at least one owner.' }));
+      const conflict = await client.removeMember(TOKEN, board.id, 'u1').catch((e: unknown) => e);
+      expect(conflict).toBeInstanceOf(ConflictException);
+      expect((conflict as ConflictException).message).toBe('A board needs at least one owner.');
+    });
+
+    it('keeps a 404 without a body a plain 404 (a board the caller cannot see)', async () => {
+      fetchMock.mockResolvedValue(respond(404));
+
+      const error = await client.listMembers(TOKEN, board.id).catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(NotFoundException);
+      expect((error as NotFoundException).message).toBe('Not Found');
+    });
   });
 });

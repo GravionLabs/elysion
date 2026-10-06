@@ -20,6 +20,15 @@ export class FakeBusinessBackend {
   readonly roles = new Map<string, string>();
   /** Answer every `membership/me` call with this status instead (an outage, a rejected token). */
   membershipStatus: number | null = null;
+  /** The member list per board id, served by the member routes; a board with no entry has no members (404). */
+  readonly members = new Map<
+    string,
+    Array<{ userId: string; displayName: string; email: string | null; role: string }>
+  >();
+  /** Answers every member route with this status and a problem-details body (a refusal of the backend's rules). */
+  memberRefusal: { status: number; detail: string } | null = null;
+  /** The last member request: method, path and parsed body. */
+  lastMemberRequest: { method: string; path: string; body: unknown } | null = null;
   /** The `Authorization` header of every request, in order. */
   readonly authorizations: Array<string | undefined> = [];
   #server: Server | null = null;
@@ -51,6 +60,44 @@ export class FakeBusinessBackend {
       res.writeHead(status, { 'content-type': 'application/json' });
       res.end(body === undefined ? undefined : JSON.stringify(body));
     };
+    const memberRoute = /^\/boards\/([^/]+)\/members(?:\/([^/]+))?$/.exec(req.url ?? '');
+    if (memberRoute) {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(chunk as Buffer);
+      const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString()) : null;
+      this.lastMemberRequest = { method: req.method ?? '', path: req.url ?? '', body };
+      if (this.memberRefusal) {
+        res.writeHead(this.memberRefusal.status, { 'content-type': 'application/problem+json' });
+        return void res.end(
+          JSON.stringify({ title: 'Refused', detail: this.memberRefusal.detail }),
+        );
+      }
+      const list = this.members.get(memberRoute[1]);
+      if (!list) return send(404);
+      const userId = memberRoute[2];
+      if (req.method === 'GET' && !userId) return send(200, list);
+      if (req.method === 'POST' && !userId) {
+        const member = {
+          userId: randomUUID(),
+          displayName: body.email,
+          email: body.email,
+          role: body.role,
+        };
+        list.push(member);
+        return send(201, member);
+      }
+      const member = list.find((m) => m.userId === userId);
+      if (!member) return send(404);
+      if (req.method === 'PATCH') {
+        member.role = body.role;
+        return send(200, member);
+      }
+      if (req.method === 'DELETE') {
+        list.splice(list.indexOf(member), 1);
+        return send(204);
+      }
+      return send(405);
+    }
     const membership = /^\/boards\/([^/]+)\/membership\/me$/.exec(req.url ?? '');
     if (membership) {
       if (this.membershipStatus !== null) return send(this.membershipStatus);

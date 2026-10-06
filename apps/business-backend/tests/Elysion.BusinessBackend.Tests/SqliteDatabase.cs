@@ -12,20 +12,52 @@ namespace Elysion.BusinessBackend.Tests;
 /// </summary>
 public sealed class SqliteDatabase : IDisposable
 {
-    private readonly SqliteConnection _connection = new("Data Source=:memory:;Foreign Keys=True");
+    private readonly SqliteConnection? _connection;
+    private readonly string? _file;
 
-    public SqliteDatabase()
+    /// <param name="concurrent">
+    /// <c>false</c> (the default): one connection in memory, shared by all contexts, which is only safe when the
+    /// contexts are not used at the same time. <c>true</c>: a temporary file where every context has a connection
+    /// of its own, for tests that really run requests in parallel (a SQLite connection is not thread-safe).
+    /// </param>
+    public SqliteDatabase(bool concurrent = false)
     {
-        _connection.Open();
+        if (concurrent)
+        {
+            _file = Path.Combine(Path.GetTempPath(), $"elysion-test-{Guid.NewGuid():N}.db");
+        }
+        else
+        {
+            _connection = new SqliteConnection("Data Source=:memory:;Foreign Keys=True");
+            _connection.Open(); // the database lives as long as this connection
+        }
+
         using var context = NewContext();
         context.Database.EnsureCreated();
     }
 
     /// <summary>A new context on the same database, as a new request would have.</summary>
-    public ElysionDbContext NewContext() =>
-        new SqliteElysionDbContext(new DbContextOptionsBuilder<ElysionDbContext>().UseSqlite(_connection).Options);
+    public ElysionDbContext NewContext()
+    {
+        var builder = new DbContextOptionsBuilder<ElysionDbContext>();
+        _ = _connection is not null
+            ? builder.UseSqlite(_connection)
+            : builder.UseSqlite($"Data Source={_file};Foreign Keys=True;Pooling=False");
+        return new SqliteElysionDbContext(builder.Options);
+    }
 
-    public void Dispose() => _connection.Dispose();
+    public void Dispose()
+    {
+        _connection?.Dispose();
+        if (_file is not null)
+        {
+            SqliteConnection.ClearAllPools();
+            foreach (var path in new[] { _file, _file + "-wal", _file + "-shm", _file + "-journal" })
+            {
+                File.Delete(path);
+            }
+        }
+    }
 
     private sealed class SqliteElysionDbContext(DbContextOptions<ElysionDbContext> options) : ElysionDbContext(options)
     {

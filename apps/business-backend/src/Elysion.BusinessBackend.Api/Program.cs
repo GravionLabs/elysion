@@ -3,6 +3,7 @@ using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Endpoints;
 using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Members;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +24,8 @@ builder.Services.AddScoped<IUnitOfWork>(services => services.GetRequiredService<
 builder.Services.AddScoped<IBoardRepository, BoardRepository>();
 builder.Services.AddScoped<IBoardDocumentRepository, BoardDocumentRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IMembershipRepository, MembershipRepository>();
+builder.Services.AddScoped<BoardMemberService>();
 
 // The caller as a local user, provisioned from the token once per authenticated request.
 builder.Services.AddScoped<UserProvisioningService>();
@@ -56,6 +59,7 @@ app.UseAuthorization();
 
 app.MapHealthEndpoints();
 app.MapBoardEndpoints();
+app.MapBoardMemberEndpoints();
 app.MapBoardDocumentEndpoints();
 
 app.Run();
