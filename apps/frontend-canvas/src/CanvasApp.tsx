@@ -6,6 +6,7 @@ import {
   type ExportFormat,
   type ExportOptions,
 } from './board-io';
+import { SpikeConnectors } from './spike/SpikeConnectors';
 import { Minimap } from './Minimap';
 import { SceneStore } from './scene-store';
 import { scrollToCenter } from './minimap-geometry';
@@ -361,6 +362,7 @@ export function CanvasApp({
         </MainMenu>
       </Excalidraw>
       <Minimap store={sceneStoreRef.current} onPan={panTo} />
+      {!readOnly && <SpikeConnectors apiRef={apiRef} rootRef={rootRef} />}
       <Toolbar
         activeTool={activeTool}
         onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
