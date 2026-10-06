@@ -16,7 +16,9 @@ import { Theme } from '../theme/theme.service';
 import { ExportFormat } from '../board/download';
 import type { PresentUser } from '../board/presence-store';
 import { ExportMenu, ExportRequest } from './export-menu';
+import { TemplateMenu } from './template-menu';
 import { UserMenu } from './user-menu';
+import type { TemplateInfo } from '../board/template-api';
 import type { SessionUser } from '../auth/session.service';
 
 /** The Yjs connection of the canvas, as its `status` event reports it. */
@@ -32,7 +34,7 @@ const STATUS_LABEL: Record<SyncStatus, string> = {
 
 /** The bar at the top of the board page, modeled on ariadne's: identity left, actions right. */
 @Component({
-  imports: [AppBrand, ExportMenu, RouterLink, UserMenu],
+  imports: [AppBrand, ExportMenu, RouterLink, TemplateMenu, UserMenu],
   selector: 'app-top-bar',
   styleUrl: './top-bar.scss',
   templateUrl: './top-bar.html',
@@ -65,6 +67,8 @@ export class TopBar {
   readonly themeToggle = output<void>();
   readonly libraryToggle = output<void>();
   readonly exportRequested = output<ExportRequest>();
+  /** The user chose a template to add to the board. */
+  readonly templateChosen = output<TemplateInfo>();
   /** The user pressed Share. */
   readonly shareRequested = output<void>();
   /** The user chose Log out in the user menu. */

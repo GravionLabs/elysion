@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { TopBar } from './top-bar';
@@ -9,7 +11,7 @@ describe('TopBar', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TopBar],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
     fixture = TestBed.createComponent(TopBar);
     fixture.componentRef.setInput('boardId', 'team-retro');
@@ -372,6 +374,15 @@ describe('TopBar', () => {
     it('shows Import and Library to an editor', () => {
       expect(el().querySelector('.import-button')).toBeTruthy();
       expect(el().querySelector('.library-toggle')).toBeTruthy();
+    });
+
+    it('shows Templates to an editor and hides it from a viewer, who cannot change the board', async () => {
+      expect(el().querySelector('app-template-menu')).toBeTruthy();
+
+      fixture.componentRef.setInput('readOnly', true);
+      await fixture.whenStable();
+
+      expect(el().querySelector('app-template-menu')).toBeNull();
     });
 
     it('hides Import and Library from a viewer, who cannot change the board, but keeps Export', async () => {

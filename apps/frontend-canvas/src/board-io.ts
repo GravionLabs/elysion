@@ -2,6 +2,7 @@ import {
   CaptureUpdateAction,
   exportToBlob,
   exportToSvg,
+  getCommonBounds,
   loadFromBlob,
   serializeAsJSON,
 } from '@excalidraw/excalidraw';
@@ -126,4 +127,98 @@ export async function importFile(api: ExcalidrawImperativeAPI, file: Blob): Prom
     api.scrollToContent(imported, { fitToViewport: true, animate: false });
   }
   return imported.length;
+}
+
+const freshId = () => crypto.randomUUID();
+
+/**
+ * Copies of `elements` that can be added to a board next to what is already there: every element gets a new id,
+ * and everything that points at an id (a text's container, a shape's bound texts and arrows, an arrow's ends,
+ * groups, frames) points at the new one, so the copies are consistent among themselves and share nothing with
+ * the original or with a second insertion of the same scene. They are moved so that their bounding box is
+ * centered on `center`.
+ */
+export function cloneForInsertion(
+  elements: readonly ExcalidrawElement[],
+  center: { x: number; y: number },
+): ExcalidrawElement[] {
+  const ids = new Map(elements.map((element) => [element.id, freshId()]));
+  const groups = new Map<string, string>();
+  const mapId = (id: string | null | undefined) => (id ? (ids.get(id) ?? null) : null);
+  const mapGroup = (id: string) => groups.get(id) ?? groups.set(id, freshId()).get(id)!;
+
+  const [minX, minY, maxX, maxY] = getCommonBounds(elements);
+  const dx = center.x - (minX + maxX) / 2;
+  const dy = center.y - (minY + maxY) / 2;
+
+  return elements.map((element) => {
+    const copy: Record<string, unknown> = {
+      ...element,
+      id: ids.get(element.id),
+      x: element.x + dx,
+      y: element.y + dy,
+      seed: nonce(),
+      version: 1,
+      versionNonce: nonce(),
+      updated: Date.now(),
+      index: null, // placed on top by the scene, not at the index of the file it came from
+      groupIds: element.groupIds.map(mapGroup),
+      frameId: mapId(element.frameId),
+      boundElements: element.boundElements
+        ? element.boundElements.flatMap((bound) => {
+            const id = mapId(bound.id);
+            return id ? [{ ...bound, id }] : [];
+          })
+        : null,
+    };
+    if ('containerId' in element) copy['containerId'] = mapId(element.containerId);
+    for (const end of ['startBinding', 'endBinding'] as const) {
+      const binding = (element as unknown as Record<string, { elementId: string } | null>)[end];
+      if (binding) {
+        const elementId = mapId(binding.elementId);
+        copy[end] = elementId ? { ...binding, elementId } : null;
+      }
+    }
+    return copy as unknown as ExcalidrawElement;
+  });
+}
+
+/**
+ * Adds the contents of an .excalidraw file to the board, around the middle of what the user sees, and
+ * selects them; what is on the board stays. One undo step. Resolves with the number of elements added.
+ */
+export async function insertFile(api: ExcalidrawImperativeAPI, file: Blob): Promise<number> {
+  let data;
+  try {
+    data = await loadFromBlob(file, null, null);
+  } catch {
+    throw new Error('This is not an Excalidraw file.');
+  }
+  const scene = data.elements.filter((element) => !element.isDeleted);
+  if (scene.length === 0) return 0;
+
+  const { scrollX, scrollY, zoom, width, height } = api.getAppState();
+  const center = {
+    x: width / 2 / zoom.value - scrollX,
+    y: height / 2 / zoom.value - scrollY,
+  };
+  const added = cloneForInsertion(scene, center);
+
+  api.addFiles(Object.values(data.files ?? {}));
+  api.updateScene({
+    elements: [...api.getSceneElementsIncludingDeleted(), ...added],
+    appState: {
+      // The shapes, not the texts inside them: those are selected through their container.
+      selectedElementIds: Object.fromEntries(
+        added
+          .filter(
+            (element) =>
+              !(element.type === 'text' && (element as { containerId?: string }).containerId),
+          )
+          .map((element) => [element.id, true]),
+      ),
+    },
+    captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+  });
+  return added.length;
 }

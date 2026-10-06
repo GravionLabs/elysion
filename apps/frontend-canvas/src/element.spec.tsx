@@ -110,6 +110,7 @@ describe('elysion-canvas custom element', () => {
   it('shows a viewer the board in view mode: no drawing tools, no import, only the zoom', async () => {
     const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
       importFile(file: Blob): Promise<number>;
+      insertFile(file: Blob): Promise<number>;
     };
     el.setAttribute('readonly', '');
     document.body.appendChild(el);
@@ -120,6 +121,7 @@ describe('elysion-canvas custom element', () => {
     expect(el.querySelector('[data-testid="elysion-undo"]')).toBeNull();
     expect(el.querySelector('[data-testid="elysion-zoom-in"]')).toBeTruthy();
     await expect(el.importFile(new Blob(['{}']))).rejects.toThrow('read-only');
+    await expect(el.insertFile(new Blob(['{}']))).rejects.toThrow('read-only');
     document.body.removeChild(el);
   });
 
@@ -168,10 +170,12 @@ describe('elysion-canvas custom element', () => {
     const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
       exportBoard(format: string): Promise<Blob | null>;
       importFile(file: Blob): Promise<number>;
+      insertFile(file: Blob): Promise<number>;
     };
 
     await expect(el.exportBoard('svg')).resolves.toBeNull();
     await expect(el.importFile(new Blob(['{}']))).rejects.toThrow('not ready');
+    await expect(el.insertFile(new Blob(['{}']))).rejects.toThrow('not ready');
   });
 
   it('exports through the element once the canvas is up', async () => {

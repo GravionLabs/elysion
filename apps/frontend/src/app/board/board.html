@@ -26,6 +26,7 @@
     (logoutRequested)="logout()"
     (shareRequested)="openShare()"
     (importChosen)="chooseImport($event)"
+    (templateChosen)="addTemplate($event.id)"
   />
   @if (pendingImport(); as file) {
     <div class="board-banner confirm" role="alertdialog" aria-label="Confirm import">

@@ -18,4 +18,6 @@ export type CanvasElement = HTMLElement & {
   tokenProvider?: () => Promise<string | null>;
   /** Replaces the board with an .excalidraw file; resolves with the number of elements in it. */
   importFile?(file: Blob): Promise<number>;
+  /** Adds an .excalidraw file to the board around the view center, selected, as one undo step; resolves with the number of elements added. */
+  insertFile?(file: Blob): Promise<number>;
 };
