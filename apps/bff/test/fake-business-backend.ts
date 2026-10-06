@@ -40,6 +40,10 @@ export class FakeBusinessBackend {
       scene: '{"type":"excalidraw","version":2,"elements":[]}',
     },
   ];
+  /** The last template POST or DELETE: method, path and parsed body. */
+  lastTemplateRequest: { method: string; path: string; body: unknown } | null = null;
+  /** Answers every template POST or DELETE with this status (a refusal of the backend's rules). */
+  templateRefusal: number | null = null;
   /** The `Authorization` header of every request, in order. */
   readonly authorizations: Array<string | undefined> = [];
   #server: Server | null = null;
@@ -72,6 +76,29 @@ export class FakeBusinessBackend {
       res.end(body === undefined ? undefined : JSON.stringify(body));
     };
     const templateRoute = /^\/templates(?:\/([^/]+))?$/.exec(req.url ?? '');
+    if (templateRoute && (req.method === 'POST' || req.method === 'DELETE')) {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(chunk as Buffer);
+      const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString()) : null;
+      this.lastTemplateRequest = { method: req.method, path: req.url ?? '', body };
+      if (this.templateRefusal) return send(this.templateRefusal);
+      if (req.method === 'POST') {
+        const template = {
+          id: randomUUID(),
+          name: body.name,
+          description: body.description ?? '',
+          isBuiltIn: false,
+          createdAt: new Date().toISOString(),
+          scene: body.scene,
+        };
+        this.templates.push(template);
+        return send(201, template);
+      }
+      const index = this.templates.findIndex((t) => t.id === templateRoute[1]);
+      if (index < 0) return send(404);
+      this.templates.splice(index, 1);
+      return send(204);
+    }
     if (templateRoute && req.method === 'GET') {
       const id = templateRoute[1];
       if (!id)

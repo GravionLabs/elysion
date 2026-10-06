@@ -1,15 +1,16 @@
-import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './../src/app.module.js';
+import { applyHttpLimits } from '../src/http-limits.js';
 import { TokenVerifier } from '../src/auth/token-verifier.js';
 import { FakeBusinessBackend } from './fake-business-backend.js';
 import { bearer, testVerifier } from './test-auth.js';
 
 describe('Templates (e2e, against a fake business backend)', () => {
   let upstream: FakeBusinessBackend;
-  let app: INestApplication;
+  let app: NestExpressApplication;
   let authorization: string;
 
   beforeEach(async () => {
@@ -21,7 +22,8 @@ describe('Templates (e2e, against a fake business backend)', () => {
       .overrideProvider(TokenVerifier)
       .useValue(testVerifier())
       .compile();
-    app = moduleRef.createNestApplication();
+    app = moduleRef.createNestApplication<NestExpressApplication>();
+    applyHttpLimits(app);
     await app.init();
     authorization = await bearer();
   });
@@ -57,5 +59,75 @@ describe('Templates (e2e, against a fake business backend)', () => {
 
   it('requires a signed-in user', async () => {
     await request(app.getHttpServer()).get('/api/templates').expect(401);
+  });
+
+  describe('own templates', () => {
+    const scene = '{"type":"excalidraw","version":2,"elements":[]}';
+
+    it('saves a template: forwards name, description and scene with the token, and answers 201', async () => {
+      const { body } = await api()
+        .post('/api/templates')
+        .send({ name: 'Mine', description: 'A start', scene, ignored: 'x' })
+        .expect(201);
+
+      expect(body).toEqual(expect.objectContaining({ name: 'Mine', isBuiltIn: false, scene }));
+      expect(upstream.lastTemplateRequest?.body).toEqual({
+        name: 'Mine',
+        description: 'A start',
+        scene,
+      });
+      expect(upstream.authorizations.at(-1)).toBe(authorization);
+      const list = (await api().get('/api/templates').expect(200)).body;
+      expect(list.map((t: { name: string }) => t.name)).toContain('Mine');
+    });
+
+    it('takes a scene larger than the default body limit of Express', async () => {
+      const big = JSON.stringify({
+        type: 'excalidraw',
+        elements: [],
+        padding: 'x'.repeat(500_000),
+      });
+
+      await api().post('/api/templates').send({ name: 'Big', scene: big }).expect(201);
+    });
+
+    it('answers 400 for a body that is not an object, without asking the backend', async () => {
+      const before = upstream.requests;
+
+      await api()
+        .post('/api/templates')
+        .set('Content-Type', 'application/json')
+        .send('[1]')
+        .expect(400);
+
+      expect(upstream.requests).toBe(before);
+    });
+
+    it('passes on what the backend refuses (400, 403, 404)', async () => {
+      for (const status of [400, 403, 404]) {
+        upstream.templateRefusal = status;
+        await api().post('/api/templates').send({ name: 'x', scene }).expect(status);
+      }
+    });
+
+    it('deletes a template with 204, and answers 404 for an id that is not a UUID without asking the backend', async () => {
+      const id = upstream.templates[0].id;
+
+      await api().delete(`/api/templates/${id}`).expect(204);
+      expect(upstream.lastTemplateRequest?.path).toBe(`/templates/${id}`);
+      const before = upstream.requests;
+      await api().delete('/api/templates/nope').expect(404);
+      expect(upstream.requests).toBe(before);
+    });
+
+    it('needs a signed-in user', async () => {
+      await request(app.getHttpServer())
+        .post('/api/templates')
+        .send({ name: 'x', scene })
+        .expect(401);
+      await request(app.getHttpServer())
+        .delete(`/api/templates/${upstream.templates[0].id}`)
+        .expect(401);
+    });
   });
 });

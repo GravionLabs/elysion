@@ -74,7 +74,11 @@
       </button>
     }
     @if (!readOnly()) {
-      <app-template-menu (templateChosen)="templateChosen.emit($event)" />
+      <app-template-menu
+        [hasSelection]="hasSelection()"
+        (templateChosen)="templateChosen.emit($event)"
+        (saveRequested)="saveTemplateRequested.emit($event)"
+      />
     }
     <app-export-menu
       [hasSelection]="hasSelection()"

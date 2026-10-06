@@ -83,6 +83,17 @@ export class BusinessBackendClient {
     return this.request<Template>(token, 'GET', `/templates/${id}`);
   }
 
+  createTemplate(
+    token: string,
+    template: { name?: unknown; description?: unknown; scene?: unknown },
+  ): Promise<Template> {
+    return this.request<Template>(token, 'POST', '/templates', template);
+  }
+
+  async deleteTemplate(token: string, id: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/templates/${id}`);
+  }
+
   listMembers(token: string, boardId: string): Promise<BoardMember[]> {
     return this.request<BoardMember[]>(token, 'GET', `/boards/${boardId}/members`);
   }

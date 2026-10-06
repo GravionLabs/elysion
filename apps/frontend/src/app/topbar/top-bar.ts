@@ -69,6 +69,8 @@ export class TopBar {
   readonly exportRequested = output<ExportRequest>();
   /** The user chose a template to add to the board. */
   readonly templateChosen = output<TemplateInfo>();
+  /** The user wants to save the board, or the selection, as a template. */
+  readonly saveTemplateRequested = output<{ selectionOnly: boolean }>();
   /** The user pressed Share. */
   readonly shareRequested = output<void>();
   /** The user chose Log out in the user menu. */

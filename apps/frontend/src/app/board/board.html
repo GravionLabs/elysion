@@ -27,6 +27,7 @@
     (shareRequested)="openShare()"
     (importChosen)="chooseImport($event)"
     (templateChosen)="addTemplate($event.id)"
+    (saveTemplateRequested)="startSaveTemplate($event.selectionOnly)"
   />
   @if (pendingImport(); as file) {
     <div class="board-banner confirm" role="alertdialog" aria-label="Confirm import">
@@ -34,6 +35,60 @@
       <button type="button" class="banner-button primary" (click)="confirmImport()">Replace</button>
       <button type="button" class="banner-button" (click)="cancelImport()">Cancel</button>
     </div>
+  } @else if (templateDraft(); as draft) {
+    <form
+      class="board-banner save-template"
+      aria-label="Save as template"
+      (submit)="$event.preventDefault(); saveTemplate()"
+    >
+      <label>
+        <span>{{
+          draft.selectionOnly ? 'Template from the selection' : 'Template from the board'
+        }}</span>
+        <input
+          #templateName
+          name="template-name"
+          type="text"
+          autocomplete="off"
+          data-1p-ignore
+          data-lpignore="true"
+          aria-label="Template name"
+          [attr.maxlength]="maxTemplateNameLength"
+          [value]="draft.name"
+          [disabled]="draft.saving"
+          (input)="updateTemplateDraft('name', $event)"
+          (keydown.escape)="cancelSaveTemplate()"
+        />
+      </label>
+      <input
+        name="template-description"
+        type="text"
+        autocomplete="off"
+        data-1p-ignore
+        data-lpignore="true"
+        aria-label="Description (optional)"
+        placeholder="Description (optional)"
+        [attr.maxlength]="maxTemplateDescriptionLength"
+        [value]="draft.description"
+        [disabled]="draft.saving"
+        (input)="updateTemplateDraft('description', $event)"
+        (keydown.escape)="cancelSaveTemplate()"
+      />
+      @if (draft.error; as message) {
+        <span class="field-error" role="alert">{{ message }}</span>
+      }
+      <button type="submit" class="banner-button primary" [disabled]="draft.saving">
+        {{ draft.saving ? 'Saving…' : 'Save' }}
+      </button>
+      <button
+        type="button"
+        class="banner-button"
+        [disabled]="draft.saving"
+        (click)="cancelSaveTemplate()"
+      >
+        Cancel
+      </button>
+    </form>
   } @else if (notice(); as message) {
     <div class="board-banner" role="status">
       <span>{{ message }}</span>

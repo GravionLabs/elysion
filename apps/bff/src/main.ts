@@ -1,7 +1,9 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
 import { AppConfigService } from './config/config.module.js';
 import { ConfigError, validateEnv } from './config/env.js';
+import { applyHttpLimits } from './http-limits.js';
 
 async function bootstrap() {
   // Checked before Nest starts, so a bad environment ends with the message below and not with a stack trace
@@ -16,7 +18,8 @@ async function bootstrap() {
     }
     throw error;
   }
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  applyHttpLimits(app);
   await app.listen(app.get(AppConfigService).get('PORT'));
 }
 

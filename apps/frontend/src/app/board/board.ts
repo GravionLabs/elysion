@@ -29,6 +29,19 @@ import { SessionService } from '../auth/session.service';
 import { PresenceStore } from './presence-store';
 import { TEMPLATE_STATE_KEY, TemplateApi } from './template-api';
 
+/** What the user is typing into the Save as template form. */
+export interface TemplateDraft {
+  selectionOnly: boolean;
+  name: string;
+  description: string;
+  saving: boolean;
+  /** Why the last attempt failed, shown in the form. */
+  error?: string;
+}
+
+const MAX_TEMPLATE_NAME_LENGTH = 120;
+const MAX_TEMPLATE_DESCRIPTION_LENGTH = 500;
+
 export type CanvasStatus = 'loading' | 'ready' | 'error';
 
 const PENDING: BoardLookup | { status: 'pending' } = { status: 'pending' };
@@ -85,6 +98,11 @@ export class Board {
 
   /** A file chosen for import that waits for the user's confirmation. */
   readonly pendingImport = signal<File | null>(null);
+
+  /** The Save as template form; `null` while it is closed. */
+  readonly templateDraft = signal<TemplateDraft | null>(null);
+  protected readonly maxTemplateNameLength = MAX_TEMPLATE_NAME_LENGTH;
+  protected readonly maxTemplateDescriptionLength = MAX_TEMPLATE_DESCRIPTION_LENGTH;
 
   /** The Yjs connection, from the element's `status` event. */
   readonly syncStatus = signal<SyncStatus>('connecting');
@@ -351,6 +369,77 @@ export class Board {
         error instanceof Error && error.message !== 'The canvas is not ready yet.'
           ? error.message
           : 'The template could not be added.',
+      );
+    }
+  }
+
+  /** Opens the form to save the board, or the selection, as a template; the name starts as the board's. */
+  startSaveTemplate(selectionOnly: boolean): void {
+    this.notice.set(null);
+    this.templateDraft.set({
+      selectionOnly,
+      name: selectionOnly ? 'Selection' : (this.boardName() ?? 'Board'),
+      description: '',
+      saving: false,
+    });
+  }
+
+  updateTemplateDraft(field: 'name' | 'description', event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.templateDraft.update((draft) =>
+      draft ? { ...draft, [field]: value, error: undefined } : draft,
+    );
+  }
+
+  cancelSaveTemplate(): void {
+    if (!this.templateDraft()?.saving) {
+      this.templateDraft.set(null);
+    }
+  }
+
+  /** Exports the board (or the selection) as an .excalidraw file and stores it as the user's own template. */
+  async saveTemplate(): Promise<void> {
+    const draft = this.templateDraft();
+    if (!draft || draft.saving) {
+      return;
+    }
+    const name = draft.name.trim();
+    if (!name) {
+      this.templateDraft.set({ ...draft, error: 'Give the template a name.' });
+      return;
+    }
+    const canvas = this.canvas()?.nativeElement;
+    if (!canvas?.exportBoard) {
+      this.templateDraft.set(null);
+      this.notice.set('The canvas is not ready yet.');
+      return;
+    }
+    this.templateDraft.set({ ...draft, saving: true, error: undefined });
+    try {
+      const blob = await canvas.exportBoard('excalidraw', { selectionOnly: draft.selectionOnly });
+      if (!blob) {
+        this.notice.set(
+          draft.selectionOnly
+            ? 'Nothing is selected.'
+            : 'The board is empty: there is nothing to save as a template.',
+        );
+      } else {
+        await firstValueFrom(
+          this.#templates.create({
+            name,
+            description: draft.description.trim(),
+            scene: await blob.text(),
+          }),
+        );
+        this.notice.set(`Saved the template “${name}”.`);
+      }
+      this.templateDraft.set(null);
+    } catch {
+      // The form stays open with what the user typed, so a retry is one click.
+      this.templateDraft.update((current) =>
+        current
+          ? { ...current, saving: false, error: 'The template could not be saved.' }
+          : current,
       );
     }
   }

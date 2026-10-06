@@ -26,3 +26,6 @@ public sealed record TemplateDto(
     public static TemplateDto From(Template template) =>
         new(template.Id, template.Name, template.Description, template.IsBuiltIn, template.CreatedAt, template.Scene);
 }
+
+/// <summary>Body for saving a user template. Name, description and scene are checked by the endpoint.</summary>
+public sealed record CreateTemplateRequest(string? Name, string? Description, string? Scene);
