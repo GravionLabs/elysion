@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { BoardInfo } from '../board/board-api';
+import { TemplateInfo } from '../board/template-api';
 import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
 import { SessionService } from '../auth/session.service';
 import { BoardList } from './board-list';
@@ -13,6 +14,23 @@ const board = (id: string, name: string, createdAt = '2026-10-05T10:00:00Z'): Bo
   createdAt,
   path: `/board/${id}`,
 });
+
+const TEMPLATES: TemplateInfo[] = [
+  {
+    id: 't-retro',
+    name: 'Retrospective',
+    description: 'Three columns.',
+    isBuiltIn: true,
+    createdAt: '2026-10-06T00:00:00Z',
+  },
+  {
+    id: 't-kanban',
+    name: 'Kanban',
+    description: 'To do, Doing, Done.',
+    isBuiltIn: true,
+    createdAt: '2026-10-06T00:00:00Z',
+  },
+];
 
 describe('BoardList', () => {
   let fixture: ComponentFixture<BoardList>;
@@ -103,7 +121,13 @@ describe('BoardList', () => {
     beforeEach(async () => {
       await respondWith([board('b1', 'Retro')]);
       await click('.new-board');
+      http.expectOne('/api/templates').flush(TEMPLATES);
+      await fixture.whenStable();
     });
+
+    const radios = () => [...el().querySelectorAll('input[type="radio"]')] as HTMLInputElement[];
+    const optionNames = () =>
+      [...el().querySelectorAll('.template-option .template-name')].map((n) => n.textContent);
 
     it('asks for a name in an inline field, preset to "Untitled board" and focused', () => {
       const input = el().querySelector('input') as HTMLInputElement;
@@ -127,6 +151,43 @@ describe('BoardList', () => {
       await fixture.whenStable();
 
       expect(navigate).toHaveBeenCalledWith('/board/b9');
+    });
+
+    it('offers Blank, selected, and the templates from the catalog with their descriptions', () => {
+      expect(optionNames()).toEqual(['Blank', 'Retrospective', 'Kanban']);
+      expect(radios().map((radio) => radio.checked)).toEqual([true, false, false]);
+      expect(text()).toContain('Three columns.');
+    });
+
+    it('creates a blank board without a template by default', async () => {
+      const navigate = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+      await submit();
+      http.expectOne('/api/boards').flush(board('b9', 'Untitled board'));
+      await fixture.whenStable();
+
+      expect(navigate).toHaveBeenCalledWith('/board/b9');
+    });
+
+    it('hands the chosen template to the new board page', async () => {
+      const navigate = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+      radios()[2].click();
+      await fixture.whenStable();
+      await submit();
+      http.expectOne('/api/boards').flush(board('b9', 'Untitled board'));
+      await fixture.whenStable();
+
+      expect(navigate).toHaveBeenCalledWith('/board/b9', { state: { templateId: 't-kanban' } });
+    });
+
+    it('starts blank again when the form is reopened', async () => {
+      radios()[1].click();
+      await fixture.whenStable();
+      await click('button[type="button"].button:not(.primary)'); // Cancel
+      await click('.new-board');
+
+      expect(radios().map((radio) => radio.checked)).toEqual([true, false, false]);
     });
 
     it('does not create a board without a name', async () => {
@@ -162,6 +223,18 @@ describe('BoardList', () => {
 
       expect(el().querySelector('form')).toBeNull();
       http.expectNone('/api/boards');
+    });
+  });
+
+  describe('a catalog that cannot be loaded', () => {
+    it('still offers a blank board', async () => {
+      await respondWith([board('b1', 'Retro')]);
+      await click('.new-board');
+      http.expectOne('/api/templates').flush(null, { status: 502, statusText: 'Bad Gateway' });
+      await fixture.whenStable();
+
+      const names = [...el().querySelectorAll('.template-option .template-name')];
+      expect(names.map((n) => n.textContent)).toEqual(['Blank']);
     });
   });
 

@@ -10,6 +10,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Title } from '@angular/platform-browser';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
@@ -26,6 +27,7 @@ import { ExportRequest } from '../topbar/export-menu';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
 import { SessionService } from '../auth/session.service';
 import { PresenceStore } from './presence-store';
+import { TEMPLATE_STATE_KEY, TemplateApi } from './template-api';
 
 export type CanvasStatus = 'loading' | 'ready' | 'error';
 
@@ -49,6 +51,8 @@ export class Board {
   readonly #themeService = inject(ThemeService);
   readonly #api = inject(BoardApi);
   readonly #pageTitle = inject(Title);
+  readonly #templates = inject(TemplateApi);
+  readonly #location = inject(Location);
   protected readonly presence = inject(PresenceStore);
   protected readonly session = inject(SessionService);
 
@@ -147,6 +151,14 @@ export class Board {
   /** The board's name, or `null` while it loads and for a room without a stored board. */
   readonly boardName = computed(() => this.#renamedTo() ?? this.#loadedName());
 
+  /**
+   * The template the user chose when creating this board, until it is applied. It comes from the history state of
+   * the navigation that opened the board: only the creator has it, so the content is written by one browser, and
+   * everybody else (also a second window opening the board) receives it through the sync like any other content.
+   * It is dropped from the history once applied, so a reload does not apply it again.
+   */
+  readonly #pendingTemplateId = signal<string | null>(this.#templateFromHistory());
+
   constructor() {
     this.#loader.load(this.#canvasElementSrc).catch(() => this.status.set('error'));
     // Another board in the same page starts without the previous one's new name.
@@ -154,12 +166,53 @@ export class Board {
       this.boardId();
       untracked(() => this.#renamedTo.set(null));
     });
+    // Apply the template once the canvas is connected; the creator is an owner, so a viewer never gets here.
+    effect(() => {
+      const templateId = this.#pendingTemplateId();
+      if (
+        templateId &&
+        isStoredBoardId(this.boardId()) &&
+        this.status() === 'ready' &&
+        this.syncStatus() === 'connected' &&
+        !this.readOnly()
+      ) {
+        untracked(() => void this.#applyTemplate(templateId));
+      }
+    });
     effect(() => {
       const name = this.boardName();
       this.#pageTitle.setTitle(
         this.notFound() ? 'Board not found · Elysion' : name ? `${name} · Elysion` : 'Elysion',
       );
     });
+  }
+
+  #templateFromHistory(): string | null {
+    const id = (this.#location.getState() as Record<string, unknown> | null)?.[TEMPLATE_STATE_KEY];
+    return typeof id === 'string' ? id : null;
+  }
+
+  /**
+   * Writes the template into the canvas, once: the marker goes first (signal and history), so neither a second
+   * event nor a reload applies it again. Applying twice would also not duplicate anything, because the elements
+   * keep their ids, but it would reset them. A failure is told and not retried: the board is simply blank.
+   */
+  async #applyTemplate(templateId: string): Promise<void> {
+    this.#pendingTemplateId.set(null);
+    this.#location.replaceState(this.#location.path(), '', {
+      ...(this.#location.getState() as object),
+      [TEMPLATE_STATE_KEY]: undefined,
+    });
+    try {
+      const template = await firstValueFrom(this.#templates.get(templateId));
+      const canvas = this.canvas()?.nativeElement;
+      if (!canvas?.importFile) {
+        throw new Error('The canvas is not ready yet.');
+      }
+      await canvas.importFile(new Blob([template.scene], { type: 'application/json' }));
+    } catch {
+      this.notice.set('The template could not be applied. The board is blank.');
+    }
   }
 
   /** The user confirmed a new name in the top bar: show it at once, save it, undo it if saving fails. */

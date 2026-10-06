@@ -72,6 +72,31 @@
           Cancel
         </button>
       </div>
+      <fieldset class="templates" [disabled]="createState() === 'saving'">
+        <legend>Start from</legend>
+        <label class="template-option">
+          <input
+            type="radio"
+            name="template"
+            [checked]="selectedTemplateId() === null"
+            (change)="selectTemplate(null)"
+          />
+          <span class="template-name">Blank</span>
+          <span class="template-description">An empty board.</span>
+        </label>
+        @for (template of templates(); track template.id) {
+          <label class="template-option">
+            <input
+              type="radio"
+              name="template"
+              [checked]="selectedTemplateId() === template.id"
+              (change)="selectTemplate(template.id)"
+            />
+            <span class="template-name">{{ template.name }}</span>
+            <span class="template-description">{{ template.description }}</span>
+          </label>
+        }
+      </fieldset>
       @if (createError(); as message) {
         <p id="board-name-error" class="field-error" role="alert">{{ message }}</p>
       }
