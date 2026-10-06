@@ -13,6 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Templates\*.excalidraw" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Elysion.BusinessBackend.Tests" />
   </ItemGroup>
 

@@ -29,6 +29,17 @@ export class FakeBusinessBackend {
   memberRefusal: { status: number; detail: string } | null = null;
   /** The last member request: method, path and parsed body. */
   lastMemberRequest: { method: string; path: string; body: unknown } | null = null;
+  /** The template catalog, served by the template routes. */
+  templates = [
+    {
+      id: '0b6f1c1e-5d3a-4f0e-9a51-6c1d2f3a4b01',
+      name: 'Retrospective',
+      description: 'Three columns.',
+      isBuiltIn: true,
+      createdAt: '2026-10-06T00:00:00+00:00',
+      scene: '{"type":"excalidraw","version":2,"elements":[]}',
+    },
+  ];
   /** The `Authorization` header of every request, in order. */
   readonly authorizations: Array<string | undefined> = [];
   #server: Server | null = null;
@@ -60,6 +71,17 @@ export class FakeBusinessBackend {
       res.writeHead(status, { 'content-type': 'application/json' });
       res.end(body === undefined ? undefined : JSON.stringify(body));
     };
+    const templateRoute = /^\/templates(?:\/([^/]+))?$/.exec(req.url ?? '');
+    if (templateRoute && req.method === 'GET') {
+      const id = templateRoute[1];
+      if (!id)
+        return send(
+          200,
+          this.templates.map(({ scene: _scene, ...summary }) => summary),
+        );
+      const template = this.templates.find((t) => t.id === id);
+      return template ? send(200, template) : send(404);
+    }
     const memberRoute = /^\/boards\/([^/]+)\/members(?:\/([^/]+))?$/.exec(req.url ?? '');
     if (memberRoute) {
       const chunks: Buffer[] = [];
