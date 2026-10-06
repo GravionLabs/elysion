@@ -47,6 +47,7 @@ clients and test user.
 | `elysion-bff`      | confidential client with a service account; secret `elysion-bff-dev-secret`                                                                                                                                                            |
 | Realm role         | `board-user`                                                                                                                                                                                                                           |
 | Dev user           | `dev` / `dev`, email `dev@elysion.local`, role `board-user`                                                                                                                                                                            |
+| Second dev user    | `guest` / `guest`, email `guest@elysion.local`, role `board-user`: somebody to share a board with (#324)                                                                                                                               |
 
 All of these are development values in a committed file. Production gets its own realm configuration with
 other secrets, HTTPS (`sslRequired` is `none` here) and no password grant; that work is not part of this ADR.

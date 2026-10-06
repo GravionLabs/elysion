@@ -38,6 +38,10 @@ Every route needs a Keycloak access token (`Authorization: Bearer ...`; [identit
 
 In tests the verifier is replaced by one that trusts a locally generated key pair (`test/test-auth.ts`: `signToken`, `bearer`, `testVerifier`); everything else about the check is the production code.
 
+## Role of the caller
+
+`GET /api/boards/:id/membership/me` → `{ boardId, role }` with `role` `owner`, `editor` or `viewer` (`BoardsController.membership`, from the backend's `membership/me`, lower-cased like the WS token's role); `404` without a role, like every board route. The shell uses it to decide what to show (Share for owners, a read-only canvas for viewers); it is a hint for the interface, the backend and the realtime service enforce the rules.
+
 ## Board members
 
 `/api/boards/:id/members` (`GET`, `POST { email, role }`, `PATCH :userId { role }`, `DELETE :userId`; `MembersController`) passes on to the business backend's member API with the caller's own token ([business-backend.md](business-backend.md), "Board members"). The BFF only checks the shape: ids that are not UUIDs are `404` and a body without a string `email` or `role` is `400`, both without a call to the backend. The backend's answers come back with its message: `403` (a lower role), `404` (a board the caller cannot see, an unknown email, not a member), `409` (already a member, the creator, the last owner), `400` (a bad role).

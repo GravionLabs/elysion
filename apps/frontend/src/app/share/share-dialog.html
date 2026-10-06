@@ -1,0 +1,95 @@
+<div class="backdrop" (click)="close()">
+  <div
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="share-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="dialog-header">
+      <h2 id="share-title">Share this board</h2>
+      <button type="button" class="close" aria-label="Close" (click)="close()">×</button>
+    </header>
+
+    <form class="invite" (submit)="$event.preventDefault(); add()">
+      <label class="field">
+        <span class="field-label">Email</span>
+        <input
+          #emailField
+          type="email"
+          autocomplete="off"
+          data-1p-ignore
+          data-lpignore="true"
+          placeholder="name@example.com"
+          [value]="email()"
+          [disabled]="busy()"
+          (input)="updateEmail($event)"
+        />
+      </label>
+      <label class="field role-field">
+        <span class="field-label">Role</span>
+        <select
+          aria-label="Role of the new member"
+          [disabled]="busy()"
+          (change)="updateNewRole($event)"
+        >
+          @for (role of roles; track role) {
+            <option [value]="role" [selected]="role === newRole()">{{ role }}</option>
+          }
+        </select>
+      </label>
+      <button type="submit" class="primary" [disabled]="busy()">Add</button>
+    </form>
+
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    <section aria-label="Members">
+      @if (loading()) {
+        <p class="note" role="status">Loading members…</p>
+      } @else if (loadError(); as message) {
+        <p class="error" role="alert">
+          {{ message }}
+          <button type="button" class="link" (click)="load()">Try again</button>
+        </p>
+      } @else {
+        <ul class="members">
+          @for (member of members(); track member.userId) {
+            <li class="member">
+              <span class="member-text">
+                <span class="member-name">{{ member.displayName }}</span>
+                @if (member.email) {
+                  <span class="member-email">{{ member.email }}</span>
+                }
+              </span>
+              <select
+                [attr.aria-label]="'Role of ' + member.displayName"
+                [disabled]="busy()"
+                (change)="changeRole(member, $event)"
+              >
+                @for (role of roles; track role) {
+                  <option [value]="role" [selected]="role === member.role">{{ role }}</option>
+                }
+              </select>
+              <button
+                type="button"
+                class="remove"
+                [attr.aria-label]="'Remove ' + member.displayName"
+                [disabled]="busy()"
+                (click)="remove(member)"
+              >
+                Remove
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <p class="hint">
+      Someone has to log in to Elysion once before they can be added. Viewers can look at the board
+      but not change it.
+    </p>
+  </div>
+</div>

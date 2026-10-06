@@ -74,6 +74,22 @@
         }
       ],
       "realmRoles": ["board-user"]
+    },
+    {
+      "username": "guest",
+      "email": "guest@elysion.local",
+      "emailVerified": true,
+      "firstName": "Guest",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "guest",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["board-user"]
     }
   ]
 }

@@ -355,4 +355,32 @@ describe('TopBar', () => {
       expect(logouts).toBe(1);
     });
   });
+
+  describe('sharing and read-only', () => {
+    it('shows Share only to somebody who may share, and says so when it is pressed', async () => {
+      expect(el().querySelector('.share-button')).toBeNull();
+
+      fixture.componentRef.setInput('canShare', true);
+      await fixture.whenStable();
+      let shares = 0;
+      fixture.componentInstance.shareRequested.subscribe(() => (shares += 1));
+      (el().querySelector('.share-button') as HTMLButtonElement).click();
+
+      expect(shares).toBe(1);
+    });
+
+    it('shows Import and Library to an editor', () => {
+      expect(el().querySelector('.import-button')).toBeTruthy();
+      expect(el().querySelector('.library-toggle')).toBeTruthy();
+    });
+
+    it('hides Import and Library from a viewer, who cannot change the board, but keeps Export', async () => {
+      fixture.componentRef.setInput('readOnly', true);
+      await fixture.whenStable();
+
+      expect(el().querySelector('.import-button')).toBeNull();
+      expect(el().querySelector('.library-toggle')).toBeNull();
+      expect(el().querySelector('app-export-menu')).toBeTruthy();
+    });
+  });
 });

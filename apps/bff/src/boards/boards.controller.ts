@@ -6,11 +6,13 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
 } from '@nestjs/common';
+import type { BoardRole } from '@elysion/shared-types';
 import { AccessToken } from '../auth/access-token.decorator.js';
 import { Board, BusinessBackendClient } from './business-backend.client.js';
 
@@ -50,6 +52,23 @@ export class BoardsController {
     @Param('id', boardId) id: string,
   ): Promise<BoardResponse> {
     return toResponse(await this.backend.getBoard(token, id));
+  }
+
+  /**
+   * What the caller may do on a board (`owner`, `editor` or `viewer`), for the shell to decide what to show: Share
+   * for owners, a read-only canvas for viewers. 404 without a role, like every board route. Only a hint for the
+   * interface: the backend and the realtime service enforce it.
+   */
+  @Get(':id/membership/me')
+  async membership(
+    @AccessToken() token: string,
+    @Param('id', boardId) id: string,
+  ): Promise<{ boardId: string; role: BoardRole }> {
+    const role = await this.backend.getMyRole(token, id);
+    if (role === null) {
+      throw new NotFoundException();
+    }
+    return { boardId: id, role };
   }
 
   @Post()

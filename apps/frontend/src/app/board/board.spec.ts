@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By, Title } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { TopBar } from '../topbar/top-bar';
+import { ShareDialog } from '../share/share-dialog';
 import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
 import { SessionService } from '../auth/session.service';
 import { ThemeService } from '../theme/theme.service';
@@ -387,6 +388,7 @@ describe('Board', () => {
       await fixture.whenStable();
 
       http.expectOne(`/api/boards/${id}`).flush('', { status: 502, statusText: 'Bad Gateway' });
+      http.expectOne(`/api/boards/${id}/membership/me`).flush({ boardId: id, role: 'editor' });
       await fixture.whenStable();
       fixture.detectChanges();
 
@@ -422,6 +424,11 @@ describe('Board', () => {
         expect(fixture.nativeElement.querySelector('elysion-canvas')).toBeNull();
 
         await answer(200, { id, name: 'Q3 planning', createdAt: '', path: '' });
+        expect(fixture.nativeElement.querySelector('elysion-canvas')).toBeNull(); // the role is still to come
+
+        http.expectOne(`/api/boards/${id}/membership/me`).flush({ boardId: id, role: 'editor' });
+        await fixture.whenStable();
+        fixture.detectChanges();
 
         expect(fixture.nativeElement.querySelector('elysion-canvas')).not.toBeNull();
       });
@@ -727,6 +734,100 @@ describe('Board', () => {
       expect(await token).toMatchObject({ status: 502 });
       expect(component.notice()).toBeNull();
       flushLookup();
+    });
+  });
+
+  describe('roles', () => {
+    const uuid = '0197a8d2-1c3e-7a10-8000-000000000001';
+    const canvas = () =>
+      fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement | null;
+    const bar = () => fixture.nativeElement.querySelector('app-top-bar') as HTMLElement;
+
+    /** Opens a stored board and answers what the BFF is asked: the board, and the user's role on it. */
+    const openAs = async (role: string | null) => {
+      fixture.componentRef.setInput('boardId', uuid);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      http
+        .expectOne(`/api/boards/${uuid}`)
+        .flush({ id: uuid, name: 'Retro', createdAt: '', path: '' });
+      const request = http.expectOne(`/api/boards/${uuid}/membership/me`);
+      if (role === null) {
+        request.flush(null, { status: 404, statusText: 'Not Found' });
+      } else {
+        request.flush({ boardId: uuid, role });
+      }
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it('gives an owner the Share button, and the dialog when it is pressed', async () => {
+      await openAs('owner');
+      expect(bar().querySelector('.share-button')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('app-share-dialog')).toBeNull();
+
+      (bar().querySelector('.share-button') as HTMLButtonElement).click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-share-dialog')).toBeTruthy();
+      http.expectOne(`/api/boards/${uuid}/members`).flush([]);
+
+      fixture.debugElement.query(By.directive(ShareDialog)).componentInstance.closed.emit();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('app-share-dialog')).toBeNull();
+    });
+
+    it('gives an editor no Share button and a canvas that is not read-only', async () => {
+      await openAs('editor');
+
+      expect(bar().querySelector('.share-button')).toBeNull();
+      expect(canvas()!.hasAttribute('readonly')).toBe(false);
+      expect(bar().querySelector('.import-button')).toBeTruthy();
+    });
+
+    it('gives a viewer a read-only canvas and no Import, Library or Share', async () => {
+      await openAs('viewer');
+
+      expect(canvas()!.hasAttribute('readonly')).toBe(true);
+      expect(bar().querySelector('.import-button')).toBeNull();
+      expect(bar().querySelector('.library-toggle')).toBeNull();
+      expect(bar().querySelector('.share-button')).toBeNull();
+    });
+
+    it("does not start the canvas before the role is known, so a viewer never gets an editor's canvas first", async () => {
+      fixture.componentRef.setInput('boardId', uuid);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      http
+        .expectOne(`/api/boards/${uuid}`)
+        .flush({ id: uuid, name: 'Retro', createdAt: '', path: '' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(canvas()).toBeNull();
+
+      http.expectOne(`/api/boards/${uuid}/membership/me`).flush({ boardId: uuid, role: 'viewer' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(canvas()!.hasAttribute('readonly')).toBe(true);
+    });
+
+    it('treats a user without a role like an editor in the interface: the backend refuses what they may not do', async () => {
+      await openAs(null);
+
+      expect(canvas()!.hasAttribute('readonly')).toBe(false);
+      expect(bar().querySelector('.share-button')).toBeNull();
+    });
+
+    it('asks nothing for a room that is no stored board', async () => {
+      fixture.componentRef.setInput('boardId', 'default');
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      http.expectNone('/api/boards/default/membership/me');
+      expect(canvas()).toBeTruthy();
     });
   });
 });
