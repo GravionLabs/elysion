@@ -11,7 +11,7 @@ namespace Elysion.BusinessBackend.Api.Identity;
 /// the handler asks (a token signed with an unknown key, after a key rotation), at most every 30 seconds.
 /// </summary>
 public sealed class JwksConfigurationManager(Uri jwksUri, string issuer, HttpClient http, TimeProvider time)
-    : IConfigurationManager<OpenIdConnectConfiguration>
+    : IConfigurationManager<OpenIdConnectConfiguration>, IDisposable
 {
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromHours(1);
     private static readonly TimeSpan MinimumRefreshInterval = TimeSpan.FromSeconds(30);
@@ -28,7 +28,7 @@ public sealed class JwksConfigurationManager(Uri jwksUri, string issuer, HttpCli
         {
             var age = time.GetUtcNow() - _fetchedAt;
             var due = _configuration is null || age >= RefreshInterval
-                || (_refreshRequested && age >= MinimumRefreshInterval);
+                                             || (_refreshRequested && age >= MinimumRefreshInterval);
             if (due)
             {
                 _configuration = await FetchAsync(cancel);
@@ -45,6 +45,8 @@ public sealed class JwksConfigurationManager(Uri jwksUri, string issuer, HttpCli
     }
 
     public void RequestRefresh() => _refreshRequested = true;
+
+    public void Dispose() => _lock.Dispose();
 
     private async Task<OpenIdConnectConfiguration> FetchAsync(CancellationToken cancel)
     {

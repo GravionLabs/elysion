@@ -49,7 +49,8 @@ Other commands (each runs across the whole workspace):
 ```sh
 pnpm build           # build every app, including the .NET solution
 pnpm test            # unit tests: Vitest, NUnit, and the repo scripts' node tests
-pnpm lint            # oxlint, and `dotnet format --verify-no-changes` for the backend
+pnpm lint            # oxlint, and the JetBrains formatter check (`jb cleanupcode`) for the backend's C#
+pnpm format:dotnet  # formats the backend's C# with the JetBrains tools (Prettier does the rest: `pnpm format`)
 pnpm format:check    # Prettier (pnpm format fixes)
 ```
 
@@ -111,7 +112,7 @@ The repository is a pnpm workspace (`apps/*`, `packages/*`); the root scripts ru
 
 ## Pre-commit hook
 
-`pnpm install` installs a git pre-commit hook (`simple-git-hooks`, configured in the root `package.json`) that runs [lint-staged](lint-staged.config.mjs) on the staged files only: Prettier rewrites them, and oxlint with the app's own `oxlint.json` checks staged TypeScript files and blocks the commit on any finding. It takes a second or two. C# files are not checked in the hook, because `dotnet format` needs about eight seconds just to load the solution; `pnpm lint` and CI cover them.
+`pnpm install` installs a git pre-commit hook (`simple-git-hooks`, configured in the root `package.json`) that runs [lint-staged](lint-staged.config.mjs) on the staged files only: Prettier rewrites them, and oxlint with the app's own `oxlint.json` checks staged TypeScript files and blocks the commit on any finding. It takes a second or two. C# files are not checked in the hook, because the JetBrains formatter needs about 40 seconds for the solution; `pnpm lint` and CI cover them.
 
 In an emergency, skip the hook with `git commit --no-verify`; CI runs the same checks, so the problem will show up there.
 

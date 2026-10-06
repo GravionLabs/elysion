@@ -4,6 +4,7 @@ using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Identity;
+
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -25,21 +26,36 @@ public static class BoardEndpoints
 
         group.MapGet("", List).WithName("ListBoards");
         group.MapGet("/{id:guid}", Get).WithName("GetBoard").RequireAuthorization(BoardPolicies.Read);
-        group.MapGet("/{id:guid}/membership/me", MyMembership).WithName("GetMyMembership").RequireAuthorization(BoardPolicies.Read);
-        group.MapPost("", Create).WithName("CreateBoard").Accepts<BoardNameRequest>("application/json").RequireJsonContentType();
-        group.MapPatch("/{id:guid}", Rename).WithName("RenameBoard").Accepts<BoardNameRequest>("application/json").RequireJsonContentType().RequireAuthorization(BoardPolicies.Write);
-        group.MapPost("/{id:guid}/duplicate", Duplicate).WithName("DuplicateBoard").RequireAuthorization(BoardPolicies.Read);
+        group.MapGet("/{id:guid}/membership/me", MyMembership)
+            .WithName("GetMyMembership")
+            .RequireAuthorization(BoardPolicies.Read);
+        group.MapPost("", Create)
+            .WithName("CreateBoard")
+            .Accepts<BoardNameRequest>("application/json")
+            .RequireJsonContentType();
+        group.MapPatch("/{id:guid}", Rename)
+            .WithName("RenameBoard")
+            .Accepts<BoardNameRequest>("application/json")
+            .RequireJsonContentType()
+            .RequireAuthorization(BoardPolicies.Write);
+        group.MapPost("/{id:guid}/duplicate", Duplicate)
+            .WithName("DuplicateBoard")
+            .RequireAuthorization(BoardPolicies.Read);
         group.MapDelete("/{id:guid}", Delete).WithName("DeleteBoard").RequireAuthorization(BoardPolicies.Administer);
         return routes;
     }
 
-    private static async Task<Ok<IReadOnlyList<BoardDto>>> List(IBoardRepository boards, ICurrentUser user, CancellationToken cancellationToken)
+    private static async Task<Ok<IReadOnlyList<BoardDto>>> List(IBoardRepository boards,
+        ICurrentUser user,
+        CancellationToken cancellationToken)
     {
         var all = await boards.ListVisibleToAsync(user.Id, cancellationToken);
         return TypedResults.Ok<IReadOnlyList<BoardDto>>(all.Select(BoardDto.From).ToList());
     }
 
-    private static async Task<Results<Ok<BoardDto>, NotFound>> Get(Guid id, IBoardRepository boards, CancellationToken cancellationToken)
+    private static async Task<Results<Ok<BoardDto>, NotFound>> Get(Guid id,
+        IBoardRepository boards,
+        CancellationToken cancellationToken)
     {
         var board = await boards.FindAsync(id, cancellationToken);
         return board is null ? TypedResults.NotFound() : TypedResults.Ok(BoardDto.From(board));
@@ -47,15 +63,23 @@ public static class BoardEndpoints
 
     /// <summary>The caller's role on the board in the route, for the BFF's WS token check (#120). 404 for non-members.</summary>
     private static async Task<Results<Ok<MembershipDto>, NotFound>> MyMembership(
-        Guid id, IBoardRepository boards, ICurrentUser user, CancellationToken cancellationToken)
+        Guid id,
+        IBoardRepository boards,
+        ICurrentUser user,
+        CancellationToken cancellationToken)
     {
         var role = await boards.GetRoleAsync(id, user.Id, cancellationToken);
         return role is null ? TypedResults.NotFound() : TypedResults.Ok(new MembershipDto(id, role.Value.ToString()));
     }
 
     private static async Task<Results<Created<BoardDto>, ValidationProblem>> Create(
-        BoardNameRequest? request, HttpRequest http, IBoardRepository boards, IUnitOfWork unitOfWork, ICurrentUser user,
-        TimeProvider time, CancellationToken cancellationToken)
+        BoardNameRequest? request,
+        HttpRequest http,
+        IBoardRepository boards,
+        IUnitOfWork unitOfWork,
+        ICurrentUser user,
+        TimeProvider time,
+        CancellationToken cancellationToken)
     {
         if (!Board.TryNormalizeName(request?.Name, out var name))
         {
@@ -71,7 +95,11 @@ public static class BoardEndpoints
     }
 
     private static async Task<Results<Ok<BoardDto>, NotFound, ValidationProblem>> Rename(
-        Guid id, BoardNameRequest? request, IBoardRepository boards, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        Guid id,
+        BoardNameRequest? request,
+        IBoardRepository boards,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
     {
         if (!Board.TryNormalizeName(request?.Name, out var name))
         {
@@ -94,8 +122,14 @@ public static class BoardEndpoints
     /// is what was last saved: changes still inside a room's save window are not in it yet.
     /// </summary>
     private static async Task<Results<Created<BoardDto>, NotFound>> Duplicate(
-        Guid id, HttpRequest http, IBoardRepository boards, IBoardDocumentRepository documents, IUnitOfWork unitOfWork,
-        ICurrentUser user, TimeProvider time, CancellationToken cancellationToken)
+        Guid id,
+        HttpRequest http,
+        IBoardRepository boards,
+        IBoardDocumentRepository documents,
+        IUnitOfWork unitOfWork,
+        ICurrentUser user,
+        TimeProvider time,
+        CancellationToken cancellationToken)
     {
         var source = await boards.FindAsync(id, cancellationToken);
         if (source is null)
@@ -143,7 +177,11 @@ public static class BoardEndpoints
     }
 
     private static async Task<Results<NoContent, NotFound>> Delete(
-        Guid id, IBoardRepository boards, IBoardDocumentRepository documents, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        Guid id,
+        IBoardRepository boards,
+        IBoardDocumentRepository documents,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
     {
         var board = await boards.FindForUpdateAsync(id, cancellationToken);
         if (board is null)

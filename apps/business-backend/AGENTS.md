@@ -15,7 +15,7 @@ See `docs/specs/business-backend.md` and `docs/adr/0003-net10-business-backend.m
 
 ## Commands
 
-From the repo root, `pnpm build`, `pnpm test` and `pnpm lint` also run `dotnet build`, `dotnet test` and `dotnet format --verify-no-changes` for this app (root scripts `build:dotnet`, `test:dotnet`, `lint:dotnet` call `run-dotnet.mjs`; `Data/Migrations` is excluded from the format check because `dotnet ef` generates it). Inside this directory:
+From the repo root, `pnpm build`, `pnpm test` and `pnpm lint` also run `dotnet build`, `dotnet test` and the JetBrains formatter check for this app (root scripts `build:dotnet`, `test:dotnet`, `lint:dotnet` and `format:dotnet` call `run-dotnet.mjs`; `Data/Migrations` is excluded from formatting because `dotnet ef` generates it). Inside this directory:
 
 ```sh
 dotnet build
@@ -31,6 +31,13 @@ dotnet tool run dotnet-ef database update \
 ```
 
 Connection string is in `appsettings.Development.json` (`ConnectionStrings:Elysion`), pointing at `localhost:5432` — matches the `postgres` service in `infra/docker/docker-compose.yml`.
+
+## C# formatting and style
+
+C# is formatted with the **JetBrains command-line tools** (`jb cleanupcode`, profile "Built-in: Reformat Code"), **not with `dotnet format`**. The style is `apps/business-backend/.editorconfig` (`root = false`: it adds to the repository's root file), copied from the C# rules of the Horae repository and adapted (`tests/` for `test/`, `Data/Migrations`); only its C# sections are here, because Prettier reads the root `.editorconfig` and the generic sections would reformat the TypeScript apps. The tool is a local dotnet tool (`dotnet-tools.json`, `dotnet tool restore`, about 1 GB in `~/.nuget/packages`, cached in CI).
+
+- `pnpm format:dotnet` formats in place (about 30 seconds, builds first because the tool needs the restored projects); `pnpm lint:dotnet` formats a **copy** of the sources and lists the files that would change (the working tree stays as it is), so it is safe with uncommitted work. Migrations and build output are never touched.
+- The rules make the analyzers stricter than the default (`Design`, `Reliability`, `Performance`, `Security` and `CodeQuality` are warnings, which `TreatWarningsAsErrors` turns into errors). Fix the code. A rule is lowered only with a reason next to it: `CA1062` is a suggestion here (nullable reference types and the guard clauses cover it), and in `tests/` `CA1001` and `CA2000` are off (NUnit disposes fixtures in `[TearDown]`, a test's `HttpContent` lives as long as the test). A single case may get a `#pragma warning disable` with its reason, as `UserRepository` does for `CA1862` (EF translates `ToLower()`, not the `StringComparison` overloads).
 
 ## Conventions
 

@@ -1,5 +1,7 @@
 using Ardalis.GuardClauses;
+
 using Elysion.BusinessBackend.Api.Entities;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace Elysion.BusinessBackend.Api.Data.Repositories;
@@ -23,7 +25,11 @@ public sealed class BoardRepository(ElysionDbContext db) : IBoardRepository
         var board = await db.Boards
             .AsNoTracking()
             .Where(b => b.Id == boardId)
-            .Select(b => new { b.OwnerId, Role = b.Memberships.Where(m => m.UserId == userId).Select(m => (BoardRole?)m.Role).FirstOrDefault() })
+            .Select(b => new
+            {
+                b.OwnerId,
+                Role = b.Memberships.Where(m => m.UserId == userId).Select(m => (BoardRole?)m.Role).FirstOrDefault()
+            })
             .FirstOrDefaultAsync(cancellationToken);
         if (board is null)
         {

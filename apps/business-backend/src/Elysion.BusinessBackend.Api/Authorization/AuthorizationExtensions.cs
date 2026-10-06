@@ -1,4 +1,5 @@
 using Elysion.BusinessBackend.Api.Entities;
+
 using Microsoft.AspNetCore.Authorization;
 
 namespace Elysion.BusinessBackend.Api.Authorization;
@@ -11,9 +12,12 @@ public static class AuthorizationExtensions
         services.AddScoped<IAuthorizationHandler, BoardAuthorizationHandler>();
         services.AddSingleton<IAuthorizationMiddlewareResultHandler, BoardAuthorizationResultHandler>();
         services.AddAuthorizationBuilder()
-            .AddPolicy(BoardPolicies.Read, policy => policy.RequireAuthenticatedUser().AddRequirements(new BoardRoleRequirement(BoardRole.Viewer)))
-            .AddPolicy(BoardPolicies.Write, policy => policy.RequireAuthenticatedUser().AddRequirements(new BoardRoleRequirement(BoardRole.Editor)))
-            .AddPolicy(BoardPolicies.Administer, policy => policy.RequireAuthenticatedUser().AddRequirements(new BoardRoleRequirement(BoardRole.Owner)));
+            .AddPolicy(BoardPolicies.Read,
+                policy => policy.RequireAuthenticatedUser().AddRequirements(new BoardRoleRequirement(BoardRole.Viewer)))
+            .AddPolicy(BoardPolicies.Write,
+                policy => policy.RequireAuthenticatedUser().AddRequirements(new BoardRoleRequirement(BoardRole.Editor)))
+            .AddPolicy(BoardPolicies.Administer,
+                policy => policy.RequireAuthenticatedUser().AddRequirements(new BoardRoleRequirement(BoardRole.Owner)));
         return services;
     }
 }

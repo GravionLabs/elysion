@@ -2,8 +2,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+
 using Elysion.BusinessBackend.Api.Identity;
+
 using Microsoft.IdentityModel.Tokens;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -57,11 +60,13 @@ public class AuthenticationTests
 
     [Test]
     public async Task An_expired_token_is_401() =>
-        (await GetBoardsAsync(ApiFactory.CreateToken(lifetime: TimeSpan.FromMinutes(-10)))).ShouldBe(HttpStatusCode.Unauthorized);
+        (await GetBoardsAsync(ApiFactory.CreateToken(lifetime: TimeSpan.FromMinutes(-10)))).ShouldBe(HttpStatusCode
+            .Unauthorized);
 
     [Test]
     public async Task A_token_from_another_issuer_is_401() =>
-        (await GetBoardsAsync(ApiFactory.CreateToken(issuer: "http://evil.test/realms/elysion"))).ShouldBe(HttpStatusCode.Unauthorized);
+        (await GetBoardsAsync(ApiFactory.CreateToken(issuer: "http://evil.test/realms/elysion"))).ShouldBe(
+            HttpStatusCode.Unauthorized);
 
     [Test]
     public async Task A_token_signed_with_another_key_is_401()
@@ -74,9 +79,14 @@ public class AuthenticationTests
     [Test]
     public async Task An_unsigned_token_is_401()
     {
-        static string B64(string json) => Convert.ToBase64String(Encoding.UTF8.GetBytes(json)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        static string B64(string json) => Convert.ToBase64String(Encoding.UTF8.GetBytes(json))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+
         var exp = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds();
-        var token = $"{B64("""{"alg":"none","typ":"JWT"}""")}.{B64($$"""{"sub":"x","iss":"{{ApiFactory.Issuer}}","aud":"{{ApiFactory.Audience}}","exp":{{exp}}}""")}.";
+        var token =
+            $"{B64("""{"alg":"none","typ":"JWT"}""")}.{B64($$"""{"sub":"x","iss":"{{ApiFactory.Issuer}}","aud":"{{ApiFactory.Audience}}","exp":{{exp}}}""")}.";
 
         (await GetBoardsAsync(token)).ShouldBe(HttpStatusCode.Unauthorized);
     }

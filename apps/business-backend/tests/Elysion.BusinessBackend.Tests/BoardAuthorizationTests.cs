@@ -1,10 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
+
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -31,12 +34,19 @@ public class BoardAuthorizationTests
         var viewer = NewUser("viewer");
         var implicitOwner = NewUser("implicit-owner");
         _board = Board.Create(Guid.CreateVersion7(), "Retro", Now, owner.Id);
-        _implicitOwnersBoard = Board.Create(Guid.CreateVersion7(), "Implicit", Now.AddMinutes(-1), implicitOwner.Id); // no membership row
+        _implicitOwnersBoard =
+            Board.Create(Guid.CreateVersion7(), "Implicit", Now.AddMinutes(-1), implicitOwner.Id); // no membership row
         _legacyBoard = Board.Create(Guid.CreateVersion7(), "Legacy", Now.AddMinutes(-2)); // from before users: no owner
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ElysionDbContext>();
         db.AddRange(
-            owner, editor, viewer, implicitOwner, _board, _implicitOwnersBoard, _legacyBoard,
+            owner,
+            editor,
+            viewer,
+            implicitOwner,
+            _board,
+            _implicitOwnersBoard,
+            _legacyBoard,
             BoardMembership.Create(_board.Id, owner.Id, BoardRole.Owner, Now),
             BoardMembership.Create(_board.Id, editor.Id, BoardRole.Editor, Now),
             BoardMembership.Create(_board.Id, viewer.Id, BoardRole.Viewer, Now));
@@ -54,7 +64,8 @@ public class BoardAuthorizationTests
         return await query(scope.ServiceProvider.GetRequiredService<ElysionDbContext>());
     }
 
-    private static StringContent Json(string name) => new($$"""{"name":"{{name}}"}""", System.Text.Encoding.UTF8, "application/json");
+    private static StringContent Json(string name) =>
+        new($$"""{"name":"{{name}}"}""", System.Text.Encoding.UTF8, "application/json");
 
     private async Task<HttpStatusCode> ReadAsync(string actor, Guid boardId)
     {
@@ -81,7 +92,10 @@ public class BoardAuthorizationTests
     [TestCase("viewer", HttpStatusCode.OK, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden)]
     [TestCase("stranger", HttpStatusCode.NotFound, HttpStatusCode.NotFound, HttpStatusCode.NotFound)]
     public async Task The_role_decides_what_a_user_may_do_on_a_board(
-        string actor, HttpStatusCode read, HttpStatusCode write, HttpStatusCode administer)
+        string actor,
+        HttpStatusCode read,
+        HttpStatusCode write,
+        HttpStatusCode administer)
     {
         (await ReadAsync(actor, _board.Id)).ShouldBe(read, "read");
         (await WriteAsync(actor, _board.Id)).ShouldBe(write, "write");
@@ -151,7 +165,8 @@ public class BoardAuthorizationTests
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         var copy = (await response.Content.ReadFromJsonAsync<BoardDto>())!;
         (await viewer.GetAsync($"/boards/{copy.Id}")).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await viewer.DeleteAsync($"/boards/{copy.Id}")).StatusCode.ShouldBe(HttpStatusCode.NoContent); // the duplicator owns the copy
+        (await viewer.DeleteAsync($"/boards/{copy.Id}")).StatusCode
+            .ShouldBe(HttpStatusCode.NoContent); // the duplicator owns the copy
         (await ReadAsync("owner", copy.Id)).ShouldBe(HttpStatusCode.NotFound); // the source's owner has no role on it
     }
 
@@ -166,14 +181,17 @@ public class BoardAuthorizationTests
         var created = (await response.Content.ReadFromJsonAsync<BoardDto>())!;
         var (ownerSubject, memberships) = await InDatabaseAsync(async db =>
         {
-            var board = await db.Boards.Include(b => b.Owner).Include(b => b.Memberships).SingleAsync(b => b.Id == created.Id);
+            var board = await db.Boards.Include(b => b.Owner)
+                .Include(b => b.Memberships)
+                .SingleAsync(b => b.Id == created.Id);
             return (board.Owner!.Subject, board.Memberships.Select(m => (m.User, m.Role)).ToList());
         });
         ownerSubject.ShouldBe("newbie");
         memberships.ShouldHaveSingleItem().Role.ShouldBe(BoardRole.Owner);
         (await creator.DeleteAsync($"/boards/{created.Id}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        var again = (await (await creator.PostAsync("/boards", Json("Mine again"))).Content.ReadFromJsonAsync<BoardDto>())!;
+        var again =
+            (await (await creator.PostAsync("/boards", Json("Mine again"))).Content.ReadFromJsonAsync<BoardDto>())!;
         (await ReadAsync("stranger", again.Id)).ShouldBe(HttpStatusCode.NotFound);
     }
 
@@ -210,7 +228,8 @@ public class BoardAuthorizationTests
     {
         using var client = _factory.CreateAuthenticatedClient("implicit-owner");
 
-        (await client.GetFromJsonAsync<MembershipDto>($"/boards/{_implicitOwnersBoard.Id}/membership/me"))!.Role.ShouldBe("Owner");
+        (await client.GetFromJsonAsync<MembershipDto>($"/boards/{_implicitOwnersBoard.Id}/membership/me"))!.Role
+            .ShouldBe("Owner");
     }
 
     [Test]
@@ -220,8 +239,10 @@ public class BoardAuthorizationTests
         using var anonymous = _factory.CreateClient();
 
         (await stranger.GetAsync($"/boards/{_board.Id}/membership/me")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await stranger.GetAsync($"/boards/{Guid.NewGuid()}/membership/me")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await anonymous.GetAsync($"/boards/{_board.Id}/membership/me")).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        (await stranger.GetAsync($"/boards/{Guid.NewGuid()}/membership/me")).StatusCode.ShouldBe(
+            HttpStatusCode.NotFound);
+        (await anonymous.GetAsync($"/boards/{_board.Id}/membership/me")).StatusCode.ShouldBe(
+            HttpStatusCode.Unauthorized);
     }
 
     [Test]

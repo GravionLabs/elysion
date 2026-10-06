@@ -35,7 +35,11 @@ public interface IBoardDocumentRepository
     /// that loses a race against another writer is a <see cref="DocumentSaveStatus.Conflict"/> too.
     /// </summary>
     Task<DocumentSaveResult> SaveAsync(
-        string boardId, byte[] state, long? expectedVersion, DateTimeOffset now, CancellationToken cancellationToken);
+        string boardId,
+        byte[] state,
+        long? expectedVersion,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
 
     /// <summary>Stages a new document (the copy of a duplicated board).</summary>
     void Add(BoardDocument document);

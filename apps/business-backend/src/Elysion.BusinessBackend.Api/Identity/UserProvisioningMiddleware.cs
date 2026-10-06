@@ -11,7 +11,9 @@ namespace Elysion.BusinessBackend.Api.Identity;
 public sealed class UserProvisioningMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(
-        HttpContext context, UserProvisioningService provisioning, CurrentUserAccessor accessor)
+        HttpContext context,
+        UserProvisioningService provisioning,
+        CurrentUserAccessor accessor)
     {
         var anonymousEndpoint = context.GetEndpoint()?.Metadata.GetMetadata<IAllowAnonymous>() is not null;
         if (context.User.Identity?.IsAuthenticated == true && !anonymousEndpoint)

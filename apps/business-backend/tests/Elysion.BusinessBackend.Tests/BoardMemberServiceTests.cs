@@ -2,7 +2,9 @@ using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Members;
+
 using Microsoft.EntityFrameworkCore;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -23,7 +25,9 @@ public class BoardMemberServiceTests
         _database = new SqliteDatabase();
         _ada = User.Create(Guid.CreateVersion7(), "ada", "Ada", "ada@example.com", Now);
         _bea = User.Create(Guid.CreateVersion7(), "bea", "Bea", "bea@example.com", Now);
-        _board = Board.Create(Guid.CreateVersion7(), "No creator", Now); // no OwnerId: the owners are the Owner memberships
+        _board = Board.Create(Guid.CreateVersion7(),
+            "No creator",
+            Now); // no OwnerId: the owners are the Owner memberships
         await using var db = _database.NewContext();
         db.AddRange(_ada, _bea, _board, BoardMembership.Create(_board.Id, _ada.Id, BoardRole.Owner, Now));
         await db.SaveChangesAsync();
@@ -35,14 +39,19 @@ public class BoardMemberServiceTests
     private async Task<T> WithServiceAsync<T>(Func<BoardMemberService, Task<T>> action)
     {
         await using var db = _database.NewContext();
-        var service = new BoardMemberService(new BoardRepository(db), new MembershipRepository(db), new UserRepository(db), db, TimeProvider.System);
+        var service = new BoardMemberService(new BoardRepository(db),
+            new MembershipRepository(db),
+            new UserRepository(db),
+            db,
+            TimeProvider.System);
         return await action(service);
     }
 
     [Test]
     public async Task The_last_owner_cannot_be_demoted_or_removed()
     {
-        (await WithServiceAsync(s => s.ChangeRoleAsync(_board.Id, _ada.Id, BoardRole.Editor, Ct))).Outcome.ShouldBe(MemberOutcome.LastOwner);
+        (await WithServiceAsync(s => s.ChangeRoleAsync(_board.Id, _ada.Id, BoardRole.Editor, Ct))).Outcome.ShouldBe(
+            MemberOutcome.LastOwner);
         (await WithServiceAsync(s => s.RemoveAsync(_board.Id, _ada.Id, Ct))).Outcome.ShouldBe(MemberOutcome.LastOwner);
 
         (await WithServiceAsync(s => s.ListAsync(_board.Id, Ct))).ShouldHaveSingleItem().Role.ShouldBe(BoardRole.Owner);
@@ -51,7 +60,8 @@ public class BoardMemberServiceTests
     [Test]
     public async Task Setting_the_last_owner_to_owner_again_is_not_a_demotion()
     {
-        (await WithServiceAsync(s => s.ChangeRoleAsync(_board.Id, _ada.Id, BoardRole.Owner, Ct))).Succeeded.ShouldBeTrue();
+        (await WithServiceAsync(s => s.ChangeRoleAsync(_board.Id, _ada.Id, BoardRole.Owner, Ct))).Succeeded
+            .ShouldBeTrue();
     }
 
     [Test]
@@ -59,9 +69,11 @@ public class BoardMemberServiceTests
     {
         await WithServiceAsync(s => s.AddAsync(_board.Id, "bea@example.com", BoardRole.Owner, Ct));
 
-        (await WithServiceAsync(s => s.ChangeRoleAsync(_board.Id, _ada.Id, BoardRole.Viewer, Ct))).Succeeded.ShouldBeTrue();
+        (await WithServiceAsync(s => s.ChangeRoleAsync(_board.Id, _ada.Id, BoardRole.Viewer, Ct))).Succeeded
+            .ShouldBeTrue();
         (await WithServiceAsync(s => s.RemoveAsync(_board.Id, _bea.Id, Ct))).Outcome.ShouldBe(MemberOutcome.LastOwner);
-        (await WithServiceAsync(s => s.ChangeRoleAsync(_board.Id, _bea.Id, BoardRole.Editor, Ct))).Outcome.ShouldBe(MemberOutcome.LastOwner);
+        (await WithServiceAsync(s => s.ChangeRoleAsync(_board.Id, _bea.Id, BoardRole.Editor, Ct))).Outcome.ShouldBe(
+            MemberOutcome.LastOwner);
     }
 
     [Test]
@@ -72,6 +84,7 @@ public class BoardMemberServiceTests
             db.Add(User.Create(Guid.CreateVersion7(), "ada-2", "Ada again", "ADA@example.com", Now));
             await db.SaveChangesAsync();
         }
+
         var other = Board.Create(Guid.CreateVersion7(), "Other", Now);
         await using (var db = _database.NewContext())
         {
@@ -79,7 +92,8 @@ public class BoardMemberServiceTests
             await db.SaveChangesAsync();
         }
 
-        (await WithServiceAsync(s => s.AddAsync(other.Id, "ada@example.com", BoardRole.Viewer, Ct))).Outcome.ShouldBe(MemberOutcome.AmbiguousEmail);
+        (await WithServiceAsync(s => s.AddAsync(other.Id, "ada@example.com", BoardRole.Viewer, Ct))).Outcome.ShouldBe(
+            MemberOutcome.AmbiguousEmail);
     }
 
     [Test]

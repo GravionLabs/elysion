@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+
 using Elysion.BusinessBackend.Api.Contracts;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -27,12 +29,17 @@ public class BoardDocumentsApiTests
 
     private static string Url(string boardId) => $"/internal/boards/{boardId}/document";
 
-    private Task<HttpResponseMessage> PutAsync(string boardId, byte[] state, string? ifMatch = null, bool ifNoneMatchAny = false)
+    private Task<HttpResponseMessage> PutAsync(string boardId,
+        byte[] state,
+        string? ifMatch = null,
+        bool ifNoneMatchAny = false)
     {
         var request = new HttpRequestMessage(HttpMethod.Put, Url(boardId)) { Content = new ByteArrayContent(state) };
         request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-        if (ifMatch is not null) request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
-        if (ifNoneMatchAny) request.Headers.TryAddWithoutValidation("If-None-Match", "*");
+        if (ifMatch is not null)
+            request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
+        if (ifNoneMatchAny)
+            request.Headers.TryAddWithoutValidation("If-None-Match", "*");
         return _client.SendAsync(request);
     }
 

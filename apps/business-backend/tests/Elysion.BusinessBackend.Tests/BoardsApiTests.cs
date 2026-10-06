@@ -1,9 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
+
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Endpoints;
+
 using Microsoft.AspNetCore.Mvc;
+
 using NSubstitute;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -148,7 +152,8 @@ public class BoardsApiTests
         var created = (await response.Content.ReadFromJsonAsync<BoardDto>())!;
 
         (created.CreatedAt.Ticks % 10).ShouldBe(0);
-        created.CreatedAt.Ticks.ShouldBe(new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero).AddTicks(1_234_560).Ticks);
+        created.CreatedAt.Ticks.ShouldBe(new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero).AddTicks(1_234_560)
+            .Ticks);
     }
 
     [Test]

@@ -1,4 +1,5 @@
 using Elysion.BusinessBackend.Api.Entities;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace Elysion.BusinessBackend.Api.Data;
@@ -41,8 +42,14 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
             // One role per user per board; the key is the unique index.
             membership.HasKey(m => new { m.BoardId, m.UserId });
             membership.Property(m => m.Role).HasConversion<string>().HasMaxLength(16);
-            membership.HasOne(m => m.Board).WithMany(b => b.Memberships).HasForeignKey(m => m.BoardId).OnDelete(DeleteBehavior.Cascade);
-            membership.HasOne(m => m.User).WithMany(u => u.Memberships).HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
+            membership.HasOne(m => m.Board)
+                .WithMany(b => b.Memberships)
+                .HasForeignKey(m => m.BoardId)
+                .OnDelete(DeleteBehavior.Cascade);
+            membership.HasOne(m => m.User)
+                .WithMany(u => u.Memberships)
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             // "Which boards can this user open?" starts from the user.
             membership.HasIndex(m => m.UserId);
         });

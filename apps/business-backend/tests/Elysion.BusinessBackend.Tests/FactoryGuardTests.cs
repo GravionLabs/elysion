@@ -1,4 +1,5 @@
 using Elysion.BusinessBackend.Api.Entities;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -91,9 +92,12 @@ public class FactoryGuardTests
         [Test]
         public void Refuses_values_longer_than_the_model_allows()
         {
-            Should.Throw<ArgumentException>(() => User.Create(Id(), new string('s', User.MaxSubjectLength + 1), "Ada", null, Now));
-            Should.Throw<ArgumentException>(() => User.Create(Id(), "kc-1", new string('n', User.MaxDisplayNameLength + 1), null, Now));
-            Should.Throw<ArgumentException>(() => User.Create(Id(), "kc-1", "Ada", new string('e', User.MaxEmailLength + 1), Now));
+            Should.Throw<ArgumentException>(() =>
+                User.Create(Id(), new string('s', User.MaxSubjectLength + 1), "Ada", null, Now));
+            Should.Throw<ArgumentException>(() =>
+                User.Create(Id(), "kc-1", new string('n', User.MaxDisplayNameLength + 1), null, Now));
+            Should.Throw<ArgumentException>(() =>
+                User.Create(Id(), "kc-1", "Ada", new string('e', User.MaxEmailLength + 1), Now));
         }
 
         [Test]

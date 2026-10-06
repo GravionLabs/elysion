@@ -1,8 +1,10 @@
 using System.Net.Mime;
+
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Identity;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 
@@ -38,17 +40,25 @@ public static class BoardDocumentEndpoints
         return routes;
     }
 
-    private static async Task<IResult> Get(string boardId, IBoardDocumentRepository documents, CancellationToken cancellationToken)
+    private static async Task<IResult> Get(string boardId,
+        IBoardDocumentRepository documents,
+        CancellationToken cancellationToken)
     {
-        if (!IsValidId(boardId)) return TypedResults.BadRequest();
+        if (!IsValidId(boardId))
+            return TypedResults.BadRequest();
         var document = await documents.FindAsync(boardId, cancellationToken);
         return document is null ? TypedResults.NotFound() : new StateResult(document, StatusCodes.Status200OK);
     }
 
     private static async Task<IResult> Put(
-        string boardId, HttpRequest request, IBoardDocumentRepository documents, TimeProvider time, CancellationToken cancellationToken)
+        string boardId,
+        HttpRequest request,
+        IBoardDocumentRepository documents,
+        TimeProvider time,
+        CancellationToken cancellationToken)
     {
-        if (!IsValidId(boardId)) return TypedResults.BadRequest();
+        if (!IsValidId(boardId))
+            return TypedResults.BadRequest();
         if (request.ContentType?.StartsWith(OctetStream, StringComparison.OrdinalIgnoreCase) != true)
         {
             return TypedResults.StatusCode(StatusCodes.Status415UnsupportedMediaType);
@@ -56,7 +66,8 @@ public static class BoardDocumentEndpoints
 
         var ifMatch = request.Headers.IfMatch.ToString();
         var create = request.Headers.IfNoneMatch.ToString() == "*";
-        if (!create && !TryParseVersion(ifMatch, out _))
+        long expected = 0;
+        if (!create && !TryParseVersion(ifMatch, out expected))
         {
             return TypedResults.Problem(
                 "Send If-Match with the version the state is based on, or If-None-Match: * for the first save.",
@@ -67,8 +78,11 @@ public static class BoardDocumentEndpoints
         await request.Body.CopyToAsync(buffer, cancellationToken);
         var state = buffer.ToArray();
 
-        TryParseVersion(ifMatch, out var expected);
-        var result = await documents.SaveAsync(boardId, state, create ? null : expected, time.GetUtcNow(), cancellationToken);
+        var result = await documents.SaveAsync(boardId,
+            state,
+            create ? null : expected,
+            time.GetUtcNow(),
+            cancellationToken);
         return result switch
         {
             { Status: DocumentSaveStatus.Saved, Document: { } saved } => new SavedResult(saved.Version),
@@ -79,9 +93,13 @@ public static class BoardDocumentEndpoints
     }
 
     private static async Task<IResult> Delete(
-        string boardId, IBoardDocumentRepository documents, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        string boardId,
+        IBoardDocumentRepository documents,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
     {
-        if (!IsValidId(boardId)) return TypedResults.BadRequest();
+        if (!IsValidId(boardId))
+            return TypedResults.BadRequest();
         if (await documents.RemoveAsync(boardId, cancellationToken))
         {
             await unitOfWork.SaveChangesAsync(cancellationToken);

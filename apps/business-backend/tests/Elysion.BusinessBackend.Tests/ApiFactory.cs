@@ -2,8 +2,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Security.Cryptography;
+
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Identity;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -52,7 +54,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         var descriptor = new SecurityTokenDescriptor
         {
             // `claims` replaces the default identity claims entirely (a token without `sub`, with a name, ...).
-            Subject = new ClaimsIdentity(claims ?? [new Claim("sub", subject), new Claim("email", $"{subject}@example.com")]),
+            Subject = new ClaimsIdentity(claims ??
+            [
+                new Claim("sub", subject), new Claim("email", $"{subject}@example.com")
+            ]),
             Issuer = issuer,
             Audience = audience,
             // A lifetime that already ended: the token must have been valid before it expired, so move its start back.
@@ -83,7 +88,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             NotBefore = started.UtcDateTime,
             IssuedAt = started.UtcDateTime,
             Expires = expires.UtcDateTime,
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secret)), algorithm),
+            SigningCredentials =
+                new SigningCredentials(new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secret)), algorithm),
         };
         return new JwtSecurityTokenHandler().CreateEncodedJwt(descriptor);
     }
@@ -100,7 +106,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     public HttpClient CreateAuthenticatedClient(string subject = "kc-sub-1", IEnumerable<Claim>? claims = null)
     {
         var client = CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateToken(subject, claims: claims));
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", CreateToken(subject, claims: claims));
         return client;
     }
 
@@ -112,17 +119,18 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         builder.ConfigureServices(services =>
         {
             // The test key stands in for the realm's published keys; issuer, audience and lifetime are still checked.
-            services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
-                options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(
-                    new OpenIdConnectConfiguration { Issuer = Issuer, SigningKeys = { SigningKey } }));
+            services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme,
+                options =>
+                    options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(
+                        new OpenIdConnectConfiguration { Issuer = Issuer, SigningKeys = { SigningKey } }));
 
             // EF registers the provider in two places; both have to go or two providers coexist. The
             // second one (IDbContextOptionsConfiguration<T>) is an internal EF type, so it is matched by name.
             services.RemoveAll<DbContextOptions<ElysionDbContext>>();
             foreach (var descriptor in services
                          .Where(d => d.ServiceType is { IsGenericType: true } type
-                             && type.GetGenericTypeDefinition().Name == "IDbContextOptionsConfiguration`1"
-                             && type.GenericTypeArguments[0] == typeof(ElysionDbContext))
+                                     && type.GetGenericTypeDefinition().Name == "IDbContextOptionsConfiguration`1"
+                                     && type.GenericTypeArguments[0] == typeof(ElysionDbContext))
                          .ToList())
             {
                 services.Remove(descriptor);

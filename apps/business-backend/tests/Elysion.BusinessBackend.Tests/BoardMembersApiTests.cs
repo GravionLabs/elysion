@@ -2,10 +2,13 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Entities;
+
 using Microsoft.Extensions.DependencyInjection;
+
 using Shouldly;
 
 namespace Elysion.BusinessBackend.Tests;
@@ -30,12 +33,17 @@ public class BoardMembersApiTests
         }
 
         _board = Board.Create(Guid.CreateVersion7(), "Retro", Now, _users["owner"].Id);
-        _implicitBoard = Board.Create(Guid.CreateVersion7(), "Implicit", Now, _users["owner"].Id); // creator without a membership row
+        _implicitBoard =
+            Board.Create(Guid.CreateVersion7(),
+                "Implicit",
+                Now,
+                _users["owner"].Id); // creator without a membership row
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ElysionDbContext>();
         db.AddRange(_users.Values);
         db.AddRange(
-            _board, _implicitBoard,
+            _board,
+            _implicitBoard,
             BoardMembership.Create(_board.Id, _users["owner"].Id, BoardRole.Owner, Now),
             BoardMembership.Create(_board.Id, _users["coowner"].Id, BoardRole.Owner, Now.AddMinutes(1)),
             BoardMembership.Create(_board.Id, _users["editor"].Id, BoardRole.Editor, Now.AddMinutes(2)),
@@ -46,15 +54,22 @@ public class BoardMembersApiTests
     [TearDown]
     public void TearDown() => _factory.Dispose();
 
-    private static StringContent Json(object body) => new(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-    private string Url(Guid? board = null, Guid? user = null) => $"/boards/{board ?? _board.Id}/members{(user is null ? "" : $"/{user}")}";
+    private static StringContent Json(object body) =>
+        new(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
+    private string Url(Guid? board = null, Guid? user = null) =>
+        $"/boards/{board ?? _board.Id}/members{(user is null ? "" : $"/{user}")}";
+
     /// <summary>A client signed in as the user, with the name and email the seeded user has (provisioning keeps them in step with the token).</summary>
     private HttpClient As(string name) =>
         _factory.CreateAuthenticatedClient(
             name,
-            [new System.Security.Claims.Claim("sub", name), new("email", $"{name}@example.com"), new("preferred_username", name)]);
+            [
+                new System.Security.Claims.Claim("sub", name), new("email", $"{name}@example.com"),
+                new("preferred_username", name)
+            ]);
 
-    private async Task<string> ProblemDetailAsync(HttpResponseMessage response) =>
+    private static async Task<string> ProblemDetailAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("detail").GetString()!;
 
     [TestCase("owner", HttpStatusCode.OK)]
@@ -71,8 +86,10 @@ public class BoardMembersApiTests
         (await client.GetAsync(Url())).StatusCode.ShouldBe(allowed, "list");
         (await client.PostAsync(Url(), Json(new { email = "invitee@example.com", role = "Viewer" }))).StatusCode
             .ShouldBe(expectOk ? HttpStatusCode.Created : allowed, "add");
-        (await client.PatchAsync(Url(user: target), Json(new { role = "Viewer" }))).StatusCode.ShouldBe(allowed, "change role");
-        (await client.DeleteAsync(Url(user: target))).StatusCode.ShouldBe(expectOk ? HttpStatusCode.NoContent : allowed, "remove");
+        (await client.PatchAsync(Url(user: target), Json(new { role = "Viewer" }))).StatusCode.ShouldBe(allowed,
+            "change role");
+        (await client.DeleteAsync(Url(user: target))).StatusCode.ShouldBe(expectOk ? HttpStatusCode.NoContent : allowed,
+            "remove");
     }
 
     [Test]
@@ -91,13 +108,14 @@ public class BoardMembersApiTests
 
         var members = (await client.GetFromJsonAsync<MemberDto[]>(Url()))!;
 
-        members.Select(m => (m.DisplayName, m.Email, m.Role)).ShouldBe(
-        [
-            ("owner", "owner@example.com", "Owner"),
-            ("coowner", "coowner@example.com", "Owner"),
-            ("editor", "editor@example.com", "Editor"),
-            ("viewer", "viewer@example.com", "Viewer"),
-        ]);
+        members.Select(m => (m.DisplayName, m.Email, m.Role))
+            .ShouldBe(
+            [
+                ("owner", "owner@example.com", "Owner"),
+                ("coowner", "coowner@example.com", "Owner"),
+                ("editor", "editor@example.com", "Editor"),
+                ("viewer", "viewer@example.com", "Viewer"),
+            ]);
     }
 
     [Test]
@@ -107,7 +125,8 @@ public class BoardMembersApiTests
 
         var members = (await client.GetFromJsonAsync<MemberDto[]>(Url(_implicitBoard.Id)))!;
 
-        members.ShouldHaveSingleItem().ShouldBe(new MemberDto(_users["owner"].Id, "owner", "owner@example.com", "Owner"));
+        members.ShouldHaveSingleItem()
+            .ShouldBe(new MemberDto(_users["owner"].Id, "owner", "owner@example.com", "Owner"));
     }
 
     [Test]
@@ -142,7 +161,8 @@ public class BoardMembersApiTests
         using var owner = As("owner");
 
         var member = await owner.PostAsync(Url(), Json(new { email = "viewer@example.com", role = "Editor" }));
-        var creator = await owner.PostAsync(Url(_implicitBoard.Id), Json(new { email = "owner@example.com", role = "Viewer" }));
+        var creator = await owner.PostAsync(Url(_implicitBoard.Id),
+            Json(new { email = "owner@example.com", role = "Viewer" }));
 
         member.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         creator.StatusCode.ShouldBe(HttpStatusCode.Conflict);
@@ -154,14 +174,18 @@ public class BoardMembersApiTests
     [TestCase("invitee@example.com", "Admin", "role")]
     [TestCase("invitee@example.com", "1", "role")]
     [TestCase("invitee@example.com", "7", "role")]
-    public async Task Adding_with_a_missing_email_or_an_invalid_role_is_a_400_naming_the_field(string? email, string? role, string field)
+    public async Task Adding_with_a_missing_email_or_an_invalid_role_is_a_400_naming_the_field(string? email,
+        string? role,
+        string field)
     {
         using var owner = As("owner");
 
         var response = await owner.PostAsync(Url(), Json(new { email, role }));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors").TryGetProperty(field, out _).ShouldBeTrue();
+        (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors")
+            .TryGetProperty(field, out _)
+            .ShouldBeTrue();
     }
 
     [Test]
@@ -179,13 +203,15 @@ public class BoardMembersApiTests
     {
         using var owner = As("owner");
         using var editor = As("editor");
-        (await editor.PatchAsync($"/boards/{_board.Id}", Json(new { name = "Renamed" }))).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await editor.PatchAsync($"/boards/{_board.Id}", Json(new { name = "Renamed" }))).StatusCode.ShouldBe(
+            HttpStatusCode.OK);
 
         var response = await owner.PatchAsync(Url(user: _users["editor"].Id), Json(new { role = "Viewer" }));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadFromJsonAsync<MemberDto>())!.Role.ShouldBe("Viewer");
-        (await editor.PatchAsync($"/boards/{_board.Id}", Json(new { name = "Again" }))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await editor.PatchAsync($"/boards/{_board.Id}", Json(new { name = "Again" }))).StatusCode.ShouldBe(
+            HttpStatusCode.Forbidden);
     }
 
     [Test]
@@ -193,9 +219,12 @@ public class BoardMembersApiTests
     {
         using var owner = As("owner");
 
-        (await owner.PatchAsync(Url(user: _users["stranger"].Id), Json(new { role = "Viewer" }))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await owner.PatchAsync(Url(user: _users["editor"].Id), Json(new { role = "boss" }))).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await owner.PatchAsync(Url(user: _users["editor"].Id), Json(new { }))).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await owner.PatchAsync(Url(user: _users["stranger"].Id), Json(new { role = "Viewer" }))).StatusCode.ShouldBe(
+            HttpStatusCode.NotFound);
+        (await owner.PatchAsync(Url(user: _users["editor"].Id), Json(new { role = "boss" }))).StatusCode.ShouldBe(
+            HttpStatusCode.BadRequest);
+        (await owner.PatchAsync(Url(user: _users["editor"].Id), Json(new { }))).StatusCode.ShouldBe(HttpStatusCode
+            .BadRequest);
     }
 
     [Test]
@@ -211,7 +240,8 @@ public class BoardMembersApiTests
         remove.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await ProblemDetailAsync(remove)).ShouldContain("creator");
         using var owner = As("owner");
-        (await owner.DeleteAsync($"/boards/{_board.Id}")).StatusCode.ShouldBe(HttpStatusCode.NoContent); // still an owner
+        (await owner.DeleteAsync($"/boards/{_board.Id}")).StatusCode
+            .ShouldBe(HttpStatusCode.NoContent); // still an owner
     }
 
     [Test]
@@ -219,8 +249,10 @@ public class BoardMembersApiTests
     {
         using var owner = As("owner");
 
-        (await owner.PatchAsync(Url(user: _users["coowner"].Id), Json(new { role = "Editor" }))).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await owner.PatchAsync(Url(user: _users["coowner"].Id), Json(new { role = "Owner" }))).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await owner.PatchAsync(Url(user: _users["coowner"].Id), Json(new { role = "Editor" }))).StatusCode.ShouldBe(
+            HttpStatusCode.OK);
+        (await owner.PatchAsync(Url(user: _users["coowner"].Id), Json(new { role = "Owner" }))).StatusCode.ShouldBe(
+            HttpStatusCode.OK);
         (await owner.DeleteAsync(Url(user: _users["coowner"].Id))).StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
@@ -250,6 +282,7 @@ public class BoardMembersApiTests
         }
 
         (await owner.GetAsync(Url(otherBoard.Id))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await owner.PostAsync(Url(otherBoard.Id), Json(new { email = "invitee@example.com", role = "Viewer" }))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await owner.PostAsync(Url(otherBoard.Id), Json(new { email = "invitee@example.com", role = "Viewer" })))
+            .StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 }
