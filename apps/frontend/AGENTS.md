@@ -4,6 +4,10 @@ Angular 22 app, TypeScript 6. Embeds a React/Excalidraw canvas via a custom elem
 
 See `docs/specs/frontend.md` and `docs/adr/0002-typescript-version-split.md`.
 
+## Login
+
+Every page needs a login (`src/app/auth/`, docs/specs/frontend.md "Login", ADR 0016): components use `SessionService`, never the login library directly, and tests use `provideFakeSession()` (`auth/testing.ts`) so no Keycloak is needed. Tokens are kept in memory by `TokenSafeStorage`; never move them to `localStorage` or `sessionStorage`, and keep `provideLogin()` the only place that registers the storage (it must come after `provideAuth`). The access token goes to `/api` only (`SECURE_ROUTES`). The login settings come from `/auth-config.json` (nginx from `OIDC_ISSUER_URL` / `OIDC_CLIENT_ID`, `public/auth-config.json` for `ng serve`). In the dev stack log in as the realm's dev user (README).
+
 ## Commands
 
 ```sh

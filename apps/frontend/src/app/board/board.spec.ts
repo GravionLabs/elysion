@@ -4,6 +4,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By, Title } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { TopBar } from '../topbar/top-bar';
+import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
+import { SessionService } from '../auth/session.service';
 import { ThemeService } from '../theme/theme.service';
 import { Board } from './board';
 import { CanvasElementLoader } from './canvas-element-loader';
@@ -25,6 +27,7 @@ describe('Board', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        provideFakeSession(),
       ],
     }).compileComponents();
 
@@ -617,6 +620,36 @@ describe('Board', () => {
       canvas().dispatchEvent(new CustomEvent('status', { detail: { status: 'connected' } }));
 
       expect(component.status()).toBe('ready');
+    });
+  });
+
+  describe('login', () => {
+    const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement;
+    const session = () => TestBed.inject(SessionService) as unknown as FakeSession;
+
+    it("passes the signed-in user's name and color to the canvas for presence", () => {
+      fixture.detectChanges();
+
+      expect(canvas().getAttribute('user-name')).toBe(FAKE_USER.name);
+      expect(canvas().getAttribute('user-color')).toBe(FAKE_USER.color);
+    });
+
+    it('sets no name or color for the canvas without a user (it keeps its generated guest identity)', () => {
+      session().user.set(null);
+      fixture.detectChanges();
+
+      expect(canvas().hasAttribute('user-name')).toBe(false);
+      expect(canvas().hasAttribute('user-color')).toBe(false);
+    });
+
+    it('shows the user in the top bar and logs out from there', () => {
+      fixture.detectChanges();
+      const menu = fixture.nativeElement.querySelector('app-top-bar app-user-menu');
+      expect(menu.textContent).toContain(FAKE_USER.name);
+
+      fixture.debugElement.query(By.directive(TopBar)).componentInstance.logoutRequested.emit();
+
+      expect(session().logoutCalls).toBe(1);
     });
   });
 });

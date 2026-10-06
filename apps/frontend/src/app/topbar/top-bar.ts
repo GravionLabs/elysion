@@ -16,6 +16,8 @@ import { Theme } from '../theme/theme.service';
 import { ExportFormat } from '../board/download';
 import type { PresentUser } from '../board/presence-store';
 import { ExportMenu, ExportRequest } from './export-menu';
+import { UserMenu } from './user-menu';
+import type { SessionUser } from '../auth/session.service';
 
 /** The Yjs connection of the canvas, as its `status` event reports it. */
 export type SyncStatus = 'connecting' | 'connected' | 'disconnected';
@@ -30,7 +32,7 @@ const STATUS_LABEL: Record<SyncStatus, string> = {
 
 /** The bar at the top of the board page, modeled on ariadne's: identity left, actions right. */
 @Component({
-  imports: [AppBrand, ExportMenu, RouterLink],
+  imports: [AppBrand, ExportMenu, RouterLink, UserMenu],
   selector: 'app-top-bar',
   styleUrl: './top-bar.scss',
   templateUrl: './top-bar.html',
@@ -49,6 +51,8 @@ export class TopBar {
   readonly exporting = input<ExportFormat | null>(null);
   /** Whether the library sidebar is open. */
   readonly libraryOpen = input(false);
+  /** Who is signed in; the menu with the log-out action is shown for them. */
+  readonly user = input<SessionUser | null>(null);
   /** The other people on the board. */
   readonly users = input<readonly PresentUser[]>([]);
 
@@ -57,6 +61,8 @@ export class TopBar {
   readonly themeToggle = output<void>();
   readonly libraryToggle = output<void>();
   readonly exportRequested = output<ExportRequest>();
+  /** The user chose Log out in the user menu. */
+  readonly logoutRequested = output<void>();
   /** A file was picked for import; the page confirms before anything is replaced. */
   readonly importChosen = output<File>();
 

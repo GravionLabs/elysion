@@ -22,6 +22,7 @@ import { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename, type ExportFormat } from './download';
 import { ExportRequest } from '../topbar/export-menu';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
+import { SessionService } from '../auth/session.service';
 import { PresenceStore } from './presence-store';
 
 export type CanvasStatus = 'loading' | 'ready' | 'error';
@@ -44,6 +45,7 @@ export class Board {
   readonly #api = inject(BoardApi);
   readonly #pageTitle = inject(Title);
   protected readonly presence = inject(PresenceStore);
+  protected readonly session = inject(SessionService);
 
   /** Passed to <elysion-canvas> as the `board-id` attribute. */
   readonly boardId = input('default');
@@ -235,6 +237,10 @@ export class Board {
 
   toggleLibrary(): void {
     this.canvas()?.nativeElement.toggleLibrary?.();
+  }
+
+  logout(): void {
+    this.session.logout();
   }
 
   toggleTheme(): void {

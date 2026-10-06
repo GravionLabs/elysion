@@ -11,6 +11,9 @@ RUN pnpm install --frozen-lockfile --filter @elysion/frontend... --filter @elysi
 RUN pnpm --filter @elysion/frontend build
 
 FROM nginx:alpine AS runtime
-COPY apps/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# Development defaults; the compose file / deployment sets the real values.
+ENV OIDC_ISSUER_URL=http://localhost:8081/realms/elysion \
+    OIDC_CLIENT_ID=elysion-frontend
+COPY apps/frontend/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /workspace/apps/frontend/dist/frontend/browser /usr/share/nginx/html
 EXPOSE 80

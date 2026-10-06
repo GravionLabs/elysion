@@ -126,5 +126,8 @@
         <span>Dark</span>
       }
     </button>
+    @if (user(); as signedIn) {
+      <app-user-menu [user]="signedIn" (logoutRequested)="logoutRequested.emit()" />
+    }
   </div>
 </header>
