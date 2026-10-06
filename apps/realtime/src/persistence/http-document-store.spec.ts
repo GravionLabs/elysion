@@ -1,7 +1,12 @@
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { INTERNAL_TOKEN_AUDIENCE, INTERNAL_TOKEN_ISSUER } from '@elysion/shared-types';
+import { jwtVerify } from 'jose';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { InternalTokenSigner } from '../auth/internal-token-signer.js';
 import { HttpDocumentStore } from './http-document-store.js';
+
+const SECRET = 'a-test-secret-that-is-at-least-32-characters-long';
 
 interface Recorded {
   method: string;
@@ -35,7 +40,10 @@ describe('HttpDocumentStore', () => {
       response.end(answer.body);
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-    store = new HttpDocumentStore(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+    store = new HttpDocumentStore(
+      new InternalTokenSigner(SECRET),
+      `http://127.0.0.1:${(server.address() as AddressInfo).port}/`,
+    );
   });
   afterEach(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
@@ -102,5 +110,53 @@ describe('HttpDocumentStore', () => {
 
     expect(requests[0].method).toBe('DELETE');
     expect(requests[0].url).toBe('/internal/boards/b/document');
+  });
+
+  describe('authentication', () => {
+    const bearer = (request: Recorded) =>
+      /^Bearer (.+)$/.exec(String(request.headers.authorization))?.[1];
+
+    it('sends a signed service token with every call: load, save and delete', async () => {
+      respond = (request) =>
+        request.method === 'PUT'
+          ? { status: 204, etag: '"1"' }
+          : request.method === 'DELETE'
+            ? { status: 204 }
+            : { status: 404 };
+
+      await store.load('b1');
+      await store.save('b1', new Uint8Array([1]), null);
+      await store.delete('b1');
+
+      expect(requests.map((r) => r.method)).toEqual(['GET', 'PUT', 'DELETE']);
+      for (const request of requests) {
+        const token = bearer(request);
+        expect(token).toBeTruthy();
+        await expect(
+          jwtVerify(token!, new TextEncoder().encode(SECRET), {
+            issuer: INTERNAL_TOKEN_ISSUER,
+            audience: INTERNAL_TOKEN_AUDIENCE,
+            algorithms: ['HS256'],
+          }),
+        ).resolves.toBeTruthy();
+      }
+    });
+
+    it('keeps the headers of the call next to the token', async () => {
+      respond = () => ({ status: 204, etag: '"2"' });
+
+      await store.save('b1', new Uint8Array([1]), '1');
+
+      expect(requests[0].headers['content-type']).toBe('application/octet-stream');
+      expect(requests[0].headers['if-match']).toBe('"1"');
+      expect(bearer(requests[0])).toBeTruthy();
+    });
+
+    it('treats a 401 of the backend as a failed call, not as a missing document', async () => {
+      respond = () => ({ status: 401 });
+
+      await expect(store.load('b1')).rejects.toThrow(/401/);
+      await expect(store.save('b1', new Uint8Array([1]), null)).rejects.toThrow(/401/);
+    });
   });
 });

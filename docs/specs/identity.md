@@ -103,14 +103,15 @@ The shell hands the token to the canvas through the element's `tokenProvider` pr
 One table for every downstream PBI. Services read these from the environment; a missing required one stops
 the service at startup with a clear message (the BFF's config module is #118).
 
-| Variable               | Used by                          | Meaning                                                                                                                                                                                                                             |
-| ---------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OIDC_ISSUER_URL`      | BFF, business backend            | The issuer the access tokens carry: `http://localhost:8081/realms/elysion` in development. Tokens with another `iss` are refused                                                                                                    |
-| `OIDC_AUDIENCE`        | BFF, business backend            | The audience a token must contain: `elysion-bff`. The realm gets an audience mapper for it on `elysion-frontend` in the first PBI that validates (#116)                                                                             |
-| `KEYCLOAK_REALM`       | compose, scripts, realm tooling  | The realm name, `elysion`. Services only need `OIDC_ISSUER_URL`                                                                                                                                                                     |
-| `WS_TOKEN_SECRET`      | BFF (signs), realtime (verifies) | The HS256 secret of the WS token, at least 32 random bytes, identical in both. A development default lives in the compose file, never in production                                                                                 |
-| `WS_TOKEN_TTL_SECONDS` | BFF                              | Lifetime of a WS token, `60` by default                                                                                                                                                                                             |
-| `OIDC_JWKS_URI`        | BFF, business backend (optional) | Where to fetch the signing keys; default `<OIDC_ISSUER_URL>/protocol/openid-connect/certs`. Needed inside the compose network, where Keycloak is `http://keycloak:8080` but the issuer in the tokens is `http://localhost:8081/...` |
+| Variable               | Used by                                       | Meaning                                                                                                                                                                                                                             |
+| ---------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OIDC_ISSUER_URL`      | BFF, business backend                         | The issuer the access tokens carry: `http://localhost:8081/realms/elysion` in development. Tokens with another `iss` are refused                                                                                                    |
+| `OIDC_AUDIENCE`        | BFF, business backend                         | The audience a token must contain: `elysion-bff`. The realm gets an audience mapper for it on `elysion-frontend` in the first PBI that validates (#116)                                                                             |
+| `KEYCLOAK_REALM`       | compose, scripts, realm tooling               | The realm name, `elysion`. Services only need `OIDC_ISSUER_URL`                                                                                                                                                                     |
+| `WS_TOKEN_SECRET`      | BFF (signs), realtime (verifies)              | The HS256 secret of the WS token, at least 32 random bytes, identical in both. A development default lives in the compose file, never in production                                                                                 |
+| `INTERNAL_API_SECRET`  | realtime (signs), business backend (verifies) | HS256 secret of the service token for the internal document API (ADR 0017), at least 32 characters, identical in both, never the value of `WS_TOKEN_SECRET`. Required: neither service starts without it                            |
+| `WS_TOKEN_TTL_SECONDS` | BFF                                           | Lifetime of a WS token, `60` by default                                                                                                                                                                                             |
+| `OIDC_JWKS_URI`        | BFF, business backend (optional)              | Where to fetch the signing keys; default `<OIDC_ISSUER_URL>/protocol/openid-connect/certs`. Needed inside the compose network, where Keycloak is `http://keycloak:8080` but the issuer in the tokens is `http://localhost:8081/...` |
 
 The access token's audience is added by an audience mapper on `elysion-frontend` in the realm file (`aud: elysion-bff`); the business backend checks it (#116).
 
@@ -128,6 +129,10 @@ so the services must not derive the key address from the issuer there.
 | Business backend | the access token (JWT bearer)                | users, board membership, roles and the policies on each endpoint |
 | Realtime         | the WS token, at the handshake               | read-only for a viewer; closes with 4401 or 4403 otherwise       |
 
-The business backend's `/internal/*` endpoints (used by the realtime service to store documents, ADR 0011)
-stay unrouted at the edge and reachable only on the compose network, as now. Authenticating that service-to-service
-call is not part of this flow; it is a follow-up once the user-facing path works.
+The business backend's `/internal/*` endpoints (used by the realtime service to store documents, ADR 0011) are not
+routed at the edge, and they take only one credential: a **service token** the realtime service signs itself
+([ADR 0017](../adr/0017-internal-api-authentication.md)). It is a JWT, HS256 with `INTERNAL_API_SECRET` (shared by the
+realtime service and the business backend, at least 32 characters, never the value of `WS_TOKEN_SECRET`), issuer
+`elysion-realtime`, audience `elysion-backend-internal`, valid for 60 seconds, made for every call; the backend checks it
+with a second authentication scheme that only `/internal/*` uses. A user's Keycloak token does not open `/internal`, and
+the service token opens nothing else. Keycloak is not involved, so persisting boards does not depend on it.

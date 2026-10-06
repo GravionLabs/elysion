@@ -114,6 +114,8 @@ services:
       OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
       OIDC_AUDIENCE: elysion-bff
       OIDC_JWKS_URI: http://keycloak:8080/realms/elysion/protocol/openid-connect/certs
+      # The realtime service's token for the internal document API is checked with this (ADR 0017). Development value only.
+      INTERNAL_API_SECRET: dev-only-internal-api-secret-change-me-0123456789
     depends_on:
       postgres:
         condition: service_healthy
@@ -152,6 +154,8 @@ services:
       BUSINESS_BACKEND_URL: http://business-backend:8080
       # Verifies the WS tokens the BFF issues; the same value as the BFF's. Development value only.
       WS_TOKEN_SECRET: dev-only-ws-token-secret-change-me-0123456789
+      # Signs the token for the business backend's internal document API (ADR 0017); the same value as the backend's.
+      INTERNAL_API_SECRET: dev-only-internal-api-secret-change-me-0123456789
     depends_on:
       - business-backend
     labels:

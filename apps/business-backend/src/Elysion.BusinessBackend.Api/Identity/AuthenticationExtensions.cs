@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
@@ -26,7 +27,36 @@ public static class AuthenticationExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+        // The internal document API takes the realtime service's own token, and only on its endpoints (ADR 0017).
+        services.AddOptions<InternalApiOptions>()
+            .Configure<IConfiguration>((options, configuration) =>
+                options.Secret = configuration[InternalApiOptions.SecretSetting] ?? "")
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer()
+            .AddJwtBearer(InternalApiOptions.Scheme, _ => { });
+        services.AddOptions<JwtBearerOptions>(InternalApiOptions.Scheme)
+            .Configure<IOptions<InternalApiOptions>>((jwt, internalApi) =>
+            {
+                jwt.MapInboundClaims = false;
+                jwt.TokenValidationParameters = new TokenValidationParameters
+                {
+                    // A shared secret, no key discovery: HS256 and nothing else, so a token cannot pick another algorithm.
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(internalApi.Value.Secret)),
+                    ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+                    RequireSignedTokens = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidateIssuer = true,
+                    ValidIssuer = InternalApiOptions.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = InternalApiOptions.Audience,
+                    ValidateLifetime = true,
+                    RequireExpirationTime = true,
+                    ClockSkew = TimeSpan.FromSeconds(5),
+                };
+            });
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
             .Configure<IOptions<OidcOptions>, IHttpClientFactory, TimeProvider>((jwt, oidc, httpFactory, time) =>
             {
@@ -59,7 +89,10 @@ public static class AuthenticationExtensions
         services.AddHttpClient(nameof(JwksConfigurationManager));
 
         services.AddAuthorizationBuilder()
-            .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+            .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
+            // Only the internal scheme counts here: a Keycloak token (a user's) does not open the internal API.
+            .AddPolicy(InternalApiOptions.Policy, policy =>
+                policy.AddAuthenticationSchemes(InternalApiOptions.Scheme).RequireAuthenticatedUser());
         return services;
     }
 }

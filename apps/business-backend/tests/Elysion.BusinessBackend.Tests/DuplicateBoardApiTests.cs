@@ -11,18 +11,21 @@ public class DuplicateBoardApiTests
 {
     private ApiFactory _factory = null!;
     private HttpClient _client = null!;
+    private HttpClient _internal = null!;
 
     [SetUp]
     public void SetUp()
     {
         _factory = new ApiFactory();
         _client = _factory.CreateAuthenticatedClient();
+        _internal = _factory.CreateInternalClient(); // the document API takes the realtime service's token
     }
 
     [TearDown]
     public void TearDown()
     {
         _client.Dispose();
+        _internal.Dispose();
         _factory.Dispose();
     }
 
@@ -41,11 +44,11 @@ public class DuplicateBoardApiTests
         request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
         if (ifMatch is null) request.Headers.TryAddWithoutValidation("If-None-Match", "*");
         else request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
-        (await _client.SendAsync(request)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await _internal.SendAsync(request)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
     private Task<HttpResponseMessage> GetDocumentAsync(Guid boardId) =>
-        _client.GetAsync($"/internal/boards/{boardId}/document");
+        _internal.GetAsync($"/internal/boards/{boardId}/document");
 
     [Test]
     public async Task Duplicate_creates_a_new_board_named_copy_and_answers_201_with_an_absolute_location()

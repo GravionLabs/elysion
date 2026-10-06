@@ -27,6 +27,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     public const string Issuer = "http://keycloak.test/realms/elysion";
     public const string Audience = "elysion-bff";
 
+    /// <summary>The secret of the internal API in the tests (a development value, as in appsettings.Development.json).</summary>
+    public const string InternalSecret = "test-only-internal-api-secret-0123456789abcdef";
+
     private static readonly RsaSecurityKey SigningKey = new(RSA.Create(2048)) { KeyId = "test-key" };
 
     private readonly string _databaseName = Guid.NewGuid().ToString();
@@ -61,6 +64,38 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         return new JwtSecurityTokenHandler().CreateEncodedJwt(descriptor);
     }
 
+    /// <summary>
+    /// The token the realtime service sends to the internal API: HS256 with the shared secret, a lifetime of a minute.
+    /// </summary>
+    public static string CreateInternalToken(
+        string issuer = InternalApiOptions.Issuer,
+        string? audience = InternalApiOptions.Audience,
+        TimeSpan? lifetime = null,
+        string secret = InternalSecret,
+        string algorithm = SecurityAlgorithms.HmacSha256)
+    {
+        var expires = DateTimeOffset.UtcNow + (lifetime ?? TimeSpan.FromMinutes(1));
+        var started = expires < DateTimeOffset.UtcNow ? expires.AddMinutes(-5) : DateTimeOffset.UtcNow;
+        var descriptor = new SecurityTokenDescriptor
+        {
+            Issuer = issuer,
+            Audience = audience,
+            NotBefore = started.UtcDateTime,
+            IssuedAt = started.UtcDateTime,
+            Expires = expires.UtcDateTime,
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secret)), algorithm),
+        };
+        return new JwtSecurityTokenHandler().CreateEncodedJwt(descriptor);
+    }
+
+    /// <summary>A client that sends the realtime service's token, for the internal document API.</summary>
+    public HttpClient CreateInternalClient()
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateInternalToken());
+        return client;
+    }
+
     /// <summary>A client that sends a valid access token, as the BFF will for a signed-in user.</summary>
     public HttpClient CreateAuthenticatedClient(string subject = "kc-sub-1", IEnumerable<Claim>? claims = null)
     {
@@ -73,6 +108,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     {
         builder.UseSetting(OidcOptions.IssuerSetting, Issuer);
         builder.UseSetting(OidcOptions.AudienceSetting, Audience);
+        builder.UseSetting(InternalApiOptions.SecretSetting, InternalSecret);
         builder.ConfigureServices(services =>
         {
             // The test key stands in for the realm's published keys; issuer, audience and lifetime are still checked.

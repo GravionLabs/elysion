@@ -2,6 +2,7 @@ using System.Net.Mime;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
+using Elysion.BusinessBackend.Api.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 
@@ -22,10 +23,11 @@ public static class BoardDocumentEndpoints
 
     public static IEndpointRouteBuilder MapBoardDocumentEndpoints(this IEndpointRouteBuilder routes)
     {
-        // Anonymous on purpose, for now: the realtime service calls this without a token, and `/internal` is reachable
-        // only on the compose network (the edge does not route it). Authenticating that service-to-service call is
-        // its own piece of work; until it exists the fallback policy must not shut the realtime service out.
-        var group = routes.MapGroup("/internal/boards/{boardId}/document").WithTags("Board documents").AllowAnonymous();
+        // Only the realtime service's own token opens this (ADR 0017): the internal scheme, not a Keycloak token. `/internal`
+        // is also not routed at the edge; the token is the second lock.
+        var group = routes.MapGroup("/internal/boards/{boardId}/document")
+            .WithTags("Board documents")
+            .RequireAuthorization(InternalApiOptions.Policy);
 
         group.MapGet("", Get).WithName("GetBoardDocument");
         group.MapPut("", Put)

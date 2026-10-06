@@ -2,6 +2,8 @@
 export interface RealtimeConfig {
   /** HS256 secret of the WS token, shared with the BFF. Required: there is no safe default. */
   wsTokenSecret: string;
+  /** HS256 secret of the service token for the business backend's internal API (ADR 0017), shared with it. Required. */
+  internalApiSecret: string;
 }
 
 /** The environment is not usable. The message names every variable that is wrong. */
@@ -15,20 +17,35 @@ export class ConfigError extends Error {
 export const MIN_SECRET_LENGTH = 32;
 
 /**
- * Reads what has to be set from the environment. Fails closed: without `WS_TOKEN_SECRET` the service does not
- * start, instead of accepting connections without checking who they are.
+ * Reads what has to be set from the environment. Fails closed: without the secrets the service does not start,
+ * instead of accepting connections without checking who they are or calling the backend without proving who it is.
+ * Every problem is reported at once.
  */
 export function loadConfig(env: Record<string, string | undefined>): RealtimeConfig {
-  const secret = env.WS_TOKEN_SECRET?.trim();
-  if (!secret) {
-    throw new ConfigError([
-      `WS_TOKEN_SECRET is required (at least ${MIN_SECRET_LENGTH} characters, the same as in the BFF; see apps/realtime/.env.example)`,
-    ]);
+  const problems: string[] = [];
+  const secret = (name: string, hint: string): string => {
+    const value = env[name]?.trim();
+    if (!value) {
+      problems.push(
+        `${name} is required (at least ${MIN_SECRET_LENGTH} characters, ${hint}; see apps/realtime/.env.example)`,
+      );
+      return '';
+    }
+    if (value.length < MIN_SECRET_LENGTH) {
+      problems.push(`${name} must be at least ${MIN_SECRET_LENGTH} characters long`);
+    }
+    return value;
+  };
+
+  const wsTokenSecret = secret('WS_TOKEN_SECRET', 'the same as in the BFF');
+  const internalApiSecret = secret('INTERNAL_API_SECRET', 'the same as in the business backend');
+  if (wsTokenSecret !== '' && wsTokenSecret === internalApiSecret) {
+    // One leaked secret must not be enough to forge both kinds of token (ADR 0017).
+    problems.push('INTERNAL_API_SECRET must not be the same value as WS_TOKEN_SECRET');
   }
-  if (secret.length < MIN_SECRET_LENGTH) {
-    throw new ConfigError([
-      `WS_TOKEN_SECRET must be at least ${MIN_SECRET_LENGTH} characters long`,
-    ]);
+
+  if (problems.length > 0) {
+    throw new ConfigError(problems);
   }
-  return { wsTokenSecret: secret };
+  return { wsTokenSecret, internalApiSecret };
 }
