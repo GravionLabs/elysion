@@ -4,7 +4,7 @@ This directory is currently empty. Elysion's gateway is Traefik, not a custom se
 
 - `infra/traefik/traefik.yml` — static config (dashboard, entrypoints, docker provider, file provider)
 - `infra/traefik/dynamic/middlewares.yml` — middlewares routers refer to as `<name>@file` (`bff-auth`: forwardAuth to the BFF)
-- `infra/docker/docker-compose.yml` — the `traefik` service, plus `traefik.enable`/router labels on each routed service
+- `infra/docker/docker-compose.yml` — the `traefik` service, plus `traefik.enable`/router labels on each routed service; the `cors` and `rate-limit` middlewares are labels on the `bff` service (they read `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_AVERAGE`, `RATE_LIMIT_BURST` from the environment, which the dynamic file cannot)
 
 See `docs/specs/gateway.md` and `docs/adr/0001-gateway-and-bff.md`.
 
@@ -12,8 +12,8 @@ If a feature ever needs custom gateway logic that Traefik's dynamic config/middl
 
 ## Routing convention
 
-- `/api/*` → BFF, **authenticated at the edge** (`middlewares=bff-auth@file`: forwardAuth to `http://bff:3000/api/auth/verify`)
-- `/yjs` → realtime backend (WebSocket; the canvas connects to `/yjs?board=<id>&token=<ws token>`), **not** forwardAuth'd: the WS token is the check and the realtime service verifies it
+- `/api/*` → BFF, `middlewares=cors,rate-limit,bff-auth@file`: **authenticated at the edge** (forwardAuth to `http://bff:3000/api/auth/verify`), after CORS (answers preflights) and the rate limit (429)
+- `/yjs` → realtime backend (WebSocket; the canvas connects to `/yjs?board=<id>&token=<ws token>`), `middlewares=cors`, **not** forwardAuth'd or rate-limited: the WS token is the check and the realtime service verifies it
 - `/internal` → no edge route; the business backend is reachable only on the compose network (`http://business-backend:8080`)
 - `/` → frontend (priority 1, so every more specific route wins), public
 
