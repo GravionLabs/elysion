@@ -183,11 +183,22 @@ public class UserProvisioningTests
     [Test]
     public async Task Real_parallel_first_requests_end_with_one_row()
     {
-        var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ =>
-            Task.Run(() => ProvisionAsync(Principal(("sub", "kc-1"), ("preferred_username", "ada"))))));
+        // Every request gets a connection of its own: a SQLite connection is not safe to share between threads.
+        using var database = new SqliteDatabase(concurrent: true);
+        async Task<User?> Request()
+        {
+            await using var db = database.NewContext();
+            var time = Substitute.For<TimeProvider>();
+            time.GetUtcNow().Returns(Now);
+            return await new UserProvisioningService(new UserRepository(db), db, time)
+                .ProvisionAsync(Principal(("sub", "kc-1"), ("preferred_username", "ada")), Ct);
+        }
+
+        var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(Request)));
 
         results.Select(u => u!.Id).Distinct().Count().ShouldBe(1);
-        (await AllUsersAsync()).ShouldHaveSingleItem();
+        await using var read = database.NewContext();
+        (await read.Users.CountAsync(Ct)).ShouldBe(1);
     }
 
     [Test]
