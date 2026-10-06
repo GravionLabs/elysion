@@ -24,12 +24,63 @@
       }
       @default {
         @for (template of templates(); track template.id) {
-          <button type="button" class="menu-item" role="menuitem" (click)="choose(template)">
-            {{ template.name }}
-            <small>{{ template.description }}</small>
-          </button>
+          <div class="menu-row">
+            @if (confirmingId() === template.id) {
+              <button
+                type="button"
+                class="menu-item danger"
+                role="menuitem"
+                (click)="confirmDelete(template)"
+              >
+                Delete “{{ template.name }}”?
+              </button>
+              <button
+                type="button"
+                class="menu-icon"
+                aria-label="Keep the template"
+                (click)="confirmingId.set(null)"
+              >
+                ✕
+              </button>
+            } @else {
+              <button type="button" class="menu-item" role="menuitem" (click)="choose(template)">
+                {{ template.name }}
+                <small>{{ template.description }}</small>
+              </button>
+              @if (!template.isBuiltIn) {
+                <button
+                  type="button"
+                  class="menu-icon"
+                  [attr.aria-label]="'Delete the template ' + template.name"
+                  title="Delete this template"
+                  (click)="askDelete(template)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16M10 11v6m4-6v6M6 7l1 12h10l1-12M9 7V4h6v3" />
+                  </svg>
+                </button>
+              }
+            }
+          </div>
+        }
+        @if (deleteError(); as message) {
+          <p class="menu-note" role="alert">{{ message }}</p>
         }
       }
     }
+    <div class="menu-save">
+      <button type="button" class="menu-item" role="menuitem" (click)="save(false)">
+        Save board as template…
+      </button>
+      <button
+        type="button"
+        class="menu-item"
+        role="menuitem"
+        [disabled]="!hasSelection()"
+        (click)="save(true)"
+      >
+        Save selection as template…
+      </button>
+    </div>
   </div>
 }

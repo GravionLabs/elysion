@@ -948,4 +948,112 @@ describe('Board', () => {
       expect(component.notice()).toBe('The template could not be added.');
     });
   });
+
+  describe('saving the board as a template', () => {
+    const SCENE = '{"type":"excalidraw","version":2,"elements":[{}]}';
+    const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement;
+    const form = () => fixture.nativeElement.querySelector('form.save-template') as HTMLFormElement;
+    const field = (name: string) => form().querySelector(`[name="${name}"]`) as HTMLInputElement;
+    const type = async (name: string, value: string) => {
+      field(name).value = value;
+      field(name).dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+    };
+    const submit = async () => {
+      form().dispatchEvent(new Event('submit'));
+      await fixture.whenStable();
+    };
+    let exportBoard: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      exportBoard = vi.fn().mockResolvedValue(new Blob([SCENE]));
+      (canvas() as unknown as { exportBoard: unknown }).exportBoard = exportBoard;
+    });
+
+    const open = async (selectionOnly = false) => {
+      component.startSaveTemplate(selectionOnly);
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+
+    it('asks for a name and a description, and starts with the board or selection', async () => {
+      await open();
+      expect(form()).toBeTruthy();
+      expect(field('template-name').value).toBe('Board');
+
+      component.cancelSaveTemplate();
+      await open(true);
+      expect(field('template-name').value).toBe('Selection');
+    });
+
+    it('exports the scene and stores it as the user template', async () => {
+      await open();
+      await type('template-name', '  Planning  ');
+      await type('template-description', 'A start');
+
+      await submit();
+      const request = http.expectOne('/api/templates');
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({
+        name: 'Planning',
+        description: 'A start',
+        scene: SCENE,
+      });
+      request.flush({ id: 't9' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(exportBoard).toHaveBeenCalledWith('excalidraw', { selectionOnly: false });
+      expect(form()).toBeNull();
+      expect(component.notice()).toBe('Saved the template “Planning”.');
+    });
+
+    it('saves only the selection when asked to', async () => {
+      await open(true);
+
+      await submit();
+      http.expectOne('/api/templates').flush({ id: 't9' });
+      await fixture.whenStable();
+
+      expect(exportBoard).toHaveBeenCalledWith('excalidraw', { selectionOnly: true });
+    });
+
+    it('does not save without a name', async () => {
+      await open();
+      await type('template-name', '   ');
+
+      await submit();
+      fixture.detectChanges();
+
+      http.expectNone('/api/templates');
+      expect(form().textContent).toContain('Give the template a name.');
+    });
+
+    it('says so when there is nothing to save, and closes the form', async () => {
+      exportBoard.mockResolvedValue(null);
+      await open(true);
+
+      await submit();
+      fixture.detectChanges();
+
+      http.expectNone('/api/templates');
+      expect(component.notice()).toBe('Nothing is selected.');
+      expect(form()).toBeNull();
+    });
+
+    it('keeps the form with what was typed when saving fails, and allows a retry', async () => {
+      await open();
+      await type('template-name', 'Planning');
+
+      await submit();
+      http.expectOne('/api/templates').flush(null, { status: 502, statusText: 'Bad Gateway' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(form().textContent).toContain('could not be saved');
+      expect(field('template-name').value).toBe('Planning');
+      await submit();
+      http.expectOne('/api/templates').flush({ id: 't9' });
+    });
+  });
 });

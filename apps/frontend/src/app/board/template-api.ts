@@ -28,6 +28,20 @@ export class TemplateApi {
     return this.#http.get<TemplateInfo[]>('/api/templates');
   }
 
+  /** Saves a scene (the text of an .excalidraw file) as the user's own template. */
+  create(template: {
+    name: string;
+    description: string;
+    scene: string;
+  }): Observable<TemplateContent> {
+    return this.#http.post<TemplateContent>('/api/templates', template);
+  }
+
+  /** Deletes one of the user's own templates; built-in ones are refused (403). */
+  delete(id: string): Observable<void> {
+    return this.#http.delete<void>(`/api/templates/${encodeURIComponent(id)}`);
+  }
+
   /** One template with its scene. */
   get(id: string): Observable<TemplateContent> {
     return this.#http.get<TemplateContent>(`/api/templates/${encodeURIComponent(id)}`);

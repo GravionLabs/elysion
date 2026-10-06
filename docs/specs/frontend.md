@@ -31,6 +31,8 @@ This is what makes collaboration links possible (#101).
 
 **Templates menu** (#336): the top bar has a **Templates** menu (`TemplateMenu`, next to Import and Export; not shown to viewers). It loads the catalog when first opened (loading and error states, "Try again") and emits the chosen template; `Board.addTemplate` fetches `GET /api/templates/:id` and calls the element's `insertFile`, which adds the scene to the board without replacing anything: new ids everywhere (`cloneForInsertion` remaps containers, bound texts, arrow ends, groups and frames, so a template can be inserted any number of times), centered on the middle of what the user sees, selected, one undo step. A failure is shown in the notice under the bar.
 
+**Own templates** (#340): the Templates menu lists the user's own templates after the built-in ones (it asks for the list every time it opens), each with a delete button that asks once more ("Delete “…”?") before `DELETE /api/templates/:id`; built-in ones have none. **Save board as template…** and **Save selection as template…** (needs a selection) open a form under the bar with the name (preset to the board's name, or "Selection") and an optional description. Saving calls the element's `exportBoard('excalidraw', { selectionOnly })` and sends the file to `POST /api/templates`; an empty board or selection is told in the notice, a failure keeps the form open with the typed values. Templates are private to their owner.
+
 The top bar of the board page links back: the brand and an "All boards" button (an icon only below 860 px) both go to `/`.
 
 ### Duplicating a board

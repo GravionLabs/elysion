@@ -26,6 +26,8 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
         {
             template.Property(t => t.Name).HasMaxLength(Template.MaxNameLength);
             template.Property(t => t.Description).HasMaxLength(Template.MaxDescriptionLength);
+            // A user's templates go with the user; "which templates can this user see?" starts from the owner.
+            template.HasOne(t => t.Owner).WithMany().HasForeignKey(t => t.OwnerId).OnDelete(DeleteBehavior.Cascade);
             template.HasData(BuiltInTemplates.All());
         });
 

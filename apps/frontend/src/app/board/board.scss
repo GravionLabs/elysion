@@ -112,3 +112,41 @@
     outline-offset: 2px;
   }
 }
+
+.save-template {
+  flex-wrap: wrap;
+
+  label {
+    display: flex;
+    flex: 1 1 280px;
+    align-items: center;
+    gap: 8px;
+
+    span {
+      margin-right: 0;
+      white-space: nowrap;
+    }
+  }
+
+  input {
+    flex: 1 1 200px;
+    min-width: 0;
+    height: 28px;
+    padding: 0 10px;
+    color: var(--c-text);
+    background: var(--c-surface-1);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    font: inherit;
+    font-size: 13px;
+
+    &:focus-visible {
+      outline: 2px solid var(--c-focus);
+      outline-offset: 1px;
+    }
+  }
+}
+
+.save-template .field-error {
+  color: var(--c-danger);
+}
