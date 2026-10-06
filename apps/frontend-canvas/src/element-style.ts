@@ -14,6 +14,10 @@ export const ELEMENT_DEFAULTS: Partial<AppState> = {
   currentItemBackgroundColor: 'transparent',
   // Helvetica, the closest of Excalidraw's bundled families to ariadne's system-ui.
   currentItemFontFamily: 2,
+  // Arrows are connectors: right-angled, with an arrowhead at the end only (see connector.ts).
+  currentItemArrowType: 'elbow',
+  currentItemStartArrowhead: null,
+  currentItemEndArrowhead: 'arrow',
 };
 
 /** Canvas background; ariadne's light `--c-bg`. */

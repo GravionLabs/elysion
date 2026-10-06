@@ -183,6 +183,10 @@ Connecting two elements the way Mural does it: shapes show connection points, dr
 5. **Layering.** The overlay sits above the canvas but must stay below Excalidraw's own panels and menus; the production CSS gives it a `z-index` below them and clips it to the canvas area.
 6. **Large shapes** such as the template columns (rectangles) get circles as well; with a frame selected the circles are far apart, which is acceptable.
 
+### The connector module (`src/connector.ts`)
+
+The one definition of a connector (#516). `CONNECTOR_STYLE` is how it looks (`elbowed`, flat, arrowhead at the end only; the toolbar's arrow tool draws the same thing through the new-arrow defaults in `element-style.ts`, `currentItemArrowType: 'elbow'`). `createConnector(elements, sourceId, targetId, sides?)` returns `{ arrow, updated: [source, target] }`: the elements to write back into the scene in one `updateScene` call. It binds the arrow to both shapes on the given sides, or on the sides that face each other (`facingSides`: the larger distance between the centers decides), places the first and last point on the middle of those sides (`sidePoint`, rotation included) and gives the arrow a right-angled route (`elbowRoute`: an L or a Z when the sides face each other, a straight line when they are in line, otherwise a detour that leaves and enters straight; the detour may run along a shape, and Excalidraw tidies a bound connector the next time a shape moves). Text that is already bound inside a shape stays bound. It throws for the same element twice, an element that is not on the board and anything that is not connectable (`isConnectable`: rectangles, diamonds, ellipses, images, frames and free text, not arrows and not text inside a shape). The toolbar entry of the arrow tool is called "Connector" (shortcut `A`, tool id `arrow`); a test draws two rectangles and a connector with the real tool and finds both bindings.
+
 ### Limits
 
 Connectors between two points in the same direction (U-turns) and connectors to the shape itself are not supported at first. Nothing of this is shown to viewers.

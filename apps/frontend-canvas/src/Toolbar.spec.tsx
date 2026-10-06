@@ -13,6 +13,17 @@ describe('Toolbar', () => {
     expect(rectangle.getAttribute('title')).toBe('Rectangle (R)');
   });
 
+  it('calls the arrow tool "Connector", with the shortcut A', () => {
+    const onSelect = vi.fn();
+    render(<Toolbar activeTool="selection" onSelect={onSelect} />);
+
+    const connector = screen.getByRole('button', { name: 'Connector' });
+    expect(connector.getAttribute('title')).toBe('Connector (A)');
+    expect(screen.queryByRole('button', { name: 'Arrow' })).toBeNull();
+    fireEvent.click(connector);
+    expect(onSelect).toHaveBeenCalledWith('arrow'); // the Excalidraw tool id is unchanged
+  });
+
   it('marks only the active tool as pressed', () => {
     render(<Toolbar activeTool="ellipse" onSelect={() => {}} />);
 

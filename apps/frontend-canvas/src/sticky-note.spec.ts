@@ -49,4 +49,12 @@ describe('ELEMENT_DEFAULTS', () => {
       currentItemRoundness: 'round',
     });
   });
+
+  it('draws arrows as right-angled connectors with an arrowhead at the end only', () => {
+    expect(ELEMENT_DEFAULTS).toMatchObject({
+      currentItemArrowType: 'elbow',
+      currentItemStartArrowhead: null,
+      currentItemEndArrowhead: 'arrow',
+    });
+  });
 });
