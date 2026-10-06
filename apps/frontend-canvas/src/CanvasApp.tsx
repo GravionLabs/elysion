@@ -6,6 +6,7 @@ import {
   type ExportFormat,
   type ExportOptions,
 } from './board-io';
+import { ConnectionPoints } from './ConnectionPoints';
 import { Minimap } from './Minimap';
 import { SceneStore } from './scene-store';
 import { scrollToCenter } from './minimap-geometry';
@@ -19,6 +20,7 @@ import '@excalidraw/excalidraw/index.css';
 import '@elysion/design-tokens/tokens.css';
 import './styles/excalidraw-theme.css';
 import './styles/toolbar.css';
+import './styles/connection-points.css';
 import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
@@ -361,6 +363,9 @@ export function CanvasApp({
         </MainMenu>
       </Excalidraw>
       <Minimap store={sceneStoreRef.current} onPan={panTo} />
+      {!readOnly && (
+        <ConnectionPoints apiRef={apiRef} rootRef={rootRef} store={sceneStoreRef.current} />
+      )}
       <Toolbar
         activeTool={activeTool}
         onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
