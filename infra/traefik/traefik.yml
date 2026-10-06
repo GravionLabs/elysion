@@ -5,6 +5,10 @@ api:
 entryPoints:
   web:
     address: ':80'
+  # Prometheus metrics, on their own port so they are not reachable through the public entry point. Not published
+  # by compose: a scraper on the compose network reads http://traefik:8082/metrics.
+  metrics:
+    address: ':8082'
 
 providers:
   docker:
@@ -19,3 +23,23 @@ providers:
 
 log:
   level: INFO
+
+# One JSON line per request on stdout (docs/specs/gateway.md). The /yjs URL carries the WS token in its query string
+# (`?board=...&token=...`) and Traefik writes `RequestPath` with the query: the query parameters are dropped (Traefik
+# 3.7.3 or later), the path stays. Request headers (Authorization, Cookie) are dropped, which is also the default.
+accessLog:
+  format: json
+  fields:
+    defaultMode: keep
+    queryParameters:
+      defaultMode: drop
+    headers:
+      defaultMode: drop
+
+# Request counts and durations per entry point, router and service (docs/specs/gateway.md).
+metrics:
+  prometheus:
+    entryPoint: metrics
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true
