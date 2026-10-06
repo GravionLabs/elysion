@@ -1,6 +1,6 @@
 # ADR 0009: Plain signals for the Angular shell's state, SignalStore when it earns its place
 
-- Status: accepted (2026-10-04); the update of 2026-10-06 below is **proposed**
+- Status: accepted (2026-10-04); the update of 2026-10-06 below is accepted
 - Date: 2026-10-04
 - Issues: #123, #125, #129, #130, #317, #318
 - Pull requests: #177 (the spike, not merged)
@@ -98,7 +98,7 @@ learn and the work of #319; gains consistency with ariadne's way of writing stat
 **C. Adopt it for the board list only, when it grows.** Not now: the list has one reader and no cache. Revisit when it gets
 paging or search with a shared, cached result.
 
-### Proposed decision
+### Decision
 
 1. **Option A**: no `@ngrx/signals` in the shell now. The three pieces stay services; #177 is closed with this reason and #319
    is not done.
@@ -109,5 +109,5 @@ paging or search with a shared, cached result.
 
 ### Owner decision
 
-To be filled in when decided. Open for the owner: **A (recommended)**, B, or C. Until then `needs-decision` stays on #317 and
-#318, and #177 stays open.
+Accepted by the product owner on 2026-10-06: **option A**, plain signals and small services. #177 is closed with this reason
+and #319 is not done.
