@@ -230,3 +230,55 @@ export function createConnector(
     updated: [bumped(source, converted[0]), bumped(target, converted[1])],
   };
 }
+
+/**
+ * The two elements a connector can be made between, when exactly two connectable elements are selected (bound text
+ * inside a selected shape is not a third one), otherwise `null`.
+ */
+export function connectableSelection(
+  elements: readonly ExcalidrawElement[],
+  selectedIds: Readonly<Record<string, boolean>>,
+): [ExcalidrawElement, ExcalidrawElement] | null {
+  const selected = elements.filter((element) => selectedIds[element.id] && isConnectable(element));
+  const others = elements.filter(
+    (element) => selectedIds[element.id] && !isConnectable(element) && !boundText(element),
+  );
+  return selected.length === 2 && others.length === 0 ? [selected[0], selected[1]] : null;
+}
+
+const boundText = (element: ExcalidrawElement) =>
+  element.type === 'text' && !!(element as { containerId?: string | null }).containerId;
+
+/**
+ * Which of two elements is the start of a connector. With a known selection order (they were picked one after the
+ * other) the first picked is the start; otherwise the left one, or the upper one when they are one above the other.
+ */
+export function connectorDirection(
+  a: ExcalidrawElement,
+  b: ExcalidrawElement,
+  pickedInOrder: boolean,
+): { source: ExcalidrawElement; target: ExcalidrawElement } {
+  if (pickedInOrder) return { source: a, target: b };
+  const centerX = (e: ExcalidrawElement) => e.x + e.width / 2;
+  const centerY = (e: ExcalidrawElement) => e.y + e.height / 2;
+  const dx = centerX(b) - centerX(a);
+  const dy = centerY(b) - centerY(a);
+  const bFirst = Math.abs(dx) >= Math.abs(dy) ? dx < 0 : dy < 0;
+  return bFirst ? { source: b, target: a } : { source: a, target: b };
+}
+
+/** A connector that already goes from `sourceId` to `targetId` (in that direction), if there is one. */
+export function findConnector(
+  elements: readonly ExcalidrawElement[],
+  sourceId: string,
+  targetId: string,
+): ExcalidrawElement | undefined {
+  return elements.find((element) => {
+    if (element.isDeleted || element.type !== 'arrow') return false;
+    const { startBinding, endBinding } = element as unknown as {
+      startBinding: { elementId: string } | null;
+      endBinding: { elementId: string } | null;
+    };
+    return startBinding?.elementId === sourceId && endBinding?.elementId === targetId;
+  });
+}

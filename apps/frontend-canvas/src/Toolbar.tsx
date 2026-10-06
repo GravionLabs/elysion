@@ -176,6 +176,8 @@ export interface ToolbarProps {
   onAddSticky?: (color: StickyColor) => void;
   /** Undo and redo; the buttons are only shown when this is given. */
   onHistory?: (action: HistoryAction) => void;
+  /** Connects the two selected elements; the button is only shown when this is given. */
+  onConnect?: () => void;
   /** Zoom out, in, back to 100% and fit to content; shown together with `zoomPercent`. */
   onZoom?: (action: ZoomAction) => void;
   /** The current zoom in percent, shown on the reset button. */
@@ -216,12 +218,21 @@ const STICKY_ICON = (
   </Icon>
 );
 
+const CONNECT_ICON = (
+  <Icon>
+    <circle cx="5" cy="12" r="2" />
+    <circle cx="19" cy="12" r="2" />
+    <path d="M7 12h10" />
+  </Icon>
+);
+
 /** The bottom-centered floating tool pill, styled after ariadne's toolbox. */
 export function Toolbar({
   activeTool,
   onSelect,
   onAddSticky,
   onHistory,
+  onConnect,
   onZoom,
   zoomPercent,
   readOnly = false,
@@ -251,6 +262,20 @@ export function Toolbar({
             onClick={() => onHistory('redo')}
           >
             {REDO_ICON}
+          </button>
+        </div>
+      )}
+      {!readOnly && onConnect && (
+        <div className="elysion-toolbar__group">
+          <button
+            type="button"
+            className="elysion-icon-button"
+            aria-label="Connect"
+            title="Connect the two selected elements (C)"
+            data-testid="elysion-connect"
+            onClick={onConnect}
+          >
+            {CONNECT_ICON}
           </button>
         </div>
       )}

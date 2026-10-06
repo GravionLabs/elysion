@@ -7,6 +7,14 @@ import {
   type ExportOptions,
 } from './board-io';
 import { ConnectionPoints } from './ConnectionPoints';
+import { commitConnector } from './connector-commit';
+import {
+  connectableSelection,
+  connectorDirection,
+  createConnector,
+  findConnector,
+} from './connector';
+import { NO_SELECTION, trackSelection, type SelectionOrder } from './selection-order';
 import { Minimap } from './Minimap';
 import { SceneStore } from './scene-store';
 import { scrollToCenter } from './minimap-geometry';
@@ -156,6 +164,9 @@ export function CanvasApp({
   const sceneStoreRef = useRef(new SceneStore());
   const [activeTool, setActiveTool] = useState<ToolType | 'custom'>('selection');
   const [zoomPercent, setZoomPercent] = useState(100);
+  // Exactly two connectable elements are selected: the Connect button is shown, and C connects them.
+  const [canConnect, setCanConnect] = useState(false);
+  const selectionOrder = useRef<SelectionOrder>(NO_SELECTION);
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Connection setup lives in the effect, not render, and is re-created (not
@@ -273,6 +284,49 @@ export function CanvasApp({
     );
   };
 
+  /** Connects the two selected elements (the button and the key C): first picked to second picked, else left to right. */
+  const connectSelection = () => {
+    const api = apiRef.current;
+    if (!api || readOnlyRef.current) return;
+    const elements = api.getSceneElements();
+    const pair = connectableSelection(elements, api.getAppState().selectedElementIds);
+    if (!pair) return;
+    const { ids, known } = selectionOrder.current;
+    const picked = known ? [...pair].sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)) : pair;
+    const { source, target } = connectorDirection(picked[0], picked[1], known);
+    const existing = findConnector(elements, source.id, target.id);
+    if (existing) {
+      // Already connected this way: no second connector, the existing one is selected.
+      api.updateScene({
+        appState: { selectedElementIds: { [existing.id]: true } },
+        captureUpdate: CaptureUpdateAction.NEVER,
+      });
+      return;
+    }
+    commitConnector(api, createConnector(elements, source.id, target.id));
+  };
+  const connectSelectionRef = useRef(connectSelection);
+  connectSelectionRef.current = connectSelection;
+
+  // The key C. Not with a modifier (Ctrl+C is copy), not while typing, and not while a text is being edited.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'c' || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.repeat || event.defaultPrevented) return;
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        target.closest('input, textarea, select, [contenteditable="true"]')
+      ) {
+        return;
+      }
+      if (apiRef.current?.getAppState().editingTextElement) return;
+      connectSelectionRef.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const addSticky = (color: StickyColor) => {
     const api = apiRef.current;
     if (!api) return;
@@ -326,6 +380,11 @@ export function CanvasApp({
           bindingRef.current?.onLocalChange(elements);
           presenceRef.current?.selectionChanged(appState.selectedElementIds);
           setActiveTool(appState.activeTool.type);
+          selectionOrder.current = trackSelection(
+            selectionOrder.current,
+            appState.selectedElementIds,
+          );
+          setCanConnect(connectableSelection(elements, appState.selectedElementIds) !== null);
           setZoomPercent(Math.round(appState.zoom.value * 100));
           const selected = Object.values(appState.selectedElementIds).filter(Boolean).length;
           if (selected !== selectionCount.current) {
@@ -371,6 +430,7 @@ export function CanvasApp({
         onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
         onAddSticky={addSticky}
         onHistory={onHistory}
+        onConnect={canConnect && !readOnly ? connectSelection : undefined}
         onZoom={onZoom}
         zoomPercent={zoomPercent}
         readOnly={readOnly}
