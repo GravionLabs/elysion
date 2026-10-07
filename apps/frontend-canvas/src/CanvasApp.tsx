@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   exportBoard,
   clearScene,
@@ -8,6 +9,13 @@ import {
   type ExportOptions,
 } from './board-io';
 import type { CanvasMenuItem } from './CanvasMenu';
+import {
+  GRID_SIZES,
+  readGridSettings,
+  writeGridSettings,
+  type GridSettings,
+  type GridSize,
+} from './canvas-settings';
 import { ConnectionPoints } from './ConnectionPoints';
 import { commitConnector } from './connector-commit';
 import {
@@ -168,6 +176,13 @@ export function CanvasApp({
   const [zoomPercent, setZoomPercent] = useState(100);
   // Exactly two connectable elements are selected: the Connect button is shown, and C connects them.
   const [canConnect, setCanConnect] = useState(false);
+  // The grid, kept per browser. `show` mirrors Excalidraw's own grid mode (its shortcut Ctrl+' toggles it too).
+  const [grid, setGrid] = useState<GridSettings>(readGridSettings);
+  const gridRef = useRef(grid);
+  gridRef.current = grid;
+  // A pointer is down on the canvas. Excalidraw snaps exactly when its grid mode is on, and draws the grid then too;
+  // to snap without showing the grid, the mode is turned on just while something is being dragged (see below).
+  const [pointerDown, setPointerDown] = useState(false);
   const selectionOrder = useRef<SelectionOrder>(NO_SELECTION);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -329,6 +344,43 @@ export function CanvasApp({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  useEffect(() => writeGridSettings(grid), [grid]);
+  // While snapping without a visible grid, Excalidraw's grid mode is on just for the length of a gesture. It has to be
+  // on *before* Excalidraw handles the press (it snaps the first corner of a new shape from the press), so the press
+  // is caught in the capture phase and rendered at once (`flushSync`). The release is caught on the window, so a
+  // pointer let go outside the canvas does not leave the mode on.
+  useEffect(() => {
+    const root = rootRef.current;
+    const press = () => {
+      const { snap, show } = gridRef.current;
+      if (snap && !show && !readOnlyRef.current) flushSync(() => setPointerDown(true));
+    };
+    const release = () => setPointerDown(false);
+    root?.addEventListener('pointerdown', press, true);
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', release);
+    return () => {
+      root?.removeEventListener('pointerdown', press, true);
+      window.removeEventListener('pointerup', release);
+      window.removeEventListener('pointercancel', release);
+    };
+  }, []);
+
+  const setGridShown = (show: boolean) => {
+    apiRef.current?.updateScene({
+      appState: { gridModeEnabled: show },
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+    setGrid((current) => ({ ...current, show }));
+  };
+  const setGridSize = (size: GridSize) => {
+    apiRef.current?.updateScene({
+      appState: { gridSize: size },
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+    setGrid((current) => ({ ...current, size }));
+  };
+
   /** Presses a key on the canvas, for what Excalidraw offers only as a shortcut (undo, the help dialog). */
   const pressKey = (init: KeyboardEventInit) => {
     const target = rootRef.current?.querySelector<HTMLElement>('.excalidraw');
@@ -351,6 +403,37 @@ export function CanvasApp({
   };
 
   const menuItems: CanvasMenuItem[] = [
+    { type: 'heading', label: 'View' },
+    {
+      type: 'check',
+      id: 'grid-show',
+      label: 'Show grid',
+      checked: grid.show,
+      onSelect: () => setGridShown(!grid.show),
+    },
+    ...(readOnly
+      ? []
+      : [
+          {
+            type: 'check' as const,
+            id: 'grid-snap',
+            label: 'Snap to grid',
+            // A shown grid is always snapped to (Excalidraw's grid mode), so the switch means nothing then.
+            checked: grid.snap || grid.show,
+            disabled: grid.show,
+            onSelect: () => setGrid((current) => ({ ...current, snap: !current.snap })),
+          },
+        ]),
+    { type: 'heading', label: 'Grid size' },
+    ...GRID_SIZES.map((size) => ({
+      type: 'radio' as const,
+      id: `grid-size-${size}`,
+      label: `${size} px`,
+      checked: grid.size === size,
+      keepOpen: true,
+      onSelect: () => setGridSize(size),
+    })),
+    { type: 'heading', label: 'Canvas' },
     {
       type: 'item',
       id: 'help',
@@ -402,9 +485,16 @@ export function CanvasApp({
       <Excalidraw
         theme={activeTheme}
         viewModeEnabled={readOnly}
+        // Only an override while dragging; otherwise `undefined` leaves the mode to Excalidraw's state (`grid.show`).
+        gridModeEnabled={grid.snap && !grid.show && pointerDown && !readOnly ? true : undefined}
         UIOptions={UI_OPTIONS}
         initialData={{
-          appState: { ...ELEMENT_DEFAULTS, viewBackgroundColor: VIEW_BACKGROUND_COLOR },
+          appState: {
+            ...ELEMENT_DEFAULTS,
+            viewBackgroundColor: VIEW_BACKGROUND_COLOR,
+            gridModeEnabled: gridRef.current.show,
+            gridSize: gridRef.current.size,
+          },
         }}
         excalidrawAPI={(api) => {
           apiRef.current = api;
@@ -428,6 +518,9 @@ export function CanvasApp({
           bindingRef.current?.onLocalChange(elements);
           presenceRef.current?.selectionChanged(appState.selectedElementIds);
           setActiveTool(appState.activeTool.type);
+          if (appState.gridModeEnabled !== gridRef.current.show) {
+            setGrid((current) => ({ ...current, show: appState.gridModeEnabled }));
+          }
           selectionOrder.current = trackSelection(
             selectionOrder.current,
             appState.selectedElementIds,

@@ -128,6 +128,19 @@ describe('CanvasMenu', () => {
     expect(screen.getByRole('menu')).toBeTruthy();
   });
 
+  it('keeps the menu open after a check item, so that two switches can be turned in a row', () => {
+    const onSelect = vi.fn();
+    render(
+      <CanvasMenu items={[{ type: 'check', id: 'c', label: 'Show', checked: false, onSelect }]} />,
+    );
+    open();
+
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Show' }));
+
+    expect(onSelect).toHaveBeenCalledOnce();
+    expect(screen.getByRole('menu')).toBeTruthy();
+  });
+
   it('does not act on a disabled item', () => {
     const onSelect = vi.fn();
     render(

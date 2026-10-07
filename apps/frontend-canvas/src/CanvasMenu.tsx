@@ -28,7 +28,7 @@ export type CanvasMenuItem =
       label: string;
       checked: boolean;
       onSelect: () => void;
-      /** Stays open after choosing, so that a size can be tried out. */
+      /** Stays open after choosing, so that a size can be tried out (check items always stay open). */
       keepOpen?: boolean;
     };
 
@@ -204,7 +204,8 @@ export function CanvasMenu({ items, footer }: CanvasMenuProps) {
                       return;
                     }
                     item.onSelect();
-                    if (!(item.type === 'radio' && item.keepOpen)) close();
+                    // A switch stays in reach (turn the grid on, then snapping); a radio item says so itself.
+                    if (item.type !== 'check' && !(item.type === 'radio' && item.keepOpen)) close();
                   }}
                 >
                   {item.type !== 'item' && (

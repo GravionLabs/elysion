@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -301,5 +301,140 @@ describe('the canvas menu', () => {
 
     expect(screen.getByRole('menuitem', { name: /Help/ })).toBeTruthy();
     expect(screen.queryByRole('menuitem', { name: /Clear canvas/ })).toBeNull();
+  });
+});
+
+describe('the grid', () => {
+  const GRID_KEYS_ALL = ['elysion.grid.show', 'elysion.grid.snap', 'elysion.grid.size'];
+  const forget = () => GRID_KEYS_ALL.forEach((key) => localStorage.removeItem(key));
+
+  /** Draws a rectangle with the real tool between two points (jsdom has no layout: client = canvas coordinates). */
+  const draw = (canvas: Element, from: [number, number], to: [number, number]) => {
+    const init = (point: [number, number], buttons = 1) => ({
+      clientX: point[0],
+      clientY: point[1],
+      pointerId: 1,
+      pointerType: 'mouse',
+      button: 0,
+      buttons,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Rectangle' }));
+    fireEvent.pointerDown(canvas, init(from));
+    fireEvent.pointerMove(canvas, init([(from[0] + to[0]) / 2, (from[1] + to[1]) / 2]));
+    fireEvent.pointerMove(canvas, init(to));
+    fireEvent.pointerUp(canvas, init(to, 0));
+  };
+  const open = () => fireEvent.click(screen.getByRole('button', { name: 'Canvas menu' }));
+
+  /** The scene as exported, with the app state's grid values, and the first rectangle. */
+  async function exported(controls: { exportBoard(format: string): Promise<Blob | null> }) {
+    const blob = (await controls.exportBoard('excalidraw')) as Blob;
+    const file = JSON.parse(await blob.text());
+    return {
+      grid: file.appState as { gridModeEnabled: boolean; gridSize: number },
+      rectangle: file.elements.find((e: { type: string }) => e.type === 'rectangle') as {
+        x: number;
+        y: number;
+      },
+    };
+  }
+
+  async function setup(props: { readOnly?: boolean } = {}) {
+    forget();
+    const onControls = vi.fn();
+    const { container } = render(
+      <CanvasApp boardId="test-board" onControls={onControls} {...props} />,
+    );
+    await excalidrawReady(container);
+    return {
+      container,
+      controls: onControls.mock.calls[0][0],
+      canvas: container.querySelector('canvas.interactive')!,
+    };
+  }
+
+  it('offers Show grid, Snap to grid and the sizes, starting with the grid hidden and 20 px', async () => {
+    await setup();
+
+    open();
+
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Show grid' }).getAttribute('aria-checked'),
+    ).toBe('false');
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Snap to grid' }).getAttribute('aria-checked'),
+    ).toBe('false');
+    expect(
+      ['10 px', '20 px', '40 px'].map((name) =>
+        screen.getByRole('menuitemradio', { name }).getAttribute('aria-checked'),
+      ),
+    ).toEqual(['false', 'true', 'false']);
+  });
+
+  it('shows the grid at the chosen size, remembers it, and a reload starts with it', async () => {
+    const { controls, canvas } = await setup();
+    draw(canvas, [100, 100], [260, 200]); // an empty board exports as nothing
+
+    open();
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Show grid' }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: '40 px' }));
+
+    await waitFor(async () =>
+      expect((await exported(controls)).grid).toMatchObject({
+        gridModeEnabled: true,
+        gridSize: 40,
+      }),
+    );
+    expect(localStorage.getItem('elysion.grid.show')).toBe('true');
+    expect(localStorage.getItem('elysion.grid.size')).toBe('40');
+    // The menu stays open for a size (to try them), and a shown grid is always snapped to: the switch is on and disabled.
+    const snap = screen.getByRole('menuitemcheckbox', { name: 'Snap to grid' });
+    expect(snap.getAttribute('aria-checked')).toBe('true');
+    expect(snap.getAttribute('aria-disabled')).toBe('true');
+
+    cleanup();
+    const again = render(<CanvasApp boardId="test-board" onControls={vi.fn()} />);
+    await excalidrawReady(again.container);
+    open();
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Show grid' }).getAttribute('aria-checked'),
+    ).toBe('true');
+    expect(screen.getByRole('menuitemradio', { name: '40 px' }).getAttribute('aria-checked')).toBe(
+      'true',
+    );
+  }, 20000);
+
+  it('snaps a new rectangle to the grid while Snap to grid is on, and not without it', async () => {
+    const { controls, canvas } = await setup();
+
+    draw(canvas, [103, 107], [258, 203]);
+    await waitFor(async () => expect((await exported(controls)).rectangle.x).toBe(103));
+
+    open();
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Snap to grid' }));
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    draw(canvas, [413, 337], [578, 453]);
+
+    await waitFor(async () => {
+      const scene = JSON.parse(await ((await controls.exportBoard('excalidraw')) as Blob).text())
+        .elements as {
+        type: string;
+        x: number;
+        y: number;
+      }[];
+      const second = scene.filter((e) => e.type === 'rectangle')[1];
+      expect(second.x % 20).toBe(0);
+      expect(second.y % 20).toBe(0);
+    });
+  }, 20000);
+
+  it('gives a viewer Show grid and the sizes, but no Snap to grid', async () => {
+    await setup({ readOnly: true });
+
+    open();
+
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Show grid' })).toBeTruthy();
+    expect(screen.queryByRole('menuitemcheckbox', { name: 'Snap to grid' })).toBeNull();
+    expect(screen.getByRole('menuitemradio', { name: '20 px' })).toBeTruthy();
   });
 });
