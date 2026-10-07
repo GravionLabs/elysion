@@ -1,6 +1,6 @@
 # ADR 0019: How boards are grouped in the overview
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-07
 - Issues: #563, #564 (Feature #559); implemented in #565 (business backend and BFF) and #569 (the overview), which are written for the recommended option
 - Builds on: [ADR 0014](0014-keycloak-identity-provider.md), "Board authorization" in [business-backend.md](../specs/business-backend.md)
@@ -158,5 +158,6 @@ On a phone the sidebar becomes a menu above the grid. "New board" in a room crea
 
 ## Decision
 
-Pending: the product owner picks an option. After the decision the status becomes Accepted and the `needs-decision`
-label is removed from #563, #564 and the dependent PBIs (#565, #569, or whatever replaces them).
+Accepted by the product owner on 2026-10-07: **option A, rooms as shared spaces**, as recommended above, including the
+answers to the open questions. Search and sorting (E) stay a later, independent addition. #565 (business backend and
+BFF) and #569 (the overview) are implemented as written.
