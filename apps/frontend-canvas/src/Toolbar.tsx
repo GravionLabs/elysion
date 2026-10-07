@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import type { ToolType } from '@excalidraw/excalidraw/types';
 import { CanvasMenu, type CanvasMenuItem } from './CanvasMenu';
-import { STICKY_COLORS, type StickyColor } from './sticky-note';
+import { STICKY_COLORS, borderColor, paperColor, type StickyColor } from './sticky-note';
 
 export type ToolbarTool = Extract<
   ToolType,
@@ -174,7 +174,10 @@ export type HistoryAction = 'undo' | 'redo';
 export interface ToolbarProps {
   activeTool: ToolType | 'custom';
   onSelect: (tool: ToolbarTool) => void;
+  /** Makes a note in a color; the button is only shown when this is given. */
   onAddSticky?: (color: StickyColor) => void;
+  /** The color the next note gets (the one used last): the button's icon shows it and one click makes such a note. */
+  stickyColor?: StickyColor;
   /** Undo and redo; the buttons are only shown when this is given. */
   onHistory?: (action: HistoryAction) => void;
   /** Connects the two selected elements; the button is only shown when this is given. */
@@ -215,11 +218,27 @@ const FIT_ICON = (
   </Icon>
 );
 
-const STICKY_ICON = (
-  <Icon>
-    <path d="M5 4h14a1 1 0 0 1 1 1v9l-6 6H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM14 20v-5a1 1 0 0 1 1-1h5" />
-  </Icon>
-);
+/** A sticky note in a color: its paper with the darker border, and the folded corner. */
+function StickyIcon({ color }: { color: StickyColor }) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+      <path
+        d="M5 4h14a1 1 0 0 1 1 1v9l-6 6H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"
+        fill={paperColor(color)}
+        stroke={borderColor(color)}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 20v-5a1 1 0 0 1 1-1h5"
+        fill="none"
+        stroke={borderColor(color)}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 const CONNECT_ICON = (
   <Icon>
@@ -234,6 +253,7 @@ export function Toolbar({
   activeTool,
   onSelect,
   onAddSticky,
+  stickyColor = STICKY_COLORS[0],
   onHistory,
   onConnect,
   onZoom,
@@ -306,33 +326,58 @@ export function Toolbar({
           })}
           {onAddSticky && group.some((d) => d.tool === 'text') && (
             <div className="elysion-sticky">
+              {/* Split button: the main part makes a note in the current color at once, the arrow picks another. */}
               <button
                 type="button"
-                className={stickyOpen ? 'elysion-icon-button active' : 'elysion-icon-button'}
+                className="elysion-icon-button elysion-sticky__main"
                 aria-label="Sticky note"
-                aria-haspopup="true"
-                aria-expanded={stickyOpen}
-                title="Sticky note"
+                title="Sticky note (N)"
                 data-testid="elysion-tool-sticky"
+                onClick={() => onAddSticky(stickyColor)}
+              >
+                <StickyIcon color={stickyColor} />
+              </button>
+              <button
+                type="button"
+                className={
+                  stickyOpen
+                    ? 'elysion-icon-button elysion-sticky__arrow active'
+                    : 'elysion-icon-button elysion-sticky__arrow'
+                }
+                aria-label="Sticky note color"
+                aria-haspopup="menu"
+                aria-expanded={stickyOpen}
+                title="Sticky note color"
+                data-testid="elysion-sticky-color"
                 onClick={() => setStickyOpen((open) => !open)}
               >
-                {STICKY_ICON}
+                <svg viewBox="0 0 10 10" width="8" height="8" aria-hidden="true" focusable="false">
+                  <path
+                    d="M2 3.5 5 6.5 8 3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                  />
+                </svg>
               </button>
               {stickyOpen && (
-                <div className="elysion-sticky__colors" role="group" aria-label="Sticky note color">
+                <div className="elysion-sticky__colors" role="menu" aria-label="Sticky note color">
                   {STICKY_COLORS.map((color) => (
                     <button
                       key={color.name}
                       type="button"
+                      role="menuitemradio"
+                      aria-checked={color.name === stickyColor.name}
                       className="elysion-sticky__swatch"
-                      style={{ background: color.hex }}
                       aria-label={`${color.name} sticky note`}
                       title={`${color.name} sticky note`}
                       onClick={() => {
                         onAddSticky(color);
                         setStickyOpen(false);
                       }}
-                    />
+                    >
+                      <StickyIcon color={color} />
+                    </button>
                   ))}
                 </div>
               )}

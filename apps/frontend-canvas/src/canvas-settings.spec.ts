@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_GRID, GRID_KEYS, readGridSettings, writeGridSettings } from './canvas-settings';
+import {
+  DEFAULT_GRID,
+  GRID_KEYS,
+  readGridSettings,
+  readStickyColor,
+  writeGridSettings,
+  writeStickyColor,
+} from './canvas-settings';
+import { DEFAULT_STICKY_COLOR, STICKY_COLORS } from './sticky-note';
 
 /** A minimal in-memory `Storage`. */
 function memory(initial: Record<string, string> = {}): Storage {
@@ -48,5 +56,28 @@ describe('grid settings', () => {
     expect(readGridSettings(throwing)).toEqual(DEFAULT_GRID);
     expect(() => writeGridSettings({ show: true, snap: false, size: 10 }, throwing)).not.toThrow();
     expect(() => writeGridSettings({ show: true, snap: false, size: 10 }, null)).not.toThrow();
+  });
+});
+
+describe('sticky color', () => {
+  it('is yellow until another one was used', () => {
+    expect(readStickyColor(memory())).toBe(DEFAULT_STICKY_COLOR);
+    expect(DEFAULT_STICKY_COLOR.name).toBe('Yellow');
+  });
+
+  it('is stored by name and read back', () => {
+    const store = memory();
+
+    writeStickyColor(STICKY_COLORS[6], store);
+
+    expect(readStickyColor(store)).toBe(STICKY_COLORS[6]);
+  });
+
+  it('is yellow for a value that is not a color, without storage and with a storage that throws', () => {
+    expect(readStickyColor(memory({ 'elysion.sticky.color': 'Mauve' }))).toBe(DEFAULT_STICKY_COLOR);
+    expect(readStickyColor(null)).toBe(DEFAULT_STICKY_COLOR);
+    expect(readStickyColor(throwing)).toBe(DEFAULT_STICKY_COLOR);
+    expect(() => writeStickyColor(STICKY_COLORS[1], throwing)).not.toThrow();
+    expect(() => writeStickyColor(STICKY_COLORS[1], null)).not.toThrow();
   });
 });

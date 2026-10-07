@@ -8,7 +8,13 @@ import {
   nearestSide,
 } from './connection-points';
 import { sidePoint, type ScenePoint, type Side } from './connector';
-import { STICKY_COLORS, type StickyColor } from './sticky-note';
+import {
+  DEFAULT_STICKY_COLOR,
+  STICKY_COLORS,
+  borderColor,
+  paperColor,
+  type StickyColor,
+} from './sticky-note';
 
 /** A drag shorter than this (screen pixels) is a click on a circle and creates nothing. */
 export const MIN_DRAG_DISTANCE = 8;
@@ -47,10 +53,19 @@ export function dropSide(
   return nearestSide(target, sidePoint(source, dragSide));
 }
 
-/** The sticky color that matches an element's border (a note made by the toolbar), otherwise the first color. */
+/**
+ * The sticky color of an element: the color whose paper is the element's background (a note made now), or whose border
+ * or accent color is its stroke (a note made before the colored backgrounds, or a shape drawn by hand in that color).
+ * Anything else gets the default, yellow.
+ */
 export function stickyColorOf(element: ExcalidrawElement): StickyColor {
+  const background = element.backgroundColor.toLowerCase();
   const stroke = element.strokeColor.toLowerCase();
-  return STICKY_COLORS.find((color) => color.hex === stroke) ?? STICKY_COLORS[0];
+  return (
+    STICKY_COLORS.find((color) => paperColor(color) === background) ??
+    STICKY_COLORS.find((color) => color.hex === stroke || borderColor(color) === stroke) ??
+    DEFAULT_STICKY_COLOR
+  );
 }
 
 /** The distance between two scene points in screen pixels. */

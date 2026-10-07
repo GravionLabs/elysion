@@ -10,7 +10,7 @@ import {
   stickyColorOf,
 } from './connection-drop';
 import { connectionPoints, nearestPoint, SNAP_RADIUS } from './connection-points';
-import { STICKY_COLORS } from './sticky-note';
+import { STICKY_COLORS, borderColor, paperColor } from './sticky-note';
 
 const shape = (
   x: number,
@@ -77,13 +77,23 @@ describe('dropSide', () => {
 });
 
 describe('stickyColorOf', () => {
-  it('matches the border of a note made by the toolbar, ignoring case', () => {
-    const teal = STICKY_COLORS[1];
+  const colored = (background: string, stroke: string) =>
+    ({ ...shape(0, 0), backgroundColor: background, strokeColor: stroke }) as ExcalidrawElement;
 
-    expect(stickyColorOf(shape(0, 0, 100, 60, teal.hex.toUpperCase()))).toBe(teal);
+  it('matches a note by its paper, ignoring case', () => {
+    const teal = STICKY_COLORS[6];
+
+    expect(stickyColorOf(colored(paperColor(teal).toUpperCase(), '#000000'))).toBe(teal);
   });
 
-  it('is the first color for anything else', () => {
+  it('still matches a note made before the colored backgrounds by its stroke', () => {
+    const purple = STICKY_COLORS[4];
+
+    expect(stickyColorOf(colored('#f1ebfd', purple.hex.toUpperCase()))).toBe(purple);
+    expect(stickyColorOf(colored('transparent', borderColor(purple)))).toBe(purple);
+  });
+
+  it('is yellow for anything else', () => {
     expect(stickyColorOf(shape(0, 0))).toBe(STICKY_COLORS[0]);
   });
 });
