@@ -1,0 +1,139 @@
+@if (timer(); as current) {
+  <div class="timer-group">
+    <span
+      class="chip"
+      role="timer"
+      aria-live="off"
+      [class.paused]="paused()"
+      [class.ended]="ended()"
+      [title]="startedByLabel()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="13" r="7" />
+        <path d="M12 9v4l2.5 1.5M9.5 3h5" />
+      </svg>
+      <span class="clock">{{ clock() }}</span>
+      @if (paused()) {
+        <span class="state">paused</span>
+      }
+    </span>
+
+    @if (canControl()) {
+      @if (paused()) {
+        <button
+          type="button"
+          class="icon-button resume"
+          aria-label="Resume the timer"
+          title="Resume"
+          (click)="resumeRequested.emit()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="icon-button pause"
+          aria-label="Pause the timer"
+          title="Pause"
+          (click)="pauseRequested.emit()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" /></svg>
+        </button>
+      }
+      <button
+        type="button"
+        class="icon-button extend"
+        aria-label="Add one minute to the timer"
+        title="Add one minute"
+        (click)="extendRequested.emit(60000)"
+      >
+        +1
+      </button>
+      <button
+        type="button"
+        class="icon-button stop"
+        aria-label="Stop the timer"
+        title="Stop the timer for everybody"
+        (click)="stopRequested.emit()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    }
+
+    <button
+      type="button"
+      class="icon-button mute"
+      [attr.aria-pressed]="muted()"
+      [attr.aria-label]="muted() ? 'Turn the end chime on' : 'Mute the end chime'"
+      [title]="muted() ? 'The end chime is muted' : 'Mute the end chime'"
+      (click)="toggleMute()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 9v6h4l5 4V5L9 9z" />
+        @if (muted()) {
+          <path d="M17 9l4 6m0-6-4 6" />
+        } @else {
+          <path d="M17.5 9a4 4 0 0 1 0 6" />
+        }
+      </svg>
+    </button>
+  </div>
+} @else if (canControl()) {
+  <button
+    type="button"
+    class="menu-button"
+    aria-haspopup="menu"
+    [attr.aria-expanded]="open()"
+    title="Start a timer for everybody on this board"
+    (click)="toggle()"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="13" r="7" />
+      <path d="M12 9v4l2.5 1.5M9.5 3h5" />
+    </svg>
+    <span>Timer</span>
+  </button>
+
+  @if (open()) {
+    <form
+      class="menu"
+      role="group"
+      aria-label="Start a timer"
+      (submit)="$event.preventDefault(); start()"
+    >
+      <div class="presets">
+        @for (preset of presets; track preset) {
+          <button
+            type="button"
+            class="preset"
+            [class.selected]="minutes() === '' + preset"
+            [attr.aria-pressed]="minutes() === '' + preset"
+            (click)="pick(preset)"
+          >
+            {{ preset }} min
+          </button>
+        }
+      </div>
+      <div class="custom">
+        <label for="timer-minutes">Minutes</label>
+        <input
+          id="timer-minutes"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          [value]="minutes()"
+          [attr.aria-invalid]="error() ? 'true' : null"
+          (input)="updateMinutes($event)"
+        />
+        <button type="submit" class="start">Start</button>
+      </div>
+      @if (error(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+      <label class="mute-option">
+        <input type="checkbox" [checked]="muted()" (change)="toggleMute()" />
+        Mute the end chime
+      </label>
+    </form>
+  }
+}

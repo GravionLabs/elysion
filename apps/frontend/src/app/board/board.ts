@@ -27,6 +27,7 @@ import { ExportRequest } from '../topbar/export-menu';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
 import { SessionService } from '../auth/session.service';
 import { PresenceStore } from './presence-store';
+import type { TimerState } from './canvas-element';
 import { TEMPLATE_STATE_KEY, TemplateApi } from './template-api';
 
 /** What the user is typing into the Save as template form. */
@@ -92,6 +93,9 @@ export class Board {
 
   /** A short message about the last export or import; `null` when there is none. */
   readonly notice = signal<string | null>(null);
+
+  /** The board's shared timer from the canvas's `timer` event (ADR 0020), or `null`. */
+  readonly timer = signal<TimerState | null>(null);
 
   /** An export is being prepared: a PDF of a large board takes seconds, so the Export menu says so. */
   readonly exporting = signal<ExportFormat | null>(null);
@@ -278,6 +282,25 @@ export class Board {
     if (status === 'connected' && this.status() === 'error') {
       // The canvas reports connection failures as `error` and keeps retrying: once it is connected again it is fine.
       this.status.set('ready');
+    }
+  }
+
+  onTimer(event: Event): void {
+    this.timer.set((event as CustomEvent<{ state: TimerState | null }>).detail.state);
+  }
+
+  /** Asks the canvas to change the shared timer; a refusal (read-only, not ready) is shown in the banner. */
+  async timerCommand(run: (canvas: CanvasElement) => Promise<void> | undefined): Promise<void> {
+    const canvas = this.canvas()?.nativeElement;
+    const call = canvas ? run(canvas) : undefined;
+    if (!call) {
+      this.notice.set('The canvas is not ready yet.');
+      return;
+    }
+    try {
+      await call;
+    } catch (error) {
+      this.notice.set(error instanceof Error ? error.message : 'The timer could not be changed.');
     }
   }
 

@@ -19,6 +19,7 @@
     [user]="session.user()"
     [canShare]="canShare()"
     [readOnly]="readOnly()"
+    [timer]="timer()"
     (renameRequested)="rename($event)"
     (themeToggle)="toggleTheme()"
     (libraryToggle)="toggleLibrary()"
@@ -28,6 +29,11 @@
     (importChosen)="chooseImport($event)"
     (templateChosen)="addTemplate($event.id)"
     (saveTemplateRequested)="startSaveTemplate($event.selectionOnly)"
+    (timerStart)="timerCommand((c) => c.startTimer?.($event))"
+    (timerPause)="timerCommand((c) => c.pauseTimer?.())"
+    (timerResume)="timerCommand((c) => c.resumeTimer?.())"
+    (timerExtend)="timerCommand((c) => c.extendTimer?.($event))"
+    (timerStop)="timerCommand((c) => c.stopTimer?.())"
   />
   @if (pendingImport(); as file) {
     <div class="board-banner confirm" role="alertdialog" aria-label="Confirm import">
@@ -105,6 +111,7 @@
       [tokenProvider]="wsTokenProvider"
       [attr.readonly]="readOnly() ? '' : null"
       [attr.user-name]="session.user()?.name"
+      [attr.user-id]="session.user()?.id"
       [attr.user-color]="session.user()?.color"
       (ready)="onCanvasReady()"
       (error)="onCanvasError()"
@@ -113,6 +120,7 @@
       (librarychange)="onLibraryChange($event)"
       (selectioncount)="onSelectionCount($event)"
       (presence)="onPresence($event)"
+      (timer)="onTimer($event)"
     ></elysion-canvas>
   }
   @if (shareOpen() && canShare()) {
