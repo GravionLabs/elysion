@@ -12,7 +12,9 @@ import type { CanvasMenuItem } from './CanvasMenu';
 import {
   GRID_SIZES,
   readGridSettings,
+  readStickyColor,
   writeGridSettings,
+  writeStickyColor,
   type GridSettings,
   type GridSize,
 } from './canvas-settings';
@@ -178,6 +180,10 @@ export function CanvasApp({
   const [canConnect, setCanConnect] = useState(false);
   // The grid, kept per browser. `show` mirrors Excalidraw's own grid mode (its shortcut Ctrl+' toggles it too).
   const [grid, setGrid] = useState<GridSettings>(readGridSettings);
+  // The color of the next sticky note: the one used last, kept per browser (yellow at first).
+  const [stickyColor, setStickyColor] = useState<StickyColor>(readStickyColor);
+  const stickyColorRef = useRef(stickyColor);
+  stickyColorRef.current = stickyColor;
   const gridRef = useRef(grid);
   gridRef.current = grid;
   // A pointer is down on the canvas. Excalidraw snaps exactly when its grid mode is on, and draws the grid then too;
@@ -325,10 +331,13 @@ export function CanvasApp({
   const connectSelectionRef = useRef(connectSelection);
   connectSelectionRef.current = connectSelection;
 
-  // The key C. Not with a modifier (Ctrl+C is copy), not while typing, and not while a text is being edited.
+  // The keys C (connect the two selected elements) and N (a sticky note in the current color). Not with a modifier
+  // (Ctrl+C is copy), not while typing, and not while a text is being edited. `addSticky` is defined further down.
+  const addStickyRef = useRef<(color: StickyColor) => void>(() => {});
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== 'c' || event.ctrlKey || event.metaKey || event.altKey) return;
+      const key = event.key.toLowerCase();
+      if ((key !== 'c' && key !== 'n') || event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.repeat || event.defaultPrevented) return;
       const target = event.target;
       if (
@@ -338,7 +347,8 @@ export function CanvasApp({
         return;
       }
       if (apiRef.current?.getAppState().editingTextElement) return;
-      connectSelectionRef.current();
+      if (key === 'c') connectSelectionRef.current();
+      else if (!readOnlyRef.current) addStickyRef.current(stickyColorRef.current);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -461,6 +471,8 @@ export function CanvasApp({
   const addSticky = (color: StickyColor) => {
     const api = apiRef.current;
     if (!api) return;
+    setStickyColor(color);
+    writeStickyColor(color);
     const { scrollX, scrollY, zoom, width, height } = api.getAppState();
     const center = {
       x: width / 2 / zoom.value - scrollX,
@@ -468,12 +480,14 @@ export function CanvasApp({
     };
     const note = createStickyNote(color, center);
     api.updateScene({
-      elements: [...api.getSceneElements(), ...note],
+      elements: [...api.getSceneElementsIncludingDeleted(), ...note],
       appState: { selectedElementIds: { [note[0].id]: true } },
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     });
     api.setActiveTool({ type: 'selection' });
   };
+
+  addStickyRef.current = addSticky;
 
   return (
     <div
@@ -565,6 +579,7 @@ export function CanvasApp({
         activeTool={activeTool}
         onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
         onAddSticky={addSticky}
+        stickyColor={stickyColor}
         onHistory={onHistory}
         onConnect={canConnect && !readOnly ? connectSelection : undefined}
         onZoom={onZoom}

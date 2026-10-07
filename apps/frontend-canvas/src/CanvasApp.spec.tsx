@@ -1,8 +1,9 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasApp } from './CanvasApp';
+import { STICKY_COLORS, paperColor } from './sticky-note';
 import { excalidrawReady } from './test-utils';
 
 /** Excalidraw's own theme shortcut, Alt+Shift+D; it listens on its container, once it has loaded. */
@@ -17,6 +18,7 @@ async function switchThemeWithShortcut(container: HTMLElement) {
 }
 
 describe('CanvasApp', () => {
+  beforeEach(() => localStorage.clear()); // the sticky color and the grid are kept per browser
   it('renders the Excalidraw canvas', async () => {
     render(<CanvasApp boardId="test-board" />);
 
@@ -132,8 +134,7 @@ describe('CanvasApp', () => {
 
     expect(await controls.exportBoard('excalidraw')).toBeNull(); // nothing on the board yet
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sticky note' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Amber sticky note' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sticky note' })); // one click: a note in the current color
 
     const file = (await controls.exportBoard('excalidraw')) as Blob;
     const ids = (JSON.parse(await file.text()).elements as { id: string }[]).map((e) => e.id);
@@ -149,8 +150,7 @@ describe('CanvasApp', () => {
     render(<CanvasApp boardId="test-board" onControls={onControls} />);
     await screen.findByTestId('toolbar-rectangle');
     const controls = onControls.mock.calls[0][0];
-    fireEvent.click(screen.getByRole('button', { name: 'Sticky note' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Amber sticky note' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sticky note' })); // one click: a note in the current color
     const file = (await controls.exportBoard('excalidraw')) as Blob;
     const ids = async () =>
       (
@@ -217,8 +217,7 @@ describe('CanvasApp', () => {
     await excalidrawReady(container);
     const controls = onControls.mock.calls[0][0];
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sticky note' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Amber sticky note' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sticky note' })); // one click: a note in the current color
     expect(await controls.exportBoard('excalidraw')).not.toBeNull();
 
     // By test id: Excalidraw's own (CSS-hidden) Undo is in the DOM too, which jsdom does not hide.
@@ -436,5 +435,96 @@ describe('the grid', () => {
     expect(screen.getByRole('menuitemcheckbox', { name: 'Show grid' })).toBeTruthy();
     expect(screen.queryByRole('menuitemcheckbox', { name: 'Snap to grid' })).toBeNull();
     expect(screen.getByRole('menuitemradio', { name: '20 px' })).toBeTruthy();
+  });
+});
+
+describe('sticky notes made with one click', () => {
+  beforeEach(() => localStorage.clear());
+
+  /** The notes of the board: the rectangles that carry a bound text, with their colors. */
+  async function notes(controls: { exportBoard(format: string): Promise<Blob | null> }) {
+    const blob = await controls.exportBoard('excalidraw');
+    if (!blob) return [];
+    const elements = JSON.parse(await blob.text()).elements as {
+      type: string;
+      backgroundColor: string;
+      boundElements: { type: string }[] | null;
+    }[];
+    return elements
+      .filter((e) => e.type === 'rectangle' && e.boundElements?.some((b) => b.type === 'text'))
+      .map((e) => e.backgroundColor);
+  }
+
+  async function setup() {
+    const onControls = vi.fn();
+    const { container } = render(<CanvasApp boardId="test-board" onControls={onControls} />);
+    await excalidrawReady(container);
+    return { container, controls: onControls.mock.calls[0][0] };
+  }
+
+  it('makes a yellow note with the first click, a note in the chosen color after choosing, and then that color again', async () => {
+    const { controls } = await setup();
+    const sticky = () => fireEvent.click(screen.getByRole('button', { name: 'Sticky note' }));
+
+    sticky();
+    await waitFor(async () =>
+      expect(await notes(controls)).toEqual([paperColor(STICKY_COLORS[0])]),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sticky note color' }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Teal sticky note' }));
+    sticky();
+
+    await waitFor(async () =>
+      expect(await notes(controls)).toEqual([
+        paperColor(STICKY_COLORS[0]),
+        paperColor(STICKY_COLORS[6]),
+        paperColor(STICKY_COLORS[6]),
+      ]),
+    );
+    expect(localStorage.getItem('elysion.sticky.color')).toBe('Teal');
+  }, 20000);
+
+  it('shows the colors as note icons with the current one checked, and starts with the stored color after a reload', async () => {
+    localStorage.setItem('elysion.sticky.color', 'Pink');
+    await setup();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sticky note color' }));
+
+    const items = screen.getAllByRole('menuitemradio');
+    expect(items).toHaveLength(STICKY_COLORS.length);
+    expect(items.every((item) => item.querySelector('svg path'))).toBe(true); // a note icon, not a plain circle
+    expect(
+      items
+        .find((item) => item.getAttribute('aria-checked') === 'true')
+        ?.getAttribute('aria-label'),
+    ).toBe('Pink sticky note');
+  });
+
+  it('makes a note with the key N, in the current color, and not while typing in a field', async () => {
+    const { controls } = await setup();
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+
+    fireEvent.keyDown(input, { key: 'n' });
+    fireEvent.keyDown(window, { key: 'n', ctrlKey: true });
+    expect(await notes(controls)).toEqual([]);
+
+    fireEvent.keyDown(window, { key: 'n' });
+    await waitFor(async () => expect(await notes(controls)).toHaveLength(1));
+    input.remove();
+  });
+
+  it('has no sticky button for a viewer, and N makes nothing there', async () => {
+    const onControls = vi.fn();
+    const { container } = render(
+      <CanvasApp boardId="test-board" onControls={onControls} readOnly />,
+    );
+    await excalidrawReady(container);
+
+    fireEvent.keyDown(window, { key: 'n' });
+
+    expect(screen.queryByRole('button', { name: 'Sticky note' })).toBeNull();
+    expect(await notes(onControls.mock.calls[0][0])).toEqual([]);
   });
 });

@@ -1,5 +1,7 @@
+import { DEFAULT_STICKY_COLOR, STICKY_COLORS, type StickyColor } from './sticky-note';
+
 /**
- * Settings of the canvas that a person keeps per browser (not per board): the grid. Stored in `localStorage`, which
+ * Settings of the canvas that a person keeps per browser (not per board): the grid and the color of the next sticky note. Stored in `localStorage`, which
  * can be missing or throw (a private window, blocked site data): every access is guarded and the defaults apply.
  */
 
@@ -54,5 +56,27 @@ export function writeGridSettings(settings: GridSettings, store: Storage | null 
     store.setItem(GRID_KEYS.size, String(settings.size));
   } catch {
     // Not stored: the settings last until the page is closed.
+  }
+}
+
+const STICKY_KEY = 'elysion.sticky.color';
+
+/** The color the next sticky note gets: the one used last, yellow when none is stored or the value is not a color. */
+export function readStickyColor(store: Storage | null = storage()): StickyColor {
+  if (!store) return DEFAULT_STICKY_COLOR;
+  try {
+    const name = store.getItem(STICKY_KEY);
+    return STICKY_COLORS.find((color) => color.name === name) ?? DEFAULT_STICKY_COLOR;
+  } catch {
+    return DEFAULT_STICKY_COLOR;
+  }
+}
+
+export function writeStickyColor(color: StickyColor, store: Storage | null = storage()): void {
+  if (!store) return;
+  try {
+    store.setItem(STICKY_KEY, color.name);
+  } catch {
+    // Not stored: the color lasts until the page is closed.
   }
 }

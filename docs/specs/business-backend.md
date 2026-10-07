@@ -43,7 +43,7 @@ Templates (`Template`: `Id`, `Name`, `Description`, `Scene`, `IsBuiltIn`, `Creat
 | `GET /templates`      | `200`, built-in templates first, then by name; each without its `scene` |
 | `GET /templates/{id}` | `200` with the template including `scene`, or `404` (a non-GUID id too) |
 
-The built-in templates (Retrospective, Kanban, Brainstorming) are seeded by the `AddTemplates` migration from the embedded `Templates/*.excalidraw` files (made of the canvas's sticky notes), with fixed ids, so every database has the same ones. Changing a built-in scene means a new migration (`dotnet ef migrations add ...` updates the seed through `HasData`).
+The built-in templates (Retrospective, Kanban, Brainstorming) are seeded by the `AddTemplates` migration from the embedded `Templates/*.excalidraw` files (made of the canvas's sticky notes), with fixed ids, so every database has the same ones. The notes in the scenes carry the canvas's note look (the color as the background, a darker border; see "Sticky notes" in the frontend spec); `UpdateBuiltInTemplateColors` brought them to it. Changing a built-in scene means a new migration (`dotnet ef migrations add ...` updates the seed through `HasData`).
 
 ## Authentication
 

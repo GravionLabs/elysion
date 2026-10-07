@@ -90,7 +90,7 @@ describe('canvas Yjs sync (two CanvasApp-style peers)', () => {
     expect(synced).toMatchObject({
       roughness: 0,
       fillStyle: 'solid',
-      strokeColor: STICKY_COLORS[3].hex,
+      strokeColor: card.strokeColor,
       backgroundColor: card.backgroundColor,
     });
 
