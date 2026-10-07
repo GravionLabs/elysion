@@ -100,7 +100,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
   [
     {
       tool: 'arrow',
-      label: 'Arrow',
+      label: 'Connector',
       shortcut: 'A',
       icon: (
         <Icon>
