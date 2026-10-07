@@ -738,6 +738,98 @@ describe('Board', () => {
     });
   });
 
+  describe('the shared timer', () => {
+    type TimerCanvas = HTMLElement & {
+      startTimer?: ReturnType<typeof vi.fn>;
+      pauseTimer?: ReturnType<typeof vi.fn>;
+      resumeTimer?: ReturnType<typeof vi.fn>;
+      extendTimer?: ReturnType<typeof vi.fn>;
+      stopTimer?: ReturnType<typeof vi.fn>;
+    };
+    const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as TimerCanvas;
+    const bar = () => fixture.nativeElement.querySelector('app-top-bar') as HTMLElement;
+    const state = {
+      durationMs: 5 * 60_000,
+      startedAt: Date.now(),
+      pausedAt: null,
+      remainingAtPauseMs: null,
+      startedBy: { id: 'kc-1', name: 'Ada' },
+    };
+    const announce = (timer: unknown) => {
+      canvas().dispatchEvent(new CustomEvent('timer', { detail: { state: timer } }));
+      fixture.detectChanges();
+    };
+    const control = (label: string) =>
+      bar().querySelector(`button[aria-label="${label}"]`) as HTMLButtonElement;
+
+    it('tells the canvas who the user is, for the timer to remember who started it', () => {
+      expect(canvas().getAttribute('user-id')).toBe(FAKE_USER.id);
+    });
+
+    it('shows the countdown the canvas announces, and removes it when the timer is gone', () => {
+      expect(bar().querySelector('[role="timer"]')).toBeNull();
+
+      announce(state);
+      expect(bar().querySelector('[role="timer"] .clock')?.textContent?.trim()).toMatch(
+        /^0[45]:\d\d$/,
+      );
+
+      announce(null);
+      expect(bar().querySelector('[role="timer"]')).toBeNull();
+    });
+
+    it('starts a timer through the canvas from the Timer menu', () => {
+      canvas().startTimer = vi.fn().mockResolvedValue(undefined);
+      (bar().querySelector('app-timer-menu .menu-button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      (bar().querySelectorAll('.preset')[1] as HTMLElement).click(); // 2 min
+      fixture.detectChanges();
+      (bar().querySelector('.start') as HTMLElement).click();
+
+      expect(canvas().startTimer).toHaveBeenCalledWith(2 * 60_000);
+    });
+
+    it('passes pause, resume, +1 min and stop on to the canvas', () => {
+      Object.assign(canvas(), {
+        pauseTimer: vi.fn().mockResolvedValue(undefined),
+        resumeTimer: vi.fn().mockResolvedValue(undefined),
+        extendTimer: vi.fn().mockResolvedValue(undefined),
+        stopTimer: vi.fn().mockResolvedValue(undefined),
+      });
+      announce(state);
+
+      control('Pause the timer').click();
+      control('Add one minute to the timer').click();
+      control('Stop the timer').click();
+      announce({ ...state, pausedAt: state.startedAt, remainingAtPauseMs: 1000 });
+      control('Resume the timer').click();
+
+      expect(canvas().pauseTimer).toHaveBeenCalledTimes(1);
+      expect(canvas().extendTimer).toHaveBeenCalledWith(60_000);
+      expect(canvas().stopTimer).toHaveBeenCalledTimes(1);
+      expect(canvas().resumeTimer).toHaveBeenCalledTimes(1);
+    });
+
+    it('says why the canvas refused, in the banner', async () => {
+      canvas().stopTimer = vi.fn().mockRejectedValue(new Error('This board is read-only.'));
+      announce(state);
+
+      control('Stop the timer').click();
+      await fixture.whenStable();
+
+      expect(component.notice()).toBe('This board is read-only.');
+    });
+
+    it('says so, without an error, while the canvas has no timer methods yet', async () => {
+      announce(state);
+
+      expect(() => control('Stop the timer').click()).not.toThrow();
+      await fixture.whenStable();
+
+      expect(component.notice()).toBe('The canvas is not ready yet.');
+    });
+  });
+
   describe('roles', () => {
     const uuid = '0197a8d2-1c3e-7a10-8000-000000000001';
     const canvas = () =>
@@ -794,6 +886,38 @@ describe('Board', () => {
       expect(bar().querySelector('.import-button')).toBeNull();
       expect(bar().querySelector('.library-toggle')).toBeNull();
       expect(bar().querySelector('.share-button')).toBeNull();
+    });
+
+    it('shows a viewer the timer and no way to start or change it', async () => {
+      await openAs('viewer');
+      canvas()!.dispatchEvent(
+        new CustomEvent('timer', {
+          detail: {
+            state: {
+              durationMs: 60_000,
+              startedAt: Date.now(),
+              pausedAt: null,
+              remainingAtPauseMs: null,
+              startedBy: { id: 'someone', name: 'Bea' },
+            },
+          },
+        }),
+      );
+      fixture.detectChanges();
+
+      expect(bar().querySelector('[role="timer"]')).toBeTruthy();
+      for (const label of ['Pause the timer', 'Add one minute to the timer', 'Stop the timer']) {
+        expect(bar().querySelector(`button[aria-label="${label}"]`)).toBeNull();
+      }
+      canvas()!.dispatchEvent(new CustomEvent('timer', { detail: { state: null } }));
+      fixture.detectChanges();
+      expect(bar().querySelector('app-timer-menu .menu-button')).toBeNull();
+    });
+
+    it('gives an editor the Timer menu', async () => {
+      await openAs('editor');
+
+      expect(bar().querySelector('app-timer-menu .menu-button')).toBeTruthy();
     });
 
     it("does not start the canvas before the role is known, so a viewer never gets an editor's canvas first", async () => {

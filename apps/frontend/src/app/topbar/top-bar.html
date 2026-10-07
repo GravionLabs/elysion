@@ -85,6 +85,16 @@
       [busy]="exporting()"
       (exportRequested)="exportRequested.emit($event)"
     />
+    <app-timer-menu
+      [timer]="timer()"
+      [canControl]="!readOnly()"
+      [userId]="user()?.id ?? null"
+      (startRequested)="timerStart.emit($event)"
+      (pauseRequested)="timerPause.emit()"
+      (resumeRequested)="timerResume.emit()"
+      (extendRequested)="timerExtend.emit($event)"
+      (stopRequested)="timerStop.emit()"
+    />
   </div>
 
   <div class="topbar-end">

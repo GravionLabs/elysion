@@ -189,4 +189,100 @@ describe('elysion-canvas custom element', () => {
 
     document.body.removeChild(el);
   });
+
+  describe('the shared timer', () => {
+    type TimerElement = HTMLElement & {
+      startTimer(durationMs: number): Promise<void>;
+      pauseTimer(): Promise<void>;
+      resumeTimer(): Promise<void>;
+      extendTimer(ms: number): Promise<void>;
+      stopTimer(): Promise<void>;
+    };
+    const mount = async (attributes: Record<string, string> = {}) => {
+      const el = document.createElement(ELEMENT_TAG_NAME) as TimerElement;
+      el.setAttribute('yjs-server-url', 'ws://localhost:9999/yjs');
+      el.setAttribute('board-id', `timer-${crypto.randomUUID()}`);
+      for (const [name, value] of Object.entries(attributes)) el.setAttribute(name, value);
+      const states: Array<{ state: unknown }> = [];
+      el.addEventListener('timer', (event) => states.push((event as CustomEvent).detail));
+      document.body.appendChild(el);
+      await waitFor(() => expect(el.querySelector('.excalidraw')).toBeTruthy());
+      return { el, states };
+    };
+
+    it('has methods that reject before the canvas is up', async () => {
+      const el = document.createElement(ELEMENT_TAG_NAME) as TimerElement;
+
+      await expect(el.startTimer(60_000)).rejects.toThrow('not ready');
+      await expect(el.pauseTimer()).rejects.toThrow('not ready');
+      await expect(el.resumeTimer()).rejects.toThrow('not ready');
+      await expect(el.extendTimer(60_000)).rejects.toThrow('not ready');
+      await expect(el.stopTimer()).rejects.toThrow('not ready');
+    });
+
+    it('starts a timer and announces the state as a timer event, then every change after it', async () => {
+      const { el, states } = await mount({ 'user-id': 'kc-1', 'user-name': 'Ada' });
+
+      // The controls arrive when Excalidraw is up: ask until the element answers.
+      await waitFor(async () => {
+        await el.startTimer(5 * 60_000);
+        expect(states.length).toBeGreaterThan(0);
+      });
+      expect(states.at(-1)?.state).toMatchObject({
+        durationMs: 5 * 60_000,
+        pausedAt: null,
+        startedBy: { id: 'kc-1', name: 'Ada' },
+      });
+
+      await el.pauseTimer();
+      expect(states.at(-1)?.state).toMatchObject({ pausedAt: expect.any(Number) });
+      await el.resumeTimer();
+      expect(states.at(-1)?.state).toMatchObject({ pausedAt: null });
+      await el.extendTimer(60_000);
+      expect((states.at(-1)!.state as { durationMs: number }).durationMs).toBeGreaterThan(
+        5 * 60_000,
+      );
+      await el.stopTimer();
+      expect(states.at(-1)).toEqual({ state: null });
+
+      document.body.removeChild(el);
+    });
+
+    it('uses a per-tab id when the host gives none', async () => {
+      const { el, states } = await mount();
+      await waitFor(async () => {
+        await el.startTimer(60_000);
+        expect(states.length).toBeGreaterThan(0);
+      });
+
+      expect((states.at(-1)!.state as { startedBy: { id: string } }).startedBy.id).toMatch(/\S+/);
+      document.body.removeChild(el);
+    });
+
+    it('rejects every method on a read-only canvas and announces nothing', async () => {
+      const { el, states } = await mount({ readonly: '' });
+      await waitFor(async () => {
+        await expect(el.startTimer(60_000)).rejects.toThrow('read-only');
+      });
+      await expect(el.pauseTimer()).rejects.toThrow('read-only');
+      await expect(el.resumeTimer()).rejects.toThrow('read-only');
+      await expect(el.extendTimer(60_000)).rejects.toThrow('read-only');
+      await expect(el.stopTimer()).rejects.toThrow('read-only');
+
+      expect(states).toEqual([]);
+      document.body.removeChild(el);
+    });
+
+    it('rejects a duration that makes no sense', async () => {
+      const { el } = await mount();
+      await waitFor(async () => {
+        await expect(el.startTimer(-1)).rejects.toThrow('milliseconds');
+      });
+      document.body.removeChild(el);
+    });
+
+    it('observes user-id', () => {
+      expect(ELEMENT_OBSERVES).toContain('user-id');
+    });
+  });
 });

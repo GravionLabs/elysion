@@ -1,0 +1,240 @@
+:host {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  color: var(--c-text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: var(--c-text-subtle);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  &:hover,
+  &[aria-expanded='true'] {
+    background: var(--c-surface-3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: -2px;
+  }
+}
+
+.timer-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+// The countdown: red at zero, quieter while it is paused.
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  color: var(--c-text);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: var(--c-primary-soft);
+  border: 1px solid var(--c-primary);
+  border-radius: 999px;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .state {
+    color: var(--c-text-subtle);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  &.paused {
+    background: var(--c-surface-3);
+    border-color: var(--c-border-muted);
+  }
+
+  &.ended {
+    color: var(--c-on-primary);
+    background: var(--c-danger);
+    border-color: var(--c-danger);
+  }
+}
+
+.icon-button {
+  display: inline-grid;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  place-items: center;
+  color: var(--c-text-subtle);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  &:hover {
+    color: var(--c-text);
+    background: var(--c-surface-3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: -2px;
+  }
+
+  // Stop is a red square, as on a recorder.
+  .stop-square {
+    fill: var(--c-danger);
+    stroke: var(--c-danger);
+  }
+}
+
+.menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  gap: 10px;
+  width: 260px;
+  padding: 12px;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preset {
+  height: 28px;
+  padding: 0 10px;
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  &.selected {
+    background: var(--c-primary-soft);
+    border-color: var(--c-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 1px;
+  }
+}
+
+.custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+
+  input {
+    width: 64px;
+    height: 30px;
+    padding: 0 8px;
+    color: var(--c-text);
+    font: inherit;
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+
+    &[aria-invalid='true'] {
+      border-color: var(--c-danger);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--c-focus);
+      outline-offset: 1px;
+    }
+  }
+}
+
+.start {
+  height: 30px;
+  margin-left: auto;
+  padding: 0 14px;
+  color: var(--c-on-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--c-primary);
+  border: 1px solid var(--c-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--c-primary-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 2px;
+  }
+}
+
+.error {
+  margin: 0;
+  color: var(--c-danger);
+  font-size: 12px;
+}
+
+.mute-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}

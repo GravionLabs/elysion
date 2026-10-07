@@ -48,6 +48,15 @@ import { YjsWebsocketClient, type YjsConnectionStatus } from './yjs/YjsWebsocket
 import { createSessionIdentity, withHostIdentity } from './presence/identity';
 import type { PresentUser } from './presence/collaborators';
 import { PresenceSync } from './presence/presence';
+import {
+  type TimerState,
+  extendTimer,
+  pauseTimer,
+  resumeTimer,
+  startTimer,
+  stopTimer,
+} from './facilitation/timer';
+import { type TimerSync, observeTimer } from './facilitation/timer-sync';
 
 /** What the host can ask the canvas to do; the element exposes these as methods. */
 export interface CanvasControls {
@@ -59,6 +68,15 @@ export interface CanvasControls {
   importFile(file: Blob): Promise<number>;
   /** Adds the contents of an .excalidraw file next to what is on the board, around the view center; resolves with the count added. */
   insertFile(file: Blob): Promise<number>;
+  /**
+   * The shared timer (ADR 0020), for everybody on the board; each rejects on a read-only canvas and before the canvas is
+   * up. The canvas keeps the state and announces it (`onTimerChange`), it does not draw the timer.
+   */
+  startTimer(durationMs: number): Promise<void>;
+  pauseTimer(): Promise<void>;
+  resumeTimer(): Promise<void>;
+  extendTimer(ms: number): Promise<void>;
+  stopTimer(): Promise<void>;
 }
 
 export interface CanvasAppProps {
@@ -87,6 +105,11 @@ export interface CanvasAppProps {
   onSelectionCount?: (count: number) => void;
   /** The other people on the board changed (somebody joined, left or was renamed); settled, not per pointer move. */
   onPresenceChange?: (users: PresentUser[]) => void;
+  /**
+   * The shared timer changed, on this client or another: its state, or `null` when there is none. Also called after
+   * the connection was made, so somebody who joins while a timer runs gets it.
+   */
+  onTimerChange?: (state: TimerState | null) => void;
   /** The connection to the board server failed; the canvas keeps retrying, so this is news, not the end. */
   onError?: (error: Error) => void;
   /**
@@ -102,6 +125,8 @@ export interface CanvasAppProps {
   readOnly?: boolean;
   /** The name shown next to this user's cursor on other screens; a generated guest name when unset. */
   userName?: string;
+  /** Who this user is (the identity provider's id): what the timer remembers about who started it. A per-tab id when unset. */
+  userId?: string;
   /** The color of this user's cursor, `#rrggbb`; one picked from the palette when unset or not valid. */
   userColor?: string;
 }
@@ -129,10 +154,12 @@ export function CanvasApp({
   onLibraryChange,
   onSelectionCount,
   onPresenceChange,
+  onTimerChange,
   onError,
   tokenProvider,
   readOnly = false,
   userName,
+  userId,
   userColor,
 }: CanvasAppProps) {
   const resolvedTheme = useResolvedTheme(theme);
@@ -158,6 +185,8 @@ export function CanvasApp({
   selectionCallback.current = onSelectionCount;
   const selectionCount = useRef(0);
   const presenceCallback = useRef(onPresenceChange);
+  const timerCallback = useRef(onTimerChange);
+  timerCallback.current = onTimerChange;
   const errorCallback = useRef(onError);
   presenceCallback.current = onPresenceChange;
   errorCallback.current = onError;
@@ -168,6 +197,10 @@ export function CanvasApp({
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
   const presenceRef = useRef<PresenceSync | null>(null);
+  const docRef = useRef<Y.Doc | null>(null);
+  const timerSyncRef = useRef<TimerSync | null>(null);
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
   // Who this tab is, made once: a re-render must not make a new collaborator.
   const identityRef = useRef(createSessionIdentity());
   const identity = withHostIdentity(identityRef.current, userName, userColor);
@@ -202,6 +235,9 @@ export function CanvasApp({
   // tldraw's persistenceKey.
   useEffect(() => {
     const doc = new Y.Doc();
+    docRef.current = doc;
+    const timerSync = observeTimer(doc, (state) => timerCallback.current?.(state));
+    timerSyncRef.current = timerSync;
     const binding = new ExcalidrawYjsBinding(doc);
     bindingRef.current = binding;
     if (apiRef.current) {
@@ -211,7 +247,11 @@ export function CanvasApp({
     const url = new URL(yjsServerUrl ?? defaultYjsServerUrl());
     url.searchParams.set('board', boardId);
     const client = new YjsWebsocketClient(url.toString(), doc, {
-      onStatusChange: (status) => statusCallback.current?.(status),
+      onStatusChange: (status) => {
+        statusCallback.current?.(status);
+        // The shell learns what the board's timer is once the connection is up, also when there is none.
+        if (status === 'connected') timerSync.emit();
+      },
       onError: (error) => errorCallback.current?.(error),
       // Read at every connect, so a provider the host sets later (after the element started) is used for the next
       // attempt; none set: no token (a gateway without authentication).
@@ -227,6 +267,9 @@ export function CanvasApp({
     presenceRef.current = presence;
 
     return () => {
+      timerSync.destroy();
+      timerSyncRef.current = null;
+      docRef.current = null;
       presence.destroy();
       presenceRef.current = null;
       client.destroy();
@@ -240,6 +283,19 @@ export function CanvasApp({
   useEffect(() => {
     presenceRef.current?.identityChanged(identityNow.current);
   }, [identity.name, identity.color]);
+
+  /** Runs a change of the shared timer; rejects when the canvas is read-only or not up, or when the change is invalid. */
+  const timerCommand = (run: (doc: Y.Doc) => unknown): Promise<void> => {
+    if (readOnlyRef.current) return Promise.reject(new Error('This board is read-only.'));
+    const doc = docRef.current;
+    if (!doc) return Promise.reject(new Error('The canvas is not ready yet.'));
+    try {
+      run(doc);
+      return Promise.resolve();
+    } catch (error) {
+      return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  };
 
   const panTo = (center: { x: number; y: number }) => {
     const snapshot = sceneStoreRef.current.get();
@@ -525,6 +581,17 @@ export function CanvasApp({
               readOnlyRef.current
                 ? Promise.reject(new Error('This board is read-only.'))
                 : insertFile(api, file),
+            startTimer: (durationMs) =>
+              timerCommand((doc) =>
+                startTimer(doc, durationMs, {
+                  id: userIdRef.current ?? identityNow.current.id,
+                  name: identityNow.current.name,
+                }),
+              ),
+            pauseTimer: () => timerCommand((doc) => pauseTimer(doc)),
+            resumeTimer: () => timerCommand((doc) => resumeTimer(doc)),
+            extendTimer: (ms) => timerCommand((doc) => extendTimer(doc, ms)),
+            stopTimer: () => timerCommand((doc) => stopTimer(doc)),
           });
         }}
         onPointerUpdate={(update) => presenceRef.current?.pointerMoved(update)}

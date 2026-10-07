@@ -7,6 +7,8 @@ import { ExcalidrawYjsBinding } from './excalidraw-binding.js';
 import { startTestYjsServer, waitUntil, type TestYjsServer } from './test-yjs-server.js';
 import { YjsWebsocketClient } from './YjsWebsocketClient.js';
 import { STICKY_COLORS, createStickyNote } from '../sticky-note.js';
+import { observeTimer } from '../facilitation/timer-sync.js';
+import { pauseTimer, readTimer, remaining, startTimer, stopTimer } from '../facilitation/timer.js';
 
 const WebSocketImpl = NodeWebSocketClient as unknown as typeof WebSocket;
 
@@ -38,6 +40,7 @@ function createCanvasPeer(url: string) {
   const { api, getElements, setElements } = createMockApi();
   binding.attach(api);
   return {
+    client,
     binding,
     getElements,
     setElements,
@@ -201,5 +204,63 @@ describe('canvas Yjs sync (two CanvasApp-style peers)', () => {
 
     peerA.destroy();
     peerB.destroy();
+  });
+
+  describe('the shared timer (ADR 0020)', () => {
+    const ADA = { id: 'u1', name: 'Ada' };
+
+    it('arrives on the other peer as a state change, and stops for both', async () => {
+      const url = `${server.url}?board=${crypto.randomUUID()}`;
+      const peerA = createCanvasPeer(url);
+      const peerB = createCanvasPeer(url);
+      const seenByB: Array<unknown> = [];
+      observeTimer(peerB.client.doc, (state) => seenByB.push(state));
+
+      startTimer(peerA.client.doc, 5 * 60_000, ADA);
+      await waitUntil(() => readTimer(peerB.client.doc) !== null);
+      expect(seenByB[0]).toMatchObject({ durationMs: 5 * 60_000, startedBy: ADA });
+
+      pauseTimer(peerB.client.doc);
+      await waitUntil(() => readTimer(peerA.client.doc)?.pausedAt != null);
+
+      stopTimer(peerA.client.doc);
+      await waitUntil(() => readTimer(peerB.client.doc) === null);
+      expect(seenByB.at(-1)).toBeNull();
+
+      peerA.destroy();
+      peerB.destroy();
+    });
+
+    it('is what a peer that joins while the timer runs gets with the document, at the right time', async () => {
+      const url = `${server.url}?board=${crypto.randomUUID()}`;
+      const peerA = createCanvasPeer(url);
+      const started = startTimer(peerA.client.doc, 10 * 60_000, ADA, Date.now() - 60_000);
+      await new Promise((resolve) => setTimeout(resolve, 200)); // the server has it before B connects
+
+      const peerB = createCanvasPeer(url);
+      await waitUntil(() => readTimer(peerB.client.doc) !== null);
+
+      expect(readTimer(peerB.client.doc)).toEqual(started);
+      expect(remaining(readTimer(peerB.client.doc)!, Date.now())).toBeLessThanOrEqual(
+        9 * 60_000 + 200,
+      );
+
+      peerA.destroy();
+      peerB.destroy();
+    });
+
+    it('is still there for a peer that connects again after the others left', async () => {
+      const url = `${server.url}?board=${crypto.randomUUID()}`;
+      const peerA = createCanvasPeer(url);
+      startTimer(peerA.client.doc, 10 * 60_000, ADA);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      peerA.destroy();
+
+      const peerB = createCanvasPeer(url);
+      await waitUntil(() => readTimer(peerB.client.doc) !== null);
+
+      expect(readTimer(peerB.client.doc)?.startedBy).toEqual(ADA);
+      peerB.destroy();
+    });
   });
 });

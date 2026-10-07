@@ -40,7 +40,7 @@ theme, and later the Library sidebar, export and import.
      token given once would be useless at the next reconnect. Without a provider the canvas connects without a token
      (a gateway that does not check one, which the realtime service no longer is).
    - _Commands_, as methods on the element, added when a feature needs one (`toggleLibrary()`,
-     `exportBoard(format)`, `importFile(file)`, `insertFile(file)` come with their PBIs; `exportBoard` takes `png`, `svg`, `pdf`
+     `exportBoard(format)`, `importFile(file)`, `insertFile(file)` come with their PBIs; the shared timer (ADR 0020) adds `startTimer(durationMs)`, `pauseTimer()`, `resumeTimer()`, `extendTimer(ms)` and `stopTimer()`, with the event `timer` and the attribute `user-id`; `exportBoard` takes `png`, `svg`, `pdf`
      (ADR 0013) or `excalidraw`). Methods rather than attributes,
      because they are actions, not state.
 3. **The theme is app-wide state in the shell** (`ThemeService`: a stored explicit choice, otherwise the

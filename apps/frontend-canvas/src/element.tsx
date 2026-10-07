@@ -1,5 +1,6 @@
 import { type Root, createRoot } from 'react-dom/client';
 import { CanvasApp, type CanvasControls } from './CanvasApp';
+import type { TimerState } from './facilitation/timer';
 import type { ExportFormat, ExportOptions } from './board-io';
 import { parseTheme } from './useResolvedTheme';
 
@@ -13,6 +14,7 @@ const OBSERVED_ATTRIBUTES = [
   'yjs-server-url',
   'theme',
   'user-name',
+  'user-id',
   'user-color',
   'readonly',
 ] as const;
@@ -93,6 +95,37 @@ class ElysionCanvasElement extends HTMLElement {
       : Promise.reject(new Error('The canvas is not ready yet.'));
   }
 
+  /** Starts a shared countdown of `durationMs` for everybody on the board; rejects on a read-only canvas or before it is up. */
+  startTimer(durationMs: number): Promise<void> {
+    return this.#timer((controls) => controls.startTimer(durationMs));
+  }
+
+  /** Pauses the shared timer. */
+  pauseTimer(): Promise<void> {
+    return this.#timer((controls) => controls.pauseTimer());
+  }
+
+  /** Lets a paused shared timer run on. */
+  resumeTimer(): Promise<void> {
+    return this.#timer((controls) => controls.resumeTimer());
+  }
+
+  /** Adds `ms` to the shared timer. */
+  extendTimer(ms: number): Promise<void> {
+    return this.#timer((controls) => controls.extendTimer(ms));
+  }
+
+  /** Removes the shared timer for everybody. */
+  stopTimer(): Promise<void> {
+    return this.#timer((controls) => controls.stopTimer());
+  }
+
+  #timer(run: (controls: CanvasControls) => Promise<void>): Promise<void> {
+    return this.#controls
+      ? run(this.#controls)
+      : Promise.reject(new Error('The canvas is not ready yet.'));
+  }
+
   #emit(name: string, detail: unknown): void {
     this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
   }
@@ -106,10 +139,12 @@ class ElysionCanvasElement extends HTMLElement {
         onLibraryChange={(open) => this.#emit('librarychange', { open })}
         onSelectionCount={(count) => this.#emit('selectioncount', { count })}
         onPresenceChange={(users) => this.#emit('presence', { users })}
+        onTimerChange={(state: TimerState | null) => this.#emit('timer', { state })}
         onError={(error) => this.#emit('error', { message: error.message })}
         tokenProvider={this.#tokenProvider}
         readOnly={this.hasAttribute('readonly')}
         userName={this.getAttribute('user-name') ?? undefined}
+        userId={this.getAttribute('user-id') ?? undefined}
         userColor={this.getAttribute('user-color') ?? undefined}
         boardId={this.getAttribute('board-id') ?? undefined}
         yjsServerUrl={this.getAttribute('yjs-server-url') ?? undefined}
