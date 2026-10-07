@@ -65,7 +65,6 @@ import {
   type VotingView,
   castVote,
   clearResults,
-  currentSession,
   retractVote,
   endSession,
   readVoting,
@@ -98,7 +97,7 @@ export interface CanvasControls {
   startVoting(options: StartOptions): Promise<void>;
   /** Closes the open voting: nobody can vote any more and the result is shown. A no-op when none is open. */
   endVoting(): Promise<void>;
-  /** Removes the voting that is shown (its votes with it). A no-op when there is none. */
+  /** Removes the results: every closed voting, with its votes. An open voting stays. A no-op when there are none. */
   clearVotingResults(): Promise<void>;
   /** Scrolls the view to an element (a result of the voting); rejects when it is not on the board. */
   scrollToElement(elementId: string): Promise<void>;
@@ -680,10 +679,12 @@ export function CanvasApp({
                 const open = readVoting(doc).openSessionId;
                 if (open) endSession(doc, open);
               }),
+            // All the results: every closed voting goes, so an older one does not show up after the last was cleared.
             clearVotingResults: () =>
               timerCommand((doc) => {
-                const current = currentSession(readVoting(doc));
-                if (current) clearResults(doc, current.id);
+                for (const session of readVoting(doc).sessions) {
+                  if (session.status === 'closed') clearResults(doc, session.id);
+                }
               }),
             scrollToElement: (elementId) => {
               const target = api.getSceneElements().find((element) => element.id === elementId);

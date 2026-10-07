@@ -339,6 +339,18 @@ describe('elysion-canvas custom element', () => {
       await el.clearVotingResults();
       expect(sessions.at(-1)).toEqual({ session: null });
       await el.clearVotingResults();
+
+      // An older closed voting does not come back after the last one was cleared: clearing removes them all.
+      await el.startVoting({ name: 'First', votesPerPerson: 1 });
+      await el.endVoting();
+      await el.startVoting({ name: 'Second', votesPerPerson: 1 });
+      await el.endVoting();
+      expect(sessions.at(-1)!.session).toMatchObject({ name: 'Second', status: 'closed' });
+      await el.clearVotingResults();
+      expect(sessions.at(-1)).toEqual({ session: null });
+      await el.startVoting({ name: 'Third', votesPerPerson: 1 });
+      await el.clearVotingResults();
+      expect(sessions.at(-1)!.session).toMatchObject({ name: 'Third', status: 'open' }); // an open one stays
       document.body.removeChild(el);
     });
 

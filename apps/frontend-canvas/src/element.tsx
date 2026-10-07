@@ -131,7 +131,7 @@ class ElysionCanvasElement extends HTMLElement {
     return this.#timer((controls) => controls.endVoting());
   }
 
-  /** Removes the voting that is shown, with its votes. */
+  /** Removes the results: every closed voting with its votes; an open one stays. */
   clearVotingResults(): Promise<void> {
     return this.#timer((controls) => controls.clearVotingResults());
   }
