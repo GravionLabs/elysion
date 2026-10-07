@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type PointerEvent } from 'react';
-import { CaptureUpdateAction } from '@excalidraw/excalidraw';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import {
@@ -20,6 +19,7 @@ import {
   screenDistance,
   stickyColorOf,
 } from './connection-drop';
+import { commitConnector } from './connector-commit';
 import { createConnector, sidePoint, type ScenePoint, type Side } from './connector';
 import { createStickyNote } from './sticky-note';
 import type { SceneStore } from './scene-store';
@@ -152,18 +152,11 @@ export function ConnectionPoints({ apiRef, rootRef, store }: ConnectionPointsPro
         ? dropSide(source, dragging.side, target, point, view.zoom)
         : oppositeSide(dragging.side),
     });
-    const replacement = new Map(updated.map((shape) => [shape.id, shape]));
-    const swap = (element: ExcalidrawElement) => replacement.get(element.id) ?? element;
-    api.updateScene({
-      // Including the deleted ones: removed elements are kept as tombstones for the sync.
-      elements: [
-        ...api.getSceneElementsIncludingDeleted().map(swap),
-        ...(note ?? []).map(swap),
-        arrow,
-      ],
-      appState: { selectedElementIds: { [note ? note[0].id : arrow.id]: true } },
-      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
-    });
+    commitConnector(
+      api,
+      { arrow, updated },
+      { extra: note ?? [], select: note ? note[0].id : arrow.id },
+    );
     if (note) editText(rootRef.current);
   };
 

@@ -201,6 +201,12 @@ The one definition of a connector (#516). `CONNECTOR_STYLE` is how it looks (`el
 
 **What is not synced.** The circles and the preview line are local to a window; the connector is a normal element and appears for everybody on the board, and moving a shape in either window re-routes it in the other (checked in the real stack with two windows). The overlay is not part of the scene and not in any export (PNG, SVG, PDF).
 
+### Connecting the two selected elements (#525)
+
+With **exactly two** connectable elements selected (the same rule as for connection points; text bound inside a selected shape is not a third element) and the board not read-only, the toolbar shows a **Connect** button ("Connect the two selected elements (C)"), and the key **C** does the same. The key is ignored with Ctrl, Cmd or Alt (Ctrl+C is copy), while a field or a text editor has the focus and with any other selection, so typing the letter c into a sticky note connects nothing.
+
+**Direction** (`connectorDirection`): from the element picked first to the one picked second. The order comes from `selection-order.ts`, which follows the selection through Excalidraw's `onChange` (shift-clicking one after the other; it is unknown when several elements joined at once, as with select all or a rubber band). When it is not known, the connector goes from the left element to the right one, or from the upper to the lower when they are one above the other. The connector is made with `createConnector` (the sides that face each other) and written by `commitConnector` in **one** update, so it is one undo step, and it becomes the selection. If the two elements are already connected in that direction (`findConnector`), nothing is added: the existing connector is selected.
+
 ### Limits
 
 Connectors between two points in the same direction (U-turns) and connectors to the shape itself are not supported at first. Nothing of this is shown to viewers.

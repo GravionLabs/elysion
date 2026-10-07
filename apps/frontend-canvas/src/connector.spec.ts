@@ -3,6 +3,9 @@ import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import { describe, expect, it } from 'vitest';
 import {
   CONNECTOR_STYLE,
+  connectableSelection,
+  connectorDirection,
+  findConnector,
   createConnector,
   elbowRoute,
   facingSides,
@@ -268,5 +271,88 @@ describe('elbowRoute', () => {
         }
       }
     }
+  });
+});
+
+describe('connectableSelection', () => {
+  const ids = (...elements: ExcalidrawElement[]) =>
+    Object.fromEntries(elements.map((e) => [e.id, true]));
+
+  it('is the two selected elements when exactly two connectable ones are selected', () => {
+    const a = box(0, 0);
+    const b = box(300, 0);
+    const c = box(600, 0);
+
+    expect(connectableSelection([a, b, c], ids(a, c))).toEqual([a, c]);
+  });
+
+  it('is null for one, three or none', () => {
+    const [a, b, c] = [box(0, 0), box(300, 0), box(600, 0)];
+
+    expect(connectableSelection([a, b, c], ids(a))).toBeNull();
+    expect(connectableSelection([a, b, c], ids(a, b, c))).toBeNull();
+    expect(connectableSelection([a, b, c], {})).toBeNull();
+  });
+
+  it('does not count the text inside a selected sticky note as a third element', () => {
+    const [card, text] = createStickyNote(STICKY_COLORS[0], { x: 0, y: 0 });
+    const other = box(400, 0);
+
+    expect(connectableSelection([card, text, other], ids(card, text, other))).toEqual([
+      card,
+      other,
+    ]);
+  });
+
+  it('is null when something that cannot be connected is selected as well', () => {
+    const a = box(0, 0);
+    const b = box(300, 0);
+    const [arrow] = convertToExcalidrawElements([
+      {
+        type: 'arrow',
+        x: 0,
+        y: 0,
+        points: [
+          [0, 0],
+          [10, 10],
+        ],
+      },
+    ] as never);
+
+    expect(connectableSelection([a, b, arrow], ids(a, b, arrow))).toBeNull();
+  });
+});
+
+describe('connectorDirection', () => {
+  it('starts at the element picked first when the order is known', () => {
+    const a = box(0, 0);
+    const b = box(300, 0);
+
+    expect(connectorDirection(b, a, true)).toEqual({ source: b, target: a });
+  });
+
+  it('starts at the left element, or at the upper one when they are one above the other', () => {
+    const left = box(0, 0);
+    const right = box(300, 20);
+    const upper = box(0, 0);
+    const lower = box(20, 300);
+
+    expect(connectorDirection(right, left, false)).toEqual({ source: left, target: right });
+    expect(connectorDirection(left, right, false)).toEqual({ source: left, target: right });
+    expect(connectorDirection(lower, upper, false)).toEqual({ source: upper, target: lower });
+  });
+});
+
+describe('findConnector', () => {
+  it('finds a connector in the same direction only, and ignores deleted ones', () => {
+    const a = box(0, 0);
+    const b = box(300, 0);
+    const { arrow } = createConnector([a, b], a.id, b.id);
+
+    expect(findConnector([a, b, arrow], a.id, b.id)).toBe(arrow);
+    expect(findConnector([a, b, arrow], b.id, a.id)).toBeUndefined();
+    expect(
+      findConnector([a, b, { ...arrow, isDeleted: true } as ExcalidrawElement], a.id, b.id),
+    ).toBeUndefined();
   });
 });
