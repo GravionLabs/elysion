@@ -1,17 +1,28 @@
 <header class="page-header">
   <app-brand />
   @if (session.user(); as user) {
-    <app-user-menu class="page-user" [user]="user" (logoutRequested)="session.logout()" />
+    <div class="page-actions">
+      <button
+        type="button"
+        class="button primary new-board"
+        aria-label="New board"
+        (click)="openCreate()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        <span class="new-board-label">New board</span>
+      </button>
+      <app-user-menu [user]="user" (logoutRequested)="session.logout()" />
+    </div>
   }
 </header>
 
 <main class="page">
   <div class="page-title">
     <h1>Boards</h1>
-    @if (state() === 'ready' && boards().length > 0 && createState() === 'closed') {
-      <button type="button" class="button primary new-board" (click)="openCreate()">
-        New board
-      </button>
+    @if (state() === 'ready' && boards().length > 0) {
+      <span class="board-count">
+        {{ boards().length }} {{ boards().length === 1 ? 'board' : 'boards' }}
+      </span>
     }
   </div>
 
@@ -123,7 +134,7 @@
           <h2>No boards yet</h2>
           <p>Create a board to start drawing and collaborating.</p>
           @if (createState() === 'closed') {
-            <button type="button" class="button primary new-board" (click)="openCreate()">
+            <button type="button" class="button create-first" (click)="openCreate()">
               Create your first board
             </button>
           }

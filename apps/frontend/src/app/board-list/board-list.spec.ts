@@ -99,9 +99,70 @@ describe('BoardList', () => {
 
     expect(text()).toContain('No boards yet');
     expect(el().querySelector('.boards')).toBeNull();
-    expect((el().querySelector('.new-board') as HTMLElement).textContent).toContain(
+    expect((el().querySelector('.create-first') as HTMLElement).textContent).toContain(
       'Create your first board',
     );
+  });
+
+  describe('the New board button in the header', () => {
+    const headerButton = () =>
+      el().querySelector('.page-header button.new-board') as HTMLButtonElement | null;
+
+    it('is there while the boards load', () => {
+      expect(headerButton()?.getAttribute('aria-label')).toBe('New board');
+      http.expectOne('/api/boards').flush([]);
+    });
+
+    it('is there in the empty state, which keeps a secondary button that does the same', async () => {
+      await respondWith([]);
+      expect(headerButton()).not.toBeNull();
+
+      await click('.create-first');
+      http.expectOne('/api/templates').flush(TEMPLATES);
+      await fixture.whenStable();
+
+      expect(el().querySelector('form')).not.toBeNull();
+    });
+
+    it('is there with boards and while the form is open, and opens the form', async () => {
+      await respondWith([board('b1', 'Retro')]);
+      expect(el().querySelector('.page-title .new-board')).toBeNull();
+
+      await click('.page-header button.new-board');
+      http.expectOne('/api/templates').flush(TEMPLATES);
+      await fixture.whenStable();
+
+      expect(el().querySelector('form')).not.toBeNull();
+      expect(headerButton()).not.toBeNull();
+    });
+
+    it('is there when the boards could not be loaded', async () => {
+      http.expectOne('/api/boards').flush('', { status: 502, statusText: 'Bad Gateway' });
+      await fixture.whenStable();
+
+      expect(headerButton()).not.toBeNull();
+    });
+
+    it('leaves a form that is already open as it is', async () => {
+      await respondWith([board('b1', 'Retro')]);
+      await click('.new-board');
+      http.expectOne('/api/templates').flush(TEMPLATES);
+      await type('Typed name');
+
+      await click('.new-board');
+
+      expect((el().querySelector('input') as HTMLInputElement).value).toBe('Typed name');
+    });
+  });
+
+  it('shows how many boards there are in the title row', async () => {
+    await respondWith([board('b2', 'Sprint review'), board('b1', 'Retro')]);
+    expect(el().querySelector('.board-count')?.textContent?.trim()).toBe('2 boards');
+  });
+
+  it('says "1 board" for a single board', async () => {
+    await respondWith([board('b1', 'Retro')]);
+    expect(el().querySelector('.board-count')?.textContent?.trim()).toBe('1 board');
   });
 
   it('shows an error with a retry when the boards cannot be loaded', async () => {

@@ -84,6 +84,9 @@ export class BoardList {
   }
 
   protected openCreate(): void {
+    if (this.createState() !== 'closed') {
+      return;
+    }
     this.draftName.set(DEFAULT_NEW_BOARD_NAME);
     this.createError.set(null);
     this.selectedTemplateId.set(null);
