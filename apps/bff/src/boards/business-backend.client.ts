@@ -18,6 +18,16 @@ export interface Board {
   id: string;
   name: string;
   createdAt: string;
+  /** The room the board is in, or null (ADR 0019). */
+  roomId: string | null;
+}
+
+/** A room as the business backend's room API returns it: `role` is the caller's role in it. */
+export interface Room {
+  id: string;
+  name: string;
+  createdAt: string;
+  role: 'Owner' | 'Editor' | 'Viewer';
 }
 
 /** A template in the list of the backend's template catalog: no scene. */
@@ -34,7 +44,7 @@ export interface Template extends TemplateSummary {
   scene: string;
 }
 
-/** A member of a board as the business backend's member API returns it. */
+/** A member of a board or of a room, as the business backend's member APIs return it. */
 export interface BoardMember {
   userId: string;
   displayName: string;
@@ -73,6 +83,50 @@ export class BusinessBackendClient {
 
   duplicateBoard(token: string, id: string): Promise<Board> {
     return this.request<Board>(token, 'POST', `/boards/${id}/duplicate`);
+  }
+
+  /** Puts a board in a room, or takes it out of its room (`roomId: null`). */
+  moveBoard(token: string, id: string, roomId: string | null): Promise<Board> {
+    return this.request<Board>(token, 'PUT', `/boards/${id}/room`, { roomId });
+  }
+
+  listRooms(token: string): Promise<Room[]> {
+    return this.request<Room[]>(token, 'GET', '/rooms');
+  }
+
+  createRoom(token: string, name: string): Promise<Room> {
+    return this.request<Room>(token, 'POST', '/rooms', { name });
+  }
+
+  renameRoom(token: string, id: string, name: string): Promise<Room> {
+    return this.request<Room>(token, 'PATCH', `/rooms/${id}`, { name });
+  }
+
+  async deleteRoom(token: string, id: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/rooms/${id}`);
+  }
+
+  listRoomMembers(token: string, roomId: string): Promise<BoardMember[]> {
+    return this.request<BoardMember[]>(token, 'GET', `/rooms/${roomId}/members`);
+  }
+
+  addRoomMember(token: string, roomId: string, email: string, role: string): Promise<BoardMember> {
+    return this.request<BoardMember>(token, 'POST', `/rooms/${roomId}/members`, { email, role });
+  }
+
+  changeRoomMemberRole(
+    token: string,
+    roomId: string,
+    userId: string,
+    role: string,
+  ): Promise<BoardMember> {
+    return this.request<BoardMember>(token, 'PATCH', `/rooms/${roomId}/members/${userId}`, {
+      role,
+    });
+  }
+
+  async removeRoomMember(token: string, roomId: string, userId: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/rooms/${roomId}/members/${userId}`);
   }
 
   listTemplates(token: string): Promise<TemplateSummary[]> {
@@ -172,7 +226,7 @@ export class BusinessBackendClient {
       throw new ForbiddenException();
     }
     if (response.status === 404) {
-      // A board that is not visible has no body; the member API says why (an unknown email, not a member).
+      // A board or room that is not visible has no body; the member and room APIs say why (an unknown email, not a member, no such room).
       throw new NotFoundException(await problemDetail(response));
     }
     if (response.status === 409) {

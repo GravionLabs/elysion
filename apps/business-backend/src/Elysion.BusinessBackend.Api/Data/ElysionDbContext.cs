@@ -11,6 +11,8 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
     public DbSet<User> Users => Set<User>();
     public DbSet<BoardMembership> BoardMemberships => Set<BoardMembership>();
     public DbSet<Template> Templates => Set<Template>();
+    public DbSet<Room> Rooms => Set<Room>();
+    public DbSet<RoomMembership> RoomMemberships => Set<RoomMembership>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,5 +65,35 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
             // "Which boards can this user open?" starts from the user.
             membership.HasIndex(m => m.UserId);
         });
+
+        modelBuilder.Entity<Room>(room =>
+        {
+            room.Property(r => r.Name).HasMaxLength(Room.MaxNameLength);
+            // A room does not go with its creator; it is left without one, like a board.
+            room.HasOne(r => r.Owner).WithMany().HasForeignKey(r => r.OwnerId).OnDelete(DeleteBehavior.SetNull);
+            // The boards stay when their room is deleted: they leave it.
+            room.HasMany(r => r.Boards)
+                .WithOne(b => b.Room)
+                .HasForeignKey(b => b.RoomId)
+                .OnDelete(DeleteBehavior.SetNull);
+            // "Which rooms can this user see?" starts from the owner.
+            room.HasIndex(r => r.OwnerId);
+        });
+
+        modelBuilder.Entity<RoomMembership>(membership =>
+        {
+            membership.HasKey(m => new { m.RoomId, m.UserId });
+            membership.Property(m => m.Role).HasConversion<string>().HasMaxLength(16);
+            membership.HasOne(m => m.Room)
+                .WithMany(r => r.Memberships)
+                .HasForeignKey(m => m.RoomId)
+                .OnDelete(DeleteBehavior.Cascade);
+            membership.HasOne(m => m.User).WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
+            // "Which rooms is this user a member of?" starts from the user.
+            membership.HasIndex(m => m.UserId);
+        });
+
+        // "Which boards are in this room?" starts from the room.
+        modelBuilder.Entity<Board>().HasIndex(b => b.RoomId);
     }
 }

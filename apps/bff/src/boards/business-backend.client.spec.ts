@@ -10,7 +10,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Board, BusinessBackendClient } from './business-backend.client.js';
 
 const TOKEN = 'the-access-token';
-const board: Board = { id: '0197a8d2-1c3e-7a10-8000-000000000001', name: 'Retro', createdAt: 'x' };
+const board: Board = {
+  id: '0197a8d2-1c3e-7a10-8000-000000000001',
+  name: 'Retro',
+  createdAt: 'x',
+  roomId: null,
+};
+const ROOM = '0197a8d2-1c3e-7a10-8000-0000000000b1';
 
 function respond(status: number, body?: unknown): Response {
   return new Response(body === undefined ? null : JSON.stringify(body), {
@@ -250,6 +256,72 @@ describe('BusinessBackendClient', () => {
 
       expect(error).toBeInstanceOf(NotFoundException);
       expect((error as NotFoundException).message).toBe('Not Found');
+    });
+  });
+
+  describe('rooms', () => {
+    it('lists the rooms with GET /rooms', async () => {
+      const room = { id: ROOM, name: 'Sprint', createdAt: 'x', role: 'Owner' };
+      fetchMock.mockImplementation(async () => respond(200, [room]));
+
+      await expect(client.listRooms(TOKEN)).resolves.toEqual([room]);
+      expect(lastCall().url).toBe('http://backend.test:5174/rooms');
+      expect(lastCall().init.method).toBe('GET');
+    });
+
+    it('creates, renames and deletes a room with the name in the body', async () => {
+      fetchMock.mockImplementation(async () => respond(200, {}));
+      await client.createRoom(TOKEN, 'Sprint');
+      expect(lastCall().init.method).toBe('POST');
+      expect(lastCall().url).toBe('http://backend.test:5174/rooms');
+      expect(lastCall().init.body).toBe(JSON.stringify({ name: 'Sprint' }));
+
+      await client.renameRoom(TOKEN, ROOM, 'New');
+      expect(lastCall().init.method).toBe('PATCH');
+      expect(lastCall().url).toBe(`http://backend.test:5174/rooms/${ROOM}`);
+
+      fetchMock.mockImplementation(async () => respond(204));
+      await expect(client.deleteRoom(TOKEN, ROOM)).resolves.toBeUndefined();
+      expect(lastCall().init.method).toBe('DELETE');
+    });
+
+    it('moves a board into a room and out of it with PUT /boards/:id/room', async () => {
+      fetchMock.mockImplementation(async () => respond(200, board));
+
+      await client.moveBoard(TOKEN, board.id, ROOM);
+      expect(lastCall().init.method).toBe('PUT');
+      expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/room`);
+      expect(lastCall().init.body).toBe(JSON.stringify({ roomId: ROOM }));
+
+      await client.moveBoard(TOKEN, board.id, null);
+      expect(lastCall().init.body).toBe(JSON.stringify({ roomId: null }));
+    });
+
+    it('talks to the room member routes', async () => {
+      fetchMock.mockImplementation(async () => respond(200, []));
+      await client.listRoomMembers(TOKEN, ROOM);
+      expect(lastCall().url).toBe(`http://backend.test:5174/rooms/${ROOM}/members`);
+
+      await client.addRoomMember(TOKEN, ROOM, 'a@b.c', 'Editor');
+      expect(lastCall().init.body).toBe(JSON.stringify({ email: 'a@b.c', role: 'Editor' }));
+
+      await client.changeRoomMemberRole(TOKEN, ROOM, 'u1', 'Viewer');
+      expect(lastCall().url).toBe(`http://backend.test:5174/rooms/${ROOM}/members/u1`);
+      expect(lastCall().init.method).toBe('PATCH');
+
+      fetchMock.mockImplementation(async () => respond(204));
+      await client.removeRoomMember(TOKEN, ROOM, 'u1');
+      expect(lastCall().init.method).toBe('DELETE');
+    });
+
+    it("keeps the backend's message for a room that does not exist for the caller", async () => {
+      fetchMock.mockImplementation(async () =>
+        respond(404, { detail: 'The room does not exist.' }),
+      );
+
+      await expect(client.moveBoard(TOKEN, board.id, ROOM)).rejects.toThrow(
+        new NotFoundException('The room does not exist.'),
+      );
     });
   });
 });

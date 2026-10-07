@@ -19,6 +19,14 @@ public class Board
 
     public User? Owner { get; set; }
 
+    /// <summary>
+    /// The room the board is in, or null (the state of every board made before rooms, and of boards made outside
+    /// a room). Deleting the room sets this back to null; the board stays.
+    /// </summary>
+    public Guid? RoomId { get; set; }
+
+    public Room? Room { get; set; }
+
     public List<BoardMembership> Memberships { get; set; } = [];
 
     /// <summary>
