@@ -4,6 +4,7 @@ import {
   DEFAULT_SESSION_NAME,
   MAX_SESSION_NAME_LENGTH,
   type VotableElement,
+  allVoted,
   castVote,
   clearResults,
   currentSession,
@@ -221,6 +222,29 @@ describe('ending and clearing', () => {
       .set('junk', 'not a session' as unknown as Y.Map<unknown>);
 
     expect(readVoting(doc).sessions).toHaveLength(1);
+  });
+});
+
+describe('everybody has voted', () => {
+  it('is true only when every one of them has used all their votes', () => {
+    const { doc, id } = open(undefined, 2);
+    castVote(doc, id, 'u1', 'e1');
+    castVote(doc, id, 'u1', 'e1');
+    castVote(doc, id, 'u2', 'e1');
+    const state = () => readVoting(doc).sessions[0];
+
+    expect(allVoted(state(), ['u1'])).toBe(true);
+    expect(allVoted(state(), ['u1', 'u2'])).toBe(false);
+    castVote(doc, id, 'u2', 'e2');
+    expect(allVoted(state(), ['u1', 'u2'])).toBe(true);
+  });
+
+  it('is false for nobody, and for somebody who has not voted at all', () => {
+    const { doc } = open();
+    const session = readVoting(doc).sessions[0];
+
+    expect(allVoted(session, [])).toBe(false);
+    expect(allVoted(session, ['u1'])).toBe(false);
   });
 });
 

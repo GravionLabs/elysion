@@ -264,6 +264,62 @@ describe('VotingMenu', () => {
     });
   });
 
+  describe('when the voting ends', () => {
+    const dialog = () => el().querySelector('.results-dialog');
+
+    it('opens the results by itself for an editor, and closes the menu that ended it', () => {
+      set({ session: session(), canControl: true });
+      el().querySelector<HTMLElement>('.menu-button')!.click(); // the menu with End voting
+      fixture.detectChanges();
+      expect(dialog()).toBeNull();
+
+      set({ session: closed() });
+
+      expect(dialog()).not.toBeNull();
+      expect(el().querySelector('.menu')).toBeNull();
+      expect(text('#voting-results-title')).toBe('Results: Best idea');
+    });
+
+    it('opens them for a viewer too', () => {
+      set({ session: session(), canControl: false });
+
+      set({ session: closed() });
+
+      expect(dialog()).not.toBeNull();
+    });
+
+    it('does not open them for somebody who finds the voting closed already (a late joiner, a reload)', () => {
+      set({ session: closed(), canControl: false });
+
+      expect(dialog()).toBeNull();
+      expect(text('.menu-button')).toBe('Results');
+    });
+
+    it('does not open them again for a voting that was cleared or for the next one that is still open', () => {
+      set({ session: session(), canControl: true });
+      set({ session: closed() });
+      expect(dialog()).not.toBeNull();
+
+      set({ session: null });
+      expect(dialog()).toBeNull();
+      set({ session: session({ id: 's2' }) });
+      expect(dialog()).toBeNull();
+    });
+
+    it('opens them again when the next voting ends, even if the last results were closed by hand', () => {
+      set({ session: session(), canControl: true });
+      set({ session: closed() });
+      el().querySelector<HTMLElement>('.dialog-close')!.click();
+      fixture.detectChanges();
+      expect(dialog()).toBeNull();
+
+      set({ session: session({ id: 's2' }) });
+      set({ session: closed({ id: 's2' }) });
+
+      expect(dialog()).not.toBeNull();
+    });
+  });
+
   describe('the results dialog', () => {
     const dialog = () => el().querySelector('.results-dialog') as HTMLElement | null;
     const header = () => el().querySelector('.dialog-header') as HTMLElement;
@@ -405,8 +461,7 @@ describe('VotingMenu', () => {
       set({ session: session() }); // another voting is open now
       expect(dialog()).toBeNull();
 
-      set({ session: closed() });
-      openMenu();
+      set({ session: closed() }); // it ended: the results open by themselves
       expect(text('.clear')).toBe('Clear results');
     });
 

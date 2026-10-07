@@ -67,22 +67,42 @@ describe('dot voting on the canvas', () => {
     expect(view()?.myVotes).toBe(1);
   });
 
-  it('adds one dot per click, up to the limit, and says what is left', async () => {
-    const { canvas, open, dots, hint, view } = await setup();
-    await open(2);
-    expect(hint()).toBe('Voting: 2 of 2 votes left (click an element to vote)');
+  it('adds one dot per click and says what is left', async () => {
+    const { canvas, open, dots, hint } = await setup();
+    await open(3);
+    expect(hint()).toBe('Voting: 3 of 3 votes left (click an element to vote)');
 
     press(canvas, [180, 150]);
     await waitFor(() => expect(dots()).toHaveLength(1));
-    expect(hint()).toBe('Voting: 1 of 2 votes left (click an element to vote)');
+    expect(hint()).toBe('Voting: 2 of 3 votes left (click an element to vote)');
     press(canvas, [180, 150]);
     await waitFor(() => expect(dots()).toHaveLength(2));
-    expect(hint()).toContain('no votes left');
+    expect(hint()).toBe('Voting: 1 of 3 votes left (click an element to vote)');
+  });
 
-    press(canvas, [180, 150]); // past the limit
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(dots()).toHaveLength(2);
-    expect(view()?.myVotes).toBe(2);
+  it('ends by itself when the last vote of the only person on the board is placed, and shows the result', async () => {
+    const { container, canvas, open, dots, hint, view } = await setup();
+    await open(2);
+
+    press(canvas, [180, 150]);
+    press(canvas, [180, 150]);
+
+    await waitFor(() => expect(view()?.status).toBe('closed'));
+    expect(view()?.tally?.[0]?.count).toBe(2);
+    expect(container.querySelector('[data-vote-count]')?.textContent).toBe('2');
+    expect(dots()).toHaveLength(0);
+    expect(hint()).toBeNull();
+  });
+
+  it('does not end by itself while the person has votes left', async () => {
+    const { canvas, open, view } = await setup();
+    await open(3);
+
+    press(canvas, [180, 150]);
+    press(canvas, [180, 150]);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    expect(view()?.status).toBe('open');
   });
 
   it('takes a vote back with a click on one of the own dots', async () => {

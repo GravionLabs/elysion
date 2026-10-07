@@ -890,13 +890,20 @@ describe('Board', () => {
       (menu().querySelector('.end') as HTMLElement).click();
       expect(canvas().endVoting).toHaveBeenCalledTimes(1);
 
-      announce(closed);
-      (menu().querySelector('.menu-button') as HTMLButtonElement).click();
-      fixture.detectChanges();
+      announce(closed); // the results open by themselves
       (menu().querySelector('.clear') as HTMLElement).click();
       fixture.detectChanges();
       (menu().querySelector('.clear') as HTMLElement).click();
       expect(canvas().clearVotingResults).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the results by themselves when the voting is closed, whoever closed it', () => {
+      announce(open);
+      expect(menu().querySelector('.results-dialog')).toBeNull();
+
+      announce(closed);
+
+      expect(menu().querySelector('.results-dialog')).toBeTruthy();
     });
 
     it('scrolls the canvas to the element of a clicked result', () => {
@@ -1036,9 +1043,8 @@ describe('Board', () => {
         myVotes: 0,
         tally: [{ elementId: 'e1', count: 2, label: 'Ship it' }],
       });
-      (menu().querySelector('.menu-button') as HTMLButtonElement).click();
       fixture.detectChanges();
-      expect(menu().querySelector('.result')).toBeTruthy();
+      expect(menu().querySelector('.result')).toBeTruthy(); // opened by themselves
       expect(menu().querySelector('.clear')).toBeNull();
       expect(menu().querySelector('form')).toBeNull();
     });

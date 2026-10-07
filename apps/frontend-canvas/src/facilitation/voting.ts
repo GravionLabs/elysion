@@ -160,6 +160,11 @@ export function votesLeft(session: VotingSession, userId: string): number {
   return Math.max(0, session.votesPerPerson - votesPlaced(session, userId));
 }
 
+/** Whether every one of these people has used all their votes in the session; `false` for nobody. */
+export function allVoted(session: VotingSession, voterIds: readonly string[]): boolean {
+  return voterIds.length > 0 && voterIds.every((id) => votesLeft(session, id) === 0);
+}
+
 /** A person's own votes by element: how many dots each element has from them. */
 export function ownVotesByElement(session: VotingSession, userId: string): Record<string, number> {
   const counts: Record<string, number> = {};

@@ -49,6 +49,7 @@ import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
 import { YjsWebsocketClient, type YjsConnectionStatus } from './yjs/YjsWebsocketClient.js';
 import { createSessionIdentity, withHostIdentity } from './presence/identity';
 import type { PresentUser } from './presence/collaborators';
+import type { Awareness } from 'y-protocols/awareness';
 import { PresenceSync } from './presence/presence';
 import {
   type TimerState,
@@ -59,6 +60,7 @@ import {
   stopTimer,
 } from './facilitation/timer';
 import { type TimerSync, observeTimer } from './facilitation/timer-sync';
+import { type AllVotedWatch, publishVoter, watchAllVoted } from './facilitation/voting-auto-end';
 import { type VotingSnapshot, type VotingSync, observeVoting } from './facilitation/voting-sync';
 import {
   type StartOptions,
@@ -234,6 +236,8 @@ export function CanvasApp({
   const docRef = useRef<Y.Doc | null>(null);
   const timerSyncRef = useRef<TimerSync | null>(null);
   const votingSyncRef = useRef<VotingSync | null>(null);
+  const awarenessRef = useRef<Awareness | null>(null);
+  const allVotedRef = useRef<AllVotedWatch | null>(null);
   // The voting as this person sees it: what the badges and the vote mode work from (see the voting section below).
   const [voting, setVoting] = useState<VotingSnapshot>(NO_VOTING);
   const votingRef = useRef(voting);
@@ -318,11 +322,24 @@ export function CanvasApp({
     );
     presenceRef.current = presence;
 
+    // Who this client is for a voting, and the watch that ends it once everybody present has used all their votes.
+    // After the presence sync, which sets the awareness state as a whole.
+    awarenessRef.current = client.awareness;
+    publishVoter(client.awareness, {
+      id: userIdRef.current ?? identityNow.current.id,
+      canVote: !readOnlyRef.current,
+    });
+    const allVotedWatch = watchAllVoted(doc, client.awareness, () => !readOnlyRef.current);
+    allVotedRef.current = allVotedWatch;
+
     return () => {
       timerSync.destroy();
       timerSyncRef.current = null;
       votingSync.destroy();
       votingSyncRef.current = null;
+      allVotedWatch.destroy();
+      allVotedRef.current = null;
+      awarenessRef.current = null;
       docRef.current = null;
       presence.destroy();
       presenceRef.current = null;
@@ -340,6 +357,14 @@ export function CanvasApp({
     lastUserId.current = userId;
     votingSyncRef.current?.emit();
   }, [userId]);
+
+  // The others learn who this client is for a voting, and whether it may vote, when that changes.
+  useEffect(() => {
+    const awareness = awarenessRef.current;
+    if (!awareness) return;
+    publishVoter(awareness, { id: userId ?? identityNow.current.id, canVote: !readOnly });
+    allVotedRef.current?.check();
+  }, [userId, readOnly]);
 
   // The host changed the name or color after the canvas started.
   useEffect(() => {

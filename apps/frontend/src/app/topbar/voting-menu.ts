@@ -8,6 +8,7 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import type { VotingSession } from '../board/canvas-element';
@@ -26,7 +27,8 @@ const DEFAULT_NAME = 'Voting';
 
 /**
  * The Voting part of the top bar (ADR 0020): editors and owners start a dot voting (a name and the votes each person
- * has), see how many votes they have left and end it; once it is closed everybody opens the **results** in a dialog
+ * has), see how many votes they have left and end it; once it is closed, by them or because everybody present has used
+ * all their votes, the **results** open by themselves for everybody in a dialog
  * of their own, the ranked list of what got votes (a click scrolls the canvas to the element). The dialog sits on the
  * right of the window at first, can be moved (by its title, or with the arrow keys) and does not block the board;
  * editors and owners can clear the results or start another voting from it. A viewer sees the state and the results and has nothing to click while a voting is open.
@@ -65,6 +67,7 @@ export class VotingMenu {
   protected readonly position = signal<{ x: number; y: number } | null>(null);
   private readonly dialog = viewChild<ElementRef<HTMLElement>>('dialog');
   #drag: { dx: number; dy: number } | null = null;
+  #previousStatus: 'open' | 'closed' | null = null;
 
   protected readonly isOpen = computed(() => this.session()?.status === 'open');
   protected readonly isClosed = computed(() => this.session()?.status === 'closed');
@@ -85,6 +88,19 @@ export class VotingMenu {
         this.resultsOpen.set(false);
         this.confirmingClear.set(false);
       }
+    });
+
+    // The results open by themselves when a voting that was open is closed (the facilitator ended it, or everybody
+    // present had used all their votes), for everybody. Somebody who joins later, or reloads, finds them closed.
+    effect(() => {
+      const status = this.session()?.status ?? null;
+      untracked(() => {
+        if (this.#previousStatus === 'open' && status === 'closed') {
+          this.open.set(false);
+          this.resultsOpen.set(true);
+        }
+        this.#previousStatus = status;
+      });
     });
   }
 
