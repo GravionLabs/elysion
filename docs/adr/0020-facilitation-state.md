@@ -1,6 +1,6 @@
 # ADR 0020: Where the timer and the votes of a board are stored
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-07
 - Issues: #577, #578 (Feature #574); implemented in #579 (the timer) and #582 (dot voting), which are written for the recommended option
 - Builds on: [ADR 0010](0010-shell-controls-the-canvas.md), [ADR 0011](0011-board-document-persistence.md)
@@ -133,5 +133,6 @@ How the open questions are answered:
 
 ## Decision
 
-Pending: the product owner picks an option. After the decision the status becomes Accepted and the `needs-decision`
-label is removed from #577, #578 and the dependent PBIs (#579, #582).
+Accepted by the product owner on 2026-10-07: **option A, the Yjs document**, as recommended above, with the viewer limit
+and "anonymity is a promise of the UI" as the stated price, and the answers to the open questions. #579 (the timer) and
+#582 (dot voting) are implemented as written.
