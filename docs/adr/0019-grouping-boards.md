@@ -127,7 +127,7 @@ Answers to the questions the option raises:
 | May a board be in no room?                        | Yes. It is the state of every existing board and of every board created from "All boards". The sidebar lists them as "Not in a room".                                                                                     |
 | Who may move a board into or out of a room?       | The board's Owner, and only into a room where they are at least an Editor; out of a room, the board's Owner or the room's Owner. Moving never changes the board's own memberships.                                        |
 | Does the creator of a board in a room own it?     | Yes. `OwnerId` is the creator, as today. Room roles map onto the board ranks one to one (a room Owner is an Owner of its boards, so a room can be kept clean by its owner), but nobody loses ownership of what they made. |
-| Who may create, rename and delete a room?         | Any signed-in user creates one and becomes its Owner. Rename and member management: room Owner. Delete: room Owner.                                                                                                       |
+| Who may create, rename and delete a room?         | Any signed-in user creates one and becomes its Owner. Rename: room Editor and Owner (as #565 was written). Member management and delete: room Owner.                                                                      |
 | Who may create a board in a room?                 | Editor and Owner of the room; the creator owns the new board.                                                                                                                                                             |
 
 ### Sketch of the overview for A

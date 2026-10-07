@@ -11,10 +11,12 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 import type { BoardRole } from '@elysion/shared-types';
 import { AccessToken } from '../auth/access-token.decorator.js';
 import { Board, BusinessBackendClient } from './business-backend.client.js';
+import { isUuid } from './request-parsing.js';
 
 /** A board as the UI wants it: the backend's fields plus the route that opens it. */
 export interface BoardResponse extends Board {
@@ -91,6 +93,26 @@ export class BoardsController {
     @Param('id', boardId) id: string,
   ): Promise<BoardResponse> {
     return toResponse(await this.backend.duplicateBoard(token, id));
+  }
+
+  /**
+   * Puts the board in a room, or takes it out (`{ "roomId": null }`): the backend needs write access on the board
+   * and Editor in the room (404 for a room the caller has no role in, 403 for a viewer).
+   */
+  @Put(':id/room')
+  async move(
+    @AccessToken() token: string,
+    @Param('id', boardId) id: string,
+    @Body() body: unknown,
+  ): Promise<BoardResponse> {
+    const roomId = (body as { roomId?: unknown } | null)?.roomId;
+    if (roomId !== null && typeof roomId !== 'string') {
+      throw new BadRequestException('Say which room, or null to take the board out of its room.');
+    }
+    if (roomId !== null && !isUuid(roomId)) {
+      throw new NotFoundException('The room does not exist.');
+    }
+    return toResponse(await this.backend.moveBoard(token, id, roomId));
   }
 
   @Delete(':id')

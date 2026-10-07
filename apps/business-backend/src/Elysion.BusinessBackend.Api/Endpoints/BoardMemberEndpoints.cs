@@ -84,10 +84,10 @@ public static class BoardMemberEndpoints
         return result.Succeeded ? TypedResults.NoContent() : Refusal(result);
     }
 
-    private const string RoleMessage = "The role must be Owner, Editor or Viewer.";
+    internal const string RoleMessage = "The role must be Owner, Editor or Viewer.";
 
     /// <summary>Only the names count: <c>Enum.TryParse</c> would accept "1" or "7" as well.</summary>
-    private static bool TryParseRole(string? text, out BoardRole role)
+    internal static bool TryParseRole(string? text, out BoardRole role)
     {
         role = default;
         var name = text?.Trim();
@@ -96,25 +96,29 @@ public static class BoardMemberEndpoints
                && Enum.TryParse(name, ignoreCase: true, out role);
     }
 
-    /// <summary>Why the request was refused, as a problem with a message the UI can show.</summary>
-    private static ProblemHttpResult Refusal(MemberResult result) => result.Outcome switch
+    /// <summary>
+    /// Why the request was refused, as a problem with a message the UI can show. <paramref name="noun"/> is what
+    /// the members belong to ("board", or "room" for the room member API, which answers with the same rules).
+    /// </summary>
+    internal static ProblemHttpResult Refusal(MemberResult result, string noun = "board") => result.Outcome switch
     {
         MemberOutcome.UnknownEmail => Problem(StatusCodes.Status404NotFound,
             "No user with this email has logged in to Elysion yet. They have to log in once before they can be added."),
-        MemberOutcome.NotAMember => Problem(StatusCodes.Status404NotFound, "This user is not a member of the board."),
+        MemberOutcome.NotAMember => Problem(StatusCodes.Status404NotFound,
+            $"This user is not a member of the {noun}."),
         MemberOutcome.AmbiguousEmail => Problem(StatusCodes.Status409Conflict, "More than one user has this email."),
         MemberOutcome.AlreadyMember => Problem(StatusCodes.Status409Conflict,
-            "This user is a member of the board already; change their role instead."),
+            $"This user is a member of the {noun} already; change their role instead."),
         MemberOutcome.CreatorStaysOwner => Problem(StatusCodes.Status409Conflict,
-            "The creator of a board stays its owner: their role cannot be changed or removed."),
+            $"The creator of a {noun} stays its owner: their role cannot be changed or removed."),
         MemberOutcome.LastOwner => Problem(StatusCodes.Status409Conflict,
-            "A board needs at least one owner: the last owner cannot be removed or demoted."),
+            $"A {noun} needs at least one owner: the last owner cannot be removed or demoted."),
         _ => throw new InvalidOperationException($"Unhandled outcome {result.Outcome}."),
     };
 
     private static ProblemHttpResult Problem(int status, string detail) =>
         TypedResults.Problem(detail, statusCode: status);
 
-    private static MemberDto ToDto(MemberView member) =>
+    internal static MemberDto ToDto(MemberView member) =>
         new(member.UserId, member.DisplayName, member.Email, member.Role.ToString());
 }

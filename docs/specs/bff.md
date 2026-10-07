@@ -12,14 +12,16 @@ UI-optimized aggregation of business-backend APIs, Redis caching for heavy UI qu
 
 Under `/api`, the prefix the gateway routes to the BFF. Backed by the business backend's Board API (`docs/specs/business-backend.md`); the BFF holds no state of its own.
 
-| Request                                     | Result                                 |
-| ------------------------------------------- | -------------------------------------- |
-| `GET /api/boards`                           | `200`, boards newest first             |
-| `GET /api/boards/:id`                       | `200` or `404`                         |
-| `POST /api/boards` `{ "name": "..." }`      | `201` with the board                   |
-| `PATCH /api/boards/:id` `{ "name": "..." }` | `200` with the renamed board, or `404` |
-| `POST /api/boards/:id/duplicate`            | `201` with the copy, or `404`          |
-| `DELETE /api/boards/:id`                    | `204` or `404`                         |
+| Request                                                                              | Result                                                    |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `GET /api/boards`                                                                    | `200`, boards newest first                                |
+| `GET /api/boards/:id`                                                                | `200` or `404`                                            |
+| `POST /api/boards` `{ "name": "..." }`                                               | `201` with the board                                      |
+| `PATCH /api/boards/:id` `{ "name": "..." }`                                          | `200` with the renamed board, or `404`                    |
+| `POST /api/boards/:id/duplicate`                                                     | `201` with the copy, or `404`                             |
+| `DELETE /api/boards/:id`                                                             | `204` or `404`                                            |
+| `PUT /api/boards/:id/room` `{ roomId }`                                              | `200` with the board in or out of a room (`roomId: null`) |
+| `GET /api/rooms`, `POST /api/rooms`, `PATCH /api/rooms/:id`, `DELETE /api/rooms/:id` | rooms, see Rooms below                                    |
 
 | `GET /api/templates` | `200`, the template catalog without scenes |
 | `GET /api/templates/:id` | `200` with the template and its `scene` (the text of an `.excalidraw` file), or `404` |
@@ -58,6 +60,10 @@ In tests the verifier is replaced by one that trusts a locally generated key pai
 ## Board members
 
 `/api/boards/:id/members` (`GET`, `POST { email, role }`, `PATCH :userId { role }`, `DELETE :userId`; `MembersController`) passes on to the business backend's member API with the caller's own token ([business-backend.md](business-backend.md), "Board members"). The BFF only checks the shape: ids that are not UUIDs are `404` and a body without a string `email` or `role` is `400`, both without a call to the backend. The backend's answers come back with its message: `403` (a lower role), `404` (a board the caller cannot see, an unknown email, not a member), `409` (already a member, the creator, the last owner), `400` (a bad role).
+
+## Rooms
+
+Rooms group boards ([ADR 0019](../adr/0019-grouping-boards.md), [business-backend.md](business-backend.md), "Rooms"). `RoomsController` serves `GET /api/rooms` (`[{ id, name, createdAt, role }]`, `role` being the caller's role in the room), `POST /api/rooms { name }` (`201`), `PATCH /api/rooms/:id { name }` and `DELETE /api/rooms/:id` (`204`; the boards of the room stay and leave it); `BoardsController.move` serves `PUT /api/boards/:id/room { roomId | null }`; `RoomMembersController` serves `/api/rooms/:id/members` like the board members. Every board the API returns has `roomId` (`null` outside a room). All of it is passed on with the caller's own token and the backend decides: `404` for a room the caller has no role in (also the answer for a room id that does not exist), `403` for a role that is too low, `400` with the backend's message for a refused name, `409` for the member list's rules, `502` when the backend cannot be reached. The BFF only checks the shape, without a call to the backend: ids that are not UUIDs are `404` (in the route and as `roomId` in the body), a body without a string `name` is `400`, a `roomId` that is neither a string nor `null` is `400`.
 
 ## WS tokens
 

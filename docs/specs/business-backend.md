@@ -28,9 +28,9 @@ The board endpoints (`/boards`, minimal APIs in `Endpoints/BoardEndpoints.cs`) a
 | `POST /boards/{id}/duplicate`            | `201` with the copy and a `Location` header, or `404` |
 | `DELETE /boards/{id}`                    | `204` or `404`                                        |
 
-A board is `{ id, name, createdAt }`. The name is trimmed and must be 1 to 120 characters; otherwise the answer is `400` with problem details (`errors.name`). A route id that is not a GUID is a `404`. `createdAt` is cut to microseconds, which is what Postgres keeps, so a create and every later read show the same value.
+A board is `{ id, name, createdAt, roomId }` (`roomId` is the room it is in, or `null`; see "Rooms"). The name is trimmed and must be 1 to 120 characters; otherwise the answer is `400` with problem details (`errors.name`). A route id that is not a GUID is a `404`. `createdAt` is cut to microseconds, which is what Postgres keeps, so a create and every later read show the same value.
 
-Board access is governed by roles, see "Board authorization" below: the list holds only the caller's boards, and every other board endpoint needs a role on the board.
+Board access is governed by roles, see "Board authorization" below: the list holds only the boards the caller owns, is a member of, or can reach through a room, and every other board endpoint needs a role on the board.
 
 **Duplicate** creates a board named "<name> (copy)" (the name is cut short, to 120 characters, when the suffix would not fit) and copies the source's stored document byte for byte as a fresh document (version 1), so the two boards are independent from then on. The copy is what was last saved: changes still inside a room's save window (a few seconds) are not in it yet. A board without content gets a copy without a document.
 
@@ -114,6 +114,25 @@ Resource-based authorization over `BoardMembership` (`Authorization/`). Three na
 - **The creator** (`Board.OwnerId`) is an Owner whatever a membership row says (`GetRoleAsync`), so their role cannot be changed or removed (`409`): it would have no effect, and pretending it had would be worse. The member list shows the creator as Owner even when no row exists.
 - **The last Owner** (the set of Owner memberships plus the creator) cannot be removed or demoted (`409`). With the creator protected this matters for a board without a creator, which nobody can reach through the API today; the rule is in `BoardMemberService` and tested there.
 - Changes take effect at once: the next request of a removed or demoted member is evaluated against the new role. A connection that is open keeps its token until the next reconnect (identity.md).
+
+## Rooms
+
+Rooms group boards ([ADR 0019](../adr/0019-grouping-boards.md): shared spaces, as in Mural). `Room` (`Id`, `Name` 1 to 120 characters as for a board, `CreatedAt`, `OwnerId`) and `RoomMembership` (`RoomId`, `UserId`, `Role`, the same `Owner`, `Editor`, `Viewer` as a board's) are in `Entities/`, `Board.RoomId` is nullable, and `IRoomRepository` and `IRoomMembershipRepository` follow the board repositories. A board is in at most one room; boards made outside a room, and every board from before rooms, have `RoomId = null` and behave exactly as before.
+
+| Request                                              | Result                                                                                                                                  |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /rooms`                                         | `200`, `[{ id, name, createdAt, role }]`: the rooms the caller owns or is a member of, by name; `role` is the caller's role in the room |
+| `POST /rooms` `{ "name": "..." }`                    | `201` with a `Location` header and the room; the caller is its Owner (creator and an explicit Owner membership); `400` for a bad name   |
+| `PATCH /rooms/{id}` `{ "name": "..." }`              | `200` with the room (needs Editor); `400` for a bad name                                                                                |
+| `DELETE /rooms/{id}`                                 | `204` (needs Owner); the room and its memberships go, **its boards stay** and leave the room (`RoomId` becomes null)                    |
+| `PUT /boards/{id}/room` `{ "roomId": guid \| null }` | `200` with the board: puts it in a room, or takes it out with `null`                                                                    |
+| `/rooms/{id}/members` (list, add, change, remove)    | The rules of the board member API ("Board members"), behind the Owner policy of the room; the messages say "room"                       |
+
+A caller with **no role in a room gets `404`, not `403`**, for the same reason as for boards (room ids cannot be probed); a role that is too low is `403`. `RoomPolicies` (`RoomRead`, `RoomWrite`, `RoomAdminister`) and `RoomAuthorizationHandler` mirror the board policies and reuse `BoardPolicies.Rank`. **Moving a board** needs `BoardWrite` on the board (the policy) and Editor in the target room; a room the caller has no role in is `404` ("The room does not exist."), a Viewer there `403`, a body without `roomId` `400`. Taking a board out of a room needs `BoardWrite` only.
+
+**What a room adds to access** (`BoardRepository.GetRoleAsync`, `ListVisibleToAsync`): a room's role **adds** to a board's own; the higher of the two wins. A member of the room has the room's role on every board in it, the room's creator is an Owner of the room without a membership row, and the board's own members and owner keep their roles when the board leaves the room. `GET /boards` returns the boards the caller owns, is a member of, or that are in one of their rooms, each once. `GET /boards/{id}/membership/me` answers with the effective role, so the BFF's WS token check and the realtime service need no change. A board's creator stays its Owner whoever else has a role through the room, and creating a board is still outside any room (move it with `PUT /boards/{id}/room`).
+
+**Deleting a room** does not delete boards: the endpoint takes its boards out first (so the in-memory test provider and the tracked entities agree with Postgres, whose foreign key sets `RoomId` to null as well), then removes the room; the memberships go with it (cascade).
 
 ## Repositories
 

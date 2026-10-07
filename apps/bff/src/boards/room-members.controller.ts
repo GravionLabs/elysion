@@ -16,17 +16,17 @@ import { textField, uuidPipe as uuid } from './request-parsing.js';
 const text = (body: unknown, field: string) => textField(body, field, 'A member');
 
 /**
- * Who may open a board and as what. Passed on to the business backend with the caller's own token, which allows
- * it for owners only (a 404 for somebody with no role on the board, a 403 for a lower role); the rules of the
- * member list (an unknown email, the last owner) are the backend's and come back as 400, 404 and 409 with its message.
+ * Who is in a room and as what (ADR 0019), the board member API's twin. Passed on to the business backend with the
+ * caller's own token, which allows it for the room's owners only (404 without a role in the room, 403 for a lower
+ * one); the rules of the member list come back as 400, 404 and 409 with the backend's message.
  */
-@Controller('api/boards/:id/members')
-export class MembersController {
+@Controller('api/rooms/:id/members')
+export class RoomMembersController {
   constructor(private readonly backend: BusinessBackendClient) {}
 
   @Get()
   list(@AccessToken() token: string, @Param('id', uuid) id: string): Promise<BoardMember[]> {
-    return this.backend.listMembers(token, id);
+    return this.backend.listRoomMembers(token, id);
   }
 
   @Post()
@@ -35,7 +35,7 @@ export class MembersController {
     @Param('id', uuid) id: string,
     @Body() body: unknown,
   ): Promise<BoardMember> {
-    return this.backend.addMember(token, id, text(body, 'email'), text(body, 'role'));
+    return this.backend.addRoomMember(token, id, text(body, 'email'), text(body, 'role'));
   }
 
   @Patch(':userId')
@@ -45,7 +45,7 @@ export class MembersController {
     @Param('userId', uuid) userId: string,
     @Body() body: unknown,
   ): Promise<BoardMember> {
-    return this.backend.changeMemberRole(token, id, userId, text(body, 'role'));
+    return this.backend.changeRoomMemberRole(token, id, userId, text(body, 'role'));
   }
 
   @Delete(':userId')
@@ -55,6 +55,6 @@ export class MembersController {
     @Param('id', uuid) id: string,
     @Param('userId', uuid) userId: string,
   ): Promise<void> {
-    await this.backend.removeMember(token, id, userId);
+    await this.backend.removeRoomMember(token, id, userId);
   }
 }

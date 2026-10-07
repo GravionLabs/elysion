@@ -46,6 +46,7 @@ describe('Boards (e2e, against a fake business backend)', () => {
       id: expect.stringMatching(/^[0-9a-f-]{36}$/),
       name: 'Sprint',
       createdAt: expect.any(String),
+      roomId: null,
       path: `/board/${body.id}`,
     });
   });
@@ -78,6 +79,7 @@ describe('Boards (e2e, against a fake business backend)', () => {
       id: expect.stringMatching(/^[0-9a-f-]{36}$/),
       name: 'Retro (copy)',
       createdAt: expect.any(String),
+      roomId: null,
       path: `/board/${body.id}`,
     });
     expect(body.id).not.toBe(source.id);
