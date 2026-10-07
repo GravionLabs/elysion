@@ -138,4 +138,74 @@ public class FactoryGuardTests
         public void Refuses_a_role_that_is_not_defined() =>
             Should.Throw<ArgumentException>(() => BoardMembership.Create(Id(), Id(), (BoardRole)42, Now));
     }
+
+    public class RoomCreate
+    {
+        [Test]
+        public void Makes_a_room_and_trims_the_name()
+        {
+            var id = Id();
+            var owner = Id();
+
+            var room = Room.Create(id, "  Sprint planning  ", Now, owner);
+
+            (room.Id, room.Name, room.CreatedAt, room.OwnerId).ShouldBe((id, "Sprint planning", Now, owner));
+        }
+
+        [Test]
+        public void Accepts_the_longest_name() =>
+            Room.Create(Id(), new string('x', Room.MaxNameLength), Now, Id()).Name.Length.ShouldBe(Room.MaxNameLength);
+
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase("   ")]
+        public void Refuses_a_missing_or_blank_name(string? name) =>
+            Should.Throw<ArgumentException>(() => Room.Create(Id(), name!, Now, Id()));
+
+        [Test]
+        public void Refuses_a_name_over_the_limit() =>
+            Should.Throw<ArgumentException>(() =>
+                Room.Create(Id(), new string('x', Room.MaxNameLength + 1), Now, Id()));
+
+        [Test]
+        public void Refuses_an_empty_id_or_owner()
+        {
+            Should.Throw<ArgumentException>(() => Room.Create(Guid.Empty, "Sprint", Now, Id()));
+            Should.Throw<ArgumentException>(() => Room.Create(Id(), "Sprint", Now, Guid.Empty));
+        }
+
+        [TestCase("  Sprint ", true, "Sprint")]
+        [TestCase("", false, "")]
+        [TestCase(null, false, "")]
+        public void TryNormalizeName_is_the_one_rule_for_requests(string? raw, bool valid, string expected)
+        {
+            Room.TryNormalizeName(raw, out var name).ShouldBe(valid);
+            name.ShouldBe(expected);
+        }
+    }
+
+    public class RoomMembershipCreate
+    {
+        [Test]
+        public void Makes_a_membership()
+        {
+            var room = Id();
+            var user = Id();
+
+            var membership = RoomMembership.Create(room, user, BoardRole.Editor, Now);
+
+            (membership.RoomId, membership.UserId, membership.Role).ShouldBe((room, user, BoardRole.Editor));
+        }
+
+        [Test]
+        public void Refuses_empty_ids()
+        {
+            Should.Throw<ArgumentException>(() => RoomMembership.Create(Guid.Empty, Id(), BoardRole.Owner, Now));
+            Should.Throw<ArgumentException>(() => RoomMembership.Create(Id(), Guid.Empty, BoardRole.Owner, Now));
+        }
+
+        [Test]
+        public void Refuses_a_role_that_is_not_defined() =>
+            Should.Throw<ArgumentException>(() => RoomMembership.Create(Id(), Id(), (BoardRole)42, Now));
+    }
 }

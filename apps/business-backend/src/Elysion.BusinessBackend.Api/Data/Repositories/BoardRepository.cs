@@ -51,6 +51,12 @@ public sealed class BoardRepository(ElysionDbContext db) : IBoardRepository
         return await db.Boards.FirstOrDefaultAsync(board => board.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Board>> ListInRoomForUpdateAsync(Guid roomId, CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(roomId);
+        return await db.Boards.Where(board => board.RoomId == roomId).ToListAsync(cancellationToken);
+    }
+
     public void Add(Board board) => db.Boards.Add(Guard.Against.Null(board));
 
     public void Remove(Board board) => db.Boards.Remove(Guard.Against.Null(board));

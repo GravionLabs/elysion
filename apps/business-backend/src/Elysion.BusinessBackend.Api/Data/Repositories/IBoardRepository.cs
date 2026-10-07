@@ -26,6 +26,9 @@ public interface IBoardRepository
     /// <summary>One board, or null, tracked: a change to it is saved by the next commit.</summary>
     Task<Board?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>The boards in a room, tracked: used to take them out of the room before it is deleted.</summary>
+    Task<IReadOnlyList<Board>> ListInRoomForUpdateAsync(Guid roomId, CancellationToken cancellationToken);
+
     void Add(Board board);
 
     void Remove(Board board);
