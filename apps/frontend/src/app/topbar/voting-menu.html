@@ -1,0 +1,177 @@
+@if (showButton()) {
+  @if (isOpen() && !canControl()) {
+    <!-- A viewer: the state, nothing to click while a voting is open. -->
+    <span
+      class="chip viewer-chip"
+      title="A voting is open: collaborators vote by clicking elements"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <circle cx="5" cy="6" r="2" />
+        <circle cx="19" cy="6" r="2" />
+        <circle cx="5" cy="18" r="2" />
+        <circle cx="19" cy="18" r="2" />
+      </svg>
+      <span>Voting: {{ session()!.name }}</span>
+    </span>
+  } @else {
+    <button
+      type="button"
+      class="menu-button"
+      aria-haspopup="menu"
+      [attr.aria-expanded]="open()"
+      [class.running]="isOpen()"
+      title="Dot voting"
+      (click)="toggle()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <circle cx="5" cy="6" r="2" />
+        <circle cx="19" cy="6" r="2" />
+        <circle cx="5" cy="18" r="2" />
+        <circle cx="19" cy="18" r="2" />
+      </svg>
+      <span>
+        @if (isOpen()) {
+          Voting · {{ left() }} left
+        } @else if (isClosed()) {
+          Results
+        } @else {
+          Voting
+        }
+      </span>
+    </button>
+  }
+
+  @if (open()) {
+    <div class="menu" role="group" aria-label="Dot voting">
+      @if (isOpen()) {
+        <h3>{{ session()!.name }}</h3>
+        <p class="note" role="status">
+          {{ left() }} of {{ session()!.votesPerPerson }} votes left. Click an element to vote,
+          click one of your dots to take it back.
+        </p>
+        <button type="button" class="primary end" (click)="end()">End voting</button>
+      } @else if (canControl()) {
+        <form class="start" (submit)="$event.preventDefault(); start()">
+          <h3>{{ isClosed() ? 'Start another voting' : 'Start a voting' }}</h3>
+          <label for="voting-name">Name</label>
+          <input
+            id="voting-name"
+            type="text"
+            autocomplete="off"
+            maxlength="80"
+            [value]="name()"
+            (input)="updateName($event)"
+          />
+          <span class="field-label">Votes per person</span>
+          <div class="presets">
+            @for (preset of presets; track preset) {
+              <button
+                type="button"
+                class="preset"
+                [class.selected]="votes() === '' + preset"
+                [attr.aria-pressed]="votes() === '' + preset"
+                (click)="pick(preset)"
+              >
+                {{ preset }}
+              </button>
+            }
+            <input
+              type="text"
+              inputmode="numeric"
+              class="votes-field"
+              aria-label="Votes per person"
+              autocomplete="off"
+              [value]="votes()"
+              [attr.aria-invalid]="error() ? 'true' : null"
+              (input)="updateVotes($event)"
+            />
+          </div>
+          @if (error(); as message) {
+            <p class="error" role="alert">{{ message }}</p>
+          }
+          <button type="submit" class="primary">Start</button>
+        </form>
+      }
+    </div>
+  }
+
+  @if (resultsOpen() && isClosed()) {
+    <!-- The results: a window of its own that can be moved, so the board stays in view. It does not block it. -->
+    <div
+      #dialog
+      class="results-dialog"
+      role="dialog"
+      aria-labelledby="voting-results-title"
+      [style.left.px]="position()?.x ?? null"
+      [style.top.px]="position()?.y ?? null"
+      [style.right.px]="position() ? null : 16"
+    >
+      <div
+        class="dialog-header"
+        (pointerdown)="dragStart($event)"
+        (pointermove)="dragMove($event)"
+        (pointerup)="dragEnd($event)"
+        (pointercancel)="dragEnd($event)"
+      >
+        <h3 id="voting-results-title">Results: {{ session()!.name }}</h3>
+        <button
+          type="button"
+          class="drag-handle"
+          aria-label="Move the dialog (arrow keys)"
+          title="Drag the title to move the dialog"
+          (keydown)="moveByKey($event)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M12 3v18M3 12h18M12 3l-3 3m3-3 3 3M12 21l-3-3m3 3 3-3M3 12l3-3m-3 3 3 3M21 12l-3-3m3 3-3 3"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="dialog-close"
+          aria-label="Close the results"
+          (click)="closeResults()"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="dialog-body">
+        @if ((session()!.tally ?? []).length === 0) {
+          <p class="note">Nobody voted for anything that is still on the board.</p>
+        } @else {
+          <ol class="results">
+            @for (entry of session()!.tally; track entry.elementId) {
+              <li>
+                <button type="button" class="result" (click)="show(entry.elementId)">
+                  <span class="label" [title]="entry.label">{{ entry.label }}</span>
+                  <span class="count">{{ entry.count }}</span>
+                </button>
+              </li>
+            }
+          </ol>
+          <p class="note">{{ total() }} {{ total() === 1 ? 'vote' : 'votes' }} in total.</p>
+        }
+
+        @if (canControl()) {
+          @if (confirmingClear()) {
+            <p class="note" role="alert">
+              Clear these results? The votes are removed for everybody.
+            </p>
+          }
+          <div class="dialog-actions">
+            <button type="button" class="danger clear" (click)="clear()">
+              {{ confirmingClear() ? 'Yes, clear the results' : 'Clear results' }}
+            </button>
+            <button type="button" class="secondary new-voting" (click)="newVoting()">
+              New voting…
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+}

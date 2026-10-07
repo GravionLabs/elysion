@@ -18,7 +18,8 @@ import type { PresentUser } from '../board/presence-store';
 import { ExportMenu, ExportRequest } from './export-menu';
 import { TemplateMenu } from './template-menu';
 import { TimerMenu } from './timer-menu';
-import type { TimerState } from '../board/canvas-element';
+import { VotingMenu, type VotingRequest } from './voting-menu';
+import type { TimerState, VotingSession } from '../board/canvas-element';
 import { UserMenu } from './user-menu';
 import type { TemplateInfo } from '../board/template-api';
 import type { SessionUser } from '../auth/session.service';
@@ -36,7 +37,7 @@ const STATUS_LABEL: Record<SyncStatus, string> = {
 
 /** The bar at the top of the board page, modeled on ariadne's: identity left, actions right. */
 @Component({
-  imports: [AppBrand, ExportMenu, RouterLink, TemplateMenu, TimerMenu, UserMenu],
+  imports: [AppBrand, ExportMenu, RouterLink, TemplateMenu, TimerMenu, UserMenu, VotingMenu],
   selector: 'app-top-bar',
   styleUrl: './top-bar.scss',
   templateUrl: './top-bar.html',
@@ -55,6 +56,8 @@ export class TopBar {
   readonly exporting = input<ExportFormat | null>(null);
   /** The board's shared timer, or `null` (ADR 0020); everybody sees it, only those who may write control it. */
   readonly timer = input<TimerState | null>(null);
+  /** The board's current dot voting, or `null` (ADR 0020): everybody sees it, only those who may write control it. */
+  readonly voting = input<VotingSession | null>(null);
   /** Whether the library sidebar is open. */
   readonly libraryOpen = input(false);
   /** Whether the user may share the board (an owner): the Share button is shown. */
@@ -87,6 +90,12 @@ export class TopBar {
   readonly timerResume = output<void>();
   readonly timerExtend = output<number>();
   readonly timerStop = output<void>();
+  /** The dot voting, asked for by those who may write; the board page calls the canvas. */
+  readonly votingStart = output<VotingRequest>();
+  readonly votingEnd = output<void>();
+  readonly votingClear = output<void>();
+  /** A result was clicked: scroll the canvas to the element. */
+  readonly votingFocus = output<string>();
 
   protected readonly maxNameLength = MAX_BOARD_NAME_LENGTH;
   protected readonly editing = signal(false);

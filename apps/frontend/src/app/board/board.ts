@@ -27,7 +27,7 @@ import { ExportRequest } from '../topbar/export-menu';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
 import { SessionService } from '../auth/session.service';
 import { PresenceStore } from './presence-store';
-import type { TimerState } from './canvas-element';
+import type { TimerState, VotingSession } from './canvas-element';
 import { TEMPLATE_STATE_KEY, TemplateApi } from './template-api';
 
 /** What the user is typing into the Save as template form. */
@@ -96,6 +96,9 @@ export class Board {
 
   /** The board's shared timer from the canvas's `timer` event (ADR 0020), or `null`. */
   readonly timer = signal<TimerState | null>(null);
+
+  /** The board's current dot voting from the canvas's `voting` event (ADR 0020), or `null`. */
+  readonly voting = signal<VotingSession | null>(null);
 
   /** An export is being prepared: a PDF of a large board takes seconds, so the Export menu says so. */
   readonly exporting = signal<ExportFormat | null>(null);
@@ -285,11 +288,15 @@ export class Board {
     }
   }
 
+  onVoting(event: Event): void {
+    this.voting.set((event as CustomEvent<{ session: VotingSession | null }>).detail.session);
+  }
+
   onTimer(event: Event): void {
     this.timer.set((event as CustomEvent<{ state: TimerState | null }>).detail.state);
   }
 
-  /** Asks the canvas to change the shared timer; a refusal (read-only, not ready) is shown in the banner. */
+  /** Asks the canvas to change the shared timer or voting; a refusal (read-only, not ready) is shown in the banner. */
   async timerCommand(run: (canvas: CanvasElement) => Promise<void> | undefined): Promise<void> {
     const canvas = this.canvas()?.nativeElement;
     const call = canvas ? run(canvas) : undefined;

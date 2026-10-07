@@ -19,6 +19,7 @@ import {
   type GridSize,
 } from './canvas-settings';
 import { ConnectionPoints } from './ConnectionPoints';
+import { VoteBadges } from './facilitation/VoteBadges';
 import { commitConnector } from './connector-commit';
 import {
   connectableSelection,
@@ -41,12 +42,14 @@ import '@elysion/design-tokens/tokens.css';
 import './styles/excalidraw-theme.css';
 import './styles/toolbar.css';
 import './styles/connection-points.css';
+import './styles/voting.css';
 import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
 import { YjsWebsocketClient, type YjsConnectionStatus } from './yjs/YjsWebsocketClient.js';
 import { createSessionIdentity, withHostIdentity } from './presence/identity';
 import type { PresentUser } from './presence/collaborators';
+import type { Awareness } from 'y-protocols/awareness';
 import { PresenceSync } from './presence/presence';
 import {
   type TimerState,
@@ -57,6 +60,18 @@ import {
   stopTimer,
 } from './facilitation/timer';
 import { type TimerSync, observeTimer } from './facilitation/timer-sync';
+import { type AllVotedWatch, publishVoter, watchAllVoted } from './facilitation/voting-auto-end';
+import { type VotingSnapshot, type VotingSync, observeVoting } from './facilitation/voting-sync';
+import {
+  type StartOptions,
+  type VotingView,
+  castVote,
+  clearResults,
+  retractVote,
+  endSession,
+  readVoting,
+  startSession,
+} from './facilitation/voting';
 
 /** What the host can ask the canvas to do; the element exposes these as methods. */
 export interface CanvasControls {
@@ -77,6 +92,17 @@ export interface CanvasControls {
   resumeTimer(): Promise<void>;
   extendTimer(ms: number): Promise<void>;
   stopTimer(): Promise<void>;
+  /**
+   * Dot voting (ADR 0020), for everybody on the board; the first three reject on a read-only canvas and before the canvas
+   * is up. `startVoting` rejects while a voting is open. The canvas keeps the state and announces it (`onVotingChange`).
+   */
+  startVoting(options: StartOptions): Promise<void>;
+  /** Closes the open voting: nobody can vote any more and the result is shown. A no-op when none is open. */
+  endVoting(): Promise<void>;
+  /** Removes the results: every closed voting, with its votes. An open voting stays. A no-op when there are none. */
+  clearVotingResults(): Promise<void>;
+  /** Scrolls the view to an element (a result of the voting); rejects when it is not on the board. */
+  scrollToElement(elementId: string): Promise<void>;
 }
 
 export interface CanvasAppProps {
@@ -110,6 +136,11 @@ export interface CanvasAppProps {
    * the connection was made, so somebody who joins while a timer runs gets it.
    */
   onTimerChange?: (state: TimerState | null) => void;
+  /**
+   * The voting changed, on this client or another: the current session as this person sees it (their own votes, the
+   * result once it is closed), or `null`. Also called after the connection was made, so a late joiner gets it.
+   */
+  onVotingChange?: (view: VotingView | null) => void;
   /** The connection to the board server failed; the canvas keeps retrying, so this is news, not the end. */
   onError?: (error: Error) => void;
   /**
@@ -130,6 +161,8 @@ export interface CanvasAppProps {
   /** The color of this user's cursor, `#rrggbb`; one picked from the palette when unset or not valid. */
   userColor?: string;
 }
+
+const NO_VOTING: VotingSnapshot = { view: null, own: {}, openSessionId: null };
 
 function defaultYjsServerUrl(): string {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -155,6 +188,7 @@ export function CanvasApp({
   onSelectionCount,
   onPresenceChange,
   onTimerChange,
+  onVotingChange,
   onError,
   tokenProvider,
   readOnly = false,
@@ -187,6 +221,8 @@ export function CanvasApp({
   const presenceCallback = useRef(onPresenceChange);
   const timerCallback = useRef(onTimerChange);
   timerCallback.current = onTimerChange;
+  const votingCallback = useRef(onVotingChange);
+  votingCallback.current = onVotingChange;
   const errorCallback = useRef(onError);
   presenceCallback.current = onPresenceChange;
   errorCallback.current = onError;
@@ -199,6 +235,13 @@ export function CanvasApp({
   const presenceRef = useRef<PresenceSync | null>(null);
   const docRef = useRef<Y.Doc | null>(null);
   const timerSyncRef = useRef<TimerSync | null>(null);
+  const votingSyncRef = useRef<VotingSync | null>(null);
+  const awarenessRef = useRef<Awareness | null>(null);
+  const allVotedRef = useRef<AllVotedWatch | null>(null);
+  // The voting as this person sees it: what the badges and the vote mode work from (see the voting section below).
+  const [voting, setVoting] = useState<VotingSnapshot>(NO_VOTING);
+  const votingRef = useRef(voting);
+  votingRef.current = voting;
   const userIdRef = useRef(userId);
   userIdRef.current = userId;
   // Who this tab is, made once: a re-render must not make a new collaborator.
@@ -238,6 +281,16 @@ export function CanvasApp({
     docRef.current = doc;
     const timerSync = observeTimer(doc, (state) => timerCallback.current?.(state));
     timerSyncRef.current = timerSync;
+    // A person is told apart by the host's user id, else by the tab's own id (so votes are per tab then).
+    const votingSync = observeVoting(
+      doc,
+      () => userIdRef.current ?? identityNow.current.id,
+      (snapshot) => {
+        setVoting(snapshot);
+        votingCallback.current?.(snapshot.view);
+      },
+    );
+    votingSyncRef.current = votingSync;
     const binding = new ExcalidrawYjsBinding(doc);
     bindingRef.current = binding;
     if (apiRef.current) {
@@ -250,7 +303,10 @@ export function CanvasApp({
       onStatusChange: (status) => {
         statusCallback.current?.(status);
         // The shell learns what the board's timer is once the connection is up, also when there is none.
-        if (status === 'connected') timerSync.emit();
+        if (status === 'connected') {
+          timerSync.emit();
+          votingSync.emit();
+        }
       },
       onError: (error) => errorCallback.current?.(error),
       // Read at every connect, so a provider the host sets later (after the element started) is used for the next
@@ -266,9 +322,24 @@ export function CanvasApp({
     );
     presenceRef.current = presence;
 
+    // Who this client is for a voting, and the watch that ends it once everybody present has used all their votes.
+    // After the presence sync, which sets the awareness state as a whole.
+    awarenessRef.current = client.awareness;
+    publishVoter(client.awareness, {
+      id: userIdRef.current ?? identityNow.current.id,
+      canVote: !readOnlyRef.current,
+    });
+    const allVotedWatch = watchAllVoted(doc, client.awareness, () => !readOnlyRef.current);
+    allVotedRef.current = allVotedWatch;
+
     return () => {
       timerSync.destroy();
       timerSyncRef.current = null;
+      votingSync.destroy();
+      votingSyncRef.current = null;
+      allVotedWatch.destroy();
+      allVotedRef.current = null;
+      awarenessRef.current = null;
       docRef.current = null;
       presence.destroy();
       presenceRef.current = null;
@@ -279,12 +350,28 @@ export function CanvasApp({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The host gave the user id after the canvas started: the votes are somebody else's now, or this person's own.
+  const lastUserId = useRef(userId);
+  useEffect(() => {
+    if (lastUserId.current === userId) return;
+    lastUserId.current = userId;
+    votingSyncRef.current?.emit();
+  }, [userId]);
+
+  // The others learn who this client is for a voting, and whether it may vote, when that changes.
+  useEffect(() => {
+    const awareness = awarenessRef.current;
+    if (!awareness) return;
+    publishVoter(awareness, { id: userId ?? identityNow.current.id, canVote: !readOnly });
+    allVotedRef.current?.check();
+  }, [userId, readOnly]);
+
   // The host changed the name or color after the canvas started.
   useEffect(() => {
     presenceRef.current?.identityChanged(identityNow.current);
   }, [identity.name, identity.color]);
 
-  /** Runs a change of the shared timer; rejects when the canvas is read-only or not up, or when the change is invalid. */
+  /** Runs a change of the board's shared state (the timer, the voting); rejects when the canvas is read-only or not up, or when the change is invalid. */
   const timerCommand = (run: (doc: Y.Doc) => unknown): Promise<void> => {
     if (readOnlyRef.current) return Promise.reject(new Error('This board is read-only.'));
     const doc = docRef.current;
@@ -295,6 +382,25 @@ export function CanvasApp({
     } catch (error) {
       return Promise.reject(error instanceof Error ? error : new Error(String(error)));
     }
+  };
+
+  /** Who this person is for the voting: the host's user id, else the tab's own. */
+  const voter = () => ({
+    id: userIdRef.current ?? identityNow.current.id,
+    name: identityNow.current.name,
+  });
+
+  /** A vote for an element in the open voting; the document decides (no vote left, closed) and the badges follow it. */
+  const voteFor = (elementId: string) => {
+    const doc = docRef.current;
+    const sessionId = votingRef.current.openSessionId;
+    if (doc && sessionId && !readOnlyRef.current) castVote(doc, sessionId, voter().id, elementId);
+  };
+  const retractFor = (elementId: string) => {
+    const doc = docRef.current;
+    const sessionId = votingRef.current.openSessionId;
+    if (doc && sessionId && !readOnlyRef.current)
+      retractVote(doc, sessionId, voter().id, elementId);
   };
 
   const panTo = (center: { x: number; y: number }) => {
@@ -592,6 +698,25 @@ export function CanvasApp({
             resumeTimer: () => timerCommand((doc) => resumeTimer(doc)),
             extendTimer: (ms) => timerCommand((doc) => extendTimer(doc, ms)),
             stopTimer: () => timerCommand((doc) => stopTimer(doc)),
+            startVoting: (options) => timerCommand((doc) => startSession(doc, options, voter())),
+            endVoting: () =>
+              timerCommand((doc) => {
+                const open = readVoting(doc).openSessionId;
+                if (open) endSession(doc, open);
+              }),
+            // All the results: every closed voting goes, so an older one does not show up after the last was cleared.
+            clearVotingResults: () =>
+              timerCommand((doc) => {
+                for (const session of readVoting(doc).sessions) {
+                  if (session.status === 'closed') clearResults(doc, session.id);
+                }
+              }),
+            scrollToElement: (elementId) => {
+              const target = api.getSceneElements().find((element) => element.id === elementId);
+              if (!target) return Promise.reject(new Error('That element is not on the board.'));
+              api.scrollToContent(target, { fitToViewport: false, animate: true });
+              return Promise.resolve();
+            },
           });
         }}
         onPointerUpdate={(update) => presenceRef.current?.pointerMoved(update)}
@@ -642,6 +767,15 @@ export function CanvasApp({
       {!readOnly && (
         <ConnectionPoints apiRef={apiRef} rootRef={rootRef} store={sceneStoreRef.current} />
       )}
+      <VoteBadges
+        apiRef={apiRef}
+        rootRef={rootRef}
+        store={sceneStoreRef.current}
+        voting={voting}
+        readOnly={readOnly}
+        onVote={voteFor}
+        onRetract={retractFor}
+      />
       <Toolbar
         activeTool={activeTool}
         onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}

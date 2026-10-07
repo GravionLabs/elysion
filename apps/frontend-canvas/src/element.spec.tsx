@@ -285,4 +285,101 @@ describe('elysion-canvas custom element', () => {
       expect(ELEMENT_OBSERVES).toContain('user-id');
     });
   });
+
+  describe('dot voting', () => {
+    type VotingElement = HTMLElement & {
+      startVoting(options: { name?: string; votesPerPerson: number }): Promise<void>;
+      endVoting(): Promise<void>;
+      clearVotingResults(): Promise<void>;
+      scrollToElement(id: string): Promise<void>;
+    };
+    const mount = async (attributes: Record<string, string> = {}) => {
+      const el = document.createElement(ELEMENT_TAG_NAME) as VotingElement;
+      el.setAttribute('yjs-server-url', 'ws://localhost:9999/yjs');
+      el.setAttribute('board-id', `voting-${crypto.randomUUID()}`);
+      for (const [name, value] of Object.entries(attributes)) el.setAttribute(name, value);
+      const sessions: Array<{ session: Record<string, unknown> | null }> = [];
+      el.addEventListener('voting', (event) => sessions.push((event as CustomEvent).detail));
+      document.body.appendChild(el);
+      await waitFor(() => expect(el.querySelector('.excalidraw')).toBeTruthy());
+      return { el, sessions };
+    };
+
+    it('has methods that reject before the canvas is up', async () => {
+      const el = document.createElement(ELEMENT_TAG_NAME) as VotingElement;
+
+      await expect(el.startVoting({ votesPerPerson: 3 })).rejects.toThrow('not ready');
+      await expect(el.endVoting()).rejects.toThrow('not ready');
+      await expect(el.clearVotingResults()).rejects.toThrow('not ready');
+      await expect(el.scrollToElement('x')).rejects.toThrow('not ready');
+    });
+
+    it('starts a voting, announces it as a voting event, ends it and clears it', async () => {
+      const { el, sessions } = await mount({ 'user-id': 'kc-1', 'user-name': 'Ada' });
+
+      await waitFor(async () => {
+        await el.startVoting({ name: 'Pick one', votesPerPerson: 5 });
+        expect(sessions.length).toBeGreaterThan(0);
+      });
+      expect(sessions.at(-1)!.session).toMatchObject({
+        name: 'Pick one',
+        votesPerPerson: 5,
+        status: 'open',
+        myVotes: 0,
+        startedBy: { id: 'kc-1', name: 'Ada' },
+      });
+      expect(sessions.at(-1)!.session).not.toHaveProperty('tally');
+
+      await expect(el.startVoting({ votesPerPerson: 3 })).rejects.toThrow('already open');
+
+      await el.endVoting();
+      expect(sessions.at(-1)!.session).toMatchObject({ status: 'closed', tally: [] });
+      await el.endVoting(); // twice is the same as once
+
+      await el.clearVotingResults();
+      expect(sessions.at(-1)).toEqual({ session: null });
+      await el.clearVotingResults();
+
+      // An older closed voting does not come back after the last one was cleared: clearing removes them all.
+      await el.startVoting({ name: 'First', votesPerPerson: 1 });
+      await el.endVoting();
+      await el.startVoting({ name: 'Second', votesPerPerson: 1 });
+      await el.endVoting();
+      expect(sessions.at(-1)!.session).toMatchObject({ name: 'Second', status: 'closed' });
+      await el.clearVotingResults();
+      expect(sessions.at(-1)).toEqual({ session: null });
+      await el.startVoting({ name: 'Third', votesPerPerson: 1 });
+      await el.clearVotingResults();
+      expect(sessions.at(-1)!.session).toMatchObject({ name: 'Third', status: 'open' }); // an open one stays
+      document.body.removeChild(el);
+    });
+
+    it('rejects a number of votes that makes no sense', async () => {
+      const { el } = await mount();
+      await waitFor(async () => {
+        await expect(el.startVoting({ votesPerPerson: 0 })).rejects.toThrow('between 1 and');
+      });
+      document.body.removeChild(el);
+    });
+
+    it('rejects starting, ending and clearing on a read-only canvas, and announces nothing', async () => {
+      const { el, sessions } = await mount({ readonly: '' });
+      await waitFor(async () => {
+        await expect(el.startVoting({ votesPerPerson: 3 })).rejects.toThrow('read-only');
+      });
+      await expect(el.endVoting()).rejects.toThrow('read-only');
+      await expect(el.clearVotingResults()).rejects.toThrow('read-only');
+
+      expect(sessions).toEqual([]);
+      document.body.removeChild(el);
+    });
+
+    it('lets a viewer scroll to an element, and says when it is not there', async () => {
+      const { el } = await mount({ readonly: '' });
+      await waitFor(async () => {
+        await expect(el.scrollToElement('missing')).rejects.toThrow('not on the board');
+      });
+      document.body.removeChild(el);
+    });
+  });
 });

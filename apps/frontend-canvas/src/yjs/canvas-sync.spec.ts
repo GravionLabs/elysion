@@ -8,6 +8,14 @@ import { startTestYjsServer, waitUntil, type TestYjsServer } from './test-yjs-se
 import { YjsWebsocketClient } from './YjsWebsocketClient.js';
 import { STICKY_COLORS, createStickyNote } from '../sticky-note.js';
 import { observeTimer } from '../facilitation/timer-sync.js';
+import { observeVoting, type VotingSnapshot } from '../facilitation/voting-sync.js';
+import {
+  castVote,
+  clearResults,
+  endSession,
+  readVoting,
+  startSession,
+} from '../facilitation/voting.js';
 import { pauseTimer, readTimer, remaining, startTimer, stopTimer } from '../facilitation/timer.js';
 
 const WebSocketImpl = NodeWebSocketClient as unknown as typeof WebSocket;
@@ -260,6 +268,86 @@ describe('canvas Yjs sync (two CanvasApp-style peers)', () => {
       await waitUntil(() => readTimer(peerB.client.doc) !== null);
 
       expect(readTimer(peerB.client.doc)?.startedBy).toEqual(ADA);
+      peerB.destroy();
+    });
+  });
+
+  describe('dot voting (ADR 0020)', () => {
+    const ADA = { id: 'u-ada', name: 'Ada' };
+    const rect = () =>
+      convertToExcalidrawElements([
+        { type: 'rectangle', x: 0, y: 0, width: 10, height: 10 },
+      ])[0] as unknown as OrderedExcalidrawElement;
+
+    it('lets two people with different user ids vote, each seeing only their own while it is open, and the same result after', async () => {
+      const url = `${server.url}?board=${crypto.randomUUID()}`;
+      const peerA = createCanvasPeer(url);
+      const peerB = createCanvasPeer(url);
+      const element = rect();
+      peerA.draw(element);
+      const seenByA: VotingSnapshot[] = [];
+      const seenByB: VotingSnapshot[] = [];
+      observeVoting(
+        peerA.client.doc,
+        () => 'u-a',
+        (snapshot) => seenByA.push(snapshot),
+      );
+      observeVoting(
+        peerB.client.doc,
+        () => 'u-b',
+        (snapshot) => seenByB.push(snapshot),
+      );
+      await waitUntil(() => peerB.getElements().some((e) => e.id === element.id));
+
+      const session = startSession(peerA.client.doc, { name: 'Pick', votesPerPerson: 3 }, ADA);
+      await waitUntil(() => readVoting(peerB.client.doc).openSessionId === session.id);
+      expect(seenByB.at(-1)?.view).toMatchObject({ status: 'open', myVotes: 0 });
+
+      castVote(peerA.client.doc, session.id, 'u-a', element.id);
+      castVote(peerB.client.doc, session.id, 'u-b', element.id);
+      castVote(peerB.client.doc, session.id, 'u-b', element.id);
+      await waitUntil(() => {
+        const votes = readVoting(peerA.client.doc).sessions[0]?.votes ?? {};
+        return votes['u-a']?.length === 1 && votes['u-b']?.length === 2;
+      });
+      expect(seenByA.at(-1)?.view?.myVotes).toBe(1);
+      expect(seenByA.at(-1)?.own).toEqual({ [element.id]: 1 });
+      expect(seenByB.at(-1)?.view?.myVotes).toBe(2);
+      expect(seenByB.at(-1)?.own).toEqual({ [element.id]: 2 });
+      expect(JSON.stringify(seenByA)).not.toContain('u-b');
+
+      endSession(peerA.client.doc, session.id);
+      await waitUntil(() => seenByB.at(-1)?.view?.status === 'closed');
+      const expected = [{ elementId: element.id, count: 3, label: 'rectangle' }];
+      expect(seenByA.at(-1)?.view?.tally).toEqual(expected);
+      expect(seenByB.at(-1)?.view?.tally).toEqual(expected);
+
+      clearResults(peerB.client.doc, session.id);
+      await waitUntil(() => seenByA.at(-1)?.view === null);
+
+      peerA.destroy();
+      peerB.destroy();
+    });
+
+    it('gives a peer that joins while a voting is open the session and its own votes from the document', async () => {
+      const url = `${server.url}?board=${crypto.randomUUID()}`;
+      const peerA = createCanvasPeer(url);
+      const session = startSession(peerA.client.doc, { votesPerPerson: 2 }, ADA);
+      castVote(peerA.client.doc, session.id, 'u-b', 'e1');
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const peerB = createCanvasPeer(url);
+      await waitUntil(() => readVoting(peerB.client.doc).openSessionId === session.id);
+      const snapshot = observeVoting(
+        peerB.client.doc,
+        () => 'u-b',
+        () => undefined,
+      ).read();
+
+      expect(snapshot.view).toMatchObject({ status: 'open', myVotes: 1, votesPerPerson: 2 });
+      expect(snapshot.own).toEqual({ e1: 1 });
+
+      peerA.destroy();
       peerB.destroy();
     });
   });
