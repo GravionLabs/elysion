@@ -125,8 +125,10 @@
     outline-offset: -2px;
   }
 
-  &.stop:hover {
-    color: var(--c-danger);
+  // Stop is a red square, as on a recorder.
+  .stop-square {
+    fill: var(--c-danger);
+    stroke: var(--c-danger);
   }
 }
 
