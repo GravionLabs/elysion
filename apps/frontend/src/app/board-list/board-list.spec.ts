@@ -6,7 +6,7 @@ import { BoardInfo } from '../board/board-api';
 import { TemplateInfo } from '../board/template-api';
 import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
 import { SessionService } from '../auth/session.service';
-import { BoardList } from './board-list';
+import { BoardList, boardInitials, boardTint } from './board-list';
 
 const board = (id: string, name: string, createdAt = '2026-10-05T10:00:00Z'): BoardInfo => ({
   id,
@@ -31,6 +31,30 @@ const TEMPLATES: TemplateInfo[] = [
     createdAt: '2026-10-06T00:00:00Z',
   },
 ];
+
+describe('boardInitials', () => {
+  it.each([
+    ['Sprint review', 'SR'],
+    ['Retro', 'RE'],
+    ['  q3   planning board ', 'QP'],
+    ['x', 'X'],
+    ['   ', '?'],
+  ])('turns %j into %j', (name, initials) => {
+    expect(boardInitials(name)).toBe(initials);
+  });
+});
+
+describe('boardTint', () => {
+  it('is stable for a board and always one of the node tokens', () => {
+    expect(boardTint('b1')).toBe(boardTint('b1'));
+    expect(boardTint('some-guid')).toMatch(/^var\(--c-node-[a-z]+\)$/);
+  });
+
+  it('differs between boards', () => {
+    const tints = new Set(['a', 'b', 'c', 'd', 'e'].map(boardTint));
+    expect(tints.size).toBeGreaterThan(1);
+  });
+});
 
 describe('BoardList', () => {
   let fixture: ComponentFixture<BoardList>;
@@ -92,6 +116,41 @@ describe('BoardList', () => {
     ]);
     expect(cards.map((card) => card.getAttribute('href'))).toEqual(['/board/b2', '/board/b1']);
     expect(cards[0].textContent).toContain('Oct 5, 2026');
+  });
+
+  describe('a board card', () => {
+    beforeEach(async () => {
+      await respondWith([
+        board('b2', 'Sprint review'),
+        board('b1', 'Q3 planning with the whole team'),
+      ]);
+    });
+
+    it('is one link with a preview, the name with a title, and the date', () => {
+      const items = [...el().querySelectorAll('.board-item')];
+
+      expect(items).toHaveLength(2);
+      for (const item of items) {
+        expect(item.querySelectorAll('a')).toHaveLength(1);
+        expect(item.querySelector('a .board-preview')).not.toBeNull();
+        expect(item.querySelector('a .board-date')?.textContent).toContain('Oct 5, 2026');
+      }
+      expect(items[0].querySelector('.board-preview')?.textContent?.trim()).toBe('SR');
+      expect(items[1].querySelector('.board-name')?.getAttribute('title')).toBe(
+        'Q3 planning with the whole team',
+      );
+    });
+
+    it('keeps Duplicate and Delete as labelled icon buttons outside the link', () => {
+      const item = el().querySelector('.board-item') as HTMLElement;
+      const buttons = [...item.querySelectorAll('.board-actions button')];
+
+      expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
+        'Duplicate the board Sprint review',
+        'Delete the board Sprint review',
+      ]);
+      expect(buttons.every((b) => !b.closest('a'))).toBe(true);
+    });
   });
 
   it('shows an empty state with a way to create the first board', async () => {
@@ -190,12 +249,28 @@ describe('BoardList', () => {
     const optionNames = () =>
       [...el().querySelectorAll('.template-option .template-name')].map((n) => n.textContent);
 
+    it('lays the templates out as a radio group of tiles', () => {
+      const group = el().querySelector('[role="radiogroup"]') as HTMLElement;
+
+      expect(group.getAttribute('aria-label')).toBe('Start from');
+      expect(group.querySelectorAll('label.template-option input[type="radio"]')).toHaveLength(3);
+    });
+
     it('asks for a name in an inline field, preset to "Untitled board" and focused', () => {
       const input = el().querySelector('input') as HTMLInputElement;
 
       expect(input.value).toBe('Untitled board');
       expect(input.maxLength).toBe(120);
       expect(document.activeElement).toBe(input);
+    });
+
+    it('closes on Escape from a template tile too', async () => {
+      (radios()[1] as HTMLElement).dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
+      await fixture.whenStable();
+
+      expect(el().querySelector('form')).toBeNull();
     });
 
     it('creates the board with the typed name and opens it', async () => {
@@ -278,7 +353,7 @@ describe('BoardList', () => {
 
       await click('.new-board');
       (el().querySelector('input') as HTMLInputElement).dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape' }),
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
       );
       await fixture.whenStable();
 

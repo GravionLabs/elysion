@@ -162,8 +162,6 @@
 }
 
 .templates {
-  display: grid;
-  gap: 6px;
   margin: 4px 0 0;
   padding: 0;
   border: 0;
@@ -177,12 +175,20 @@
   }
 }
 
+.template-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .create .template-option {
+  position: relative;
   display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 8px;
-  align-items: baseline;
-  padding: 8px 10px;
+  flex: 0 1 200px;
+  align-content: start;
+  gap: 2px;
+  min-width: 140px;
+  padding: 10px 12px;
   color: var(--c-text);
   font-size: 14px;
   font-weight: 400;
@@ -190,19 +196,31 @@
   background: var(--c-surface-2);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
+
+  &:hover {
+    border-color: var(--c-border-muted);
+  }
 
   &:has(input:checked) {
+    background: var(--c-primary-soft);
     border-color: var(--c-primary);
   }
 
   &:has(input:focus-visible) {
     outline: 2px solid var(--c-focus);
-    outline-offset: 1px;
+    outline-offset: 2px;
   }
 
+  // Visually hidden, but still the radio that keyboard and screen readers use.
   input {
-    grid-row: 1 / span 2;
+    position: absolute;
+    width: 1px;
+    height: 1px;
     margin: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .template-name {
@@ -210,7 +228,6 @@
   }
 
   .template-description {
-    grid-column: 2;
     color: var(--c-text-subtle);
     font-size: 12px;
   }
@@ -268,10 +285,10 @@
 
 .board-card {
   display: grid;
-  gap: 6px;
+  grid-template-rows: auto 1fr;
   height: 100%;
   box-sizing: border-box;
-  padding: 16px;
+  overflow: hidden;
   color: inherit;
   text-decoration: none;
   background: var(--c-surface-1);
@@ -291,6 +308,26 @@
     outline: 2px solid var(--c-focus);
     outline-offset: 2px;
   }
+}
+
+// A neutral placeholder until boards get real thumbnails: the initials on a tint of a node token.
+.board-preview {
+  display: grid;
+  height: 120px;
+  place-items: center;
+  color: var(--tint, var(--c-text-subtle));
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: color-mix(in srgb, var(--tint, var(--c-text-subtle)) 14%, var(--c-surface-2));
+  border-bottom: 1px solid var(--c-border);
+}
+
+.board-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px 14px;
 }
 
 .board-name {
@@ -347,18 +384,35 @@
   position: relative;
 }
 
-.icon-button {
+// In the preview's corner: shown on hover and keyboard focus, always on touch screens.
+.board-actions {
   position: absolute;
   top: 8px;
   right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+
+  .board-item:hover &,
+  &:focus-within {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    opacity: 1;
+  }
+}
+
+.icon-button {
   display: grid;
   width: 28px;
   height: 28px;
   padding: 0;
   place-items: center;
   color: var(--c-text-subtle);
-  background: transparent;
-  border: 1px solid transparent;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
   cursor: pointer;
 
@@ -388,19 +442,10 @@
   }
 }
 
-.duplicate-button {
-  right: 40px;
-}
-
 .delete-button:hover:not(:disabled) {
   color: var(--c-danger);
 }
 
 .duplicate-error {
   margin-bottom: 12px;
-}
-
-// Room for the two buttons next to a long name.
-.board-name {
-  padding-right: 64px;
 }
