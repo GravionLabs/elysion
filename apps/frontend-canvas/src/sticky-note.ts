@@ -40,6 +40,36 @@ export function shade(hex: string, amount: number): string {
   return `#${channel(1)}${channel(3)}${channel(5)}`;
 }
 
+/**
+ * What Excalidraw's dark theme does to every color on the canvas: a CSS filter, `invert(93%) hue-rotate(180deg)`
+ * (the canvas elements carry `filter: var(--theme-filter)`). Light colors turn dark, the hue stays. A note's stored
+ * paper is the same in both themes (it is shared by everybody on the board), so in the dark theme it is *drawn* in
+ * the color this function gives.
+ */
+export function darkThemeColor(hex: string): string {
+  const invert = (value: number) => value * (1 - 0.93) + (255 - value) * 0.93;
+  const [r, g, b] = [1, 3, 5].map((offset) => invert(parseInt(hex.slice(offset, offset + 2), 16)));
+  // The matrix of hue-rotate(180deg).
+  const out = [
+    -0.574 * r + 1.43 * g + 0.144 * b,
+    0.426 * r + 0.43 * g + 0.144 * b,
+    0.426 * r + 1.43 * g - 0.856 * b,
+  ].map((value) =>
+    Math.max(0, Math.min(255, Math.round(value)))
+      .toString(16)
+      .padStart(2, '0'),
+  );
+  return `#${out.join('')}`;
+}
+
+/**
+ * The color as it is seen on the canvas in a theme: what the toolbar's note icon and color swatches show, so that
+ * the menu and the note that is drawn look the same. The same in the light theme, filtered in the dark one.
+ */
+export function seenColor(hex: string, theme: 'light' | 'dark'): string {
+  return theme === 'dark' ? darkThemeColor(hex) : hex;
+}
+
 /** The paper of a note: its background, the color as a note on a wall (the text stays dark and readable). */
 export function paperColor(color: StickyColor): string {
   return tint(color.hex, 0.55);

@@ -781,6 +781,7 @@ export function CanvasApp({
         onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
         onAddSticky={addSticky}
         stickyColor={stickyColor}
+        theme={activeTheme}
         onHistory={onHistory}
         onConnect={canConnect && !readOnly ? connectSelection : undefined}
         onZoom={onZoom}

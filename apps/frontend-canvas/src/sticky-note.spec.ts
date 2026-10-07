@@ -6,7 +6,9 @@ import {
   STICKY_SIZE,
   borderColor,
   createStickyNote,
+  darkThemeColor,
   paperColor,
+  seenColor,
   shade,
   tint,
 } from './sticky-note';
@@ -94,5 +96,37 @@ describe('ELEMENT_DEFAULTS', () => {
       currentItemStartArrowhead: null,
       currentItemEndArrowhead: 'arrow',
     });
+  });
+});
+
+describe('the colors as they are seen on the canvas', () => {
+  it('is the same color in the light theme', () => {
+    for (const color of STICKY_COLORS) {
+      expect(seenColor(paperColor(color), 'light')).toBe(paperColor(color));
+    }
+  });
+
+  it('is what the dark theme filter makes of it: light colors turn dark, the hue stays', () => {
+    // invert(93%) hue-rotate(180deg) of the yellow paper, worked out by hand.
+    expect(darkThemeColor('#f3d577')).toBe('#503700');
+    expect(seenColor('#f3d577', 'dark')).toBe('#503700');
+    expect(darkThemeColor('#ffffff')).toBe('#121212'); // white becomes the near-black of the dark canvas
+    expect(darkThemeColor('#000000')).toBe('#ededed');
+  });
+
+  it('keeps the hue of every note color, only the lightness changes', () => {
+    const hue = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+      const max = Math.max(r, g, b);
+      const d = max - Math.min(r, g, b);
+      if (d === 0) return 0;
+      const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      return (h * 60 + 360) % 360;
+    };
+    for (const color of STICKY_COLORS) {
+      const light = hue(paperColor(color));
+      const dark = hue(darkThemeColor(paperColor(color)));
+      expect(Math.abs(light - dark) % 360).toBeLessThan(10);
+    }
   });
 });
