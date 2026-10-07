@@ -2,196 +2,374 @@
   <app-brand />
   @if (session.user(); as user) {
     <div class="page-actions">
-      <button
-        type="button"
-        class="button primary new-board"
-        aria-label="New board"
-        (click)="openCreate()"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-        <span class="new-board-label">New board</span>
-      </button>
+      @if (canCreateBoard()) {
+        <button
+          type="button"
+          class="button primary new-board"
+          aria-label="New board"
+          (click)="openCreate()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          <span class="new-board-label">New board</span>
+        </button>
+      }
       <app-user-menu [user]="user" (logoutRequested)="session.logout()" />
     </div>
   }
 </header>
 
 <main class="page">
-  <div class="page-title">
-    <h1>Boards</h1>
-    @if (state() === 'ready' && boards().length > 0) {
-      <span class="board-count">
-        {{ boards().length }} {{ boards().length === 1 ? 'board' : 'boards' }}
-      </span>
-    }
-  </div>
+  <div class="layout">
+    <app-room-sidebar
+      [rooms]="rooms()"
+      [state]="roomsState()"
+      [selected]="roomId()"
+      [total]="boards().length"
+      [unassigned]="unassignedCount()"
+      [counts]="roomCounts()"
+      [dragging]="draggingId() !== null"
+      (roomAdded)="onRoomAdded($event)"
+      (boardDropped)="onBoardDropped($event)"
+      (retry)="loadRooms()"
+    />
 
-  @if (deleteTarget(); as target) {
-    <div class="confirm" role="alertdialog" aria-label="Confirm delete">
-      <p>
-        Delete “{{ target.name }}”? The board and everything on it will be gone. This cannot be
-        undone.
-      </p>
-      @if (deleteError(); as message) {
-        <p class="field-error" role="alert">{{ message }}</p>
-      }
-      <div class="confirm-actions">
-        <button
-          type="button"
-          class="button danger"
-          [disabled]="deleting()"
-          (click)="confirmDelete()"
-        >
-          {{ deleting() ? 'Deleting…' : 'Delete' }}
-        </button>
-        <button type="button" class="button" [disabled]="deleting()" (click)="cancelDelete()">
-          Cancel
-        </button>
-      </div>
-    </div>
-  }
-
-  @if (createState() !== 'closed') {
-    <div class="backdrop" (click)="closeOnBackdrop($event)">
-      <form
-        class="create"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-title"
-        (submit)="$event.preventDefault(); create()"
-        (keydown.escape)="cancelCreate()"
-      >
-        <h2 id="create-title">New board</h2>
-        <label for="board-name">Board name</label>
-        <div class="create-row">
-          <input
-            #nameInput
-            id="board-name"
-            name="name"
-            type="text"
-            autocomplete="off"
-            data-1p-ignore
-            data-lpignore="true"
-            [attr.maxlength]="maxNameLength"
-            [value]="draftName()"
-            [disabled]="createState() === 'saving'"
-            [attr.aria-invalid]="createError() ? 'true' : null"
-            [attr.aria-describedby]="createError() ? 'board-name-error' : null"
-            (input)="updateName($event)"
-          />
-          <button type="submit" class="button primary" [disabled]="createState() === 'saving'">
-            {{ createState() === 'saving' ? 'Creating…' : 'Create' }}
-          </button>
-          <button
-            type="button"
-            class="button"
-            [disabled]="createState() === 'saving'"
-            (click)="cancelCreate()"
+    <section class="content" aria-label="Boards">
+      <div class="page-title">
+        @if (renaming()) {
+          <form
+            class="rename"
+            (submit)="$event.preventDefault(); saveRename()"
+            (keydown.escape)="cancelRename()"
           >
-            Cancel
-          </button>
-        </div>
-        <fieldset class="templates" [disabled]="createState() === 'saving'">
-          <legend>Start from</legend>
-          <div class="template-tiles" role="radiogroup" aria-label="Start from">
-            <label class="template-option">
-              <input
-                type="radio"
-                name="template"
-                [checked]="selectedTemplateId() === null"
-                (change)="selectTemplate(null)"
-              />
-              <span class="template-name">Blank</span>
-              <span class="template-description">An empty board.</span>
-            </label>
-            @for (template of templates(); track template.id) {
-              <label class="template-option">
-                <input
-                  type="radio"
-                  name="template"
-                  [checked]="selectedTemplateId() === template.id"
-                  (change)="selectTemplate(template.id)"
-                />
-                <span class="template-name">{{ template.name }}</span>
-                <span class="template-description">{{ template.description }}</span>
-              </label>
-            }
-          </div>
-        </fieldset>
-        @if (createError(); as message) {
-          <p id="board-name-error" class="field-error" role="alert">{{ message }}</p>
-        }
-      </form>
-    </div>
-  }
-
-  @if (duplicateError(); as message) {
-    <p class="field-error duplicate-error" role="alert">{{ message }}</p>
-  }
-
-  @switch (state()) {
-    @case ('loading') {
-      <p class="message" role="status">Loading boards…</p>
-    }
-    @case ('error') {
-      <div class="message error" role="alert">
-        <p>The boards could not be loaded.</p>
-        <button type="button" class="button" (click)="load()">Try again</button>
-      </div>
-    }
-    @default {
-      @if (boards().length === 0) {
-        <div class="empty">
-          <h2>No boards yet</h2>
-          <p>Create a board to start drawing and collaborating.</p>
-          @if (createState() === 'closed') {
-            <button type="button" class="button create-first" (click)="openCreate()">
-              Create your first board
+            <input
+              #renameInput
+              id="room-rename"
+              name="roomName"
+              aria-label="Room name"
+              type="text"
+              autocomplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              [attr.maxlength]="maxRoomNameLength"
+              [value]="renameDraft()"
+              [disabled]="renameSaving()"
+              (input)="updateRenameDraft($event)"
+            />
+            <button type="submit" class="button primary" [disabled]="renameSaving()">Save</button>
+            <button
+              type="button"
+              class="button"
+              [disabled]="renameSaving()"
+              (click)="cancelRename()"
+            >
+              Cancel
             </button>
+          </form>
+        } @else {
+          <h1>{{ title() }}</h1>
+          @if (state() === 'ready' && visibleBoards().length > 0) {
+            <span class="board-count">
+              {{ visibleBoards().length }} {{ visibleBoards().length === 1 ? 'board' : 'boards' }}
+            </span>
           }
+          @if (currentRoom(); as room) {
+            <span class="room-actions">
+              @if (canWriteRoom(room)) {
+                <button type="button" class="button rename-room" (click)="startRename(room)">
+                  Rename
+                </button>
+              }
+              @if (canAdministerRoom(room)) {
+                <button type="button" class="button members-room" (click)="shareRoomOpen.set(true)">
+                  Members
+                </button>
+                <button type="button" class="button delete-room" (click)="askDeleteRoom(room)">
+                  Delete room
+                </button>
+              }
+            </span>
+          }
+        }
+      </div>
+
+      @if (roomDeleteTarget(); as room) {
+        <div class="confirm" role="alertdialog" aria-label="Confirm room delete">
+          <p>
+            Delete the room “{{ room.name }}”? Its {{ countIn(room) }}
+            {{ countIn(room) === 1 ? 'board stays' : 'boards stay' }}, but no longer in a room, and
+            the room's members lose the access the room gave them.
+          </p>
+          @if (roomDeleteError(); as message) {
+            <p class="field-error" role="alert">{{ message }}</p>
+          }
+          <div class="confirm-actions">
+            <button
+              type="button"
+              class="button danger"
+              [disabled]="roomDeleting()"
+              (click)="confirmDeleteRoom()"
+            >
+              {{ roomDeleting() ? 'Deleting…' : 'Delete room' }}
+            </button>
+            <button
+              type="button"
+              class="button"
+              [disabled]="roomDeleting()"
+              (click)="cancelDeleteRoom()"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-      } @else {
-        <ul class="boards">
-          @for (board of boards(); track board.id) {
-            <li class="board-item">
-              <a class="board-card" [routerLink]="board.path">
-                <span class="board-preview" aria-hidden="true" [style.--tint]="tint(board.id)">
-                  {{ initials(board.name) }}
-                </span>
-                <span class="board-meta">
-                  <span class="board-name" [title]="board.name">{{ board.name }}</span>
-                  <span class="board-date">Created {{ board.createdAt | date: 'mediumDate' }}</span>
-                </span>
-              </a>
-              <span class="board-actions">
-                <button
-                  type="button"
-                  class="icon-button duplicate-button"
-                  [attr.aria-label]="'Duplicate the board ' + board.name"
-                  [title]="duplicatingId() === board.id ? 'Duplicating…' : 'Duplicate this board'"
-                  [disabled]="duplicatingId() !== null"
-                  (click)="duplicate(board)"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M9 9h10v10H9zM5 15V5h10" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="icon-button delete-button"
-                  [attr.aria-label]="'Delete the board ' + board.name"
-                  title="Delete this board"
-                  (click)="askDelete(board)"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 7h16M10 11v6m4-6v6M6 7l1 12h10l1-12M9 7V4h6v3" />
-                  </svg>
-                </button>
-              </span>
-            </li>
-          }
-        </ul>
       }
-    }
-  }
+
+      @if (roomError(); as message) {
+        <p class="field-error room-error" role="alert">{{ message }}</p>
+      }
+
+      @if (shareRoomOpen() && currentRoom(); as room) {
+        <app-share-dialog [boardId]="room.id" scope="room" (closed)="shareRoomOpen.set(false)" />
+      }
+
+      @if (deleteTarget(); as target) {
+        <div class="confirm" role="alertdialog" aria-label="Confirm delete">
+          <p>
+            Delete “{{ target.name }}”? The board and everything on it will be gone. This cannot be
+            undone.
+          </p>
+          @if (deleteError(); as message) {
+            <p class="field-error" role="alert">{{ message }}</p>
+          }
+          <div class="confirm-actions">
+            <button
+              type="button"
+              class="button danger"
+              [disabled]="deleting()"
+              (click)="confirmDelete()"
+            >
+              {{ deleting() ? 'Deleting…' : 'Delete' }}
+            </button>
+            <button type="button" class="button" [disabled]="deleting()" (click)="cancelDelete()">
+              Cancel
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (createState() !== 'closed') {
+        <div class="backdrop" (click)="closeOnBackdrop($event)">
+          <form
+            class="create"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-title"
+            (submit)="$event.preventDefault(); create()"
+            (keydown.escape)="cancelCreate()"
+          >
+            <h2 id="create-title">New board</h2>
+            @if (currentRoom(); as room) {
+              <p class="create-room">In the room “{{ room.name }}”</p>
+            }
+            <label for="board-name">Board name</label>
+            <div class="create-row">
+              <input
+                #nameInput
+                id="board-name"
+                name="name"
+                type="text"
+                autocomplete="off"
+                data-1p-ignore
+                data-lpignore="true"
+                [attr.maxlength]="maxNameLength"
+                [value]="draftName()"
+                [disabled]="createState() === 'saving'"
+                [attr.aria-invalid]="createError() ? 'true' : null"
+                [attr.aria-describedby]="createError() ? 'board-name-error' : null"
+                (input)="updateName($event)"
+              />
+              <button type="submit" class="button primary" [disabled]="createState() === 'saving'">
+                {{ createState() === 'saving' ? 'Creating…' : 'Create' }}
+              </button>
+              <button
+                type="button"
+                class="button"
+                [disabled]="createState() === 'saving'"
+                (click)="cancelCreate()"
+              >
+                Cancel
+              </button>
+            </div>
+            <fieldset class="templates" [disabled]="createState() === 'saving'">
+              <legend>Start from</legend>
+              <div class="template-tiles" role="radiogroup" aria-label="Start from">
+                <label class="template-option">
+                  <input
+                    type="radio"
+                    name="template"
+                    [checked]="selectedTemplateId() === null"
+                    (change)="selectTemplate(null)"
+                  />
+                  <span class="template-name">Blank</span>
+                  <span class="template-description">An empty board.</span>
+                </label>
+                @for (template of templates(); track template.id) {
+                  <label class="template-option">
+                    <input
+                      type="radio"
+                      name="template"
+                      [checked]="selectedTemplateId() === template.id"
+                      (change)="selectTemplate(template.id)"
+                    />
+                    <span class="template-name">{{ template.name }}</span>
+                    <span class="template-description">{{ template.description }}</span>
+                  </label>
+                }
+              </div>
+            </fieldset>
+            @if (createError(); as message) {
+              <p id="board-name-error" class="field-error" role="alert">{{ message }}</p>
+            }
+          </form>
+        </div>
+      }
+
+      @if (duplicateError(); as message) {
+        <p class="field-error duplicate-error" role="alert">{{ message }}</p>
+      }
+
+      @switch (state()) {
+        @case ('loading') {
+          <p class="message" role="status">Loading boards…</p>
+        }
+        @case ('error') {
+          <div class="message error" role="alert">
+            <p>The boards could not be loaded.</p>
+            <button type="button" class="button" (click)="load()">Try again</button>
+          </div>
+        }
+        @default {
+          @if (roomMissing()) {
+            <div class="empty room-missing">
+              <h2>Room not found</h2>
+              <p>This room does not exist, or you have no access to it.</p>
+              <a class="button" routerLink="/">All boards</a>
+            </div>
+          } @else if (boards().length === 0) {
+            <div class="empty">
+              <h2>No boards yet</h2>
+              <p>Create a board to start drawing and collaborating.</p>
+              @if (createState() === 'closed' && canCreateBoard()) {
+                <button type="button" class="button create-first" (click)="openCreate()">
+                  Create your first board
+                </button>
+              }
+            </div>
+          } @else if (visibleBoards().length === 0) {
+            <div class="empty view-empty">
+              @if (currentRoom(); as room) {
+                <h2>No boards in this room yet</h2>
+                <p>Create a board here, or move one in from the board's menu.</p>
+                @if (createState() === 'closed' && canWriteRoom(room)) {
+                  <button type="button" class="button create-first" (click)="openCreate()">
+                    Create the first board in this room
+                  </button>
+                }
+              } @else {
+                <h2>Every board is in a room</h2>
+                <p>Boards that are in no room show up here.</p>
+              }
+            </div>
+          } @else {
+            <ul class="boards">
+              @for (board of visibleBoards(); track board.id) {
+                <li
+                  class="board-item"
+                  [class.dragging]="draggingId() === board.id"
+                  [class.menu-open]="moveMenuFor() === board.id"
+                  [attr.draggable]="canMove(board) ? 'true' : null"
+                  (dragstart)="dragStart(board, $event)"
+                  (dragend)="dragEnd()"
+                >
+                  <a class="board-card" draggable="false" [routerLink]="board.path">
+                    <span class="board-preview" aria-hidden="true" [style.--tint]="tint(board.id)">
+                      {{ initials(board.name) }}
+                    </span>
+                    <span class="board-meta">
+                      <span class="board-name" [title]="board.name">{{ board.name }}</span>
+                      <span class="board-date"
+                        >Created {{ board.createdAt | date: 'mediumDate' }}</span
+                      >
+                      @if (roomLabel(board); as label) {
+                        <span class="board-room" [title]="'In the room ' + label">{{ label }}</span>
+                      }
+                    </span>
+                  </a>
+                  <span class="board-actions">
+                    @if (moveOptions(board).length > 0) {
+                      <span class="move-root">
+                        <button
+                          type="button"
+                          class="icon-button move-button"
+                          aria-haspopup="menu"
+                          [attr.aria-expanded]="moveMenuFor() === board.id"
+                          [attr.aria-label]="'Move the board ' + board.name + ' to a room'"
+                          title="Move to a room"
+                          (click)="toggleMoveMenu(board)"
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 7h6l2 2h10v10H3zM12 12v5m-2-2 2 2 2-2" />
+                          </svg>
+                        </button>
+                        @if (moveMenuFor() === board.id) {
+                          <ul class="move-menu" role="menu" (keydown.escape)="closeMoveMenu()">
+                            @for (option of moveOptions(board); track option.roomId) {
+                              <li role="none">
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  class="move-item"
+                                  (click)="moveTo(board, option.roomId)"
+                                >
+                                  {{ option.label }}
+                                </button>
+                              </li>
+                            }
+                          </ul>
+                        }
+                      </span>
+                    }
+                    <button
+                      type="button"
+                      class="icon-button duplicate-button"
+                      [attr.aria-label]="'Duplicate the board ' + board.name"
+                      [title]="
+                        duplicatingId() === board.id ? 'Duplicating…' : 'Duplicate this board'
+                      "
+                      [disabled]="duplicatingId() !== null"
+                      (click)="duplicate(board)"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M9 9h10v10H9zM5 15V5h10" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-button delete-button"
+                      [attr.aria-label]="'Delete the board ' + board.name"
+                      title="Delete this board"
+                      (click)="askDelete(board)"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 7h16M10 11v6m4-6v6M6 7l1 12h10l1-12M9 7V4h6v3" />
+                      </svg>
+                    </button>
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+        }
+      }
+    </section>
+  </div>
 </main>

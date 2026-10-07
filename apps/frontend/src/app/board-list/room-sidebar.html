@@ -1,0 +1,105 @@
+<nav class="sidebar" aria-label="Rooms">
+  <ul class="entries">
+    <li>
+      <a
+        class="entry"
+        routerLink="/"
+        [class.active]="selected() === undefined"
+        [attr.aria-current]="selected() === undefined ? 'page' : null"
+      >
+        <span class="entry-name">All boards</span>
+        <span class="entry-count">{{ total() }}</span>
+      </a>
+    </li>
+    <li>
+      <a
+        class="entry"
+        routerLink="/rooms/none"
+        [class.active]="selected() === 'none'"
+        [class.can-drop]="canDropOn(null)"
+        [class.drop-target]="dropTarget() === 'none'"
+        [attr.aria-current]="selected() === 'none' ? 'page' : null"
+        (dragover)="dragOver($event, null)"
+        (dragleave)="dragLeave('none')"
+        (drop)="drop($event, null)"
+      >
+        <span class="entry-name">Not in a room</span>
+        <span class="entry-count">{{ unassigned() }}</span>
+      </a>
+    </li>
+  </ul>
+
+  <h2 class="rooms-heading">Rooms</h2>
+  @switch (state()) {
+    @case ('loading') {
+      <p class="note" role="status">Loading rooms…</p>
+    }
+    @case ('error') {
+      <p class="note error" role="alert">
+        The rooms could not be loaded.
+        <button type="button" class="link" (click)="retry.emit()">Try again</button>
+      </p>
+    }
+    @default {
+      @if (rooms().length === 0) {
+        <p class="note">No rooms yet. A room is a shared space for the boards of a team.</p>
+      } @else {
+        <ul class="entries rooms">
+          @for (room of rooms(); track room.id) {
+            <li>
+              <a
+                class="entry"
+                [routerLink]="['/rooms', room.id]"
+                [class.active]="selected() === room.id"
+                [class.can-drop]="canDropOn(room)"
+                [class.drop-target]="dropTarget() === room.id"
+                [attr.aria-current]="selected() === room.id ? 'page' : null"
+                (dragover)="dragOver($event, room)"
+                (dragleave)="dragLeave(room.id)"
+                (drop)="drop($event, room)"
+              >
+                <span class="entry-name" [title]="room.name">{{ room.name }}</span>
+                <span class="entry-count">{{ counts()[room.id] ?? 0 }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+
+  @if (adding()) {
+    <form class="new-room" (submit)="$event.preventDefault(); add()" (keydown.escape)="cancelAdd()">
+      <input
+        #nameField
+        id="room-name"
+        name="room"
+        aria-label="Room name"
+        type="text"
+        placeholder="Room name"
+        autocomplete="off"
+        data-1p-ignore
+        data-lpignore="true"
+        [attr.maxlength]="maxNameLength"
+        [value]="draft()"
+        [disabled]="saving()"
+        [attr.aria-invalid]="error() ? 'true' : null"
+        [attr.aria-describedby]="error() ? 'room-name-error' : null"
+        (input)="updateDraft($event)"
+      />
+      <div class="new-room-actions">
+        <button type="submit" class="small primary" [disabled]="saving()">
+          {{ saving() ? 'Creating…' : 'Create' }}
+        </button>
+        <button type="button" class="small" [disabled]="saving()" (click)="cancelAdd()">
+          Cancel
+        </button>
+      </div>
+      @if (error(); as message) {
+        <p id="room-name-error" class="error" role="alert">{{ message }}</p>
+      }
+    </form>
+  } @else {
+    <button type="button" class="add-room" (click)="openAdd()">+ New room</button>
+  }
+</nav>

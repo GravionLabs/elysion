@@ -87,4 +87,37 @@ describe('MembersApi', () => {
       error: { message: 'No user with this email' },
     });
   });
+
+  describe('for a room', () => {
+    const room = '0197a8d2-1c3e-7a10-8000-0000000000b1';
+
+    it('talks to /api/rooms/:id/members for every call', async () => {
+      const list = firstValueFrom(api.list(room, 'room'));
+      http.expectOne(`/api/rooms/${room}/members`).flush([member]);
+      expect(await list).toEqual([member]);
+
+      const add = firstValueFrom(api.add(room, 'ada@example.com', 'Viewer', 'room'));
+      const added = http.expectOne(`/api/rooms/${room}/members`);
+      expect(added.request.method).toBe('POST');
+      expect(added.request.body).toEqual({ email: 'ada@example.com', role: 'Viewer' });
+      added.flush(member);
+      await add;
+
+      const change = firstValueFrom(api.changeRole(room, user, 'Editor', 'room'));
+      const changed = http.expectOne(`/api/rooms/${room}/members/${user}`);
+      expect(changed.request.method).toBe('PATCH');
+      changed.flush(member);
+      await change;
+    });
+
+    it('removes a member of a room', async () => {
+      const result = firstValueFrom(api.remove(room, user, 'room'));
+
+      const request = http.expectOne(`/api/rooms/${room}/members/${user}`);
+      expect(request.request.method).toBe('DELETE');
+      request.flush(null, { status: 204, statusText: 'No Content' });
+
+      await expect(result).resolves.toBeNull();
+    });
+  });
 });

@@ -7,7 +7,7 @@
     (click)="$event.stopPropagation()"
   >
     <header class="dialog-header">
-      <h2 id="share-title">Share this board</h2>
+      <h2 id="share-title">Share this {{ scope() }}</h2>
       <button type="button" class="close" aria-label="Close" (click)="close()">×</button>
     </header>
 
@@ -88,8 +88,13 @@
     </section>
 
     <p class="hint">
-      Someone has to log in to Elysion once before they can be added. Viewers can look at the board
-      but not change it.
+      Someone has to log in to Elysion once before they can be added.
+      @if (scope() === 'room') {
+        A member gets this role on every board in the room. Viewers can look at them but not change
+        them.
+      } @else {
+        Viewers can look at the board but not change it.
+      }
     </p>
   </div>
 </div>

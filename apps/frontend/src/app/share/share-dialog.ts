@@ -12,17 +12,27 @@ import {
   viewChild,
 } from '@angular/core';
 import type { Observable } from 'rxjs';
-import { MEMBER_ROLES, type Member, MembersApi, type MemberRole } from './members-api';
+import {
+  MEMBER_ROLES,
+  type Member,
+  MembersApi,
+  type MemberRole,
+  type MemberScope,
+} from './members-api';
 
 /** The message to show for a failed call: the API's own where it has one, else a general one. */
-export function describeError(error: unknown, fallback: string): string {
+export function describeError(
+  error: unknown,
+  fallback: string,
+  scope: MemberScope = 'board',
+): string {
   if (error instanceof HttpErrorResponse) {
     const message = (error.error as { message?: unknown } | null)?.message;
     if (typeof message === 'string' && message.trim() !== '') {
       return message;
     }
     if (error.status === 403) {
-      return 'Only an owner of the board can do this.';
+      return `Only an owner of the ${scope} can do this.`;
     }
   }
   return fallback;
@@ -41,7 +51,10 @@ export function describeError(error: unknown, fallback: string): string {
 export class ShareDialog {
   readonly #api = inject(MembersApi);
 
+  /** The id of the board, or of the room when `scope` is `room`. */
   readonly boardId = input.required<string>();
+  /** What is shared: a board (the default) or a room, whose members get its role on every board in it. */
+  readonly scope = input<MemberScope>('board');
   readonly closed = output<void>();
 
   protected readonly roles = MEMBER_ROLES;
@@ -75,14 +88,14 @@ export class ShareDialog {
   protected load(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    this.#api.list(this.boardId()).subscribe({
+    this.#api.list(this.boardId(), this.scope()).subscribe({
       next: (members) => {
         this.members.set(members);
         this.loading.set(false);
       },
       error: (error: unknown) => {
         this.loading.set(false);
-        this.loadError.set(describeError(error, 'The members could not be loaded.'));
+        this.loadError.set(describeError(error, 'The members could not be loaded.', this.scope()));
       },
     });
   }
@@ -103,7 +116,7 @@ export class ShareDialog {
       return;
     }
     this.#change(
-      this.#api.add(this.boardId(), email, this.newRole()),
+      this.#api.add(this.boardId(), email, this.newRole(), this.scope()),
       'The member could not be added.',
       (member) => {
         this.members.update((members) => [...members, member]);
@@ -116,7 +129,7 @@ export class ShareDialog {
     const select = event.target as HTMLSelectElement;
     const role = select.value as MemberRole;
     this.#change(
-      this.#api.changeRole(this.boardId(), member.userId, role),
+      this.#api.changeRole(this.boardId(), member.userId, role, this.scope()),
       'The role could not be changed.',
       (changed) =>
         this.members.update((members) =>
@@ -129,7 +142,7 @@ export class ShareDialog {
 
   protected remove(member: Member): void {
     this.#change(
-      this.#api.remove(this.boardId(), member.userId),
+      this.#api.remove(this.boardId(), member.userId, this.scope()),
       'The member could not be removed.',
       () => this.members.update((members) => members.filter((m) => m.userId !== member.userId)),
     );
@@ -150,7 +163,7 @@ export class ShareDialog {
       },
       error: (error: unknown) => {
         this.busy.set(false);
-        this.error.set(describeError(error, failure));
+        this.error.set(describeError(error, failure, this.scope()));
         undo?.();
       },
     });

@@ -1,0 +1,236 @@
+// The rooms column of the board overview; chips above the grid on a phone.
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.sidebar {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+
+.entries {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  color: var(--c-text);
+  font-size: 14px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+
+  &:hover {
+    background: var(--c-surface-3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 1px;
+  }
+
+  &.active {
+    background: var(--c-primary-soft);
+    border-color: var(--c-primary);
+    font-weight: 600;
+  }
+
+  // A board is being dragged: the entries that take it are marked, the one under the pointer is lit.
+  &.can-drop {
+    border-style: dashed;
+    border-color: var(--c-border-muted);
+  }
+
+  &.drop-target {
+    background: var(--c-primary-soft);
+    border-color: var(--c-primary);
+  }
+}
+
+.entry-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-count {
+  flex: none;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.rooms-heading {
+  margin: 16px 10px 4px;
+  color: var(--c-text-subtle);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.note {
+  margin: 2px 10px 6px;
+  color: var(--c-text-subtle);
+  font-size: 13px;
+
+  &.error {
+    color: var(--c-danger);
+  }
+}
+
+.link {
+  padding: 0;
+  color: var(--c-primary);
+  font: inherit;
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.add-room {
+  margin: 6px 0 0;
+  padding: 7px 10px;
+  color: var(--c-text-subtle);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  background: none;
+  border: 1px dashed var(--c-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--c-text);
+    border-color: var(--c-border-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 1px;
+  }
+}
+
+.new-room {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+
+  input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    color: var(--c-text);
+    font: inherit;
+    font-size: 14px;
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+
+    &:focus-visible {
+      outline: 2px solid var(--c-focus);
+      outline-offset: 1px;
+    }
+
+    &[aria-invalid='true'] {
+      border-color: var(--c-danger);
+    }
+  }
+
+  .error {
+    margin: 0;
+    color: var(--c-danger);
+    font-size: 13px;
+  }
+}
+
+.new-room-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.small {
+  height: 30px;
+  padding: 0 12px;
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  &.primary {
+    color: var(--c-on-primary);
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 2px;
+  }
+}
+
+// On a phone the column becomes a row of chips above the grid.
+@media (max-width: 720px) {
+  .sidebar {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .entries {
+    display: flex;
+    gap: 8px;
+  }
+
+  .entry {
+    border-color: var(--c-border);
+    border-radius: 999px;
+  }
+
+  .rooms-heading {
+    display: none;
+  }
+
+  .note {
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .add-room {
+    margin: 0;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  // The form needs its own line: a chip row has no room for a field.
+  .new-room {
+    grid-column: 1 / -1;
+    min-width: 240px;
+  }
+}
