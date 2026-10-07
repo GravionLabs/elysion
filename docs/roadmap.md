@@ -4,7 +4,7 @@ The order in which the open backlog is built, by phase. Each phase lists its PBI
 should be implemented; a PBI's tasks are its GitHub sub-issues. The same order is on the project
 board ([GravionLabs project 7](https://github.com/users/GravionLabs/projects/7)): the **Phase** field
 holds the phase and the items are sorted in this order. Each phase is a GitHub milestone
-(M1 to M9) holding its features, PBIs and tasks; epics span several phases and have no milestone.
+(M1 to M10) holding its features, PBIs and tasks; epics span several phases and have no milestone.
 
 Refined on 2026-10-06; open PBIs only, finished ones drop out (last refreshed 2026-10-06). When the backlog changes, update this file and the board together.
 
@@ -86,3 +86,15 @@ Milestone: [M9 Canvas polish](https://github.com/GravionLabs/elysion/milestone/9
 Three things from using the board (owner, 2026-10-07): the canvas menu moves from Excalidraw's hamburger into the toolbar, elements can snap to a grid that can also be shown (20 px by default, selectable), and sticky notes remember their color (yellow at first), are made with one click, show their colors as note icons and carry the color as their background.
 
 All PBIs of this phase are done.
+
+## M10 Branding and boards
+
+Milestone: [M10 Branding and boards](https://github.com/GravionLabs/elysion/milestone/10)
+
+A project icon, a board overview that uses the page (New board in the header), and a way to group boards: the ADR decides between rooms (as in Mural), folders and tags; the two rooms PBIs follow its answer.
+
+1. #555 feat: project icon as favicon, app icon and in the app's brand (Feature #554; the owner picks one of three candidates)
+2. #560 feat: board overview that uses the page, with New board in the top bar (Feature #559)
+3. #563 docs: decide how boards are grouped (rooms, folders or tags) (Feature #559, needs-decision)
+4. #565 feat: rooms in the business backend and the BFF (Feature #559, after the decision)
+5. #569 feat: rooms in the board overview (Feature #559, after #565)
