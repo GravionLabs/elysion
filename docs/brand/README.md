@@ -1,8 +1,8 @@
 # Elysion brand
 
-## Project icon: three candidates
+## Project icon: candidate B, two sticky notes
 
-Issue #556 (PBI #555). The owner picks one; the chosen icon becomes the favicon, the app icon and the mark in the app
+Issue #556 (PBI #555). **The owner picked candidate B (two sticky notes) on 2026-10-07**, against the recommendation below; the chosen icon becomes the favicon, the app icon and the mark in the app
 (#557, #558). All three are hand-drawn SVGs on a 64 x 64 grid (plain `rect`, `path` and one gradient, no fonts,
 filters or rasters), use the colors of the product, `--c-primary` `#6366f1` to `--c-node-purple` `#8b5cf6` at 135
 degrees (the gradient the mark in the app already has), and share the rounded square, so the choice is about the
