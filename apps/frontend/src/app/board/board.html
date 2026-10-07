@@ -20,6 +20,7 @@
     [canShare]="canShare()"
     [readOnly]="readOnly()"
     [timer]="timer()"
+    [voting]="voting()"
     (renameRequested)="rename($event)"
     (themeToggle)="toggleTheme()"
     (libraryToggle)="toggleLibrary()"
@@ -34,6 +35,10 @@
     (timerResume)="timerCommand((c) => c.resumeTimer?.())"
     (timerExtend)="timerCommand((c) => c.extendTimer?.($event))"
     (timerStop)="timerCommand((c) => c.stopTimer?.())"
+    (votingStart)="timerCommand((c) => c.startVoting?.($event))"
+    (votingEnd)="timerCommand((c) => c.endVoting?.())"
+    (votingClear)="timerCommand((c) => c.clearVotingResults?.())"
+    (votingFocus)="timerCommand((c) => c.scrollToElement?.($event))"
   />
   @if (pendingImport(); as file) {
     <div class="board-banner confirm" role="alertdialog" aria-label="Confirm import">
@@ -121,6 +126,7 @@
       (selectioncount)="onSelectionCount($event)"
       (presence)="onPresence($event)"
       (timer)="onTimer($event)"
+      (voting)="onVoting($event)"
     ></elysion-canvas>
   }
   @if (shareOpen() && canShare()) {

@@ -830,6 +830,99 @@ describe('Board', () => {
     });
   });
 
+  describe('dot voting', () => {
+    type VotingCanvas = HTMLElement & {
+      startVoting?: ReturnType<typeof vi.fn>;
+      endVoting?: ReturnType<typeof vi.fn>;
+      clearVotingResults?: ReturnType<typeof vi.fn>;
+      scrollToElement?: ReturnType<typeof vi.fn>;
+    };
+    const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as VotingCanvas;
+    const bar = () => fixture.nativeElement.querySelector('app-top-bar') as HTMLElement;
+    const open = {
+      id: 's1',
+      name: 'Best idea',
+      votesPerPerson: 5,
+      status: 'open',
+      startedBy: { id: 'kc-1', name: 'Ada' },
+      myVotes: 1,
+    };
+    const closed = {
+      ...open,
+      status: 'closed',
+      tally: [{ elementId: 'e1', count: 3, label: 'Ship it' }],
+    };
+    const announce = (session: unknown) => {
+      canvas().dispatchEvent(new CustomEvent('voting', { detail: { session } }));
+      fixture.detectChanges();
+    };
+    const menu = () => bar().querySelector('app-voting-menu') as HTMLElement;
+
+    it('shows an editor a Voting button, then the votes left while a voting is open', () => {
+      expect(menu().querySelector('.menu-button')?.textContent).toContain('Voting');
+
+      announce(open);
+      expect(menu().querySelector('.menu-button')?.textContent).toContain('4 left');
+
+      announce(null);
+      expect(menu().querySelector('.menu-button')?.textContent).not.toContain('left');
+    });
+
+    it('starts a voting through the canvas from the menu', () => {
+      canvas().startVoting = vi.fn().mockResolvedValue(undefined);
+      (menu().querySelector('.menu-button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      (menu().querySelectorAll('.preset')[0] as HTMLElement).click(); // 3 votes
+      fixture.detectChanges();
+      (menu().querySelector('button[type="submit"]') as HTMLElement).click();
+
+      expect(canvas().startVoting).toHaveBeenCalledWith({ name: 'Voting', votesPerPerson: 3 });
+    });
+
+    it('ends the voting and clears the results through the canvas', () => {
+      Object.assign(canvas(), {
+        endVoting: vi.fn().mockResolvedValue(undefined),
+        clearVotingResults: vi.fn().mockResolvedValue(undefined),
+      });
+      announce(open);
+      (menu().querySelector('.menu-button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      (menu().querySelector('.end') as HTMLElement).click();
+      expect(canvas().endVoting).toHaveBeenCalledTimes(1);
+
+      announce(closed);
+      (menu().querySelector('.menu-button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      (menu().querySelector('.clear') as HTMLElement).click();
+      fixture.detectChanges();
+      (menu().querySelector('.clear') as HTMLElement).click();
+      expect(canvas().clearVotingResults).toHaveBeenCalledTimes(1);
+    });
+
+    it('scrolls the canvas to the element of a clicked result', () => {
+      canvas().scrollToElement = vi.fn().mockResolvedValue(undefined);
+      announce(closed);
+      (menu().querySelector('.menu-button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      (menu().querySelector('.result') as HTMLElement).click();
+
+      expect(canvas().scrollToElement).toHaveBeenCalledWith('e1');
+    });
+
+    it('says why the canvas refused, in the banner', async () => {
+      canvas().endVoting = vi.fn().mockRejectedValue(new Error('This board is read-only.'));
+      announce(open);
+      (menu().querySelector('.menu-button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      (menu().querySelector('.end') as HTMLElement).click();
+      await fixture.whenStable();
+
+      expect(component.notice()).toBe('This board is read-only.');
+    });
+  });
+
   describe('roles', () => {
     const uuid = '0197a8d2-1c3e-7a10-8000-000000000001';
     const canvas = () =>
@@ -912,6 +1005,42 @@ describe('Board', () => {
       canvas()!.dispatchEvent(new CustomEvent('timer', { detail: { state: null } }));
       fixture.detectChanges();
       expect(bar().querySelector('app-timer-menu .menu-button')).toBeNull();
+    });
+
+    it('shows a viewer the state of a voting and its results, and nothing to start or change', async () => {
+      await openAs('viewer');
+      const announce = (session: unknown) => {
+        canvas()!.dispatchEvent(new CustomEvent('voting', { detail: { session } }));
+        fixture.detectChanges();
+      };
+      const menu = () => bar().querySelector('app-voting-menu') as HTMLElement;
+      expect(menu().querySelector('.menu-button')).toBeNull(); // nothing without a voting
+
+      announce({
+        id: 's1',
+        name: 'Pick',
+        votesPerPerson: 3,
+        status: 'open',
+        startedBy: { id: 'someone', name: 'Bea' },
+        myVotes: 0,
+      });
+      expect(menu().querySelector('.chip')?.textContent).toContain('Voting: Pick');
+      expect(menu().querySelector('.menu-button')).toBeNull();
+
+      announce({
+        id: 's1',
+        name: 'Pick',
+        votesPerPerson: 3,
+        status: 'closed',
+        startedBy: { id: 'someone', name: 'Bea' },
+        myVotes: 0,
+        tally: [{ elementId: 'e1', count: 2, label: 'Ship it' }],
+      });
+      (menu().querySelector('.menu-button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(menu().querySelector('.result')).toBeTruthy();
+      expect(menu().querySelector('.clear')).toBeNull();
+      expect(menu().querySelector('form')).toBeNull();
     });
 
     it('gives an editor the Timer menu', async () => {

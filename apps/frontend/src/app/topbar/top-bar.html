@@ -95,6 +95,14 @@
       (extendRequested)="timerExtend.emit($event)"
       (stopRequested)="timerStop.emit()"
     />
+    <app-voting-menu
+      [session]="voting()"
+      [canControl]="!readOnly()"
+      (startRequested)="votingStart.emit($event)"
+      (endRequested)="votingEnd.emit()"
+      (clearRequested)="votingClear.emit()"
+      (elementRequested)="votingFocus.emit($event)"
+    />
   </div>
 
   <div class="topbar-end">

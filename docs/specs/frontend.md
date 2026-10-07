@@ -81,6 +81,16 @@ The first facilitation tool (#579, [ADR 0020](../adr/0020-facilitation-state.md)
 
 **Clock skew.** The end is worked out on every client from `startedAt` with its own `Date.now()`, because the realtime service has no time API. A client whose clock is off by a few seconds shows a few seconds too much or too little, and the red zero comes that much early or late there. This is accepted for a workshop timer; a server-time offset can be added later without changing what is stored.
 
+## Facilitation: voting
+
+The second facilitation tool (#582, [ADR 0020](../adr/0020-facilitation-state.md), option A: the sessions and votes live in the board's Yjs document, so **viewers cannot vote** and anonymity is a promise of the interface). How the state is kept, the vote mode and the badges on the canvas are in "Dot voting, in the canvas" below the contract table; this is what the shell shows.
+
+**Top bar** (`topbar/voting-menu.*`, `VotingMenu`, after the Timer): editors and owners get a **Voting** button. Without a voting it opens a form: a **name** (default "Voting"), the **votes per person** as the presets 3, 5 and 10 or a field (a whole number from 1 to 100; anything else is refused with a message), and **Start**. While a voting is open the button says "Voting · 3 left" (the caller's votes left, never below zero) and its menu shows the name, "3 of 5 votes left" with how to vote and take a vote back, and **End voting**; there is no second voting while one is open. Once it is closed the button says **Results**, and its panel is the **ranked list** of what got votes (the element's text, a sticky note's bound text, else its type, with the count; a click scrolls the canvas to the element through `scrollToElement`) and the total; editors and owners also get **Clear results**, which asks first (a second press confirms, closing the menu forgets the question), and the form for another voting. A **viewer** sees the state ("Voting: <name>", nothing to click while it is open) and, once it is closed, the Results button with the panel and no controls, because the canvas rejects a viewer's changes. The board page passes the `voting` event's session in (`Board.voting`) and calls the element (`Board.timerCommand`); a refusal is shown in the banner.
+
+**Anonymity.** While a voting is open the shell knows only the caller's own number of votes: it shows no names (not even who started it, the event has it only for tooltips), no one else's counts and no results. After it is closed it shows counts per element, no names. This is what the interface promises. With option A the board's document holds the raw votes (who voted for what) and every client receives it, so somebody who reads the document can see them; a real guarantee, and viewers voting, would need the votes on the server (option C of the ADR).
+
+**Reload and late joiners.** The open voting and the person's own votes come back with the document (the person is told apart by `user-id`, so a reload, or a second tab, is the same voter; without a user id the canvas's per-tab id is used and votes are per tab).
+
 ## Top bar and the element contract
 
 [ADR 0010](../adr/0010-shell-controls-the-canvas.md): the Angular shell owns the top bar (`topbar/top-bar.ts`, after ariadne's `.topbar`: brand, board name, sync status, theme toggle), the canvas stays free of board logic.
