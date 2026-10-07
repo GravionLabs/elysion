@@ -41,8 +41,21 @@
   padding: 28px 24px 48px;
 }
 
+// The rooms column and the boards; one column with chips above the grid on a phone.
+.layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.content {
+  min-width: 0;
+}
+
 .page-title {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 12px;
   min-height: 36px;
@@ -54,6 +67,35 @@
     font-weight: 700;
     letter-spacing: -0.02em;
   }
+}
+
+.room-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+
+  .button {
+    height: 30px;
+  }
+}
+
+.rename {
+  flex: 1 1 320px;
+}
+
+.room-error {
+  margin-bottom: 12px;
+}
+
+.create-room {
+  margin: -4px 0 4px;
+  color: var(--c-text-subtle);
+  font-size: 13px;
+}
+
+a.button {
+  text-decoration: none;
 }
 
 .board-count {
@@ -150,7 +192,8 @@
   }
 }
 
-.create-row {
+.create-row,
+.rename {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -176,6 +219,11 @@
       border-color: var(--c-danger);
     }
   }
+}
+
+.rename input {
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .templates {
@@ -360,6 +408,23 @@
   font-size: 12px;
 }
 
+// Which room the board is in, in the all-boards view.
+.board-room {
+  overflow: hidden;
+  color: var(--c-primary);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
 @media (max-width: 480px) {
   .page {
     padding: 20px 16px 48px;
@@ -399,6 +464,58 @@
 
 .board-item {
   position: relative;
+
+  &.dragging {
+    opacity: 0.5;
+  }
+}
+
+// The menu that moves a board into a room, under its button in the card's corner.
+.move-root {
+  position: relative;
+}
+
+.move-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  display: grid;
+  min-width: 180px;
+  max-width: 260px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.move-item {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  overflow: hidden;
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--c-surface-3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: -2px;
+  }
 }
 
 // In the preview's corner: shown on hover and keyboard focus, always on touch screens.
@@ -412,6 +529,7 @@
   transition: opacity var(--transition-fast);
 
   .board-item:hover &,
+  .board-item.menu-open &,
   &:focus-within {
     opacity: 1;
   }

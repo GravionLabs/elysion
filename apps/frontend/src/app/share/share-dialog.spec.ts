@@ -281,3 +281,76 @@ describe('describeError', () => {
     expect(describeError(new Error('boom'), 'fallback')).toBe('fallback');
   });
 });
+
+describe('ShareDialog for a room', () => {
+  const room = '0197a8d2-1c3e-7a10-8000-0000000000b1';
+  const roomUrl = `/api/rooms/${room}/members`;
+  let fixture: ComponentFixture<ShareDialog>;
+  let http: HttpTestingController;
+  const el = () => fixture.nativeElement as HTMLElement;
+
+  beforeEach(async () => {
+    TestBed.configureTestingModule({
+      imports: [ShareDialog],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    http = TestBed.inject(HttpTestingController);
+    fixture = TestBed.createComponent(ShareDialog);
+    fixture.componentRef.setInput('boardId', room);
+    fixture.componentRef.setInput('scope', 'room');
+    await fixture.whenStable();
+    fixture.detectChanges();
+  });
+
+  afterEach(() => http.verify());
+
+  it('asks the room member API and says it is about the room', async () => {
+    http.expectOne(roomUrl).flush([ada, bea]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(el().querySelector('h2')?.textContent).toContain('Share this room');
+    expect(el().querySelector('.hint')?.textContent).toContain('every board in the room');
+    expect(el().querySelectorAll('.member')).toHaveLength(2);
+  });
+
+  it('adds, changes and removes through the room routes', async () => {
+    http.expectOne(roomUrl).flush([ada]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const input = el().querySelector('input[type="email"]') as HTMLInputElement;
+    input.value = 'bea@example.com';
+    input.dispatchEvent(new Event('input'));
+    (el().querySelector('form') as HTMLFormElement).dispatchEvent(
+      new Event('submit', { cancelable: true }),
+    );
+    const added = http.expectOne(roomUrl);
+    expect(added.request.method).toBe('POST');
+    added.flush(bea);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const select = el().querySelector('select[aria-label="Role of Bea"]') as HTMLSelectElement;
+    select.value = 'Editor';
+    select.dispatchEvent(new Event('change'));
+    const changed = http.expectOne(`${roomUrl}/u2`);
+    expect(changed.request.method).toBe('PATCH');
+    changed.flush({ ...bea, role: 'Editor' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    (el().querySelector('button[aria-label="Remove Bea"]') as HTMLButtonElement).click();
+    const removed = http.expectOne(`${roomUrl}/u2`);
+    expect(removed.request.method).toBe('DELETE');
+    removed.flush(null, { status: 204, statusText: 'No Content' });
+  });
+
+  it('names the room when only an owner may do it', () => {
+    http.expectOne(roomUrl).flush([]);
+    const forbidden = new HttpErrorResponse({ status: 403 });
+
+    expect(describeError(forbidden, 'x', 'room')).toBe('Only an owner of the room can do this.');
+    expect(describeError(forbidden, 'x')).toBe('Only an owner of the board can do this.');
+  });
+});

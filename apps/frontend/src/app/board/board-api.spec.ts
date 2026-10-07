@@ -9,6 +9,7 @@ const board: BoardInfo = {
   id,
   name: 'Retro',
   createdAt: '2026-10-05T00:00:00Z',
+  roomId: null,
   path: `/board/${id}`,
 };
 
@@ -228,5 +229,38 @@ describe('BoardApi', () => {
     http.expectOne(`/api/boards/${id}`).flush('', { status: 404, statusText: 'Not Found' });
 
     await expect(result).rejects.toMatchObject({ status: 404 });
+  });
+
+  describe('moving a board to a room', () => {
+    const room = '0197a8d2-1c3e-7a10-8000-0000000000b1';
+
+    it('puts the board in a room with PUT /api/boards/:id/room', async () => {
+      const result = firstValueFrom(api.moveToRoom(id, room));
+
+      const request = http.expectOne(`/api/boards/${id}/room`);
+      expect(request.request.method).toBe('PUT');
+      expect(request.request.body).toEqual({ roomId: room });
+      request.flush({ ...board, roomId: room });
+
+      expect((await result).roomId).toBe(room);
+    });
+
+    it('takes it out of its room with a null room', async () => {
+      const result = firstValueFrom(api.moveToRoom(id, null));
+
+      const request = http.expectOne(`/api/boards/${id}/room`);
+      expect(request.request.body).toEqual({ roomId: null });
+      request.flush(board);
+
+      expect((await result).roomId).toBeNull();
+    });
+
+    it('does not hide a refusal', async () => {
+      const result = firstValueFrom(api.moveToRoom(id, room));
+
+      http.expectOne(`/api/boards/${id}/room`).flush('', { status: 403, statusText: 'Forbidden' });
+
+      await expect(result).rejects.toMatchObject({ status: 403 });
+    });
   });
 });

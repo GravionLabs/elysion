@@ -7,6 +7,8 @@ export interface BoardInfo {
   id: string;
   name: string;
   createdAt: string;
+  /** The room the board is in, or `null` (ADR 0019). */
+  roomId: string | null;
   /** The route that opens the board. */
   path: string;
 }
@@ -112,6 +114,11 @@ export class BoardApi {
   /** A new board named "<name> (copy)" with a copy of the board's stored content. */
   duplicate(id: string): Observable<BoardInfo> {
     return this.#http.post<BoardInfo>(`/api/boards/${encodeURIComponent(id)}/duplicate`, null);
+  }
+
+  /** Puts a board in a room, or takes it out of its room with `null`. Needs write access on the board and Editor in the room. */
+  moveToRoom(id: string, roomId: string | null): Observable<BoardInfo> {
+    return this.#http.put<BoardInfo>(`/api/boards/${encodeURIComponent(id)}/room`, { roomId });
   }
 
   /** Deletes a board and, in the business backend, its stored content. */

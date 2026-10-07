@@ -52,6 +52,39 @@ describe('routes', () => {
     expect(router.url).toBe('/');
   });
 
+  it('opens the board list for a room and for the boards in no room, with the view as the roomId input', async () => {
+    const all = await harness.navigateByUrl('/', BoardList);
+    expect(all.roomId()).toBeUndefined();
+
+    const room = await harness.navigateByUrl(
+      '/rooms/0197a8d2-1c3e-7a10-8000-0000000000b1',
+      BoardList,
+    );
+    expect(room.roomId()).toBe('0197a8d2-1c3e-7a10-8000-0000000000b1');
+    expect(router.url).toBe('/rooms/0197a8d2-1c3e-7a10-8000-0000000000b1');
+
+    const none = await harness.navigateByUrl('/rooms/none', BoardList);
+    expect(none.roomId()).toBe('none');
+  });
+
+  it('keeps the same board list in place while the user moves between its views', async () => {
+    const first = await harness.navigateByUrl('/', BoardList);
+    const second = await harness.navigateByUrl('/rooms/none', BoardList);
+    const third = await harness.navigateByUrl('/', BoardList);
+
+    expect(second).toBe(first);
+    expect(third).toBe(first);
+    expect(third.roomId()).toBeUndefined();
+  });
+
+  it('sends a malformed rooms path to the board list', async () => {
+    await harness.navigateByUrl('/rooms', BoardList);
+    expect(router.url).toBe('/');
+
+    await harness.navigateByUrl('/rooms/a/b', BoardList);
+    expect(router.url).toBe('/');
+  });
+
   it('sends unknown paths to the board list', async () => {
     await harness.navigateByUrl('/nowhere/at/all', BoardList);
 

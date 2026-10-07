@@ -7,7 +7,10 @@ export type MemberRole = 'Owner' | 'Editor' | 'Viewer';
 
 export const MEMBER_ROLES: readonly MemberRole[] = ['Owner', 'Editor', 'Viewer'];
 
-/** One person with a role on a board. */
+/** What the members belong to: a board, or a room (ADR 0019), whose member API has the same shape. */
+export type MemberScope = 'board' | 'room';
+
+/** One person with a role on a board or in a room. */
 export interface Member {
   userId: string;
   displayName: string;
@@ -16,33 +19,43 @@ export interface Member {
 }
 
 /**
- * The members of a board (`/api/boards/:id/members`): only an owner may call these, and the errors carry a message the
+ * The members of a board (`/api/boards/:id/members`) or of a room (`/api/rooms/:id/members`): only an owner may call these, and the errors carry a message the
  * dialog can show (an unknown email, the creator that cannot be changed, a duplicate).
  */
 @Injectable({ providedIn: 'root' })
 export class MembersApi {
   readonly #http = inject(HttpClient);
 
-  list(boardId: string): Observable<Member[]> {
-    return this.#http.get<Member[]>(this.#url(boardId));
+  list(id: string, scope: MemberScope = 'board'): Observable<Member[]> {
+    return this.#http.get<Member[]>(this.#url(scope, id));
   }
 
   /** Adds somebody who has logged in at least once, by email. */
-  add(boardId: string, email: string, role: MemberRole): Observable<Member> {
-    return this.#http.post<Member>(this.#url(boardId), { email, role });
+  add(
+    id: string,
+    email: string,
+    role: MemberRole,
+    scope: MemberScope = 'board',
+  ): Observable<Member> {
+    return this.#http.post<Member>(this.#url(scope, id), { email, role });
   }
 
-  changeRole(boardId: string, userId: string, role: MemberRole): Observable<Member> {
-    return this.#http.patch<Member>(`${this.#url(boardId)}/${encodeURIComponent(userId)}`, {
+  changeRole(
+    id: string,
+    userId: string,
+    role: MemberRole,
+    scope: MemberScope = 'board',
+  ): Observable<Member> {
+    return this.#http.patch<Member>(`${this.#url(scope, id)}/${encodeURIComponent(userId)}`, {
       role,
     });
   }
 
-  remove(boardId: string, userId: string): Observable<void> {
-    return this.#http.delete<void>(`${this.#url(boardId)}/${encodeURIComponent(userId)}`);
+  remove(id: string, userId: string, scope: MemberScope = 'board'): Observable<void> {
+    return this.#http.delete<void>(`${this.#url(scope, id)}/${encodeURIComponent(userId)}`);
   }
 
-  #url(boardId: string): string {
-    return `/api/boards/${encodeURIComponent(boardId)}/members`;
+  #url(scope: MemberScope, id: string): string {
+    return `/api/${scope === 'room' ? 'rooms' : 'boards'}/${encodeURIComponent(id)}/members`;
   }
 }
