@@ -116,15 +116,32 @@
   }
 }
 
+// The New board form is a modal dialog: centered over the dimmed page.
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  padding: 16px;
+  overflow-y: auto;
+  place-items: center;
+  background: color-mix(in srgb, var(--c-bg) 70%, transparent);
+}
+
 .create {
   display: grid;
+  width: min(560px, 100%);
   gap: 8px;
-  margin-bottom: 20px;
-  padding: 16px;
+  padding: 20px;
   background: var(--c-surface-1);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-lg);
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 17px;
+  }
 
   label {
     color: var(--c-text-subtle);
@@ -276,7 +293,7 @@
 
 .boards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
   margin: 0;
   padding: 0;
@@ -313,10 +330,10 @@
 // A neutral placeholder until boards get real thumbnails: the initials on a tint of a node token.
 .board-preview {
   display: grid;
-  height: 120px;
+  height: 84px;
   place-items: center;
   color: var(--tint, var(--c-text-subtle));
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
   background: color-mix(in srgb, var(--tint, var(--c-text-subtle)) 14%, var(--c-surface-2));
@@ -327,7 +344,7 @@
   display: grid;
   gap: 4px;
   min-width: 0;
-  padding: 12px 14px 14px;
+  padding: 10px 12px 12px;
 }
 
 .board-name {
