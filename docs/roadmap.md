@@ -4,7 +4,7 @@ The order in which the open backlog is built, by phase. Each phase lists its PBI
 should be implemented; a PBI's tasks are its GitHub sub-issues. The same order is on the project
 board ([GravionLabs project 7](https://github.com/users/GravionLabs/projects/7)): the **Phase** field
 holds the phase and the items are sorted in this order. Each phase is a GitHub milestone
-(M1 to M10) holding its features, PBIs and tasks; epics span several phases and have no milestone.
+(M1 to M11) holding its features, PBIs and tasks; epics span several phases and have no milestone.
 
 Refined on 2026-10-06; open PBIs only, finished ones drop out (last refreshed 2026-10-06). When the backlog changes, update this file and the board together.
 
@@ -98,3 +98,13 @@ A project icon, a board overview that uses the page (New board in the header), a
 3. #563 docs: decide how boards are grouped (rooms, folders or tags) (Feature #559, needs-decision)
 4. #565 feat: rooms in the business backend and the BFF (Feature #559, after the decision)
 5. #569 feat: rooms in the board overview (Feature #559, after #565)
+
+## M11 Facilitation
+
+Milestone: [M11 Facilitation](https://github.com/GravionLabs/elysion/milestone/11)
+
+Workshop tools as in Mural: a shared timer and dot voting. One ADR first decides where that state lives (the Yjs document is the expected answer, with the price that viewers cannot vote).
+
+1. #577 docs: decide where facilitation state (timer, votes) lives (Feature #574, needs-decision)
+2. #579 feat: shared timer in the top bar (Feature #575, after the decision)
+3. #582 feat: dot voting on the board (Feature #576, after the decision)
