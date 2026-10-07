@@ -4,7 +4,7 @@ The order in which the open backlog is built, by phase. Each phase lists its PBI
 should be implemented; a PBI's tasks are its GitHub sub-issues. The same order is on the project
 board ([GravionLabs project 7](https://github.com/users/GravionLabs/projects/7)): the **Phase** field
 holds the phase and the items are sorted in this order. Each phase is a GitHub milestone
-(M1 to M8) holding its features, PBIs and tasks; epics span several phases and have no milestone.
+(M1 to M9) holding its features, PBIs and tasks; epics span several phases and have no milestone.
 
 Refined on 2026-10-06; open PBIs only, finished ones drop out (last refreshed 2026-10-06). When the backlog changes, update this file and the board together.
 
@@ -76,5 +76,13 @@ All PBIs of this phase are done.
 Milestone: [M8 Connectors](https://github.com/GravionLabs/elysion/milestone/8)
 
 Connecting two elements the way Mural does: visible connection points on every shape, drag from one to another shape (or into empty space for a new sticky note), right-angled connectors by default, and a Connect action for two selected elements. The technique is in docs/specs/frontend.md ("Connectors").
+
+All PBIs of this phase are done.
+
+## M9 Canvas polish
+
+Milestone: [M9 Canvas polish](https://github.com/GravionLabs/elysion/milestone/9)
+
+Three things from using the board (owner, 2026-10-07): the canvas menu moves from Excalidraw's hamburger into the toolbar, elements can snap to a grid that can also be shown (20 px by default, selectable), and sticky notes remember their color (yellow at first), are made with one click, show their colors as note icons and carry the color as their background.
 
 All PBIs of this phase are done.
