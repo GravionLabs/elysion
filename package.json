@@ -19,6 +19,8 @@
     "dev:infra": "docker compose -f infra/docker/docker-compose.yml up -d",
     "dev:infra:down": "docker compose -f infra/docker/docker-compose.yml --profile apps down",
     "dev:stack": "node scripts/dev-stack.mjs up",
+    "demo": "docker compose -f infra/docker/docker-compose.demo.yaml up -d --build",
+    "demo:down": "docker compose -f infra/docker/docker-compose.demo.yaml down",
     "dev:stack:down": "node scripts/dev-stack.mjs down",
     "make:icons": "node scripts/make-icons.mjs",
     "kind:up": "bash infra/kind/deploy.sh up",
