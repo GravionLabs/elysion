@@ -116,16 +116,32 @@
   }
 }
 
+// The New board form is a modal dialog: centered over the dimmed page.
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  padding: 16px;
+  overflow-y: auto;
+  place-items: center;
+  background: color-mix(in srgb, var(--c-bg) 70%, transparent);
+}
+
 .create {
   display: grid;
-  max-width: 560px;
+  width: min(560px, 100%);
   gap: 8px;
-  margin-bottom: 20px;
-  padding: 16px;
+  padding: 20px;
   background: var(--c-surface-1);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-lg);
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 17px;
+  }
 
   label {
     color: var(--c-text-subtle);

@@ -140,6 +140,13 @@ export class BoardList {
     }
   }
 
+  /** A click on the dimmed area around the dialog (not one inside it) closes the form. */
+  protected closeOnBackdrop(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.cancelCreate();
+    }
+  }
+
   protected updateName(event: Event): void {
     this.draftName.set((event.target as HTMLInputElement).value);
     this.createError.set(null);

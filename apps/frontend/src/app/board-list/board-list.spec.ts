@@ -264,6 +264,21 @@ describe('BoardList', () => {
       expect(document.activeElement).toBe(input);
     });
 
+    it('is a modal dialog that closes when the dimmed area around it is clicked', async () => {
+      const dialog = el().querySelector('form[role="dialog"]') as HTMLElement;
+      expect(dialog.getAttribute('aria-modal')).toBe('true');
+      expect(dialog.getAttribute('aria-labelledby')).toBe('create-title');
+      expect(dialog.closest('.backdrop')).not.toBeNull();
+
+      dialog.click();
+      await fixture.whenStable();
+      expect(el().querySelector('form')).not.toBeNull();
+
+      (el().querySelector('.backdrop') as HTMLElement).click();
+      await fixture.whenStable();
+      expect(el().querySelector('form')).toBeNull();
+    });
+
     it('closes on Escape from a template tile too', async () => {
       (radios()[1] as HTMLElement).dispatchEvent(
         new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),

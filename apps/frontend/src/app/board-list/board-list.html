@@ -52,71 +52,77 @@
   }
 
   @if (createState() !== 'closed') {
-    <form
-      class="create"
-      (submit)="$event.preventDefault(); create()"
-      (keydown.escape)="cancelCreate()"
-    >
-      <label for="board-name">Board name</label>
-      <div class="create-row">
-        <input
-          #nameInput
-          id="board-name"
-          name="name"
-          type="text"
-          autocomplete="off"
-          data-1p-ignore
-          data-lpignore="true"
-          [attr.maxlength]="maxNameLength"
-          [value]="draftName()"
-          [disabled]="createState() === 'saving'"
-          [attr.aria-invalid]="createError() ? 'true' : null"
-          [attr.aria-describedby]="createError() ? 'board-name-error' : null"
-          (input)="updateName($event)"
-        />
-        <button type="submit" class="button primary" [disabled]="createState() === 'saving'">
-          {{ createState() === 'saving' ? 'Creating…' : 'Create' }}
-        </button>
-        <button
-          type="button"
-          class="button"
-          [disabled]="createState() === 'saving'"
-          (click)="cancelCreate()"
-        >
-          Cancel
-        </button>
-      </div>
-      <fieldset class="templates" [disabled]="createState() === 'saving'">
-        <legend>Start from</legend>
-        <div class="template-tiles" role="radiogroup" aria-label="Start from">
-          <label class="template-option">
-            <input
-              type="radio"
-              name="template"
-              [checked]="selectedTemplateId() === null"
-              (change)="selectTemplate(null)"
-            />
-            <span class="template-name">Blank</span>
-            <span class="template-description">An empty board.</span>
-          </label>
-          @for (template of templates(); track template.id) {
+    <div class="backdrop" (click)="closeOnBackdrop($event)">
+      <form
+        class="create"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-title"
+        (submit)="$event.preventDefault(); create()"
+        (keydown.escape)="cancelCreate()"
+      >
+        <h2 id="create-title">New board</h2>
+        <label for="board-name">Board name</label>
+        <div class="create-row">
+          <input
+            #nameInput
+            id="board-name"
+            name="name"
+            type="text"
+            autocomplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            [attr.maxlength]="maxNameLength"
+            [value]="draftName()"
+            [disabled]="createState() === 'saving'"
+            [attr.aria-invalid]="createError() ? 'true' : null"
+            [attr.aria-describedby]="createError() ? 'board-name-error' : null"
+            (input)="updateName($event)"
+          />
+          <button type="submit" class="button primary" [disabled]="createState() === 'saving'">
+            {{ createState() === 'saving' ? 'Creating…' : 'Create' }}
+          </button>
+          <button
+            type="button"
+            class="button"
+            [disabled]="createState() === 'saving'"
+            (click)="cancelCreate()"
+          >
+            Cancel
+          </button>
+        </div>
+        <fieldset class="templates" [disabled]="createState() === 'saving'">
+          <legend>Start from</legend>
+          <div class="template-tiles" role="radiogroup" aria-label="Start from">
             <label class="template-option">
               <input
                 type="radio"
                 name="template"
-                [checked]="selectedTemplateId() === template.id"
-                (change)="selectTemplate(template.id)"
+                [checked]="selectedTemplateId() === null"
+                (change)="selectTemplate(null)"
               />
-              <span class="template-name">{{ template.name }}</span>
-              <span class="template-description">{{ template.description }}</span>
+              <span class="template-name">Blank</span>
+              <span class="template-description">An empty board.</span>
             </label>
-          }
-        </div>
-      </fieldset>
-      @if (createError(); as message) {
-        <p id="board-name-error" class="field-error" role="alert">{{ message }}</p>
-      }
-    </form>
+            @for (template of templates(); track template.id) {
+              <label class="template-option">
+                <input
+                  type="radio"
+                  name="template"
+                  [checked]="selectedTemplateId() === template.id"
+                  (change)="selectTemplate(template.id)"
+                />
+                <span class="template-name">{{ template.name }}</span>
+                <span class="template-description">{{ template.description }}</span>
+              </label>
+            }
+          </div>
+        </fieldset>
+        @if (createError(); as message) {
+          <p id="board-name-error" class="field-error" role="alert">{{ message }}</p>
+        }
+      </form>
+    </div>
   }
 
   @if (duplicateError(); as message) {
