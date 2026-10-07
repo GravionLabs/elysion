@@ -3,10 +3,12 @@ import {
   ElementRef,
   HostListener,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import type { VotingSession } from '../board/canvas-element';
 
@@ -24,9 +26,10 @@ const DEFAULT_NAME = 'Voting';
 
 /**
  * The Voting part of the top bar (ADR 0020): editors and owners start a dot voting (a name and the votes each person
- * has), see how many votes they have left and end it; once it is closed everybody opens the **results**, the ranked
- * list of what got votes (a click scrolls the canvas to the element), and editors and owners can clear them or start
- * another voting. A viewer sees the state and the results and has nothing to click while a voting is open.
+ * has), see how many votes they have left and end it; once it is closed everybody opens the **results** in a dialog
+ * of their own, the ranked list of what got votes (a click scrolls the canvas to the element). The dialog sits on the
+ * right of the window at first, can be moved (by its title, or with the arrow keys) and does not block the board;
+ * editors and owners can clear the results or start another voting from it. A viewer sees the state and the results and has nothing to click while a voting is open.
  *
  * Anonymity: while a voting is open the interface knows only the caller's own number of votes, and the results are
  * counts without names. That is what the canvas tells the shell; the board's document holds more (the ADR says so).
@@ -56,6 +59,12 @@ export class VotingMenu {
   protected readonly votes = signal('5');
   protected readonly error = signal<string | null>(null);
   protected readonly confirmingClear = signal(false);
+  /** Whether the results dialog is open (only a closed voting has results). */
+  protected readonly resultsOpen = signal(false);
+  /** Where the results dialog was moved to, in pixels from the window's top left; `null` until it is: then it sits on the right. */
+  protected readonly position = signal<{ x: number; y: number } | null>(null);
+  private readonly dialog = viewChild<ElementRef<HTMLElement>>('dialog');
+  #drag: { dx: number; dy: number } | null = null;
 
   protected readonly isOpen = computed(() => this.session()?.status === 'open');
   protected readonly isClosed = computed(() => this.session()?.status === 'closed');
@@ -69,10 +78,86 @@ export class VotingMenu {
   /** The button: whether there is anything to open for this user. */
   protected readonly showButton = computed(() => this.session() !== null || this.canControl());
 
+  constructor() {
+    // The results belong to the voting that was closed: a new voting, or a clear, takes the dialog away.
+    effect(() => {
+      if (!this.isClosed()) {
+        this.resultsOpen.set(false);
+        this.confirmingClear.set(false);
+      }
+    });
+  }
+
+  /** The button: the results of a closed voting open as a dialog, everything else as the menu under the button. */
   protected toggle(): void {
-    this.open.update((open) => !open);
     this.error.set(null);
     this.confirmingClear.set(false);
+    if (this.isClosed()) {
+      this.open.set(false);
+      this.resultsOpen.update((open) => !open);
+      return;
+    }
+    this.open.update((open) => !open);
+  }
+
+  protected closeResults(): void {
+    this.resultsOpen.set(false);
+    this.confirmingClear.set(false);
+  }
+
+  /** From the results to the form for another voting. */
+  protected newVoting(): void {
+    this.closeResults();
+    this.open.set(true);
+  }
+
+  protected dragStart(event: PointerEvent): void {
+    const dialog = this.dialog()?.nativeElement;
+    // A press on a button of the header (close, move) is not a drag.
+    if (!dialog || event.button !== 0 || (event.target as Element).closest('button')) return;
+    const box = dialog.getBoundingClientRect();
+    this.#drag = { dx: event.clientX - box.left, dy: event.clientY - box.top };
+    (event.currentTarget as Element).setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  }
+
+  protected dragMove(event: PointerEvent): void {
+    if (!this.#drag) return;
+    this.#place(event.clientX - this.#drag.dx, event.clientY - this.#drag.dy);
+  }
+
+  protected dragEnd(event: PointerEvent): void {
+    this.#drag = null;
+    (event.currentTarget as Element).releasePointerCapture?.(event.pointerId);
+  }
+
+  /** The keyboard's way to move the dialog: the arrow keys on the move button, 16 pixels at a time. */
+  protected moveByKey(event: KeyboardEvent): void {
+    const step = 16;
+    const delta: Record<string, [number, number]> = {
+      ArrowLeft: [-step, 0],
+      ArrowRight: [step, 0],
+      ArrowUp: [0, -step],
+      ArrowDown: [0, step],
+    };
+    const move = delta[event.key];
+    const dialog = this.dialog()?.nativeElement;
+    if (!move || !dialog) return;
+    event.preventDefault();
+    const box = dialog.getBoundingClientRect();
+    this.#place(box.left + move[0], box.top + move[1]);
+  }
+
+  /** Puts the dialog's top left corner at a place, kept inside the window so its title stays reachable. */
+  #place(x: number, y: number): void {
+    const dialog = this.dialog()?.nativeElement;
+    const width = dialog?.offsetWidth ?? 0;
+    const maxX = Math.max(0, window.innerWidth - width);
+    const maxY = Math.max(0, window.innerHeight - 48);
+    this.position.set({
+      x: Math.min(Math.max(0, x), maxX),
+      y: Math.min(Math.max(0, y), maxY),
+    });
   }
 
   protected pick(votes: number): void {
@@ -111,7 +196,7 @@ export class VotingMenu {
       return;
     }
     this.confirmingClear.set(false);
-    this.open.set(false);
+    this.resultsOpen.set(false);
     this.clearRequested.emit();
   }
 
@@ -130,6 +215,6 @@ export class VotingMenu {
   @HostListener('keydown.escape')
   protected closeOnEscape(): void {
     this.open.set(false);
-    this.confirmingClear.set(false);
+    this.closeResults();
   }
 }
