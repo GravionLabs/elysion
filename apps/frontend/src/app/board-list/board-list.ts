@@ -9,6 +9,34 @@ import { ThemeService } from '../theme/theme.service';
 import { BoardApi, BoardInfo, MAX_BOARD_NAME_LENGTH } from '../board/board-api';
 import { TEMPLATE_STATE_KEY, TemplateApi, TemplateInfo } from '../board/template-api';
 
+/** The design tokens the preview placeholders are tinted with; a board always gets the same one. */
+const PREVIEW_TINTS = [
+  '--c-node-red',
+  '--c-node-orange',
+  '--c-node-amber',
+  '--c-node-green',
+  '--c-node-teal',
+  '--c-node-blue',
+  '--c-node-purple',
+  '--c-node-pink',
+];
+
+/** Up to two letters standing for the board in its preview: the first letters of the first two words. */
+export function boardInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const letters = words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? '').slice(0, 2);
+  return letters.toUpperCase() || '?';
+}
+
+/** The CSS color of a board's preview: one of the node tokens, chosen from the id so it is stable. */
+export function boardTint(id: string): string {
+  let hash = 0;
+  for (const char of id) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+  return `var(${PREVIEW_TINTS[hash % PREVIEW_TINTS.length]})`;
+}
+
 export const DEFAULT_NEW_BOARD_NAME = 'Untitled board';
 
 type ListState = 'loading' | 'ready' | 'error';
@@ -30,6 +58,8 @@ export class BoardList {
   // Injected so the theme is applied to the page, which the board page does through its top bar.
   readonly #theme = inject(ThemeService);
 
+  protected readonly initials = boardInitials;
+  protected readonly tint = boardTint;
   protected readonly maxNameLength = MAX_BOARD_NAME_LENGTH;
   protected readonly theme = this.#theme.theme;
 
@@ -84,6 +114,9 @@ export class BoardList {
   }
 
   protected openCreate(): void {
+    if (this.createState() !== 'closed') {
+      return;
+    }
     this.draftName.set(DEFAULT_NEW_BOARD_NAME);
     this.createError.set(null);
     this.selectedTemplateId.set(null);

@@ -1,17 +1,28 @@
 <header class="page-header">
   <app-brand />
   @if (session.user(); as user) {
-    <app-user-menu class="page-user" [user]="user" (logoutRequested)="session.logout()" />
+    <div class="page-actions">
+      <button
+        type="button"
+        class="button primary new-board"
+        aria-label="New board"
+        (click)="openCreate()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        <span class="new-board-label">New board</span>
+      </button>
+      <app-user-menu [user]="user" (logoutRequested)="session.logout()" />
+    </div>
   }
 </header>
 
 <main class="page">
   <div class="page-title">
     <h1>Boards</h1>
-    @if (state() === 'ready' && boards().length > 0 && createState() === 'closed') {
-      <button type="button" class="button primary new-board" (click)="openCreate()">
-        New board
-      </button>
+    @if (state() === 'ready' && boards().length > 0) {
+      <span class="board-count">
+        {{ boards().length }} {{ boards().length === 1 ? 'board' : 'boards' }}
+      </span>
     }
   </div>
 
@@ -41,7 +52,11 @@
   }
 
   @if (createState() !== 'closed') {
-    <form class="create" (submit)="$event.preventDefault(); create()">
+    <form
+      class="create"
+      (submit)="$event.preventDefault(); create()"
+      (keydown.escape)="cancelCreate()"
+    >
       <label for="board-name">Board name</label>
       <div class="create-row">
         <input
@@ -58,7 +73,6 @@
           [attr.aria-invalid]="createError() ? 'true' : null"
           [attr.aria-describedby]="createError() ? 'board-name-error' : null"
           (input)="updateName($event)"
-          (keydown.escape)="cancelCreate()"
         />
         <button type="submit" class="button primary" [disabled]="createState() === 'saving'">
           {{ createState() === 'saving' ? 'Creating…' : 'Create' }}
@@ -74,28 +88,30 @@
       </div>
       <fieldset class="templates" [disabled]="createState() === 'saving'">
         <legend>Start from</legend>
-        <label class="template-option">
-          <input
-            type="radio"
-            name="template"
-            [checked]="selectedTemplateId() === null"
-            (change)="selectTemplate(null)"
-          />
-          <span class="template-name">Blank</span>
-          <span class="template-description">An empty board.</span>
-        </label>
-        @for (template of templates(); track template.id) {
+        <div class="template-tiles" role="radiogroup" aria-label="Start from">
           <label class="template-option">
             <input
               type="radio"
               name="template"
-              [checked]="selectedTemplateId() === template.id"
-              (change)="selectTemplate(template.id)"
+              [checked]="selectedTemplateId() === null"
+              (change)="selectTemplate(null)"
             />
-            <span class="template-name">{{ template.name }}</span>
-            <span class="template-description">{{ template.description }}</span>
+            <span class="template-name">Blank</span>
+            <span class="template-description">An empty board.</span>
           </label>
-        }
+          @for (template of templates(); track template.id) {
+            <label class="template-option">
+              <input
+                type="radio"
+                name="template"
+                [checked]="selectedTemplateId() === template.id"
+                (change)="selectTemplate(template.id)"
+              />
+              <span class="template-name">{{ template.name }}</span>
+              <span class="template-description">{{ template.description }}</span>
+            </label>
+          }
+        </div>
       </fieldset>
       @if (createError(); as message) {
         <p id="board-name-error" class="field-error" role="alert">{{ message }}</p>
@@ -123,7 +139,7 @@
           <h2>No boards yet</h2>
           <p>Create a board to start drawing and collaborating.</p>
           @if (createState() === 'closed') {
-            <button type="button" class="button primary new-board" (click)="openCreate()">
+            <button type="button" class="button create-first" (click)="openCreate()">
               Create your first board
             </button>
           }
@@ -133,32 +149,39 @@
           @for (board of boards(); track board.id) {
             <li class="board-item">
               <a class="board-card" [routerLink]="board.path">
-                <span class="board-name">{{ board.name }}</span>
-                <span class="board-date">Created {{ board.createdAt | date: 'mediumDate' }}</span>
+                <span class="board-preview" aria-hidden="true" [style.--tint]="tint(board.id)">
+                  {{ initials(board.name) }}
+                </span>
+                <span class="board-meta">
+                  <span class="board-name" [title]="board.name">{{ board.name }}</span>
+                  <span class="board-date">Created {{ board.createdAt | date: 'mediumDate' }}</span>
+                </span>
               </a>
-              <button
-                type="button"
-                class="icon-button duplicate-button"
-                [attr.aria-label]="'Duplicate the board ' + board.name"
-                [title]="duplicatingId() === board.id ? 'Duplicating…' : 'Duplicate this board'"
-                [disabled]="duplicatingId() !== null"
-                (click)="duplicate(board)"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M9 9h10v10H9zM5 15V5h10" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="icon-button delete-button"
-                [attr.aria-label]="'Delete the board ' + board.name"
-                title="Delete this board"
-                (click)="askDelete(board)"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M4 7h16M10 11v6m4-6v6M6 7l1 12h10l1-12M9 7V4h6v3" />
-                </svg>
-              </button>
+              <span class="board-actions">
+                <button
+                  type="button"
+                  class="icon-button duplicate-button"
+                  [attr.aria-label]="'Duplicate the board ' + board.name"
+                  [title]="duplicatingId() === board.id ? 'Duplicating…' : 'Duplicate this board'"
+                  [disabled]="duplicatingId() !== null"
+                  (click)="duplicate(board)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 9h10v10H9zM5 15V5h10" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="icon-button delete-button"
+                  [attr.aria-label]="'Delete the board ' + board.name"
+                  title="Delete this board"
+                  (click)="askDelete(board)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16M10 11v6m4-6v6M6 7l1 12h10l1-12M9 7V4h6v3" />
+                  </svg>
+                </button>
+              </span>
             </li>
           }
         </ul>
