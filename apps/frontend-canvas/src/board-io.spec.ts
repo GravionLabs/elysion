@@ -3,6 +3,7 @@ import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  clearScene,
   cloneForInsertion,
   elementsToExport,
   exportBoard,
@@ -390,5 +391,24 @@ describe('insertFile', () => {
     );
     expect(await insertFile(api, file([]))).toBe(0);
     expect(updateScene).not.toHaveBeenCalled();
+  });
+});
+
+describe('clearScene', () => {
+  it('marks every live element as deleted with a newer version and drops none', () => {
+    const live = rect('a');
+    const gone = { ...rect('b'), isDeleted: true } as ExcalidrawElement;
+
+    const cleared = clearScene([live, gone]);
+
+    expect(cleared.map((e) => e.id)).toEqual(['a', 'b']);
+    expect(cleared.every((e) => e.isDeleted)).toBe(true);
+    expect(cleared[0].version).toBe(live.version + 1);
+    expect(cleared[0].versionNonce).not.toBe(live.versionNonce);
+    expect(cleared[1]).toBe(gone); // an existing tombstone is kept as it is
+  });
+
+  it('is an empty list for an empty scene', () => {
+    expect(clearScene([])).toEqual([]);
   });
 });

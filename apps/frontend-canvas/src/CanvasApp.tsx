@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   exportBoard,
+  clearScene,
   importFile,
   insertFile,
   type ExportFormat,
   type ExportOptions,
 } from './board-io';
+import type { CanvasMenuItem } from './CanvasMenu';
 import { ConnectionPoints } from './ConnectionPoints';
 import { commitConnector } from './connector-commit';
 import {
@@ -23,7 +25,7 @@ import { Toolbar, type HistoryAction, type ToolbarTool, type ZoomAction } from '
 import { ELEMENT_DEFAULTS, VIEW_BACKGROUND_COLOR } from './element-style';
 import { createStickyNote, type StickyColor } from './sticky-note';
 import { useResolvedTheme, type CanvasTheme } from './useResolvedTheme';
-import { CaptureUpdateAction, DefaultSidebar, Excalidraw, MainMenu } from '@excalidraw/excalidraw';
+import { CaptureUpdateAction, DefaultSidebar, Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import '@elysion/design-tokens/tokens.css';
 import './styles/excalidraw-theme.css';
@@ -327,6 +329,52 @@ export function CanvasApp({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  /** Presses a key on the canvas, for what Excalidraw offers only as a shortcut (undo, the help dialog). */
+  const pressKey = (init: KeyboardEventInit) => {
+    const target = rootRef.current?.querySelector<HTMLElement>('.excalidraw');
+    if (!target) return;
+    target.focus({ preventScroll: true });
+    target.dispatchEvent(
+      new KeyboardEvent('keydown', { ...init, bubbles: true, cancelable: true }),
+    );
+  };
+
+  /** Removes everything from the board, as tombstones (a sync-safe delete), in one undo step. */
+  const clearBoard = () => {
+    const api = apiRef.current;
+    if (!api || readOnlyRef.current) return;
+    api.updateScene({
+      elements: clearScene(api.getSceneElementsIncludingDeleted()),
+      appState: { selectedElementIds: {} },
+      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    });
+  };
+
+  const menuItems: CanvasMenuItem[] = [
+    {
+      type: 'item',
+      id: 'help',
+      label: 'Help',
+      hint: '?',
+      onSelect: () => pressKey({ key: '?', code: 'Slash', shiftKey: true }),
+    },
+    ...(readOnly
+      ? []
+      : [
+          {
+            type: 'item' as const,
+            id: 'clear',
+            label: 'Clear canvas…',
+            onSelect: clearBoard,
+            confirm: {
+              message: 'Remove everything from this board, for everyone? You can undo it.',
+              accept: 'Clear everything',
+              decline: 'Keep it',
+            },
+          },
+        ]),
+  ];
+
   const addSticky = (color: StickyColor) => {
     const api = apiRef.current;
     if (!api) return;
@@ -415,11 +463,6 @@ export function CanvasApp({
       >
         {/* Our own trigger replaces Excalidraw's floating Library button; the top bar opens the library. */}
         <DefaultSidebar.Trigger style={{ display: 'none' }} aria-hidden="true" />
-        {/* Open, save, export and the theme are in the top bar; what is left is here. */}
-        <MainMenu>
-          {!readOnly && <MainMenu.DefaultItems.ClearCanvas />}
-          <MainMenu.DefaultItems.Help />
-        </MainMenu>
       </Excalidraw>
       <Minimap store={sceneStoreRef.current} onPan={panTo} />
       {!readOnly && (
@@ -433,6 +476,7 @@ export function CanvasApp({
         onConnect={canConnect && !readOnly ? connectSelection : undefined}
         onZoom={onZoom}
         zoomPercent={zoomPercent}
+        menuItems={menuItems}
         readOnly={readOnly}
       />
     </div>

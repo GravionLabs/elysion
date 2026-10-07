@@ -1,4 +1,6 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { CanvasApp } from './CanvasApp';
 import { excalidrawReady } from './test-utils';
@@ -112,17 +114,14 @@ describe('CanvasApp', () => {
     }
   });
 
-  it('keeps only Clear canvas and Help in the main menu: the rest is in the top bar', async () => {
+  it("hides Excalidraw's hamburger: the menu is in the toolbar", async () => {
     render(<CanvasApp boardId="test-board" />);
     await screen.findByTestId('toolbar-rectangle');
 
-    fireEvent.click(await screen.findByTestId('main-menu-trigger'));
-
-    expect(await screen.findByText('Reset the canvas')).toBeTruthy();
-    expect(screen.getByText('Help')).toBeTruthy();
-    for (const gone of ['Open', 'Save to...', 'Export image...', 'Dark mode', 'Light mode']) {
-      expect(screen.queryByText(gone)).toBeNull();
-    }
+    // Excalidraw's own stylesheet is not applied in the test, so the rule that hides its trigger is checked as written.
+    const css = readFileSync(join(process.cwd(), 'src/styles/toolbar.css'), 'utf8');
+    expect(css).toMatch(/\.main-menu-trigger\s*\{\s*display:\s*none;/);
+    expect(screen.getByRole('button', { name: 'Canvas menu' })).toBeTruthy();
   });
 
   it('exports a real sticky note and takes the file back in', async () => {
@@ -228,5 +227,79 @@ describe('CanvasApp', () => {
 
     fireEvent.click(screen.getByTestId('elysion-redo'));
     await waitFor(async () => expect(await controls.exportBoard('excalidraw')).not.toBeNull());
+  });
+});
+
+describe('the canvas menu', () => {
+  const draw = (canvas: Element) => {
+    const init = (x: number, y: number, buttons = 1) => ({
+      clientX: x,
+      clientY: y,
+      pointerId: 1,
+      pointerType: 'mouse',
+      button: 0,
+      buttons,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Rectangle' }));
+    fireEvent.pointerDown(canvas, init(100, 100));
+    fireEvent.pointerMove(canvas, init(180, 150));
+    fireEvent.pointerMove(canvas, init(260, 200));
+    fireEvent.pointerUp(canvas, init(260, 200, 0));
+  };
+
+  it('opens Excalidraw’s help dialog with Help', async () => {
+    const { container } = render(<CanvasApp boardId="test-board" />);
+    await excalidrawReady(container);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Canvas menu' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Help/ }));
+
+    // The dialog is a portal outside the canvas, and takes the focus.
+    await waitFor(() => expect(document.querySelector('.HelpDialog__btn')).toBeTruthy(), {
+      timeout: 3000,
+    });
+  }, 20000);
+
+  it('clears the board only after the question, as tombstones, and one undo brings it back', async () => {
+    const onControls = vi.fn();
+    const { container } = render(<CanvasApp boardId="test-board" onControls={onControls} />);
+    await excalidrawReady(container);
+    const controls = onControls.mock.calls[0][0];
+    draw(container.querySelector('canvas.interactive')!);
+    // An empty board exports as nothing: `null` counts as no live element.
+    const live = async () => {
+      const blob = (await controls.exportBoard('excalidraw')) as Blob | null;
+      if (!blob) return 0;
+      return (JSON.parse(await blob.text()).elements as { isDeleted?: boolean }[]).filter(
+        (e) => !e.isDeleted,
+      ).length;
+    };
+    await waitFor(async () => expect(await live()).toBe(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Canvas menu' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Clear canvas/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Keep it' }));
+    expect(await live()).toBe(1); // declined: nothing happened
+
+    fireEvent.click(screen.getByRole('menuitem', { name: /Clear canvas/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear everything' }));
+    await waitFor(async () => expect(await live()).toBe(0));
+
+    fireEvent.click(
+      within(screen.getByRole('toolbar', { name: 'Canvas tools' })).getByRole('button', {
+        name: 'Undo',
+      }),
+    );
+    await waitFor(async () => expect(await live()).toBe(1));
+  });
+
+  it('gives a viewer Help but no Clear canvas', async () => {
+    const { container } = render(<CanvasApp boardId="test-board" readOnly />);
+    await excalidrawReady(container);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Canvas menu' }));
+
+    expect(screen.getByRole('menuitem', { name: /Help/ })).toBeTruthy();
+    expect(screen.queryByRole('menuitem', { name: /Clear canvas/ })).toBeNull();
   });
 });

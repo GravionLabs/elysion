@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import type { ToolType } from '@excalidraw/excalidraw/types';
+import { CanvasMenu, type CanvasMenuItem } from './CanvasMenu';
 import { STICKY_COLORS, type StickyColor } from './sticky-note';
 
 export type ToolbarTool = Extract<
@@ -182,6 +183,8 @@ export interface ToolbarProps {
   onZoom?: (action: ZoomAction) => void;
   /** The current zoom in percent, shown on the reset button. */
   zoomPercent?: number;
+  /** What the canvas menu at the end of the toolbar lists; without items there is no menu. */
+  menuItems?: readonly CanvasMenuItem[];
   /** A viewer: no tools, no undo and redo, no sticky notes; only the zoom is shown. */
   readOnly?: boolean;
 }
@@ -235,6 +238,7 @@ export function Toolbar({
   onConnect,
   onZoom,
   zoomPercent,
+  menuItems,
   readOnly = false,
 }: ToolbarProps) {
   const [stickyOpen, setStickyOpen] = useState(false);
@@ -379,6 +383,12 @@ export function Toolbar({
           >
             {FIT_ICON}
           </button>
+        </div>
+      )}
+      {menuItems && menuItems.length > 0 && (
+        <div className="elysion-toolbar__group">
+          <div className="elysion-toolbar__divider" />
+          <CanvasMenu items={menuItems} />
         </div>
       )}
     </div>
