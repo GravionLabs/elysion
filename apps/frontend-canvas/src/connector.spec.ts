@@ -67,6 +67,17 @@ describe('createConnector', () => {
     }
   });
 
+  it('gives the shapes a newer version, so that the change is synced like any edit', () => {
+    const a = box(0, 0);
+    const b = box(300, 0);
+
+    const { updated } = createConnector([a, b], a.id, b.id);
+
+    expect(updated[0].version).toBe(a.version + 1);
+    expect(updated[1].version).toBe(b.version + 1);
+    expect(updated[0].versionNonce).not.toBe(a.versionNonce);
+  });
+
   it('keeps the text that is already bound inside a sticky note', () => {
     const [card, text] = createStickyNote(STICKY_COLORS[0], { x: 0, y: 0 });
     const other = box(400, 0);

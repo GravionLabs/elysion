@@ -62,13 +62,16 @@ export function sidePoint(element: ExcalidrawElement, side: Side): ScenePoint {
 }
 
 /** The direction a side faces once the element's rotation is applied (the unit vector pointing out of it). */
-function outwardOf(element: ExcalidrawElement, side: Side): ScenePoint {
+export function sideDirection(element: ExcalidrawElement, side: Side): ScenePoint {
   const out = OUTWARD[side];
   const cos = Math.cos(element.angle);
   const sin = Math.sin(element.angle);
-  const x = out.x * cos - out.y * sin;
-  const y = out.x * sin + out.y * cos;
-  // A rotated shape's side points diagonally; the connector leaves along the nearer axis.
+  return { x: out.x * cos - out.y * sin, y: out.x * sin + out.y * cos };
+}
+
+/** The axis a connector leaves a side along: a rotated shape's side points diagonally, the nearer axis is used. */
+function outwardOf(element: ExcalidrawElement, side: Side): ScenePoint {
+  const { x, y } = sideDirection(element, side);
   return Math.abs(x) >= Math.abs(y) ? { x: Math.sign(x), y: 0 } : { x: 0, y: Math.sign(y) };
 }
 
@@ -215,6 +218,15 @@ export function createConnector(
     ] as never,
     { regenerateIds: false },
   );
-  const arrow = converted[2];
-  return { arrow, updated: [converted[0], converted[1]] };
+  // The shapes now list the connector: a newer version, so that the change is synced like any edit.
+  const bumped = (original: ExcalidrawElement, current: ExcalidrawElement): ExcalidrawElement => ({
+    ...current,
+    version: original.version + 1,
+    versionNonce: Math.floor(Math.random() * 2 ** 31),
+    updated: Date.now(),
+  });
+  return {
+    arrow: converted[2],
+    updated: [bumped(source, converted[0]), bumped(target, converted[1])],
+  };
 }

@@ -1,0 +1,40 @@
+/*
+ * Connection points (ConnectionPoints.tsx). A layer over the canvas that catches no pointer events except on the
+ * circles. Below Excalidraw's UI layer (z-index 4), so its property panel is never covered.
+ */
+.elysion-canvas .elysion-connection-points {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.elysion-canvas .elysion-connection-point {
+  position: absolute;
+  box-sizing: border-box;
+  background: var(--c-surface-1);
+  border: 1.5px solid var(--c-primary);
+  border-radius: 50%;
+  cursor: crosshair;
+  pointer-events: auto;
+  touch-action: none;
+  transition: transform var(--transition-fast, 120ms);
+}
+
+.elysion-canvas .elysion-connection-point:hover {
+  transform: scale(1.3);
+}
+
+.elysion-canvas .elysion-connector-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.elysion-canvas .elysion-connector-preview line {
+  stroke: var(--c-primary);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
