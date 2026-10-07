@@ -26,6 +26,16 @@
   transform: scale(1.3);
 }
 
+/* The shape a connector is dragged onto: its circles show, and the one the connector would end at is filled. */
+.elysion-canvas .elysion-connection-point[data-target='true'] {
+  pointer-events: none;
+}
+
+.elysion-canvas .elysion-connection-point[data-active='true'] {
+  background: var(--c-primary);
+  transform: scale(1.5);
+}
+
 .elysion-canvas .elysion-connector-preview {
   position: absolute;
   inset: 0;

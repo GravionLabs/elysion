@@ -4,16 +4,24 @@ import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import {
   POINT_DIAMETER,
-  connectableAt,
   connectionPoints,
+  containsPoint,
   hoveredShape,
-  nearestSide,
   shapesWithPoints,
   toScene,
   toScreen,
   type View,
 } from './connection-points';
+import {
+  MIN_DRAG_DISTANCE,
+  dropSide,
+  dropTarget,
+  oppositeSide,
+  screenDistance,
+  stickyColorOf,
+} from './connection-drop';
 import { createConnector, sidePoint, type ScenePoint, type Side } from './connector';
+import { createStickyNote } from './sticky-note';
 import type { SceneStore } from './scene-store';
 
 export interface ConnectionPointsProps {
@@ -27,7 +35,8 @@ export interface ConnectionPointsProps {
 interface Drag {
   sourceId: string;
   side: Side;
-  /** The pointer, in scene coordinates. */
+  /** Where the press started and where the pointer is now, in scene coordinates. */
+  origin: ScenePoint;
   pointer: ScenePoint;
 }
 
@@ -112,7 +121,7 @@ export function ConnectionPoints({ apiRef, rootRef, store }: ConnectionPointsPro
     event.stopPropagation(); // a press on a circle is not a press on the canvas
     event.currentTarget.setPointerCapture?.(event.pointerId);
     const pointer = sceneAt(event.clientX, event.clientY);
-    if (pointer) setDrag({ sourceId: shape.id, side, pointer });
+    if (pointer) setDrag({ sourceId: shape.id, side, origin: pointer, pointer });
   };
 
   const move = (event: PointerEvent<HTMLElement>) => {
@@ -127,62 +136,117 @@ export function ConnectionPoints({ apiRef, rootRef, store }: ConnectionPointsPro
     const point = sceneAt(event.clientX, event.clientY);
     if (!dragging || !point) return;
     const source = elements.find((element) => element.id === dragging.sourceId);
-    const target = connectableAt(elements, point, view.zoom, 0, dragging.sourceId);
-    if (!source || !target) return;
+    // A click on a circle, or a drag that did not get anywhere, makes nothing.
+    if (!source || screenDistance(dragging.origin, point, view.zoom) < MIN_DRAG_DISTANCE) return;
 
-    const { arrow, updated } = createConnector(elements, source.id, target.id, {
+    // Released on the source itself: the user changed their mind.
+    if (containsPoint(source, point)) return;
+
+    const target = dropTarget(elements, source, point, view.zoom);
+    // Released on empty canvas: a new sticky note there (the color of the source if that is a note), connected.
+    const note = target ? null : createStickyNote(stickyColorOf(source), point);
+    const end = target ?? note![0];
+    const { arrow, updated } = createConnector([...elements, ...(note ?? [])], source.id, end.id, {
       sourceSide: dragging.side,
-      // The side of the target nearest to where the connector leaves the source.
-      targetSide: nearestSide(target, sidePoint(source, dragging.side)),
+      targetSide: target
+        ? dropSide(source, dragging.side, target, point, view.zoom)
+        : oppositeSide(dragging.side),
     });
     const replacement = new Map(updated.map((shape) => [shape.id, shape]));
+    const swap = (element: ExcalidrawElement) => replacement.get(element.id) ?? element;
     api.updateScene({
       // Including the deleted ones: removed elements are kept as tombstones for the sync.
       elements: [
-        ...api
-          .getSceneElementsIncludingDeleted()
-          .map((element) => replacement.get(element.id) ?? element),
+        ...api.getSceneElementsIncludingDeleted().map(swap),
+        ...(note ?? []).map(swap),
         arrow,
       ],
-      appState: { selectedElementIds: { [arrow.id]: true } },
+      appState: { selectedElementIds: { [note ? note[0].id : arrow.id]: true } },
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     });
+    if (note) editText(rootRef.current);
   };
 
   const dragSource = drag && elements.find((element) => element.id === drag.sourceId);
+  // While dragging: the shape the connector would end on shows its circles, the one it would end at marked.
+  const target =
+    drag && dragSource ? dropTarget(elements, dragSource, drag.pointer, view.zoom) : undefined;
+  const activeSide =
+    drag && dragSource && target
+      ? dropSide(dragSource, drag.side, target, drag.pointer, view.zoom)
+      : undefined;
+  const circles = new Map<string, { shape: ExcalidrawElement; side: Side; active: boolean }>();
+  for (const shape of target ? [...shapes, target] : shapes) {
+    for (const point of connectionPoints(shape, view.zoom)) {
+      circles.set(`${shape.id}:${point.side}`, {
+        shape,
+        side: point.side,
+        active: shape === target && point.side === activeSide,
+      });
+    }
+  }
+
+  const circleAt = (shape: ExcalidrawElement, side: Side) => {
+    const point = connectionPoints(shape, view.zoom).find((candidate) => candidate.side === side)!;
+    return toScreen(point, view);
+  };
+
   return (
     <div className="elysion-connection-points" aria-hidden="true">
-      {shapes.flatMap((shape) =>
-        connectionPoints(shape, view.zoom).map((point) => {
-          const at = toScreen(point, view);
-          return (
-            <div
-              key={`${shape.id}-${point.side}`}
-              className="elysion-connection-point"
-              data-connection-point={`${shape.id}:${point.side}`}
-              style={{
-                left: at.x - POINT_DIAMETER / 2,
-                top: at.y - POINT_DIAMETER / 2,
-                width: POINT_DIAMETER,
-                height: POINT_DIAMETER,
-              }}
-              onPointerDown={start(shape, point.side)}
-              onPointerMove={move}
-              onPointerUp={finish}
-              onPointerCancel={() => setDrag(null)}
-            />
-          );
-        }),
-      )}
+      {[...circles.entries()].map(([key, { shape, side, active }]) => {
+        const at = circleAt(shape, side);
+        const isTarget = shape === target;
+        return (
+          <div
+            key={key}
+            className="elysion-connection-point"
+            data-connection-point={key}
+            data-target={isTarget ? 'true' : undefined}
+            data-active={active ? 'true' : undefined}
+            style={{
+              left: at.x - POINT_DIAMETER / 2,
+              top: at.y - POINT_DIAMETER / 2,
+              width: POINT_DIAMETER,
+              height: POINT_DIAMETER,
+            }}
+            onPointerDown={start(shape, side)}
+            onPointerMove={move}
+            onPointerUp={finish}
+            onPointerCancel={() => setDrag(null)}
+          />
+        );
+      })}
       {drag && dragSource && (
         <svg className="elysion-connector-preview">
           {(() => {
             const from = toScreen(sidePoint(dragSource, drag.side), view);
-            const to = toScreen(drag.pointer, view);
+            // The line ends on the circle it would snap to, otherwise at the pointer.
+            const to =
+              target && activeSide ? circleAt(target, activeSide) : toScreen(drag.pointer, view);
             return <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} />;
           })()}
         </svg>
       )}
     </div>
   );
+}
+
+/**
+ * Starts editing the text of the selected shape by pressing Enter on the canvas, which is what Excalidraw does for
+ * the keyboard (it has no method for it). A frame later, so that the scene update has been taken in.
+ */
+function editText(root: HTMLElement | null): void {
+  requestAnimationFrame(() => {
+    const canvas = root?.querySelector<HTMLElement>('.excalidraw');
+    if (!canvas) return;
+    canvas.focus({ preventScroll: true });
+    canvas.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        code: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
 }

@@ -13,7 +13,7 @@ export const POINT_DIAMETER = 10;
 export const MAX_SHAPES_WITH_POINTS = 10;
 
 /** How far from a shape's border the pointer may be and still count as on it, in screen pixels: room for the points. */
-const HOVER_MARGIN = POINT_OFFSET + POINT_DIAMETER + 4;
+export const HOVER_MARGIN = POINT_OFFSET + POINT_DIAMETER + 4;
 
 export interface ConnectionPoint extends ScenePoint {
   readonly side: Side;
@@ -91,6 +91,23 @@ export function hoveredShape(
   zoom: number,
 ): ExcalidrawElement | undefined {
   return connectableAt(elements, point, zoom, HOVER_MARGIN);
+}
+
+/** A pointer this close (screen pixels) to a circle of the target snaps to that circle. */
+export const SNAP_RADIUS = 16;
+
+/** The connection point nearest to a scene point, with its distance on screen (in pixels), or `undefined` for none. */
+export function nearestPoint(
+  points: readonly ConnectionPoint[],
+  pointer: ScenePoint,
+  zoom: number,
+): { point: ConnectionPoint; distance: number } | undefined {
+  let best: { point: ConnectionPoint; distance: number } | undefined;
+  for (const point of points) {
+    const distance = Math.hypot(point.x - pointer.x, point.y - pointer.y) * zoom;
+    if (!best || distance < best.distance) best = { point, distance };
+  }
+  return best;
 }
 
 /** The side of an element whose middle is nearest to a scene point. */
