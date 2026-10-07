@@ -20,6 +20,7 @@
     "dev:infra:down": "docker compose -f infra/docker/docker-compose.yml --profile apps down",
     "dev:stack": "node scripts/dev-stack.mjs up",
     "dev:stack:down": "node scripts/dev-stack.mjs down",
+    "make:icons": "node scripts/make-icons.mjs",
     "kind:up": "bash infra/kind/deploy.sh up",
     "kind:down": "bash infra/kind/deploy.sh down",
     "prepare": "simple-git-hooks"
@@ -28,6 +29,7 @@
     "lint-staged": "^17.6.0",
     "oxlint": "^1.81.0",
     "prettier": "^3.8.1",
+    "sharp": "^0.35.5",
     "simple-git-hooks": "^2.14.0"
   },
   "simple-git-hooks": {
