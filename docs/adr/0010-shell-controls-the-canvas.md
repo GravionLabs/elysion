@@ -57,8 +57,9 @@ theme, and later the Library sidebar, export and import.
 - No board logic in React: the canvas stays reusable and testable without a router or HTTP client.
 - Every new canvas capability is a small contract change (an event or a method) that has to be
   documented in the frontend spec and tested on both sides; there is no shared state object.
-- Excalidraw's own hamburger menu stays until the top bar covers what it offers (export and import,
-  #211); until then the theme can be switched in two places, which `themechange` keeps in step.
+- Excalidraw's own hamburger menu stayed until the top bar covered what it offered (export and import,
+  #211) and was replaced by a menu in the canvas's own toolbar (#535: Help and Clear canvas); the theme can
+  still be switched in two places, which `themechange` keeps in step.
 - A host that does not size `<elysion-canvas>` gets a canvas that fills its nearest positioned
   ancestor, which is the documented behavior, not an accident.
 - The alternative (a bar rendered inside the canvas) would be simpler for Library and export but would

@@ -222,3 +222,22 @@ export async function insertFile(api: ExcalidrawImperativeAPI, file: Blob): Prom
   });
   return added.length;
 }
+
+/**
+ * The scene after "clear canvas": every live element is marked deleted with a newer version, none is dropped. The
+ * Yjs binding never removes entries from the shared map, so an element that just vanished from the scene would be
+ * merged back from it and stay on every other peer's board (see `replaceScene`).
+ */
+export function clearScene(existing: readonly ExcalidrawElement[]): ExcalidrawElement[] {
+  return existing.map((element) =>
+    element.isDeleted
+      ? element
+      : ({
+          ...element,
+          isDeleted: true,
+          version: element.version + 1,
+          versionNonce: nonce(),
+          updated: Date.now(),
+        } as ExcalidrawElement),
+  );
+}
