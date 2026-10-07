@@ -1,6 +1,29 @@
 import { ExportFormat } from './download';
 
 /** The board's shared timer (ADR 0020), as the canvas announces it in its `timer` event. */
+/** One element's result in a closed voting: how many votes it got and what to call it. */
+export interface TallyEntry {
+  elementId: string;
+  count: number;
+  /** The element's text (a sticky note's bound text), else its type. */
+  label: string;
+}
+
+/**
+ * The current dot voting as the canvas announces it in its `voting` event, for the caller: their own number of votes,
+ * never the others', and the ranked `tally` only once it is closed (ADR 0020).
+ */
+export interface VotingSession {
+  id: string;
+  name: string;
+  votesPerPerson: number;
+  status: 'open' | 'closed';
+  startedBy: { id: string; name: string };
+  /** How many votes the caller has placed. */
+  myVotes: number;
+  tally?: TallyEntry[];
+}
+
 export interface TimerState {
   /** The length of the timer, including extensions. */
   durationMs: number;
@@ -42,4 +65,14 @@ export type CanvasElement = HTMLElement & {
   resumeTimer?(): Promise<void>;
   extendTimer?(ms: number): Promise<void>;
   stopTimer?(): Promise<void>;
+  /**
+   * Dot voting for everybody on the board; the first three reject on a read-only canvas and before the canvas is up.
+   * `startVoting` rejects while a voting is open, `endVoting` and `clearVotingResults` are no-ops without one. The canvas
+   * announces the state as the `voting` event.
+   */
+  startVoting?(options: { name?: string; votesPerPerson: number }): Promise<void>;
+  endVoting?(): Promise<void>;
+  clearVotingResults?(): Promise<void>;
+  /** Scrolls the view to an element (a result); rejects when it is not on the board. */
+  scrollToElement?(elementId: string): Promise<void>;
 };

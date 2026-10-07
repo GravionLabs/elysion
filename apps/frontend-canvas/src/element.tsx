@@ -1,6 +1,7 @@
 import { type Root, createRoot } from 'react-dom/client';
 import { CanvasApp, type CanvasControls } from './CanvasApp';
 import type { TimerState } from './facilitation/timer';
+import type { StartOptions, VotingView } from './facilitation/voting';
 import type { ExportFormat, ExportOptions } from './board-io';
 import { parseTheme } from './useResolvedTheme';
 
@@ -120,6 +121,26 @@ class ElysionCanvasElement extends HTMLElement {
     return this.#timer((controls) => controls.stopTimer());
   }
 
+  /** Opens a dot voting for everybody on the board; rejects while one is open, on a read-only canvas and before the canvas is up. */
+  startVoting(options: StartOptions): Promise<void> {
+    return this.#timer((controls) => controls.startVoting(options));
+  }
+
+  /** Closes the open voting and shows the result; a no-op when none is open. */
+  endVoting(): Promise<void> {
+    return this.#timer((controls) => controls.endVoting());
+  }
+
+  /** Removes the voting that is shown, with its votes. */
+  clearVotingResults(): Promise<void> {
+    return this.#timer((controls) => controls.clearVotingResults());
+  }
+
+  /** Scrolls the view to an element, for the results panel; rejects when the element is not on the board. */
+  scrollToElement(elementId: string): Promise<void> {
+    return this.#timer((controls) => controls.scrollToElement(elementId));
+  }
+
   #timer(run: (controls: CanvasControls) => Promise<void>): Promise<void> {
     return this.#controls
       ? run(this.#controls)
@@ -140,6 +161,7 @@ class ElysionCanvasElement extends HTMLElement {
         onSelectionCount={(count) => this.#emit('selectioncount', { count })}
         onPresenceChange={(users) => this.#emit('presence', { users })}
         onTimerChange={(state: TimerState | null) => this.#emit('timer', { state })}
+        onVotingChange={(session: VotingView | null) => this.#emit('voting', { session })}
         onError={(error) => this.#emit('error', { message: error.message })}
         tokenProvider={this.#tokenProvider}
         readOnly={this.hasAttribute('readonly')}

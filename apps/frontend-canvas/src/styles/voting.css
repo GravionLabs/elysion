@@ -1,0 +1,95 @@
+/*
+ * Dot voting (facilitation/VoteBadges.tsx). A layer over the canvas that catches no pointer events except on the
+ * person's own dots. Below Excalidraw's UI layer (z-index 4), like the connection points. The colors are the design
+ * tokens'; none of it is part of the scene, so it is not synced and not in an export.
+ */
+.elysion-canvas .elysion-vote-badges {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.elysion-canvas .elysion-vote-dots {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.elysion-canvas .elysion-vote-count {
+  position: absolute;
+}
+
+/* The dots sit on the corner, the first one centered on it and the next ones to its left. */
+.elysion-canvas .elysion-vote-dot {
+  position: absolute;
+  top: -6px;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  padding: 0;
+  margin-right: -6px;
+  background: var(--c-primary);
+  border: 2px solid var(--c-surface-1);
+  border-radius: 50%;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.elysion-canvas .elysion-vote-dot:disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
+.elysion-canvas .elysion-vote-dot:hover:not(:disabled) {
+  background: var(--c-danger);
+}
+
+.elysion-canvas .elysion-vote-more {
+  position: absolute;
+  top: -8px;
+  margin-right: -6px;
+  color: var(--c-primary);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* The result: a count on the corner of each element that got votes. */
+.elysion-canvas .elysion-vote-count {
+  display: grid;
+  box-sizing: border-box;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  place-items: center;
+  color: var(--c-on-primary);
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--c-primary);
+  border: 2px solid var(--c-surface-1);
+  border-radius: 999px;
+  box-shadow: var(--shadow-md);
+  transform: translate(-50%, -50%);
+}
+
+.elysion-canvas .elysion-vote-hint {
+  position: absolute;
+  bottom: 72px;
+  left: 50%;
+  z-index: 3;
+  max-width: calc(100% - 32px);
+  padding: 6px 12px;
+  color: var(--c-text);
+  font-size: 13px;
+  text-align: center;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  box-shadow: var(--shadow-md);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
