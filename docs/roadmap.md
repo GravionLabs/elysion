@@ -4,7 +4,7 @@ The order in which the open backlog is built, by phase. Each phase lists its PBI
 should be implemented; a PBI's tasks are its GitHub sub-issues. The same order is on the project
 board ([GravionLabs project 7](https://github.com/users/GravionLabs/projects/7)): the **Phase** field
 holds the phase and the items are sorted in this order. Each phase is a GitHub milestone
-(M1 to M7) holding its features, PBIs and tasks; epics span several phases and have no milestone.
+(M1 to M8) holding its features, PBIs and tasks; epics span several phases and have no milestone.
 
 Refined on 2026-10-06; open PBIs only, finished ones drop out (last refreshed 2026-10-06). When the backlog changes, update this file and the board together.
 
@@ -68,5 +68,13 @@ All PBIs of this phase are done.
 Milestone: [M7 Operations](https://github.com/GravionLabs/elysion/milestone/7)
 
 Operations work that only pays off once the product runs somewhere shared: CORS and rate limits, logs and metrics, caching (measured: not needed, see docs/specs/bff.md) and Kubernetes (a Helm chart, ADR 0018).
+
+All PBIs of this phase are done.
+
+## M8 Connectors
+
+Milestone: [M8 Connectors](https://github.com/GravionLabs/elysion/milestone/8)
+
+Connecting two elements the way Mural does: visible connection points on every shape, drag from one to another shape (or into empty space for a new sticky note), right-angled connectors by default, and a Connect action for two selected elements. The technique is in docs/specs/frontend.md ("Connectors").
 
 All PBIs of this phase are done.
