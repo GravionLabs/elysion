@@ -1,0 +1,20 @@
+{
+  "name": "@elysion/site",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "description": "The documentation site: docs/ as a website (VitePress), published on GitHub Pages.",
+  "type": "module",
+  "scripts": {
+    "prepare:site": "node scripts/prepare.mjs",
+    "dev": "pnpm prepare:site && vitepress dev",
+    "build": "pnpm prepare:site && vitepress build",
+    "preview": "vitepress preview",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "vitepress": "^1.6.4",
+    "vitest": "^4.0.8"
+  }
+}

@@ -48,4 +48,4 @@ images, and the reusable workflow makes one release per call, so it does not fit
 - The images run as the base images' default user (nginx and the Node images as root): hardening them is part of the security review on the [roadmap](../roadmap.md).
 - The Helm chart's default image names are not the GHCR ones yet; the self-hosting page says how to set them.
 - The version is not shown in the application yet; the images carry it as OCI labels (`org.opencontainers.image.version`).
-- The documentation site on GitHub Pages is a separate change.
+- The documentation site on GitHub Pages is [ADR 0022](0022-documentation-site.md).
