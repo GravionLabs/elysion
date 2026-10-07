@@ -242,4 +242,32 @@ describe('Rooms (e2e, against a fake business backend)', () => {
       expect(body.message).toBe('A room needs at least one owner.');
     });
   });
+
+  describe('walk-through', () => {
+    it('makes a room, invites somebody, fills it, takes a board out and deletes the room', async () => {
+      const room = await newRoom('Sprint planning');
+      upstream.roomMembers.set(room.id, []);
+      const invited = await api()
+        .post(`/api/rooms/${room.id}/members`)
+        .send({ email: 'bea@example.com', role: 'Viewer' })
+        .expect(201);
+      expect((await api().get(`/api/rooms/${room.id}/members`)).body).toEqual([invited.body]);
+
+      const board = await newBoard('Retro');
+      expect(board.roomId).toBeNull();
+      await api().put(`/api/boards/${board.id}/room`).send({ roomId: room.id }).expect(200);
+      const inRoom = (await api().get('/api/boards')).body as Array<{ id: string; roomId: string }>;
+      expect(inRoom.find((b) => b.id === board.id)!.roomId).toBe(room.id);
+
+      await api().patch(`/api/rooms/${room.id}`).send({ name: 'Sprint 42' }).expect(200);
+      await api().put(`/api/boards/${board.id}/room`).send({ roomId: null }).expect(200);
+      expect((await api().get(`/api/boards/${board.id}`)).body.roomId).toBeNull();
+
+      await api().put(`/api/boards/${board.id}/room`).send({ roomId: room.id }).expect(200);
+      await api().delete(`/api/rooms/${room.id}`).expect(204);
+      expect((await api().get('/api/rooms')).body).toEqual([]);
+      expect((await api().get(`/api/boards/${board.id}`).expect(200)).body.roomId).toBeNull();
+      expect(new Set(upstream.authorizations)).toEqual(new Set([authorization]));
+    });
+  });
 });
