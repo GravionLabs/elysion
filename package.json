@@ -20,6 +20,7 @@
     "dev:infra:down": "docker compose -f infra/docker/docker-compose.yml --profile apps down",
     "dev:stack": "node scripts/dev-stack.mjs up",
     "demo": "docker compose -f infra/docker/docker-compose.demo.yaml up -d --build",
+    "demo:check": "bash scripts/demo-smoke.sh",
     "demo:down": "docker compose -f infra/docker/docker-compose.demo.yaml down",
     "dev:stack:down": "node scripts/dev-stack.mjs down",
     "make:icons": "node scripts/make-icons.mjs",

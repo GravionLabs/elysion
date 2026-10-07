@@ -24,13 +24,13 @@ pnpm demo        # then open http://localhost and log in as dev, dev1 or dev2 (t
 pnpm demo:down
 ```
 
-The [Demo](#demo) section has the details. To work on Elysion see [Getting started](#getting-started).
+The [Demo](#demo) section has the details. The published images and what a real deployment needs are in [self-hosting](docs/self-hosting.md); every merge to `main` is a (pre-)release with images on GHCR ([ADR 0021](docs/adr/0021-versioning-and-releases.md)). To work on Elysion see [Getting started](#getting-started).
 
 ## What is missing
 
 Known gaps, so nobody finds them by surprise (the [roadmap](docs/roadmap.md) says what comes next):
 
-- **Not a production setup:** the demo and the development stack run Keycloak in development mode, wired to `localhost`, with development secrets. A real deployment needs TLS, a host name, a production Keycloak and its own secrets.
+- **Not a production setup:** the demo and the development stack run Keycloak in development mode, wired to `localhost`, with development secrets. A real deployment needs TLS, a host name, a production Keycloak and its own secrets (see [self-hosting](docs/self-hosting.md)).
 - **Voting is not secret from the server:** with the votes in the board's document (ADR 0020) the interface shows no names while a voting runs and only counts afterwards, but the document holds who voted for what, and viewers cannot vote.
 - **Timer clocks** of two clients may differ by a few seconds (the end is worked out on every client).
 - **Cards show initials**, not thumbnails of the board.
@@ -51,7 +51,7 @@ Frontend (Angular + React/Excalidraw)
   PostgreSQL / Valkey (realtime) / Keycloak (identity)
 ```
 
-Decisions are recorded as ADRs: [gateway and BFF](docs/adr/0001-gateway-and-bff.md), [the TypeScript version split](docs/adr/0002-typescript-version-split.md), [the .NET 10 business backend](docs/adr/0003-net10-business-backend.md), [the canvas library](docs/adr/0004-canvas-library.md), [the canvas follows ariadne's design](docs/adr/0005-canvas-follows-ariadne-design.md), [shared local infrastructure](docs/adr/0006-shared-local-infrastructure.md), [RustFS instead of MinIO](docs/adr/0007-rustfs-replaces-minio.md), [repository tooling conventions](docs/adr/0008-repository-tooling-conventions.md), [state in the Angular shell](docs/adr/0009-angular-shell-state.md), [the shell controls the canvas](docs/adr/0010-shell-controls-the-canvas.md), [board document persistence](docs/adr/0011-board-document-persistence.md), [minimal APIs in the business backend](docs/adr/0012-minimal-apis-in-the-business-backend.md) Per-service contracts live in [docs/specs/](docs/specs), [PDF export in the browser](docs/adr/0013-pdf-export.md), [Keycloak as the identity provider](docs/adr/0014-keycloak-identity-provider.md), [repositories in the business backend](docs/adr/0015-business-backend-repositories.md), [the Angular OIDC library](docs/adr/0016-angular-oidc-library.md), [authenticating the internal API](docs/adr/0017-internal-api-authentication.md), [Kubernetes packaging: Helm](docs/adr/0018-kubernetes-packaging.md), [grouping boards](docs/adr/0019-grouping-boards.md), [facilitation state](docs/adr/0020-facilitation-state.md).
+Decisions are recorded as ADRs: [gateway and BFF](docs/adr/0001-gateway-and-bff.md), [the TypeScript version split](docs/adr/0002-typescript-version-split.md), [the .NET 10 business backend](docs/adr/0003-net10-business-backend.md), [the canvas library](docs/adr/0004-canvas-library.md), [the canvas follows ariadne's design](docs/adr/0005-canvas-follows-ariadne-design.md), [shared local infrastructure](docs/adr/0006-shared-local-infrastructure.md), [RustFS instead of MinIO](docs/adr/0007-rustfs-replaces-minio.md), [repository tooling conventions](docs/adr/0008-repository-tooling-conventions.md), [state in the Angular shell](docs/adr/0009-angular-shell-state.md), [the shell controls the canvas](docs/adr/0010-shell-controls-the-canvas.md), [board document persistence](docs/adr/0011-board-document-persistence.md), [minimal APIs in the business backend](docs/adr/0012-minimal-apis-in-the-business-backend.md) Per-service contracts live in [docs/specs/](docs/specs), [PDF export in the browser](docs/adr/0013-pdf-export.md), [Keycloak as the identity provider](docs/adr/0014-keycloak-identity-provider.md), [repositories in the business backend](docs/adr/0015-business-backend-repositories.md), [the Angular OIDC library](docs/adr/0016-angular-oidc-library.md), [authenticating the internal API](docs/adr/0017-internal-api-authentication.md), [Kubernetes packaging: Helm](docs/adr/0018-kubernetes-packaging.md), [grouping boards](docs/adr/0019-grouping-boards.md), [facilitation state](docs/adr/0020-facilitation-state.md), [versioning and releases](docs/adr/0021-versioning-and-releases.md).
 
 ## Getting started
 

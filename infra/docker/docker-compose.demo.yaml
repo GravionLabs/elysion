@@ -7,6 +7,10 @@ name: elysion-demo
 # is for the machine it runs on. Not a production setup: dev-mode Keycloak, development secrets.
 #
 #   pnpm demo           # build and start        pnpm demo:down   # stop (data is kept)
+#
+# The four app services have an `image` as well as a `build`: `pnpm demo` builds them from this checkout, and the
+# published images (docs/self-hosting.md) run without building, as `--no-build --pull always` of `docker compose up`:
+#   ELYSION_VERSION=0.1.0-beta.126 docker compose -f infra/docker/docker-compose.demo.yaml up -d --no-build --pull always
 #   docker compose -f infra/docker/docker-compose.demo.yaml down -v   # stop and forget everything
 #
 # It uses ports 80 and 8081 like the development stack (`pnpm dev:stack`): stop that one first.
@@ -102,6 +106,7 @@ services:
   # reaches it, at http://business-backend:8080 on the compose network.
 
   business-backend:
+    image: ghcr.io/gravionlabs/elysion-business-backend:${ELYSION_VERSION:-next}
     build: ../../apps/business-backend
     environment:
       ConnectionStrings__Elysion: Host=postgres;Port=5432;Database=elysion;Username=elysion;Password=elysion
@@ -120,6 +125,7 @@ services:
       - elysion
 
   bff:
+    image: ghcr.io/gravionlabs/elysion-bff:${ELYSION_VERSION:-next}
     build:
       context: ../..
       dockerfile: apps/bff/Dockerfile
@@ -155,6 +161,7 @@ services:
       - elysion
 
   realtime:
+    image: ghcr.io/gravionlabs/elysion-realtime:${ELYSION_VERSION:-next}
     build:
       context: ../..
       dockerfile: apps/realtime/Dockerfile
@@ -179,6 +186,7 @@ services:
       - elysion
 
   frontend:
+    image: ghcr.io/gravionlabs/elysion-frontend:${ELYSION_VERSION:-next}
     build:
       context: ../..
       dockerfile: apps/frontend/Dockerfile
