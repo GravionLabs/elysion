@@ -39,6 +39,8 @@ This is what makes collaboration links possible (#101).
 
 **Own templates** (#340): the Templates menu lists the user's own templates after the built-in ones (it asks for the list every time it opens), each with a delete button that asks once more ("Delete “…”?") before `DELETE /api/templates/:id`; built-in ones have none. **Save board as template…** and **Save selection as template…** (needs a selection) open a form under the bar with the name (preset to the board's name, or "Selection") and an optional description. Saving calls the element's `exportBoard('excalidraw', { selectionOnly })` and sends the file to `POST /api/templates`; an empty board or selection is told in the notice, a failure keeps the form open with the typed values. Templates are private to their owner.
 
+**The brand** (#555, `shared/app-brand.ts`) is the project icon, two sticky notes on the gradient square, plus the name; it links to `/`. The source of the icon is `apps/frontend/public/icon.svg`; `pnpm make:icons` (`scripts/make-icons.mjs`) makes `favicon.ico`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` and `apple-touch-icon.png` from it, and `index.html` links them with `manifest.webmanifest` (served as `application/manifest+json`). The mark in `AppBrand` is the same drawing as inline SVG, so change the icon in both places (the candidates and the owner's choice are in `docs/brand/README.md`).
+
 The top bar of the board page links back: the brand and an "All boards" button (an icon only below 860 px) both go to `/`.
 
 ### Duplicating a board
