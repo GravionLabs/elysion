@@ -45,6 +45,7 @@ pnpm demo        # then open http://localhost and log in as dev, dev1 or dev2 (t
 
 ## Where to read on
 
+- [User guide](./user-guide): boards and rooms, the canvas, sharing, the timer and the dot voting, with screenshots.
 - [Self-hosting](./self-hosting): the published images, running the demo from them, and what a real deployment needs.
 - [Specifications](./specs/frontend): how each service behaves, as built.
 - [Decisions](./adr/0001-gateway-and-bff): why it is built this way (the ADRs).
