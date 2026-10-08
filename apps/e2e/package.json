@@ -1,0 +1,18 @@
+{
+  "name": "@elysion/e2e",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Browser tests of the running stack (Playwright). Not part of `pnpm test`: they need the stack, see AGENTS.md.",
+  "scripts": {
+    "lint": "oxlint -c oxlint.json .",
+    "typecheck": "tsc --noEmit",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.13.3",
+    "typescript": "^6.0.3"
+  }
+}

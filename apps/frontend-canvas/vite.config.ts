@@ -8,6 +8,9 @@ export default defineConfig({
     globals: true,
     include: ['src/**/*.spec.{ts,tsx}'],
     setupFiles: ['src/test-setup.ts'],
+    // The first test of a file that mounts Excalidraw is slow when `pnpm test` runs every app at once (the default 5 s
+    // made QuickConnect and VoteBadges fail now and then); a test that hangs still fails.
+    testTimeout: 30_000,
     server: {
       deps: {
         // @excalidraw/excalidraw is otherwise treated as an external CJS/ESM

@@ -21,6 +21,7 @@
     "dev:stack": "node scripts/dev-stack.mjs up",
     "demo": "docker compose up -d --build",
     "demo:check": "bash scripts/demo-smoke.sh",
+    "test:browser": "pnpm --filter @elysion/e2e test:browser",
     "demo:down": "docker compose down",
     "dev:stack:down": "node scripts/dev-stack.mjs down",
     "make:icons": "node scripts/make-icons.mjs",
