@@ -14,7 +14,7 @@ providers:
   docker:
     endpoint: 'unix:///var/run/docker.sock'
     exposedByDefault: false
-    # Services also join other networks (local-infra); route over this one.
+    # Route over the stack's own network (the project is called `elysion`), whatever other networks a service joins.
     network: elysion_elysion
   # Middlewares (edge authentication): see dynamic/middlewares.yml.
   file:

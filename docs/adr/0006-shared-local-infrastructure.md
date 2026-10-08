@@ -1,6 +1,6 @@
 # ADR 0006: Shared local infrastructure from local-infra
 
-- Status: accepted
+- Status: accepted, **superseded in part by [ADR 0023](0023-own-valkey-one-compose-file.md)** (Elysion has its own Valkey and does not need local-infra; the key prefix and the RustFS ports below stay)
 - Date: 2026-10-04
 - Issues: #149, #157, #158, #159, #160
 - Pull requests: #153, #161

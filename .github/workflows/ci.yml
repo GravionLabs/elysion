@@ -67,7 +67,7 @@ jobs:
     name: BFF and realtime e2e, coverage
     runs-on: ubuntu-latest
     services:
-      # Stands in for local-infra's Valkey, which realtime reaches on localhost:6379 by default.
+      # The Valkey of the stack (docker-compose.yml, the same image), which realtime reaches on localhost:6379 by default.
       valkey:
         image: valkey/valkey:9.1.2-alpine
         ports:

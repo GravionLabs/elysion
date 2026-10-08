@@ -27,13 +27,13 @@ You need Docker with Compose and this repository (the stack mounts the Traefik c
 
 ```sh
 git clone https://github.com/GravionLabs/elysion.git && cd elysion
-ELYSION_VERSION=next docker compose -f infra/docker/docker-compose.demo.yaml up -d --no-build --pull always
+ELYSION_VERSION=next docker compose up -d --pull always
 bash scripts/demo-smoke.sh        # optional: checks that it works end to end
 ```
 
 Then open <http://localhost> and log in as `dev`, `dev1` or `dev2` (the password is the username). Use a version instead of `next`
-to pin one (`ELYSION_VERSION=0.1.0-beta.126`). Without `--no-build` the images are built from the checkout (`pnpm demo`).
-`docker compose -f infra/docker/docker-compose.demo.yaml down` stops it, and `down -v` also forgets the data.
+to pin one (`ELYSION_VERSION=0.1.0-beta.126`). Settings (`ELYSION_VERSION`, ports) can also go into a `.env` (copy `.env.example`). `pnpm demo` builds the images from the checkout instead.
+`docker compose down` stops it, and `down -v` also forgets the data.
 
 The stack is Traefik (port 80), the four images, Postgres, Valkey (its own, for the realtime service) and Keycloak (port 8081,
 admin console `admin` / `admin`). The business backend applies its database migrations when it starts.

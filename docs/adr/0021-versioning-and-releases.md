@@ -32,11 +32,10 @@ images, and the reusable workflow makes one release per call, so it does not fit
 4. **Release notes** come from the Conventional Commits of the squash-merged pull requests (the squash body's `* type: message` lines are read as
    commits of their own). `chore`, `ci`, `style`, `test` and `build` are left out. The notes of a release are what came after the last tag of any
    kind, pre-releases included. Pull request titles are therefore Conventional Commits (`feat: ...`, `fix: ...`, `docs: ...`).
-5. **A pull request that touches the images or the demo** (`container.yml`) builds the four images and starts the demo stack, and
+5. **A pull request that touches the images or the demo** (`container.yml`) builds the four images and starts the stack, and
    `scripts/demo-smoke.sh` checks that it works: the app is served, `dev`, `dev1` and `dev2` log in, the API answers, a board is made and a
    realtime token issued. The images are not pushed from a pull request.
-6. **Self-hosting** is described in [docs/self-hosting.md](../self-hosting.md): the demo compose file runs the published images (`ELYSION_VERSION`,
-   `--no-build`), and the page lists what a real deployment needs. The demo is not a production setup.
+6. **Self-hosting** is described in [docs/self-hosting.md](../self-hosting.md): `docker-compose.yml` runs the published images (`ELYSION_VERSION`; [ADR 0023](0023-own-valkey-one-compose-file.md)), and the page lists what a real deployment needs. The demo is not a production setup.
 
 ## Consequences
 

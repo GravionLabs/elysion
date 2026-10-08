@@ -16,4 +16,4 @@ Elysion needs a single entry point for TLS termination, auth validation, rate li
 ## Consequences
 
 - Extra deployable (BFF) and extra hop, but keeps the business backend free of UI concerns and internet exposure.
-- Traefik config lives in `infra/traefik/`; routing labels live alongside each service's docker-compose block in `infra/docker/docker-compose.yml`.
+- Traefik config lives in `infra/traefik/`; routing labels live alongside each service's docker-compose block in `docker-compose.yml`.

@@ -1,8 +1,17 @@
 name: elysion
 
-# Valkey (Redis), RabbitMQ and Portainer are shared across projects and run from
-# ~/Source/gravionlabs/local-infra (`docker compose up -d` there). Do not define them here:
-# apps on the host use localhost:6379, apps in containers join the external `local-infra` network.
+# The whole of Elysion in one `docker compose up`: Traefik at the edge, the four apps, Postgres, Keycloak and **Valkey**
+# (for the realtime service). Nothing else has to be installed or running. Open http://localhost and log in as dev, dev1
+# or dev2 (the password is the username); Keycloak's admin console is at http://localhost:8081 (admin / admin).
+#
+#   docker compose up -d                  # the published images (ELYSION_VERSION, `next` by default), see docs/self-hosting.md
+#   docker compose up -d --build          # the images built from this checkout (`pnpm demo`)
+#   docker compose down                   # stop (the data is kept); `down -v` also forgets it
+#
+# This file is also what `pnpm dev:stack` runs, with docker-compose.dev.yml on top: that file only adds host ports (Postgres,
+# Valkey, the Traefik dashboard) and RustFS, for working on an app on the host (`pnpm dev:infra`, ADR 0023).
+# Settings you may want to change are in .env (copy .env.example). The identity provider is wired to `localhost`, so this
+# is for the machine it runs on. Not a production setup: dev-mode Keycloak, development secrets.
 
 services:
   traefik:
@@ -11,11 +20,10 @@ services:
       - '--configFile=/etc/traefik/traefik.yml'
     ports:
       - '80:80'
-      - '8080:8080' # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ../traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ../traefik/dynamic:/etc/traefik/dynamic:ro
+      - ./infra/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./infra/traefik/dynamic:/etc/traefik/dynamic:ro
     networks:
       - elysion
 
@@ -25,8 +33,6 @@ services:
       POSTGRES_USER: elysion
       POSTGRES_PASSWORD: elysion
       POSTGRES_DB: elysion
-    ports:
-      - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
@@ -37,20 +43,21 @@ services:
     networks:
       - elysion
 
-  # S3-compatible object store. MinIO's community images are no longer pullable (Docker Hub and
-  # quay.io both deny access), so RustFS stands in with the same S3 API. Host ports are 9100/9101 because Portainer from
-  # local-infra owns 9000.
-  rustfs:
-    image: rustfs/rustfs:1.0.1
+  # Valkey for the realtime service (presence and cross-instance sync). The image and the settings are those of
+  # local-infra's `valkey`, but it is Elysion's own (a volume of its own, no published port): it needs nothing from the
+  # machine and cannot clash with a Valkey on it (ADR 0023). docker-compose.dev.yml publishes it for apps on the host.
+  valkey:
+    image: valkey/valkey:9.1.2-alpine
+    restart: unless-stopped
     environment:
-      RUSTFS_ACCESS_KEY: elysion
-      RUSTFS_SECRET_KEY: elysion123
-      RUSTFS_CONSOLE_ENABLE: 'true'
-    ports:
-      - '${RUSTFS_S3_PORT:-9100}:9000' # S3 API
-      - '${RUSTFS_CONSOLE_PORT:-9101}:9001' # console
+      ALLOW_EMPTY_PASSWORD: 'yes'
     volumes:
-      - rustfs-data:/data
+      - valkey-data:/data
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - elysion
 
@@ -73,8 +80,8 @@ services:
     networks:
       - elysion
 
-  # The identity provider (ADR 0014). Elysion-specific, so it lives here and not in local-infra (ADR 0006).
-  # Host port 8081 because Traefik's dashboard owns 8080. The realm comes from infra/keycloak, so a clean
+  # The identity provider (ADR 0014).
+  # Host port 8081 (`KEYCLOAK_PORT`) because Traefik's dashboard owns 8080. The realm comes from infra/keycloak, so a clean
   # checkout has the same provider every time. Dev mode (HTTP, no hostname checks): never a production setup.
   keycloak:
     image: quay.io/keycloak/keycloak:26.6
@@ -90,7 +97,7 @@ services:
     ports:
       - '${KEYCLOAK_PORT:-8081}:8080'
     volumes:
-      - ../keycloak:/opt/keycloak/data/import:ro
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
     depends_on:
       keycloak-db:
         condition: service_completed_successfully
@@ -98,14 +105,12 @@ services:
       - elysion
 
   # --- Application services ---
-  # Behind the `apps` profile: `pnpm dev:infra` starts only the infrastructure above (for running the
-  # apps on the host), `pnpm dev:stack` adds these. Needs local-infra running (Valkey, ADR 0006).
-  # Routes at the edge: /api -> bff, /yjs -> realtime, / -> frontend. The business backend has no
-  # route: only the bff reaches it, at http://business-backend:8080 on the compose network.
+  # Routes at the edge: /api -> bff, /yjs -> realtime, / -> frontend. The business backend has no route: only the bff
+  # reaches it, at http://business-backend:8080 on the compose network.
 
   business-backend:
-    profiles: [apps]
-    build: ../../apps/business-backend
+    image: ghcr.io/gravionlabs/elysion-business-backend:${ELYSION_VERSION:-next}
+    build: ./apps/business-backend
     environment:
       ConnectionStrings__Elysion: Host=postgres;Port=5432;Database=elysion;Username=elysion;Password=elysion
       Database__MigrateOnStartup: 'true'
@@ -123,9 +128,9 @@ services:
       - elysion
 
   bff:
-    profiles: [apps]
+    image: ghcr.io/gravionlabs/elysion-bff:${ELYSION_VERSION:-next}
     build:
-      context: ../..
+      context: .
       dockerfile: apps/bff/Dockerfile
     environment:
       BUSINESS_BACKEND_URL: http://business-backend:8080
@@ -159,9 +164,9 @@ services:
       - elysion
 
   realtime:
-    profiles: [apps]
+    image: ghcr.io/gravionlabs/elysion-realtime:${ELYSION_VERSION:-next}
     build:
-      context: ../..
+      context: .
       dockerfile: apps/realtime/Dockerfile
     environment:
       REDIS_URL: redis://valkey:6379
@@ -173,6 +178,7 @@ services:
       INTERNAL_API_SECRET: dev-only-internal-api-secret-change-me-0123456789
     depends_on:
       - business-backend
+      - valkey
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.realtime.rule=PathPrefix(`/yjs`)'
@@ -181,12 +187,11 @@ services:
       - 'traefik.http.services.realtime.loadbalancer.server.port=3000'
     networks:
       - elysion
-      - local-infra # reach Valkey as valkey:6379
 
   frontend:
-    profiles: [apps]
+    image: ghcr.io/gravionlabs/elysion-frontend:${ELYSION_VERSION:-next}
     build:
-      context: ../..
+      context: .
       dockerfile: apps/frontend/Dockerfile
     environment:
       # Where the browser logs in (the address the browser uses, so localhost:8081) and as which client.
@@ -203,11 +208,7 @@ services:
 networks:
   elysion:
     driver: bridge
-  # Created by ../local-infra; only the services behind the `apps` profile join it.
-  local-infra:
-    external: true
-    name: local-infra
 
 volumes:
   postgres-data:
-  rustfs-data:
+  valkey-data:

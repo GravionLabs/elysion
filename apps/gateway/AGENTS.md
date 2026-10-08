@@ -4,7 +4,7 @@ This directory is currently empty. Elysion's gateway is Traefik, not a custom se
 
 - `infra/traefik/traefik.yml` — static config (dashboard, entrypoints incl. the internal `metrics` one, docker provider, file provider, JSON access log, Prometheus metrics)
 - `infra/traefik/dynamic/middlewares.yml` — middlewares routers refer to as `<name>@file` (`bff-auth`: forwardAuth to the BFF)
-- `infra/docker/docker-compose.yml` — the `traefik` service, plus `traefik.enable`/router labels on each routed service; the `cors` and `rate-limit` middlewares are labels on the `bff` service (they read `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_AVERAGE`, `RATE_LIMIT_BURST` from the environment, which the dynamic file cannot)
+- `docker-compose.yml` — the `traefik` service, plus `traefik.enable`/router labels on each routed service; the `cors` and `rate-limit` middlewares are labels on the `bff` service (they read `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_AVERAGE`, `RATE_LIMIT_BURST` from the environment, which the dynamic file cannot)
 
 See `docs/specs/gateway.md` and `docs/adr/0001-gateway-and-bff.md`.
 
@@ -19,7 +19,7 @@ If a feature ever needs custom gateway logic that Traefik's dynamic config/middl
 
 A new route is public unless it says otherwise: decide for each one whether it gets `bff-auth@file`, and write it into the routing table in `docs/specs/gateway.md`. Never apply forwardAuth to `/yjs` (a browser WebSocket cannot send the header).
 
-Services also join `local-infra`, so Traefik is told to route over `elysion_elysion` (`providers.docker.network` in `traefik.yml`); a new routed service needs `traefik.enable=true`, a router rule and `loadbalancer.server.port` labels.
+Traefik is told to route over `elysion_elysion`, the compose project's network (`providers.docker.network` in `traefik.yml`; the project is called `elysion`, so keep that `name` in `docker-compose.yml`); a new routed service needs `traefik.enable=true`, a router rule and `loadbalancer.server.port` labels.
 
 Verify routing changes with `pnpm dev:stack` and `curl` against `http://localhost/...` — the Traefik dashboard (`:8080/dashboard/`) shows registered routers if something isn't matching.
 
