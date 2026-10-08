@@ -32,7 +32,7 @@ A board is `{ id, name, createdAt, roomId }` (`roomId` is the room it is in, or 
 
 Board access is governed by roles, see "Board authorization" below: the list holds only the boards the caller owns, is a member of, or can reach through a room, and every other board endpoint needs a role on the board.
 
-**Duplicate** creates a board named "<name> (copy)" (the name is cut short, to 120 characters, when the suffix would not fit) and copies the source's stored document byte for byte as a fresh document (version 1), so the two boards are independent from then on. The copy is what was last saved: changes still inside a room's save window (a few seconds) are not in it yet. A board without content gets a copy without a document.
+**Duplicate** creates a board named "&lt;name&gt; (copy)" (the name is cut short, to 120 characters, when the suffix would not fit) and copies the source's stored document byte for byte as a fresh document (version 1), so the two boards are independent from then on. The copy is what was last saved: changes still inside a room's save window (a few seconds) are not in it yet. A board without content gets a copy without a document.
 
 ## Template API
 

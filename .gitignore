@@ -40,3 +40,8 @@ Thumbs.db
 # Test coverage
 coverage/
 TestResults/
+
+# The documentation site (apps/site)
+apps/site/.vitepress/cache/
+apps/site/.vitepress/dist/
+apps/site/public/
