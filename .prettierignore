@@ -9,3 +9,6 @@ infra/docker/data
 
 # Helm templates are Go templates, not YAML.
 infra/helm/*/templates/
+
+apps/e2e/test-results
+apps/e2e/playwright-report
