@@ -1,0 +1,97 @@
+// Renovate keeps npm packages, NuGet packages, Dockerfile base images and GitHub Actions current: a few grouped pull
+// requests a week, gated by CI, merged by a person (no automerge). See docs/adr/0024-renovate-for-dependency-updates.md.
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    ':semanticCommits',
+    ':dependencyDashboard',
+    // Every action in .github/workflows is pinned to a commit SHA; Renovate moves SHA and comment together.
+    'helpers:pinGitHubActionDigests',
+  ],
+  // `chore(deps): …` keeps dependency updates out of the release notes (cliff.toml leaves `chore` out).
+  // Issue titles start with their level (AGENTS.md): the dashboard is a PBI.
+  dependencyDashboardTitle: '[PBI] chore: Dependency Dashboard',
+  semanticCommitType: 'chore',
+  semanticCommitScope: 'deps',
+  timezone: 'Europe/Zurich',
+  schedule: ['before 6am on monday'],
+  lockFileMaintenance: { enabled: true, schedule: ['before 6am on the first day of the month'] },
+  // Raise the range in package.json to the new version instead of leaving it as it was.
+  rangeStrategy: 'bump',
+  postUpdateOptions: ['pnpmDedupe'],
+  // A known vulnerability gets a pull request at once, outside the schedule.
+  vulnerabilityAlerts: { enabled: true, labels: ['security'], schedule: ['at any time'] },
+  osvVulnerabilityAlerts: true,
+  packageRules: [
+    {
+      groupName: 'angular',
+      // Angular pins the range of TypeScript it supports: they move together.
+      matchPackageNames: [
+        '@angular/{/,}**',
+        '@angular-devkit/{/,}**',
+        '@schematics/angular',
+        'zone.js',
+        'typescript',
+      ],
+    },
+    {
+      // TypeScript 6 on every app, not 7 (docs/adr/0002-typescript-version-split.md): raise this together with Angular
+      // and @nestjs/cli, by hand.
+      matchPackageNames: ['typescript'],
+      allowedVersions: '<7.0.0',
+    },
+    { groupName: 'nestjs', matchPackageNames: ['@nestjs/{/,}**'] },
+    {
+      groupName: 'excalidraw',
+      matchPackageNames: [
+        '@excalidraw/{/,}**',
+        'react',
+        'react-dom',
+        '@types/react',
+        '@types/react-dom',
+      ],
+    },
+    {
+      groupName: 'build and test tooling',
+      matchPackageNames: [
+        'vitest',
+        '@vitest/{/,}**',
+        'vite',
+        '@vitejs/{/,}**',
+        'vite-tsconfig-paths',
+        'jsdom',
+        'oxlint',
+        'prettier',
+        'simple-git-hooks',
+        'lint-staged',
+        'playwright',
+        '@playwright/{/,}**',
+        'vitepress',
+      ],
+    },
+    {
+      groupName: 'types',
+      matchPackageNames: ['@types/{/,}**', '!@types/react', '!@types/react-dom'],
+    },
+    { groupName: 'dotnet', matchManagers: ['nuget'] },
+    { groupName: 'github-actions', matchManagers: ['github-actions'] },
+    {
+      // Node 24 is the LTS of this repository (.nvmrc, the Dockerfiles, CI); a newer line is a decision, not an update.
+      matchDatasources: ['docker'],
+      matchPackageNames: ['node'],
+      allowedVersions: '<25',
+    },
+    {
+      // The shared workflows of the organisation are followed on `main` on purpose.
+      matchPackageNames: ['GravionLabs/ci/**'],
+      enabled: false,
+    },
+    {
+      // Majors get their own pull requests, labelled, and a person decides.
+      matchUpdateTypes: ['major'],
+      addLabels: ['major'],
+      automerge: false,
+    },
+  ],
+}
