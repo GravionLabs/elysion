@@ -25,11 +25,11 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.x
       # The JetBrains command-line tools that format the C# (`pnpm lint` runs them) are almost 1 GB: keep them between runs.
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages/jetbrains.resharper.globaltools
           key: jetbrains-clt-${{ hashFiles('apps/business-backend/dotnet-tools.json') }}
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.x
       - name: Test with coverage
@@ -58,7 +58,7 @@ jobs:
           dotnet test Elysion.BusinessBackend.slnx
           --collect:"XPlat Code Coverage"
           --results-directory ../../coverage/dotnet
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-dotnet
           path: coverage/dotnet/**/coverage.cobertura.xml
@@ -91,7 +91,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
       - run: pnpm --filter @elysion/bff test:cov
       - run: pnpm --filter @elysion/realtime test:cov
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-node
           path: |
