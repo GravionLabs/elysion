@@ -21,4 +21,8 @@ jobs:
         with:
           node-version-file: .nvmrc
       # No install of the repository: the validator is a one-off tool.
-      - run: pnpm dlx --package renovate renovate-config-validator --strict
+      # pnpm 12 refuses build scripts by default; these four are native or optional builds of Renovate's dependencies.
+      - run: >-
+          pnpm dlx
+          --allow-build=re2 --allow-build=core-js-pure --allow-build=dtrace-provider --allow-build=protobufjs
+          --package renovate renovate-config-validator --strict .github/renovate.json5
