@@ -60,6 +60,7 @@ export default defineConfig({
   themeConfig: {
     logo: '/icon.svg',
     nav: [
+      { text: 'User guide', link: '/user-guide' },
       { text: 'Self-hosting', link: '/self-hosting' },
       { text: 'Specifications', link: '/specs/frontend' },
       { text: 'Decisions', link: '/adr/0001-gateway-and-bff' },
@@ -71,6 +72,7 @@ export default defineConfig({
         text: 'Elysion',
         items: [
           { text: 'Overview', link: '/' },
+          { text: 'User guide', link: '/user-guide' },
           { text: 'Self-hosting', link: '/self-hosting' },
           { text: 'Roadmap', link: '/roadmap' },
         ],

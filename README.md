@@ -24,7 +24,7 @@ pnpm demo        # = `docker compose up -d --build`, then open http://localhost 
 pnpm demo:down   # = `docker compose down`
 ```
 
-The [Demo](#demo) section has the details. The published images and what a real deployment needs are in [self-hosting](docs/self-hosting.md); every merge to `main` is a (pre-)release with images on GHCR ([ADR 0021](docs/adr/0021-versioning-and-releases.md)). The documentation is also a website (`apps/site`, [ADR 0022](docs/adr/0022-documentation-site.md)) at <https://gravionlabs.github.io/elysion/> once GitHub Pages is switched on. To work on Elysion see [Getting started](#getting-started).
+The [Demo](#demo) section has the details. How to use it is in the [user guide](docs/user-guide.md). The published images and what a real deployment needs are in [self-hosting](docs/self-hosting.md); every merge to `main` is a (pre-)release with images on GHCR ([ADR 0021](docs/adr/0021-versioning-and-releases.md)). The documentation is also a website (`apps/site`, [ADR 0022](docs/adr/0022-documentation-site.md)) at <https://gravionlabs.github.io/elysion/> once GitHub Pages is switched on. To work on Elysion see [Getting started](#getting-started).
 
 ## What is missing
 
