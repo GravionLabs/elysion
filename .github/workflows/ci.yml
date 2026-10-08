@@ -8,9 +8,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request makes the running checks obsolete. A push to main is not cancelled: it may be in the
+# middle of a release (images published, tag not yet made), and a release must run to its end.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
@@ -65,7 +67,7 @@ jobs:
     name: BFF and realtime e2e, coverage
     runs-on: ubuntu-latest
     services:
-      # Stands in for local-infra's Valkey, which realtime reaches on localhost:6379 by default.
+      # The Valkey of the stack (docker-compose.yml, the same image), which realtime reaches on localhost:6379 by default.
       valkey:
         image: valkey/valkey:9.1.2-alpine
         ports:
@@ -95,3 +97,101 @@ jobs:
           path: |
             apps/bff/coverage
             apps/realtime/coverage
+
+  # --- Release ---
+  # Every merge to main that passes the checks is a (pre-)release (docs/adr/0021-versioning-and-releases.md): GitVersion
+  # gives the version from the git history (GitVersion.yml), the four images are published to GHCR, and a GitHub
+  # release is created with notes from the Conventional Commits. The version has a pre-release label (0.1.0-beta.N)
+  # until GitVersion.yml says otherwise, and then the release is marked as a pre-release and the images get no `latest`.
+
+  version:
+    name: Version
+    needs: [verify, dotnet-coverage, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      semver: ${{ steps.version.outputs.semver }}
+      docker-version: ${{ steps.version.outputs.docker-version }}
+      major: ${{ steps.version.outputs.major }}
+      minor: ${{ steps.version.outputs.minor }}
+      pre-release-label: ${{ steps.version.outputs.pre-release-label }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - id: version
+        uses: GravionLabs/ci/versioning/determine-version@f2bce90da1f215b8da4da9fba22881e9255921d2 # main
+        with:
+          gitversion-config-file: GitVersion.yml
+
+  images:
+    name: Image ${{ matrix.image }}
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [frontend, bff, realtime, business-backend]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # A pre-release is `<version>`, `<version>-<commit>` and the moving tag `next`; a stable release also `latest`,
+      # `<major>` and `<major>.<minor>`. Lowercase: a registry rejects capitals.
+      - id: tags
+        env:
+          IMAGE: ghcr.io/gravionlabs/elysion-${{ matrix.image }}
+          SEMVER: ${{ needs.version.outputs.semver }}
+          DOCKER_VERSION: ${{ needs.version.outputs.docker-version }}
+          MAJOR: ${{ needs.version.outputs.major }}
+          MINOR: ${{ needs.version.outputs.minor }}
+          PRE_RELEASE: ${{ needs.version.outputs.pre-release-label }}
+        run: |
+          {
+            echo "tags<<TAGS_EOF"
+            echo "$IMAGE:$SEMVER"
+            echo "$IMAGE:$DOCKER_VERSION"
+            if [ -n "$PRE_RELEASE" ]; then
+              echo "$IMAGE:next"
+            else
+              echo "$IMAGE:latest"
+              echo "$IMAGE:$MAJOR"
+              echo "$IMAGE:$MAJOR.$MINOR"
+            fi
+            echo "TAGS_EOF"
+          } >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: apps/${{ matrix.image }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.version.outputs.semver }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=MIT
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  release:
+    name: Release
+    needs: [version, images]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Tags the commit and creates the GitHub release; it is marked as a pre-release when the version has a label.
+      - uses: GravionLabs/ci/versioning/gh-release@f2bce90da1f215b8da4da9fba22881e9255921d2 # main
+        with:
+          version: ${{ needs.version.outputs.semver }}
+          cliff-config: cliff.toml

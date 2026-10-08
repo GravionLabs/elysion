@@ -1,0 +1,12 @@
+# The version comes from the git history (GitVersion, via GravionLabs/ci), see docs/adr/0021-versioning-and-releases.md.
+# Every merge to main that passes the checks is a (pre-)release: with the label below the version is
+# 0.1.0-beta.<commits since the last tag>, and the GitHub release is marked as a pre-release. `+semver: minor` or
+# `+semver: major` in a commit message bumps that part.
+#
+# To release a stable version: delete the `label` line (and set next-version to 1.0.0). Then a merge to main is
+# 1.0.0, 1.0.1, ... and the images also get `latest`, `1` and `1.0`.
+mode: ContinuousDelivery
+next-version: 0.1.0
+branches:
+  main:
+    label: beta

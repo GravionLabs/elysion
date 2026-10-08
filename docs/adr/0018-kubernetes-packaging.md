@@ -14,7 +14,7 @@ The services run only in the dev compose stack. Feature #30 asks for manifests f
 What is to be packaged:
 
 - **Four small stateless Deployments**, each with a Service, probes on its health endpoint, resource requests and a
-  handful of environment variables (ports 80 / 3000 / 3000 / 8080; see `infra/docker/docker-compose.yml`).
+  handful of environment variables (ports 80 / 3000 / 3000 / 8080; see `docker-compose.yml`).
 - **External services are not bundled:** Postgres, Valkey, the object store (RustFS) and Keycloak are given as
   connection settings (host, port, credentials), because in a real cluster they are managed services or run by someone
   else. The manifests only point at them.

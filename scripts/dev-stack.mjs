@@ -1,30 +1,15 @@
-// `pnpm dev:stack` / `pnpm dev:stack:down`: the whole stack in containers behind Traefik.
-// Needs the shared local-infra Valkey (ADR 0006), so it checks that first like the VS Code task does.
+// `pnpm dev:stack` / `pnpm dev:stack:down`: the whole stack in containers behind Traefik, built from this checkout, with
+// the host ports of docker-compose.dev.yml on top (Postgres, Valkey, the Traefik dashboard). It is the same stack as
+// `pnpm demo` (docker-compose.yml); nothing else has to be running (ADR 0023).
 import { spawnSync } from 'node:child_process';
 
-const COMPOSE = ['compose', '-f', 'infra/docker/docker-compose.yml', '--profile', 'apps'];
+const COMPOSE = ['compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.dev.yml'];
 const ACTIONS = { up: ['up', '-d', '--build', '--remove-orphans'], down: ['down'] };
 
 const action = process.argv[2];
 if (!ACTIONS[action]) {
   console.error(`Usage: node scripts/dev-stack.mjs <${Object.keys(ACTIONS).join('|')}>`);
   process.exit(2);
-}
-
-if (action === 'up') {
-  const valkey = spawnSync(
-    'docker',
-    ['inspect', '-f', '{{.State.Running}}', 'local-infra-valkey-1'],
-    {
-      encoding: 'utf8',
-    },
-  );
-  if (valkey.stdout?.trim() !== 'true') {
-    console.error(
-      'local-infra is not running. Start it first:\n  cd ../local-infra && docker compose up -d',
-    );
-    process.exit(1);
-  }
 }
 
 const result = spawnSync('docker', [...COMPOSE, ...ACTIONS[action]], { stdio: 'inherit' });

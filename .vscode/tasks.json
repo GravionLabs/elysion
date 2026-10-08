@@ -2,16 +2,8 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "local-infra: require",
-      "detail": "Fails with a hint unless the shared local-infra Valkey container is running",
-      "type": "shell",
-      "command": "docker inspect -f '{{.State.Running}}' local-infra-valkey-1 2>/dev/null | grep -q true || { echo 'local-infra is not running: cd ../local-infra && docker compose up -d'; exit 1; }",
-      "problemMatcher": []
-    },
-    {
       "label": "infra: up",
-      "detail": "Traefik, Postgres and RustFS (docker compose, detached)",
-      "dependsOn": ["local-infra: require"],
+      "detail": "Traefik, Postgres, Keycloak, Valkey and RustFS (docker compose, detached)",
       "type": "shell",
       "command": "pnpm dev:infra",
       "problemMatcher": []

@@ -32,7 +32,7 @@ Traefik's open-source edition has no JWT middleware, so the `/api` router has a 
 
 ## CORS and rate limiting
 
-Two middlewares in front of the routes (#344). They are defined by labels on the `bff` service in `infra/docker/docker-compose.yml` and not in the dynamic file: the file provider cannot read the environment, and the allowed origins and the limit are compose variables.
+Two middlewares in front of the routes (#344). They are defined by labels on the `bff` service in `docker-compose.yml` and not in the dynamic file: the file provider cannot read the environment, and the allowed origins and the limit are compose variables.
 
 - **`cors`** (headers middleware; `/api` and `/yjs`): the origins in `CORS_ALLOWED_ORIGINS` (comma-separated; default `http://localhost,http://localhost:4200`) get `Access-Control-Allow-Origin` and may use `GET, POST, PATCH, PUT, DELETE, OPTIONS` with the headers `Authorization` and `Content-Type` (preflight cached for 10 minutes). Any other origin gets no `Access-Control-Allow-Origin`, so its browser refuses the answer; the request itself is still handled (CORS is a browser rule, not authentication, which is `bff-auth`). No credentials: the API takes bearer tokens, no cookies. The Angular app is served from the same origin as the API and needs none of this; it is for another front end or a dev server on another port. A preflight carries no token, so `cors` is first in the chain and answers it itself; it never reaches `bff-auth`.
 - **`rate-limit`** (`/api` only): `RATE_LIMIT_AVERAGE` requests per second (default 50) and client address, with a burst of `RATE_LIMIT_BURST` (default 100); over it Traefik answers `429` and the BFF never sees the request. It sits before `bff-auth` so that an unauthenticated flood does not turn into a flood of verify calls. Clients behind one NAT share a budget. `/yjs` has no rate limit: it would count connects, not messages, and a reconnecting canvas must not lock itself out; limiting connects can follow if they turn out to be abused.
@@ -64,8 +64,8 @@ Which scraper or dashboards run is not decided here; this is what the services p
 
 The BFF's route label is the route pattern (`/api/boards/:id`), never the URL, so ids and query strings cannot become label values; URLs no route matches share the label `unmatched`. The business backend has no metrics endpoint yet.
 
-In the dev stack (`pnpm dev:stack`) the routes are Docker labels in `infra/docker/docker-compose.yml`; Traefik
-routes over the `elysion_elysion` network because some services also join `local-infra`.
+In the dev stack (`pnpm dev:stack`) the routes are Docker labels in `docker-compose.yml`; Traefik
+routes over the `elysion_elysion` network, the compose project's own.
 
 ## In Kubernetes
 

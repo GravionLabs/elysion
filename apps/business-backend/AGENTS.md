@@ -30,7 +30,7 @@ dotnet tool run dotnet-ef database update \
   --project src/Elysion.BusinessBackend.Api --startup-project src/Elysion.BusinessBackend.Api
 ```
 
-Connection string is in `appsettings.Development.json` (`ConnectionStrings:Elysion`), pointing at `localhost:5432` — matches the `postgres` service in `infra/docker/docker-compose.yml`.
+Connection string is in `appsettings.Development.json` (`ConnectionStrings:Elysion`), pointing at `localhost:5432` — matches the `postgres` service of `docker-compose.yml`, whose host port 5432 `docker-compose.dev.yml` publishes (`pnpm dev:infra`).
 
 ## C# formatting and style
 
@@ -53,7 +53,7 @@ C# is formatted with the **JetBrains command-line tools** (`jb cleanupcode`, pro
 
 ## Gotcha: Postgres 18 volume mount
 
-`infra/docker/docker-compose.yml` mounts the postgres volume at `/var/lib/postgresql` (not `.../data`) — the `postgres:18-alpine` image's expected layout changed from earlier majors. If you bump the Postgres major version again, check the image's startup logs for a similar warning before assuming the old mount path still works.
+`docker-compose.yml` mounts the postgres volume at `/var/lib/postgresql` (not `.../data`) — the `postgres:18-alpine` image's expected layout changed from earlier majors. If you bump the Postgres major version again, check the image's startup logs for a similar warning before assuming the old mount path still works.
 
 ## Docker
 
