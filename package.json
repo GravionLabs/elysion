@@ -31,8 +31,8 @@
   },
   "devDependencies": {
     "lint-staged": "^17.6.0",
-    "oxlint": "^1.81.0",
-    "prettier": "^3.8.1",
+    "oxlint": "^1.86.0",
+    "prettier": "^3.9.9",
     "sharp": "^0.35.5",
     "simple-git-hooks": "^2.14.0"
   },
