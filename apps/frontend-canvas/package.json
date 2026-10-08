@@ -35,7 +35,7 @@
     "typescript": "~6.0.2",
     "vite": "^8.3.2",
     "vite-plugin-css-injected-by-js": "^5.0.2",
-    "vitest": "^4.0.8",
+    "vitest": "^5",
     "vitest-canvas-mock": "^1.2.0",
     "ws": "^8.22.0"
   }
