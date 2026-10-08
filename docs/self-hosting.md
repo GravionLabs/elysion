@@ -50,6 +50,8 @@ The demo is wired to `localhost` and uses development values. Before it faces an
 - **Your own secrets.** `WS_TOKEN_SECRET` (BFF and realtime, [identity](specs/identity.md)) and `INTERNAL_API_SECRET` (realtime and business backend, [ADR 0017](adr/0017-internal-api-authentication.md))
   have development values in the compose file: set long random ones, the same in the services that share them.
 - **Postgres with backups** (the demo's volume is a convenience), and Valkey if you run more than one realtime instance.
+- **Keycloak and the network:** the compose file publishes Keycloak (with its development admin password) on the loopback only (`KEYCLOAK_BIND`); in a real deployment it sits behind your TLS proxy and has no development admin at all.
+- **A Content-Security-Policy.** The frontend image sends `X-Content-Type-Options`, `Referrer-Policy` and `X-Frame-Options`, but no CSP yet; set one at your proxy once you know the identity provider's origin.
 - **CORS and the rate limit:** `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_AVERAGE` and `RATE_LIMIT_BURST` ([gateway](specs/gateway.md)).
 
 The Helm chart ([ADR 0018](adr/0018-kubernetes-packaging.md), `infra/helm/elysion`) is the way to run it on Kubernetes; its default image
