@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import type { ToolType } from '@excalidraw/excalidraw/types';
 import { CanvasMenu, type CanvasMenuItem } from './CanvasMenu';
-import { STICKY_COLORS, borderColor, paperColor, type StickyColor } from './sticky-note';
+import { STICKY_COLORS, borderColor, paperColor, seenColor, type StickyColor } from './sticky-note';
 
 export type ToolbarTool = Extract<
   ToolType,
@@ -178,6 +178,8 @@ export interface ToolbarProps {
   onAddSticky?: (color: StickyColor) => void;
   /** The color the next note gets (the one used last): the button's icon shows it and one click makes such a note. */
   stickyColor?: StickyColor;
+  /** The theme of the canvas: the sticky note colors are shown as they are seen in it. */
+  theme?: 'light' | 'dark';
   /** Undo and redo; the buttons are only shown when this is given. */
   onHistory?: (action: HistoryAction) => void;
   /** Connects the two selected elements; the button is only shown when this is given. */
@@ -218,21 +220,26 @@ const FIT_ICON = (
   </Icon>
 );
 
-/** A sticky note in a color: its paper with the darker border, and the folded corner. */
-function StickyIcon({ color }: { color: StickyColor }) {
+/**
+ * A sticky note in a color: its paper with the darker border, and the folded corner, in the color the note really has
+ * on the canvas in this theme (the dark theme darkens the canvas), so the menu and the note drawn look the same.
+ */
+function StickyIcon({ color, theme }: { color: StickyColor; theme: 'light' | 'dark' }) {
+  const paper = seenColor(paperColor(color), theme);
+  const border = seenColor(borderColor(color), theme);
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
       <path
         d="M5 4h14a1 1 0 0 1 1 1v9l-6 6H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"
-        fill={paperColor(color)}
-        stroke={borderColor(color)}
+        fill={paper}
+        stroke={border}
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
       <path
         d="M14 20v-5a1 1 0 0 1 1-1h5"
         fill="none"
-        stroke={borderColor(color)}
+        stroke={border}
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
@@ -254,6 +261,7 @@ export function Toolbar({
   onSelect,
   onAddSticky,
   stickyColor = STICKY_COLORS[0],
+  theme = 'light',
   onHistory,
   onConnect,
   onZoom,
@@ -335,7 +343,7 @@ export function Toolbar({
                 data-testid="elysion-tool-sticky"
                 onClick={() => onAddSticky(stickyColor)}
               >
-                <StickyIcon color={stickyColor} />
+                <StickyIcon color={stickyColor} theme={theme} />
               </button>
               <button
                 type="button"
@@ -376,7 +384,7 @@ export function Toolbar({
                         setStickyOpen(false);
                       }}
                     >
-                      <StickyIcon color={color} />
+                      <StickyIcon color={color} theme={theme} />
                     </button>
                   ))}
                 </div>

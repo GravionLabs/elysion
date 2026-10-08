@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { CanvasApp } from './CanvasApp';
 import { Toolbar } from './Toolbar';
+import { STICKY_COLORS, paperColor, seenColor } from './sticky-note';
 import { excalidrawReady } from './test-utils';
 
 describe('Toolbar', () => {
@@ -132,5 +133,47 @@ describe('Toolbar for a viewer (readOnly)', () => {
     expect(screen.getByRole('button', { name: 'Zoom in' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Zoom out' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Reset zoom/ })).toBeTruthy();
+  });
+});
+
+describe('the sticky note colors in the toolbar', () => {
+  const renderEditor = (theme: 'light' | 'dark') =>
+    render(
+      <Toolbar
+        activeTool="selection"
+        onSelect={() => {}}
+        onAddSticky={() => {}}
+        onHistory={() => {}}
+        onZoom={() => {}}
+        zoomPercent={100}
+        theme={theme}
+      />,
+    );
+  const fills = () =>
+    screen
+      .getAllByRole('menuitemradio')
+      .map((swatch) => swatch.querySelector('svg path')?.getAttribute('fill'));
+
+  it('shows the paper of every color in the light theme', () => {
+    renderEditor('light');
+    fireEvent.click(screen.getByTestId('elysion-sticky-color'));
+
+    expect(fills()).toEqual(STICKY_COLORS.map((color) => paperColor(color)));
+  });
+
+  it('shows them as the dark theme draws them, so the menu and the note on the canvas look the same', () => {
+    renderEditor('dark');
+    fireEvent.click(screen.getByTestId('elysion-sticky-color'));
+
+    expect(fills()).toEqual(STICKY_COLORS.map((color) => seenColor(paperColor(color), 'dark')));
+    expect(fills()[0]).toBe('#503700'); // yellow: dark amber on the dark canvas, not the pale paper
+    expect(fills()).not.toEqual(STICKY_COLORS.map((color) => paperColor(color)));
+  });
+
+  it('shows the current color on the button in the theme too', () => {
+    renderEditor('dark');
+
+    const icon = screen.getByTestId('elysion-tool-sticky').querySelector('svg path');
+    expect(icon?.getAttribute('fill')).toBe(seenColor(paperColor(STICKY_COLORS[0]), 'dark'));
   });
 });
