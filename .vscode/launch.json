@@ -32,7 +32,8 @@
       "cwd": "${workspaceFolder}/apps/business-backend/src/Elysion.BusinessBackend.Api",
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ASPNETCORE_URLS": "http://localhost:5174"
+        "ASPNETCORE_URLS": "http://localhost:5174",
+        "Database__MigrateOnStartup": "true"
       },
       "console": "internalConsole",
       "stopAtEntry": false
