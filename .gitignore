@@ -45,3 +45,7 @@ TestResults/
 apps/site/.vitepress/cache/
 apps/site/.vitepress/dist/
 apps/site/public/
+
+# Playwright (apps/e2e)
+test-results/
+playwright-report/

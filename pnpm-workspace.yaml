@@ -4,6 +4,7 @@ packages:
   - 'apps/bff'
   - 'apps/realtime'
   - 'apps/site'
+  - 'apps/e2e'
   - 'packages/*'
 
 allowBuilds:

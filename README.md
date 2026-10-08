@@ -35,7 +35,7 @@ Known gaps, so nobody finds them by surprise (the [roadmap](docs/roadmap.md) say
 - **Timer clocks** of two clients may differ by a few seconds (the end is worked out on every client).
 - **Cards show initials**, not thumbnails of the board.
 - **Dark theme:** Excalidraw darkens all colors on a dark canvas, so a sticky note is a darker shade than its pastel color in the light theme.
-- **No browser end-to-end tests** yet: the apps have unit, API and component tests, and the realtime behavior is tested with several clients, but not with two real browsers.
+- **Few browser end-to-end tests:** one suite (`apps/e2e`, Playwright, two browsers on one board: sharing, the timer, the dot voting, a viewer's limits) runs against the container stack in CI; rooms, templates, export and the canvas drawing tools are not covered.
 
 ## Architecture
 
@@ -92,7 +92,7 @@ pnpm format:dotnet  # formats the backend's C# with the JetBrains tools (Prettie
 pnpm format:check    # Prettier (pnpm format fixes)
 ```
 
-To verify a change as a whole, run `pnpm format:check && pnpm lint && pnpm test && pnpm build` (CI runs the same commands). CI (`.github/workflows/ci.yml`) has three jobs: that command chain; the .NET tests with a coverage report; and the BFF and realtime end-to-end tests against a Valkey service container, plus their coverage. Coverage reports are uploaded as workflow artifacts; there is no threshold yet. The .NET parts need the .NET 10 SDK; the realtime end-to-end tests need a Valkey: `pnpm dev:infra` starts the stack's on `localhost:6380`, so run them with `REDIS_URL=redis://localhost:6380 pnpm --filter @elysion/realtime test:e2e` (CI uses a service container on 6379).
+The browser tests (`apps/e2e`) need the running stack: `pnpm demo`, then `pnpm test:browser` (see its `AGENTS.md`). To verify a change as a whole, run `pnpm format:check && pnpm lint && pnpm test && pnpm build` (CI runs the same commands). CI (`.github/workflows/ci.yml`) has three jobs: that command chain; the .NET tests with a coverage report; and the BFF and realtime end-to-end tests against a Valkey service container, plus their coverage. Coverage reports are uploaded as workflow artifacts; there is no threshold yet. The .NET parts need the .NET 10 SDK; the realtime end-to-end tests need a Valkey: `pnpm dev:infra` starts the stack's on `localhost:6380`, so run them with `REDIS_URL=redis://localhost:6380 pnpm --filter @elysion/realtime test:e2e` (CI uses a service container on 6379).
 
 Each app has a `Dockerfile`; build from the repo root so the workspace files are in context:
 

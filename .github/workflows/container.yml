@@ -32,12 +32,31 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
       # Builds the four images from the checkout and starts the stack (`pnpm demo`).
       - name: Start the demo stack
         run: docker compose up -d --build
       # The app is served, the three demo users log in, the API answers, a board is made and a realtime token issued.
       - name: Check that it works
         run: bash scripts/demo-smoke.sh
+      # Two browsers on one board: sharing, the shared timer, the dot voting, a viewer's limits (apps/e2e).
+      - name: Install the browser tests
+        run: |
+          pnpm install --frozen-lockfile --filter @elysion/e2e...
+          pnpm --filter @elysion/e2e exec playwright install --with-deps chromium
+      - name: Browser tests
+        run: pnpm test:browser
+      - name: Report of the browser tests
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-report
+          path: apps/e2e/playwright-report
+          if-no-files-found: ignore
       - name: Logs of the services
         if: failure()
         run: docker compose logs --no-color --tail=80

@@ -1,6 +1,12 @@
 // Pre-commit: runs only on staged files, so it takes seconds. C# files are not checked here
 // (the JetBrains formatter needs about 40 seconds for the solution); `pnpm lint` and CI cover them.
-const OXLINT_APPS = ['apps/bff', 'apps/realtime', 'apps/frontend', 'apps/frontend-canvas'];
+const OXLINT_APPS = [
+  'apps/bff',
+  'apps/realtime',
+  'apps/frontend',
+  'apps/frontend-canvas',
+  'apps/e2e',
+];
 
 export default {
   '*': 'prettier --write --ignore-unknown',

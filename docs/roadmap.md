@@ -43,7 +43,7 @@ Not planned in detail yet; roughly in this order.
 
 1. **A security review** of the services and the images, and a production configuration: TLS, a host name, a production Keycloak, secrets
    ([ADR 0014](adr/0014-keycloak-identity-provider.md), [ADR 0017](adr/0017-internal-api-authentication.md), the Helm chart).
-2. **Browser end-to-end tests** with two real users: sharing, rooms, the timer and the voting.
+2. **More browser end-to-end tests** (a first suite with two real users covers sharing, the timer and the voting): rooms, templates, export, the drawing tools.
 3. **Real board thumbnails** on the cards of the overview.
 4. **Votes on the server** if viewers must be able to vote or the votes must be secret ([ADR 0020](adr/0020-facilitation-state.md), option C).
 5. **Housekeeping:** the initial bundle is over its 500 kB warning budget, `board-list.scss` is at its limit, and one canvas test
