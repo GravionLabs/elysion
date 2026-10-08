@@ -4,20 +4,51 @@
 
 [![CI](https://github.com/GravionLabs/elysion/actions/workflows/ci.yml/badge.svg)](https://github.com/GravionLabs/elysion/actions/workflows/ci.yml)
 
-An open-source alternative to [Mural](https://mural.co): a collaborative whiteboard you can self-host. The canvas is Angular hosting a React/tldraw custom element, realtime collaboration runs on Yjs CRDTs over WebSockets, and the domain lives in a .NET backend.
+An open-source alternative to [Mural](https://mural.co): a collaborative whiteboard you can self-host. Several people draw on the same board at the same time and see each other's cursors; boards are kept, shared with roles, grouped in rooms and started from templates; and a facilitator can run a timer and a dot voting. It is a **pre-release**: it works end to end, but it is not yet a production setup (see [What is missing](#what-is-missing)).
+
+## What it does
+
+- **Boards:** a board overview with rooms (shared spaces for a team), create, rename, duplicate and delete; sharing with the roles owner, editor and viewer (per board and per room); built-in templates and your own, applied when a board is created or added to one; PDF, PNG, SVG and `.excalidraw` export and an `.excalidraw` import.
+- **The canvas** ([Excalidraw](https://excalidraw.com) in the ariadne look, light and dark): shapes, text, drawing, sticky notes with a remembered color and one-click creation, **connectors** with connection points, a grid with snapping, a minimap, undo and redo, and the cursors, names and avatars of everybody on the board.
+- **Realtime:** every change is merged by Yjs CRDTs over WebSockets (several realtime instances stay in step through Valkey); boards are persisted and survive a restart.
+- **Facilitation:** a **shared timer** with a countdown for everybody, and **dot voting** (votes per person, your own dots while it runs, a ranked result in a movable dialog when it ends, by the facilitator or when everybody has voted). Viewers see both and cannot vote.
+- **Identity:** login through Keycloak; the BFF, the realtime service and the business backend each check the token, and a viewer's changes are refused by the server, not only hidden in the interface.
+- **Operations:** Traefik at the edge with CORS and rate limits, metrics and structured logs, a Helm chart ([ADR 0018](docs/adr/0018-kubernetes-packaging.md)).
+
+## Try it
+
+With Docker, in one command and with nothing else installed (the images are built from this checkout):
+
+```sh
+pnpm demo        # then open http://localhost and log in as dev, dev1 or dev2 (the password is the username)
+pnpm demo:down
+```
+
+The [Demo](#demo) section has the details. To work on Elysion see [Getting started](#getting-started).
+
+## What is missing
+
+Known gaps, so nobody finds them by surprise (the [roadmap](docs/roadmap.md) says what comes next):
+
+- **Not a production setup:** the demo and the development stack run Keycloak in development mode, wired to `localhost`, with development secrets. A real deployment needs TLS, a host name, a production Keycloak and its own secrets.
+- **Voting is not secret from the server:** with the votes in the board's document (ADR 0020) the interface shows no names while a voting runs and only counts afterwards, but the document holds who voted for what, and viewers cannot vote.
+- **Timer clocks** of two clients may differ by a few seconds (the end is worked out on every client).
+- **Cards show initials**, not thumbnails of the board.
+- **Dark theme:** Excalidraw darkens all colors on a dark canvas, so a sticky note is a darker shade than its pastel color in the light theme.
+- **No browser end-to-end tests** yet: the apps have unit, API and component tests, and the realtime behavior is tested with several clients, but not with two real browsers.
 
 ## Architecture
 
 ```
-Frontend (Angular + React/tldraw)
+Frontend (Angular + React/Excalidraw)
         |
-    Gateway (Traefik)  — TLS, auth validation, routing
+    Gateway (Traefik)  — edge authentication, CORS, rate limits, routing
     /              \
   BFF (NestJS)   Realtime (NestJS + Yjs)  — WebSocket CRDT sync, presence
     |
-  Business Backend (.NET 10)  — domain logic, persistence, exports
+  Business Backend (.NET 10)  — domain logic, persistence, authorization
     |
-  PostgreSQL / Valkey (shared) / RustFS (S3-compatible object store)
+  PostgreSQL / Valkey (realtime) / Keycloak (identity)
 ```
 
 Decisions are recorded as ADRs: [gateway and BFF](docs/adr/0001-gateway-and-bff.md), [the TypeScript version split](docs/adr/0002-typescript-version-split.md), [the .NET 10 business backend](docs/adr/0003-net10-business-backend.md), [the canvas library](docs/adr/0004-canvas-library.md), [the canvas follows ariadne's design](docs/adr/0005-canvas-follows-ariadne-design.md), [shared local infrastructure](docs/adr/0006-shared-local-infrastructure.md), [RustFS instead of MinIO](docs/adr/0007-rustfs-replaces-minio.md), [repository tooling conventions](docs/adr/0008-repository-tooling-conventions.md), [state in the Angular shell](docs/adr/0009-angular-shell-state.md), [the shell controls the canvas](docs/adr/0010-shell-controls-the-canvas.md), [board document persistence](docs/adr/0011-board-document-persistence.md), [minimal APIs in the business backend](docs/adr/0012-minimal-apis-in-the-business-backend.md) Per-service contracts live in [docs/specs/](docs/specs), [PDF export in the browser](docs/adr/0013-pdf-export.md), [Keycloak as the identity provider](docs/adr/0014-keycloak-identity-provider.md), [repositories in the business backend](docs/adr/0015-business-backend-repositories.md), [the Angular OIDC library](docs/adr/0016-angular-oidc-library.md), [authenticating the internal API](docs/adr/0017-internal-api-authentication.md), [Kubernetes packaging: Helm](docs/adr/0018-kubernetes-packaging.md), [grouping boards](docs/adr/0019-grouping-boards.md), [facilitation state](docs/adr/0020-facilitation-state.md).
@@ -97,7 +128,7 @@ Valkey (Redis), RabbitMQ and Portainer are not part of this repository: they run
 ```
 apps/
   frontend/          the Angular shell: routing, auth, panels around the canvas
-  frontend-canvas/   the React/tldraw canvas, built as a custom element (<elysion-canvas>)
+  frontend-canvas/   the React/Excalidraw canvas, built as a custom element (<elysion-canvas>)
                      and embedded into the frontend — see docs/specs/frontend.md
   gateway/           Traefik-routed edge; the config lives in infra/traefik/
   bff/               NestJS Backend-for-Frontend: the API the frontend talks to
@@ -105,11 +136,14 @@ apps/
   business-backend/  .NET 10 Web API: domain logic, persistence, exports
 packages/
   shared-types/      cross-app TS types, compiled to plain JS/d.ts
-  proto/             gRPC/contract definitions (if/when used)
+  design-tokens/     the colors, radii and shadows shared by the shell and the canvas
 infra/
-  docker/            docker-compose.yml (Traefik, Postgres, RustFS)
+  docker/            docker-compose.yml (the development infrastructure and stack),
+                     docker-compose.demo.yaml (the self-contained demo)
   traefik/           Traefik static config and dynamic middlewares (edge authentication)
-  kubernetes/        production manifests (future)
+  helm/              the Helm chart (ADR 0018)
+  kind/              a local Kubernetes cluster with the chart
+  keycloak/          the realm (users, clients)
 docs/
   adr/               architecture decision records
   specs/             per-service specs
