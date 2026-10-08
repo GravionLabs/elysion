@@ -1,0 +1,36 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: 'build'
+    groups:
+      angular:
+        patterns: ['@angular/*', '@angular-devkit/*']
+      nestjs:
+        patterns: ['@nestjs/*']
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: nuget
+    directory: /apps/business-backend
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: 'build'
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: 'ci'
+  - package-ecosystem: docker
+    directories: ['/apps/*']
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: 'build'
