@@ -61,9 +61,9 @@ test('a board made from a template can be shared with a second person', async ()
   await a.keyboard.press('Escape');
 
   await openBoard(b, boardUrl);
-  // B appears next to Share for A, as the initial of B's name.
+  // B is on the board for A: the people next to Share are listed by name.
   await expect(
-    a.locator('app-top-bar').getByText(USER_B[0].toUpperCase(), { exact: true }),
+    a.getByRole('list', { name: new RegExp(`On this board: .*${USER_B}`) }),
   ).toBeVisible();
 });
 
