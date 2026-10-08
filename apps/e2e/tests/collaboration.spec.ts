@@ -61,9 +61,12 @@ test('a board made from a template can be shared with a second person', async ()
   await a.keyboard.press('Escape');
 
   await openBoard(b, boardUrl);
-  // B is on the board for A: the people next to Share are listed by name.
+  // B is on the board for A: the people next to Share are listed by name ("dev2 is on this board" when B is the only
+  // one, "On this board: dev1, dev2" with more).
   await expect(
-    a.getByRole('list', { name: new RegExp(`On this board: .*${USER_B}`) }),
+    a.getByRole('list', {
+      name: new RegExp(`^${USER_B} is on this board|^On this board: .*${USER_B}`),
+    }),
   ).toBeVisible();
 });
 
