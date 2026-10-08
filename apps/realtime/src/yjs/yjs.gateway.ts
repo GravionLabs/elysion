@@ -17,6 +17,12 @@ import { MESSAGE_AWARENESS, MESSAGE_SYNC } from './protocol.js';
 import { YjsRoom, YjsRoomRegistry } from './yjs-room-registry.js';
 
 /**
+ * The largest message one connection may send (a Yjs update or a whole board in sync step 2). The `ws` default is
+ * 100 MiB, and a connection can send before its token is checked; a board is far smaller than this.
+ */
+const MAX_MESSAGE_BYTES = 16 * 1024 * 1024;
+
+/**
  * A viewer's connection is read-only. Its sync step 2 and update messages are dropped (never applied, never
  * relayed); this many in total close the connection, so a client that keeps editing is told. A viewer
  * that just looks sends none beyond the one reply to the server's first sync step.
@@ -43,7 +49,7 @@ function toUint8Array(data: RawData): Uint8Array {
  * {@link PresenceRelay}'s Redis pub/sub).
  */
 @Injectable()
-@WebSocketGateway({ path: '/yjs' })
+@WebSocketGateway({ path: '/yjs', maxPayload: MAX_MESSAGE_BYTES })
 export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(YjsGateway.name);
   private readonly roomByClient = new WeakMap<WebSocket, YjsRoom>();
