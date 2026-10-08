@@ -37,7 +37,7 @@ pnpm --filter @elysion/bff test:e2e     # vitest (e2e, against a fake business b
 
 ## Configuration
 
-`src/config/`: `validateEnv` (the schema, with defaults) and `AppConfigService` (typed accessor). Read configuration only through `AppConfigService`, never from `process.env`; a new variable goes into `AppConfig`, `validateEnv`, its spec, `.env.example`, the table in `docs/specs/bff.md` and (if the container needs it) the compose file. For local runs copy `apps/bff/.env.example` to `apps/bff/.env` (git-ignored): `WS_TOKEN_SECRET` has no default, so without it the BFF refuses to start and says so. Do not use `ConfigService.get('PORT')` for these values: it prefers the raw string in `process.env` over the validated one. The tests get their `WS_TOKEN_SECRET` from `vitest.config*.ts`.
+`src/config/`: `validateEnv` (the schema, with defaults) and `AppConfigService` (typed accessor). Read configuration only through `AppConfigService`, never from `process.env`; a new variable goes into `AppConfig`, `validateEnv`, its spec, `.env.example`, the table in `docs/specs/bff.md` and (if the container needs it) the compose file. For local runs `pnpm setup:env` (also run by `pnpm dev:infra`) creates `apps/bff/.env` (git-ignored) from `.env.example` with a random `WS_TOKEN_SECRET`: `WS_TOKEN_SECRET` has no default, so without it the BFF refuses to start and says so. Do not use `ConfigService.get('PORT')` for these values: it prefers the raw string in `process.env` over the validated one. The tests get their `WS_TOKEN_SECRET` from `vitest.config*.ts`.
 
 ## Docker
 
