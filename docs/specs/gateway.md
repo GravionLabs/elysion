@@ -53,6 +53,8 @@ for i in $(seq 1 200); do curl -s -o /dev/null -w '%{http_code}\n' http://localh
 
 Which scraper or dashboards run is not decided here; this is what the services provide (#347).
 
+The application logs are being moved to one JSON shape with a request id, and a local log viewer is added; the decisions are in [ADR 0025](../adr/0025-structured-logging-and-log-viewer.md).
+
 - **Access logs** (Traefik, `accessLog` in `infra/traefik/traefik.yml`): one JSON object per request on stdout (`docker logs elysion-traefik-1`), with the client address, method, router and service, status, size and duration. **Redacted on purpose:** the query parameters are dropped from `RequestPath` (`fields.queryParameters.defaultMode: drop`, Traefik 3.7.3 or later), because the `/yjs` URL carries the WS token there (`?board=...&token=...`); the path itself stays, so the log shows `/yjs` and `/api/boards/<id>`. Request headers (`Authorization`, `Cookie`) are not logged either. Application logs (BFF, realtime, business backend) go to stdout of their containers as before.
 - **Metrics**, Prometheus text format, all on the compose network only (nothing is published to the host, and `/metrics` is not routed at the edge):
 
