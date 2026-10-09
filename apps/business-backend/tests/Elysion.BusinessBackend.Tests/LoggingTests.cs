@@ -9,6 +9,7 @@ using Elysion.BusinessBackend.Api.Logging;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
+using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Parsing;
@@ -256,6 +257,43 @@ public class LoggingTests
 
         ElysionJsonFormatter.RenderMessage(line).ShouldBe("HTTP GET /boards/{id} took 12.3 ms for 3");
         Render(line).ShouldContain("\"message\":\"HTTP GET /boards/{id} took 12.3 ms for 3\"");
+    }
+
+    [Test]
+    public void The_log_viewer_is_off_unless_an_endpoint_is_set_and_refuses_what_is_no_url()
+    {
+        RequestLogging.ViewerEndpoint(null).ShouldBeNull();
+        RequestLogging.ViewerEndpoint("  ").ShouldBeNull();
+        RequestLogging.ViewerEndpoint("http://victorialogs:9428/insert/opentelemetry/v1/logs")
+            .ShouldBe("http://victorialogs:9428/insert/opentelemetry/v1/logs");
+        Should.Throw<InvalidOperationException>(() => RequestLogging.ViewerEndpoint("not a url"))
+            .Message.ShouldContain("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT");
+        Should.Throw<InvalidOperationException>(() => RequestLogging.ViewerEndpoint("ftp://host/x"));
+    }
+
+    [Test]
+    public void The_viewer_headers_are_name_value_pairs_and_the_rest_is_ignored()
+    {
+        var headers = RequestLogging.ParseOtlpHeaders("a=1, b = two ,broken,=nothing,c=x%20y");
+
+        headers.ShouldBe(new Dictionary<string, string> { ["a"] = "1", ["b"] = "two", ["c"] = "x y" });
+        RequestLogging.ParseOtlpHeaders(null).ShouldBeEmpty();
+    }
+
+    [Test]
+    public void The_level_enricher_adds_the_word_the_viewer_can_search_for()
+    {
+        var sink = new CapturingSink();
+        using var logger = new LoggerConfiguration()
+            .MinimumLevel.Verbose()
+            .WriteTo.Logger(inner => inner.Enrich.With<LevelWordEnricher>().WriteTo.Sink(sink))
+            .CreateLogger();
+
+        logger.Warning("careful");
+        logger.Information("fine");
+
+        sink.Events.Select(e => ((ScalarValue)e.Properties[LevelWordEnricher.PropertyName]).Value)
+            .ShouldBe(["warn", "info"]);
     }
 
     [TestCase(LogEventLevel.Verbose, "trace")]

@@ -14,6 +14,19 @@ describe('loadConfig', () => {
     });
   });
 
+  it('reads the log viewer endpoint, which is off unless it is set, and refuses what is no URL', () => {
+    expect(loadConfig(valid)).not.toHaveProperty('otlpLogsEndpoint');
+    expect(
+      loadConfig({
+        ...valid,
+        OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: 'http://victorialogs:9428/insert/opentelemetry/v1/logs',
+      }),
+    ).toMatchObject({ otlpLogsEndpoint: 'http://victorialogs:9428/insert/opentelemetry/v1/logs' });
+    expect(() => loadConfig({ ...valid, OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: 'nope' })).toThrow(
+      /OTEL_EXPORTER_OTLP_LOGS_ENDPOINT must be an http\(s\) URL/,
+    );
+  });
+
   it('reads the log level and format in any case, and refuses other words', () => {
     expect(loadConfig({ ...valid, LOG_LEVEL: 'DEBUG', LOG_FORMAT: 'Text' })).toMatchObject({
       logLevel: 'debug',

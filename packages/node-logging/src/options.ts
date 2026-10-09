@@ -1,7 +1,8 @@
 import { createRequire } from 'node:module';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { DestinationStream } from 'pino';
+import { multistream, type DestinationStream } from 'pino';
 import type { Options } from 'pino-http';
+import { createOtlpStream, parseHeaders } from './otlp.js';
 import { connectionFields, settleRequestId } from './request-id.js';
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
@@ -86,6 +87,13 @@ export interface LoggerParams {
   format?: string;
   /** Where JSON goes; stdout when unset. A test reads it here. */
   stream?: DestinationStream;
+  /**
+   * `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`: when set, every line is also sent to this OTLP/HTTP logs endpoint, the viewer of
+   * the dev stack (ADR 0025). Unset (the default), nothing is sent and the OpenTelemetry packages are not loaded.
+   */
+  otlpEndpoint?: string;
+  /** `OTEL_EXPORTER_OTLP_LOGS_HEADERS`: `name=value,name2=value2` for the OTLP requests. */
+  otlpHeaders?: string;
   /** Paths (without query) whose request line is logged at `debug`: health checks and metrics run every few seconds. */
   quietPaths?: readonly string[];
 }
@@ -170,29 +178,55 @@ export function createPinoHttpOptions(
       `HTTP ${request.method} ${routeOf(request as ExpressLikeRequest)} failed with ${response.statusCode}`,
   };
 
+  const endpoint = params.otlpEndpoint?.trim();
+  if (endpoint) {
+    // stdout (or the stream of a test) as before, and the viewer as a second destination. The logger's own level decides
+    // what is written, so both entries take every level.
+    const primary = params.stream ?? (format === 'text' ? prettyStream() : process.stdout);
+    const viewer = createOtlpStream({
+      service: params.service,
+      endpoint,
+      headers: parseHeaders(params.otlpHeaders),
+    });
+    return [
+      options,
+      multistream([
+        { level: 'trace', stream: primary },
+        { level: 'trace', stream: viewer },
+      ]),
+    ];
+  }
   if (params.stream !== undefined) {
     return [options, params.stream];
   }
   if (format === 'text') {
     const target = prettyTarget();
     if (target !== undefined) {
-      return {
-        ...options,
-        transport: {
-          target,
-          options: {
-            colorize: true,
-            translateTime: 'HH:MM:ss.l',
-            timestampKey: 'timestamp',
-            messageKey: 'message',
-            ignore: 'service',
-            messageFormat: '{if requestId}[{requestId}] {end}{message}',
-          },
-        },
-      };
+      return { ...options, transport: { target, options: PRETTY_OPTIONS } };
     }
   }
   return options;
+}
+
+const PRETTY_OPTIONS = {
+  colorize: true,
+  translateTime: 'HH:MM:ss.l',
+  timestampKey: 'timestamp',
+  messageKey: 'message',
+  ignore: 'service',
+  messageFormat: '{if requestId}[{requestId}] {end}{message}',
+};
+
+/** `pino-pretty` as a stream, for the text format next to another destination (a transport cannot be combined with one). */
+function prettyStream(): DestinationStream {
+  try {
+    const pretty = createRequire(import.meta.url)('pino-pretty') as (
+      options: object,
+    ) => DestinationStream;
+    return pretty({ ...PRETTY_OPTIONS, sync: true });
+  } catch {
+    return process.stdout; // an optional dependency: without it the text format falls back to JSON
+  }
 }
 
 /** `pino-pretty` as an absolute path: pino resolves a transport target from its own directory, where a package manager with strict `node_modules` does not have it. */

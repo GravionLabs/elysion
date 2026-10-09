@@ -22,7 +22,8 @@ services:
       - '80:80'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./infra/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      # `pnpm dev:logs` points this at a generated copy that also ships the access log to the log viewer (ADR 0025).
+      - ${TRAEFIK_STATIC_CONFIG:-./infra/traefik/traefik.yml}:/etc/traefik/traefik.yml:ro
       - ./infra/traefik/dynamic:/etc/traefik/dynamic:ro
     networks:
       - elysion
@@ -105,6 +106,24 @@ services:
     networks:
       - elysion
 
+  # The log viewer of the dev stack (ADR 0025): VictoriaLogs, Apache-2.0, one container. Not part of `docker compose up` or
+  # `pnpm demo` (the `logs` profile); `pnpm dev:logs` starts it with the stack and points the three services and Traefik at it.
+  # Its web UI is http://localhost:9428/select/vmui (docker-compose.dev.yml publishes the port on the loopback).
+  victorialogs:
+    image: victoriametrics/victoria-logs:v1.53.0
+    profiles: ['logs']
+    command:
+      - '-storageDataPath=/victoria-logs-data'
+      - '-retentionPeriod=7d'
+      - '-httpListenAddr=:9428'
+    mem_limit: 256m
+    volumes:
+      - victorialogs-data:/victoria-logs-data
+    # No health check: the image holds the one binary, without a shell or wget. Nothing waits for the viewer; a service
+    # that cannot reach it drops its lines (ADR 0025).
+    networks:
+      - elysion
+
   # --- Application services ---
   # Routes at the edge: /api -> bff, /yjs -> realtime, / -> frontend. The business backend has no route: only the bff
   # reaches it, at http://business-backend:8080 on the compose network.
@@ -122,6 +141,8 @@ services:
       OIDC_JWKS_URI: http://keycloak:8080/realms/elysion/protocol/openid-connect/certs
       # The realtime service's token for the internal document API is checked with this (ADR 0017). Development value only.
       INTERNAL_API_SECRET: dev-only-internal-api-secret-change-me-0123456789
+      # Also send every log line to the log viewer (the `logs` profile, `pnpm dev:logs`, ADR 0025); empty: nothing is sent.
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${LOGS_OTLP_ENDPOINT:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -138,6 +159,8 @@ services:
       # Keycloak is `keycloak:8080` here, while tokens carry the issuer the browser used (localhost:8081).
       OIDC_JWKS_URI: http://keycloak:8080/realms/elysion/protocol/openid-connect/certs
       WS_TOKEN_SECRET: dev-only-ws-token-secret-change-me-0123456789 # development value only
+      # Also send every log line to the log viewer (the `logs` profile, `pnpm dev:logs`, ADR 0025); empty: nothing is sent.
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${LOGS_OTLP_ENDPOINT:-}
     depends_on:
       - business-backend
     labels:
@@ -179,6 +202,8 @@ services:
       WS_TOKEN_SECRET: dev-only-ws-token-secret-change-me-0123456789
       # Signs the token for the business backend's internal document API (ADR 0017); the same value as the backend's.
       INTERNAL_API_SECRET: dev-only-internal-api-secret-change-me-0123456789
+      # Also send every log line to the log viewer (the `logs` profile, `pnpm dev:logs`, ADR 0025); empty: nothing is sent.
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${LOGS_OTLP_ENDPOINT:-}
     depends_on:
       - business-backend
       - valkey
@@ -215,3 +240,4 @@ networks:
 volumes:
   postgres-data:
   valkey-data:
+  victorialogs-data:

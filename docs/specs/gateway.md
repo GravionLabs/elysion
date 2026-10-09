@@ -66,6 +66,21 @@ The application logs are being moved to one JSON shape with a request id, and a 
 
 The BFF's route label is the route pattern (`/api/boards/:id`), never the URL, so ids and query strings cannot become label values; URLs no route matches share the label `unmatched`. The business backend has no metrics endpoint yet.
 
+### The log viewer (dev stack)
+
+[ADR 0025](../adr/0025-structured-logging-and-log-viewer.md). `pnpm dev:logs` is `pnpm dev:stack` plus **VictoriaLogs** (`victorialogs` in `docker-compose.yml`, the `logs` profile, so `docker compose up` and `pnpm demo` do not start it; pinned image, a volume, 256 MB, seven days of retention). Its UI is <http://localhost:9428/select/vmui> (`VICTORIALOGS_PORT`, loopback only, `docker-compose.dev.yml`).
+
+- **What is shipped.** The BFF, the realtime service and the business backend send every log line to `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` (OTLP over HTTP, protobuf; `LOGS_OTLP_ENDPOINT` in the compose file) next to stdout, which stays as it is. The variable is empty unless the stack was started with `pnpm dev:logs`: with it unset a service sends nothing and does not even load the OpenTelemetry packages. Traefik ships its access log through its experimental OTLP export (`experimental.otlpLogs`, `accessLog.otlp`, with `dualOutput` so stdout keeps it), configured in a generated copy of `traefik.yml` (`scripts/traefik-logs-config.mjs`, because Traefik reads one static configuration only). A viewer that is down loses lines; it never makes a service fail.
+- **Stream.** Every sender sets the header `VL-Stream-Fields: service.name`; without it the SDKs' host and process attributes become the stream key.
+- **Field names in the viewer.** The message is `_msg`, the time `_time`, the level the word `level` (`trace` to `fatal`, in all three services; `severity_text` is OpenTelemetry's and holds Serilog's `Warning` for the backend). The Node services send the fields of their JSON line (dotted for nested ones: `http.route`, `err.type`) with the same names, as does the business backend for `requestId`, `userId` and its own properties (`reason`, `scheme`); the backend's request line carries Serilog's names (`RequestMethod`, `HttpRoute`, `StatusCode`, `Elapsed`) instead of the `http` object. Traefik's access log keeps Traefik's names (`RequestPath`, `DownstreamStatus`, `RouterName`) and has no `requestId`: Traefik does not make one (the BFF does).
+- **Queries** (LogsQL):
+
+```text
+requestId:"<id from the X-Request-Id header of a response>"        # one request across the BFF, the backend and the realtime service
+service.name:"elysion-bff" level:warn                             # what the BFF warned about; `level:warn` across all components
+userId:"<sub of the token>"                                         # everything one person caused
+```
+
 In the dev stack (`pnpm dev:stack`) the routes are Docker labels in `docker-compose.yml`; Traefik
 routes over the `elysion_elysion` network, the compose project's own.
 

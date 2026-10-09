@@ -35,6 +35,7 @@ accessLog:
       defaultMode: drop
     headers:
       defaultMode: drop
+  # logs:otlp (`pnpm dev:logs` replaces this line with the export to the log viewer, scripts/traefik-logs-config.mjs)
 
 # Request counts and durations per entry point, router and service (docs/specs/gateway.md).
 metrics:
