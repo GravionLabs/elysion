@@ -40,6 +40,8 @@ admin console `admin` / `admin`). The business backend applies its database migr
 
 ## What a real deployment needs
 
+The topology (TLS, host names, where Keycloak sits) is proposed in [ADR 0028](adr/0028-production-topology-tls-and-keycloak.md); the production overlay that implements it is #673.
+
 The demo is wired to `localhost` and uses development values. Before it faces anybody else:
 
 - **A host name and TLS.** The identity provider's address is part of every token: `OIDC_ISSUER_URL` (the address the browser uses) is
