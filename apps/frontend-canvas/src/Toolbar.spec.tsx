@@ -45,6 +45,28 @@ describe('Toolbar', () => {
   });
 });
 
+describe('Toolbar image tool', () => {
+  // Excalidraw's `files` are not shared or stored yet, so an image would be seen by its author only and be gone
+  // after a reload: the tool is hidden until the host switches `imagesEnabled` on.
+  it('hides the image tool by default and keeps the neighbouring tools', () => {
+    render(<Toolbar activeTool="selection" onSelect={() => {}} />);
+
+    expect(screen.queryByRole('button', { name: 'Insert image' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Text' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Eraser' })).toBeTruthy();
+  });
+
+  it('offers the image tool when images are enabled', () => {
+    const onSelect = vi.fn();
+    render(<Toolbar activeTool="selection" onSelect={onSelect} imagesEnabled />);
+
+    const image = screen.getByRole('button', { name: 'Insert image' });
+    expect(image.getAttribute('title')).toBe('Insert image (9)');
+    fireEvent.click(image);
+    expect(onSelect).toHaveBeenCalledWith('image');
+  });
+});
+
 describe('Toolbar undo, redo and zoom', () => {
   it('shows neither group unless it is given the handlers', () => {
     render(<Toolbar activeTool="selection" onSelect={() => {}} />);
@@ -102,6 +124,41 @@ describe('Toolbar inside CanvasApp', () => {
     fireEvent.keyDown(excalidraw, { key: 'e', code: 'KeyE' });
     await waitFor(() => expect(pressed('Eraser')).toBe('true'));
     expect(pressed('Rectangle')).toBe('false');
+  });
+});
+
+describe('the image tool inside CanvasApp', () => {
+  const pressKey9 = async (container: HTMLElement) => {
+    await excalidrawReady(container);
+    const excalidraw = container.querySelector('.excalidraw') as HTMLElement;
+    fireEvent.keyDown(excalidraw, { key: '9', code: 'Digit9' });
+  };
+
+  it("ignores Excalidraw's own shortcut for the image tool while images are off", async () => {
+    const { container } = render(<CanvasApp boardId="test-board" />);
+    const pressed = (name: string) =>
+      screen.getByRole('button', { name }).getAttribute('aria-pressed');
+    await waitFor(() => expect(pressed('Selection')).toBe('true'));
+
+    await pressKey9(container);
+
+    // The tool is refused (Excalidraw shows its own "Images are disabled" message on an insert), so the
+    // selection tool stays the active one.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(pressed('Selection')).toBe('true');
+    expect(screen.queryByRole('button', { name: 'Insert image' })).toBeNull();
+  });
+
+  it('follows the shortcut to the image tool once images are enabled', async () => {
+    const { container } = render(<CanvasApp boardId="test-board" imagesEnabled />);
+    const pressed = (name: string) =>
+      screen.getByRole('button', { name }).getAttribute('aria-pressed');
+    await waitFor(() => expect(pressed('Selection')).toBe('true'));
+
+    await pressKey9(container);
+
+    await waitFor(() => expect(pressed('Insert image')).toBe('true'));
+    expect(pressed('Selection')).toBe('false');
   });
 });
 

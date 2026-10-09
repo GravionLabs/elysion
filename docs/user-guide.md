@@ -39,7 +39,8 @@ bar means your changes are being sent; if the connection drops, Elysion reconnec
 board), **Templates**, **Export**, **Timer**, **Voting**, then **Share**, the people on the board, **Library**, the theme and your account menu.
 
 **The toolbar at the bottom** has undo and redo, the hand (move the view), the selection tool, rectangle, diamond, ellipse, arrow, line, freehand
-drawing, text, image, the **sticky note**, the eraser, and the zoom controls (zoom out, the zoom level, zoom in, fit the board in the window).
+drawing, text, the **sticky note**, the eraser, and the zoom controls (zoom out, the zoom level, zoom in, fit the board in the window). Images cannot be placed on a board yet: the tool is hidden, and
+pasting or dropping an image shows "Images are disabled".
 The `⋯` button opens the canvas menu with the grid settings, among others. The small **map** at the bottom left shows the whole board and
 the part you see; click or drag in it to move there.
 

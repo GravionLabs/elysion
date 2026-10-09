@@ -18,6 +18,7 @@ const OBSERVED_ATTRIBUTES = [
   'user-id',
   'user-color',
   'readonly',
+  'images-enabled',
 ] as const;
 
 class ElysionCanvasElement extends HTMLElement {
@@ -165,6 +166,7 @@ class ElysionCanvasElement extends HTMLElement {
         onError={(error) => this.#emit('error', { message: error.message })}
         tokenProvider={this.#tokenProvider}
         readOnly={this.hasAttribute('readonly')}
+        imagesEnabled={this.hasAttribute('images-enabled')}
         userName={this.getAttribute('user-name') ?? undefined}
         userId={this.getAttribute('user-id') ?? undefined}
         userColor={this.getAttribute('user-color') ?? undefined}

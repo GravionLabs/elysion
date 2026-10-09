@@ -154,6 +154,13 @@ export interface CanvasAppProps {
    * silently do nothing.
    */
   readOnly?: boolean;
+  /**
+   * Whether images may be inserted (the toolbar's tool, its shortcut, paste and drop). Off by default: the Yjs
+   * binding shares elements, not Excalidraw's `files`, so an image would be seen by its author only and be gone
+   * after a reload. Excalidraw refuses an image itself when this is off ("Images are disabled"). The host switches
+   * it on once the files are stored and shared.
+   */
+  imagesEnabled?: boolean;
   /** The name shown next to this user's cursor on other screens; a generated guest name when unset. */
   userName?: string;
   /** Who this user is (the identity provider's id): what the timer remembers about who started it. A per-tab id when unset. */
@@ -171,7 +178,8 @@ function defaultYjsServerUrl(): string {
 
 // Excalidraw only offers its own light/dark toggle when it is not given a `theme`; we always pass one
 // (the host or the system decides), so the toggle has to be switched on explicitly.
-const UI_OPTIONS = { canvasActions: { toggleTheme: true } };
+const UI_OPTIONS = { canvasActions: { toggleTheme: true }, tools: { image: false } };
+const UI_OPTIONS_WITH_IMAGES = { canvasActions: { toggleTheme: true }, tools: { image: true } };
 
 // Excalidraw's own library: the default sidebar, on its library tab.
 const LIBRARY_SIDEBAR = 'default';
@@ -192,6 +200,7 @@ export function CanvasApp({
   onError,
   tokenProvider,
   readOnly = false,
+  imagesEnabled = false,
   userName,
   userId,
   userColor,
@@ -663,7 +672,7 @@ export function CanvasApp({
         viewModeEnabled={readOnly}
         // Only an override while dragging; otherwise `undefined` leaves the mode to Excalidraw's state (`grid.show`).
         gridModeEnabled={grid.snap && !grid.show && pointerDown && !readOnly ? true : undefined}
-        UIOptions={UI_OPTIONS}
+        UIOptions={imagesEnabled ? UI_OPTIONS_WITH_IMAGES : UI_OPTIONS}
         initialData={{
           appState: {
             ...ELEMENT_DEFAULTS,
@@ -788,6 +797,7 @@ export function CanvasApp({
         zoomPercent={zoomPercent}
         menuItems={menuItems}
         readOnly={readOnly}
+        imagesEnabled={imagesEnabled}
       />
     </div>
   );

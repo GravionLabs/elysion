@@ -107,6 +107,23 @@ describe('elysion-canvas custom element', () => {
     document.body.removeChild(el);
   });
 
+  it('offers no image tool until the images-enabled attribute is set', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME);
+    document.body.appendChild(el);
+
+    await waitFor(() => expect(el.querySelector('[data-testid="elysion-tool-text"]')).toBeTruthy());
+    expect(el.querySelector('[data-testid="elysion-tool-image"]')).toBeNull();
+
+    el.setAttribute('images-enabled', '');
+    await waitFor(() =>
+      expect(el.querySelector('[data-testid="elysion-tool-image"]')).toBeTruthy(),
+    );
+
+    el.removeAttribute('images-enabled');
+    await waitFor(() => expect(el.querySelector('[data-testid="elysion-tool-image"]')).toBeNull());
+    document.body.removeChild(el);
+  });
+
   it('shows a viewer the board in view mode: no drawing tools, no import, only the zoom', async () => {
     const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
       importFile(file: Blob): Promise<number>;
