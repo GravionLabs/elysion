@@ -1,0 +1,48 @@
+# An example, not part of the chart (the chart does not run Postgres, ADR 0018): a nightly pg_dump of the two databases of
+# a Postgres in or outside the cluster, with the same script as the compose stack's backup service (infra/backup/backup.sh).
+# The object store's bucket is the store's own to back up (versioning or replication of your S3 service), so this example
+# switches the copy off (BACKUP_FILES=false); restore.sh of the same directory restores a dump.
+#
+#   kubectl -n elysion create configmap elysion-backup-script --from-file=backup.sh=infra/backup/backup.sh
+#   kubectl -n elysion create secret generic elysion-backup --from-literal=PGPASSWORD='...'
+#   kubectl -n elysion apply -f infra/helm/examples/backup-cronjob.yaml
+#
+# Edit PGHOST and PGUSER, the schedule, and the claim: the dumps go to a PersistentVolumeClaim you provide (and back up
+# elsewhere: a backup on the volume of the database it protects is not a backup).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: elysion-backup
+spec:
+  schedule: '0 3 * * *'
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: backup
+              image: postgres:18-alpine
+              command: ['bash', '/scripts/backup.sh']
+              env:
+                - { name: PGHOST, value: postgres.example }
+                - { name: PGUSER, value: elysion }
+                - name: PGPASSWORD
+                  valueFrom: { secretKeyRef: { name: elysion-backup, key: PGPASSWORD } }
+                - { name: BACKUP_PATH, value: /backups }
+                - { name: BACKUP_KEEP_DAYS, value: '14' }
+                - { name: BACKUP_FILES, value: 'false' }
+              volumeMounts:
+                - { name: script, mountPath: /scripts }
+                - { name: backups, mountPath: /backups }
+              securityContext:
+                allowPrivilegeEscalation: false
+          volumes:
+            - name: script
+              configMap: { name: elysion-backup-script }
+            - name: backups
+              persistentVolumeClaim: { claimName: elysion-backups }

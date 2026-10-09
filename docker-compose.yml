@@ -76,6 +76,32 @@ services:
     networks:
       - elysion
 
+  # The backup of the stack (profile `backup`, so the demo does not run it; `docker compose --profile backup up -d backup`): pg_dump of
+  # `elysion` and `keycloak` and a copy of the object store's bucket on a schedule, into the volume `backup-data` (or a path you mount
+  # at BACKUP_PATH). `scripts/restore.sh` brings a backup back. Development credentials, like the services it saves.
+  backup:
+    build: ./infra/backup
+    profiles: ['backup']
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGUSER: elysion
+      PGPASSWORD: elysion
+      BACKUP_CRON: ${BACKUP_CRON:-0 3 * * *}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      BACKUP_PATH: /backups
+      S3_ENDPOINT: http://rustfs:9000
+      S3_BUCKET: ${S3_BUCKET:-elysion-files}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-elysion}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-elysion123}
+    volumes:
+      - ${BACKUP_PATH:-backup-data}:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - elysion
+
   # Creates Keycloak's own database in the existing Postgres. A script in /docker-entrypoint-initdb.d
   # would only run on an empty data volume; this is idempotent, so it also works on an existing one.
   keycloak-db:
@@ -263,6 +289,7 @@ networks:
 
 volumes:
   postgres-data:
+  backup-data:
   rustfs-data:
   valkey-data:
   victorialogs-data:
