@@ -165,12 +165,11 @@ With option 1 and brokering the facts are these, and they are less comfortable t
 - `docs/specs/identity.md` gets "Enterprise sign-in" with this ADR's names and the lifecycle facts above, including that they are claims as of the last
   login.
 
-## Open questions for the owner
+## Questions for the owner (answered)
 
 - ~~Is 8 hours of SSO session the right window?~~ **Owner answer (2026-10-09): 8 hours is fine.** An immediate cut-off stays in #666.
-- Should an administrator be able to **delete a board** without being a member? The proposal says yes (a company must be able to remove content), with
-  an audit entry; the other reading is "only hand it over".
+- ~~Should an administrator be able to delete a board without being a member?~~ **Owner answer (2026-10-09): yes.** An administrator may delete a board (and a room) without being a member of it, with an audit entry (#669); handing a board over stays an explicit, logged action. Deleting is the one thing they may do to content they cannot read.
 
 ## Decision
 
-_Proposed. The owner has confirmed the 8-hour window; the question on an administrator deleting a board is still open. To be accepted by the product owner, who then removes `needs-decision` from #638._
+_Proposed. The owner has confirmed the 8-hour window and that an administrator may delete a board without being a member. To be accepted by the product owner, who then removes `needs-decision` from #638._
