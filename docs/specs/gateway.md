@@ -84,6 +84,14 @@ userId:"<sub of the token>"                                         # everything
 In the dev stack (`pnpm dev:stack`) the routes are Docker labels in `docker-compose.yml`; Traefik
 routes over the `elysion_elysion` network, the compose project's own.
 
+## TLS
+
+Proposed in [ADR 0028](../adr/0028-production-topology-tls-and-keycloak.md): production is Kubernetes through the Helm chart, and the compose stack in this
+repository serves plain HTTP on port 80 and is a demo and a development setup. In the chart the routes go on `websecure` with a certificate Secret that
+cert-manager (or the operator's PKI) made (`edge.tlsSecretName`; the chart never does ACME), `edge.redirectToHttps` adds the redirect from `web`, and
+`edge.hsts.maxAge` the HSTS header (`max-age=31536000` proposed, no `includeSubDomains`, no `preload`). Traefik's own chart is configured without the dashboard and
+without the Docker socket. Keycloak has its own host name and only `/realms/` and `/resources/` are routed to it. None of this is implemented yet (#673).
+
 ## In Kubernetes
 
 The same routes and middlewares are rendered by the Helm chart (`infra/helm/elysion`, [ADR 0018](../adr/0018-kubernetes-packaging.md)) as Traefik `Middleware` and `IngressRoute` resources (`edge.*` values); the forwardAuth address carries the namespace of the BFF's Service, because Traefik runs in its own. A local `kind` deployment is described in `infra/kind/README.md`.
