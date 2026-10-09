@@ -33,7 +33,10 @@ function socket(): WebSocket {
 }
 
 const request = (boardId: string, token: string | null = 'a-token') =>
-  ({ url: `/yjs?board=${boardId}${token === null ? '' : `&token=${token}`}` }) as IncomingMessage;
+  ({
+    url: `/yjs?board=${boardId}${token === null ? '' : `&token=${token}`}`,
+    headers: {},
+  }) as IncomingMessage;
 
 /** A verifier that accepts any token and says it is for `boardId`. */
 const allowing = (boardId: string, role: 'owner' | 'editor' | 'viewer' = 'editor') =>
@@ -191,7 +194,7 @@ describe('YjsGateway admitting a connection', () => {
     const { gateway, getOrLoad } = setup(allowing('board-1'));
     const client = socket();
 
-    gateway.handleConnection(client, { url: '/yjs?token=abc' } as IncomingMessage);
+    gateway.handleConnection(client, { url: '/yjs?token=abc', headers: {} } as IncomingMessage);
     await flush();
 
     expect(client.close).toHaveBeenCalledWith(1008, 'Missing board id');

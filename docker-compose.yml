@@ -155,6 +155,8 @@ services:
       - 'traefik.http.middlewares.cors.headers.accessControlAllowOriginList=${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:4200}'
       - 'traefik.http.middlewares.cors.headers.accessControlAllowMethods=GET,POST,PATCH,PUT,DELETE,OPTIONS'
       - 'traefik.http.middlewares.cors.headers.accessControlAllowHeaders=Authorization,Content-Type'
+      # A browser script may read the id of a request (to quote it in a bug report): ADR 0025.
+      - 'traefik.http.middlewares.cors.headers.accessControlExposeHeaders=X-Request-Id'
       - 'traefik.http.middlewares.cors.headers.accessControlMaxAge=600'
       - 'traefik.http.middlewares.cors.headers.addVaryHeader=true'
       # Requests per second and client address (the burst is what may arrive at once); over it: 429.

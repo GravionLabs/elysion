@@ -38,9 +38,13 @@ export class AuthGuard implements CanActivate {
     }
     try {
       request.auth = { token, claims: await this.verifier.verify(token) };
+      // From here on every log line of the request, also its final one, says whose request it was (ADR 0025).
+      request.log?.setBindings({ userId: request.auth.claims.sub });
       return true;
     } catch (error) {
       if (error instanceof InvalidTokenError) {
+        // The reason, never the token or the library's message.
+        request.log?.warn({ reason: error.reason }, 'Access token rejected');
         throw this.unauthorized(http.getResponse<Response>());
       }
       throw error;

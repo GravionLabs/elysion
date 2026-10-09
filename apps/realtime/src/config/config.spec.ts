@@ -6,8 +6,22 @@ const INTERNAL = 'i'.repeat(32);
 const valid = { WS_TOKEN_SECRET: WS, INTERNAL_API_SECRET: INTERNAL };
 
 describe('loadConfig', () => {
-  it('reads both secrets', () => {
-    expect(loadConfig(valid)).toEqual({ wsTokenSecret: WS, internalApiSecret: INTERNAL });
+  it('reads both secrets and defaults the log level to info', () => {
+    expect(loadConfig(valid)).toEqual({
+      wsTokenSecret: WS,
+      internalApiSecret: INTERNAL,
+      logLevel: 'info',
+    });
+  });
+
+  it('reads the log level and format in any case, and refuses other words', () => {
+    expect(loadConfig({ ...valid, LOG_LEVEL: 'DEBUG', LOG_FORMAT: 'Text' })).toMatchObject({
+      logLevel: 'debug',
+      logFormat: 'text',
+    });
+    expect(() => loadConfig({ ...valid, LOG_LEVEL: 'loud', LOG_FORMAT: 'xml' })).toThrow(
+      /LOG_LEVEL must be one of trace, debug, info, warn, error, fatal, got "loud"[\s\S]*LOG_FORMAT must be one of json, text, got "xml"/,
+    );
   });
 
   it.each(['WS_TOKEN_SECRET', 'INTERNAL_API_SECRET'])(

@@ -69,6 +69,8 @@ export class FakeBusinessBackend {
   templateRefusal: number | null = null;
   /** The `Authorization` header of every request, in order. */
   readonly authorizations: Array<string | undefined> = [];
+  /** The `X-Request-Id` of every request, in order (ADR 0025). */
+  readonly requestIds: Array<string | undefined> = [];
   #server: Server | null = null;
 
   get url(): string {
@@ -94,6 +96,7 @@ export class FakeBusinessBackend {
   async #handle(req: IncomingMessage, res: import('node:http').ServerResponse): Promise<void> {
     this.requests += 1;
     this.authorizations.push(req.headers.authorization);
+    this.requestIds.push(req.headers['x-request-id'] as string | undefined);
     const send = (status: number, body?: unknown) => {
       res.writeHead(status, { 'content-type': 'application/json' });
       res.end(body === undefined ? undefined : JSON.stringify(body));

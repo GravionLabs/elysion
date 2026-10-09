@@ -5,6 +5,7 @@ FROM base AS build
 WORKDIR /workspace
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/shared-types packages/shared-types
+COPY packages/node-logging packages/node-logging
 COPY apps/bff apps/bff
 RUN pnpm install --frozen-lockfile --filter @elysion/bff...
 RUN pnpm --filter @elysion/bff run build

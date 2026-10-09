@@ -30,6 +30,10 @@ Every `/yjs` connection needs `?token=` (the BFF's board-scoped WS token): `src/
 
 `src/persistence/` holds the `DocumentStore` interface (`load`, `save`, `delete`) and `HttpDocumentStore` (ADR 0011; protocol in `docs/specs/realtime.md`). `YjsRoomRegistry.getOrLoad` is async and fails when the store does; A room without clients is saved and unloaded after a grace period (`ROOM_EVICT_AFTER_MS`, default 30000; `YjsRoomRegistry.release`); the e2e suites shorten the registry's timings by overriding `PERSISTENCE_OPTIONS`. `InMemoryDocumentStore` is for tests: the e2e suites replace `DocumentStore` with it (`overrideProvider(DocumentStore)`), `test/persistence.e2e-spec.ts` covers a restart.
 
+## Logging
+
+`src/logging/` ([ADR 0025](../../docs/adr/0025-structured-logging-and-log-viewer.md), spec "Logging"): `nestjs-pino` with the shared options of `@elysion/node-logging`; Nest's `Logger` goes through it (`main.ts` calls `useLogger`). A line made while a connection's callback runs carries the connection's `requestId` and `userId` by itself (the `ConnectionContext` of `YjsGateway`); a callback of a socket that is registered by hand has to enter the context again (`runInConnection`). Put values in fields, never a token, a header, a URL with its query, a connection string or a secret in a message or a field. A test that reads the output passes a stream to `startInstance` (`test/logging.e2e-spec.ts`).
+
 ## Conventions
 
 - Package name `@elysion/realtime` (not `realtime`).

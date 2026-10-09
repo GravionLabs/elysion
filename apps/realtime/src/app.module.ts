@@ -3,6 +3,7 @@ import { AppController } from './app.controller.js';
 import { HealthController } from './health.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
+import { LoggingModule } from './logging/logging.module.js';
 import { MetricsController } from './metrics/metrics.controller.js';
 import { MetricsService } from './metrics/metrics.service.js';
 import { DocumentRelay } from './document/document-relay.js';
@@ -17,7 +18,7 @@ import {
 } from './yjs/yjs-room-registry.js';
 
 @Module({
-  imports: [AuthModule, RedisModule, PersistenceModule],
+  imports: [LoggingModule, AuthModule, RedisModule, PersistenceModule],
   controllers: [AppController, HealthController, MetricsController],
   providers: [
     AppService,

@@ -69,6 +69,17 @@ Rooms group boards ([ADR 0019](../adr/0019-grouping-boards.md), [business-backen
 
 `POST /api/realtime/token` (`src/realtime/`, body `{ "boardId": "<uuid>" }`, answer `{ token, expiresAt }`, [identity.md](identity.md)) mints the board-scoped credential for the realtime service: the caller's role on the board is looked up with their own token (`BusinessBackendClient.getMyRole`, the backend's `membership/me`), no role is `403`, a missing `boardId` is `400`, a backend failure `502`. `WsTokenService` signs HS256 with `WS_TOKEN_SECRET` for `WS_TOKEN_TTL_SECONDS` (60); claims are `sub`, `boardId`, `role`, `iss: elysion-bff`, `aud: elysion-realtime`, `iat`, `exp`, typed by `@elysion/shared-types`. Renewal is the client's business: it asks again on every (re)connect (#312).
 
+## Logging
+
+[ADR 0025](../adr/0025-structured-logging-and-log-viewer.md). `nestjs-pino` with the options of `packages/node-logging` (`@elysion/node-logging`, shared with the realtime service so that both write the same line); `src/logging/logging.module.ts`.
+
+- **Format.** One JSON object per line on stdout (`LOG_FORMAT=json`, the default whenever stdout is not a terminal); readable text through `pino-pretty` in a terminal (`LOG_FORMAT=text`). `LOG_LEVEL` is `trace`, `debug`, `info` (default), `warn`, `error` or `fatal`; both are validated at start like the rest of the configuration.
+- **Fields** (the same in the realtime service and the business backend): `timestamp` (ISO 8601, UTC), `level`, `service` (`elysion-bff`), `requestId`, `message`, `userId` (the token's `sub` and nothing else about the person; set by `AuthGuard` once the token is verified, so the final line of the request has it too), `err` (`type`, `message`, `stack`) on an exception, and `context` (the Nest class that logged). The one line per finished request adds `http`: `method`, `route` (the Express route pattern, `/api/boards/:id`; `unmatched` for a URL no route matches), `status`, `durationMs`. `/health` and `/metrics` log that line at `debug`.
+- **Request id.** The header is `X-Request-Id`. `genReqId` and `requestIdMiddleware` take the value of the request when it matches `^[A-Za-z0-9._-]{8,64}$` and create a UUID otherwise; it is echoed in the response (and exposed to browsers by the edge's CORS middleware), is on every line of the request, and is the _current request id_ of an `AsyncLocalStorage`, which `BusinessBackendClient` sends on every call to the business backend. A value that does not match is replaced and never logged.
+- **Rejected tokens.** `AuthGuard` logs `Access token rejected` at `warn` with `reason` (`expired`, `not_yet_valid`, `wrong_issuer`, `wrong_audience`, `wrong_algorithm`, `invalid_signature`, `malformed`, `missing_claim`, `invalid`), never the token or the library's message.
+- **Never logged:** `Authorization`, `Cookie`, `Set-Cookie`, query strings (`/yjs?token=...` is not a BFF route, but the rule is the same everywhere: the line has the route, not the URL), and secrets. The request line carries no headers at all; `redact` covers `authorization`, `cookie`, `token`, `access_token`, `password` and `secret` up to three levels deep for the day somebody logs an object. `test/logging.e2e-spec.ts` sends marker strings in each place and asserts that none reaches the output.
+- **Start-up lines** of Nest (module initialisation, mapped routes) come through the same logger at `info`.
+
 ## Configuration
 
 Read once at startup by `src/config/` (`@nestjs/config`, validated by `validateEnv`) and used through the typed `AppConfigService` (`config.get('PORT')` is a number); nothing else reads `process.env`. A missing or malformed variable stops the process before it listens, with a message that names every problem. For local runs copy `apps/bff/.env.example` to `apps/bff/.env`; the compose file sets what the container needs.
@@ -82,6 +93,8 @@ Read once at startup by `src/config/` (`@nestjs/config`, validated by `validateE
 | `OIDC_JWKS_URI`        | none (derived from the issuer)         | where to fetch Keycloak's keys when that is not the issuer's address (inside compose)     |
 | `WS_TOKEN_SECRET`      | **none, required**                     | HS256 secret of the WS token, at least 32 characters, the same as in the realtime service |
 | `WS_TOKEN_TTL_SECONDS` | `60`                                   | lifetime of a WS token                                                                    |
+| `LOG_LEVEL`            | `info`                                 | `trace`, `debug`, `info`, `warn`, `error` or `fatal` (see "Logging")                      |
+| `LOG_FORMAT`           | none: text in a terminal, else `json`  | `json` or `text`                                                                          |
 
 `OIDC_*` are used by the token verifier, `WS_TOKEN_*` by `WsTokenService`.
 

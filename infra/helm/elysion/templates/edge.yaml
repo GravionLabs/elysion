@@ -28,6 +28,7 @@ spec:
       {{- toYaml .Values.edge.corsAllowedOrigins | nindent 6 }}
     accessControlAllowMethods: [GET, POST, PATCH, PUT, DELETE, OPTIONS]
     accessControlAllowHeaders: [Authorization, Content-Type]
+    accessControlExposeHeaders: [X-Request-Id]
     accessControlMaxAge: 600
     addVaryHeader: true
 ---

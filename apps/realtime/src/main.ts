@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { NestFactory } from '@nestjs/core';
+import { Logger } from 'nestjs-pino';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { AppModule } from './app.module.js';
 import { ConfigError, loadConfig } from './config/config.js';
@@ -19,7 +20,9 @@ async function bootstrap() {
     }
     throw error;
   }
-  const app = await NestFactory.create(AppModule);
+  // Buffered until pino is set up, so the start-up lines have the same shape as the rest (ADR 0025).
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
   app.useWebSocketAdapter(new WsAdapter(app));
   await app.listen(process.env.PORT ?? 3000);
 }

@@ -35,6 +35,10 @@ pnpm --filter @elysion/bff test:e2e     # vitest (e2e, against a fake business b
 
 `src/realtime/` issues the board-scoped WS token (docs/specs/identity.md): it checks the caller's role with the business backend first and never signs a token for a caller without one. The token's shape (claims, issuer, audience, algorithm, roles, close codes) is defined once in `packages/shared-types` and imported from `@elysion/shared-types`; change it there, not here. That package is compiled by its `prepare` script (`pnpm install` builds it; run `pnpm --filter @elysion/shared-types build` after editing it) and the Dockerfiles copy it in before installing.
 
+## Logging
+
+`src/logging/` ([ADR 0025](../../docs/adr/0025-structured-logging-and-log-viewer.md), spec "Logging"): `nestjs-pino` with the shared options of `@elysion/node-logging`. Log through Nest's `Logger` (its output goes through pino) or, for a field of the request, `request.log`; put values in fields, never a token, a header, a connection string or a secret in a message or a field. A call to the business backend forwards the request id by itself (`currentRequestId()`); a new outgoing client does the same. A test that reads the output overrides the `LOG_STREAM` provider (`test/logging.e2e-spec.ts`).
+
 ## Configuration
 
 `src/config/`: `validateEnv` (the schema, with defaults) and `AppConfigService` (typed accessor). Read configuration only through `AppConfigService`, never from `process.env`; a new variable goes into `AppConfig`, `validateEnv`, its spec, `.env.example`, the table in `docs/specs/bff.md` and (if the container needs it) the compose file. For local runs `pnpm setup:env` (also run by `pnpm dev:infra`) creates `apps/bff/.env` (git-ignored) from `.env.example` with a random `WS_TOKEN_SECRET`: `WS_TOKEN_SECRET` has no default, so without it the BFF refuses to start and says so. Do not use `ConfigService.get('PORT')` for these values: it prefers the raw string in `process.env` over the validated one. The tests get their `WS_TOKEN_SECRET` from `vitest.config*.ts`.
