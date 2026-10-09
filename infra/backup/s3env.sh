@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Sourced by backup.sh and restore.sh: the object store as rclone settings, from the same S3_* variables the services use.
 # (Environment variables, not rclone's connection-string syntax: the colon of "http://host:9000" breaks that.)
 export RCLONE_S3_PROVIDER=Other

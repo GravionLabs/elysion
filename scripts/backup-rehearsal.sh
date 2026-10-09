@@ -25,7 +25,7 @@ t="$(token dev1)"
 [ -n "$t" ] || fail "dev1 cannot log in"
 a="$(make_board "$t" 'Rehearsal A')"
 b="$(make_board "$t" 'Rehearsal B')"
-[ -n "$a" ] && [ -n "$b" ] || fail "the boards could not be made"
+if [ -z "$a" ] || [ -z "$b" ]; then fail "the boards could not be made"; fi
 echo "ok  two boards made ($a, $b)"
 
 # A 1x1 PNG on board A: the object store is part of the backup.
