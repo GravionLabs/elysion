@@ -33,7 +33,7 @@ Known gaps, so nobody finds them by surprise (the [roadmap](docs/roadmap.md) say
 - **Not a production setup:** the demo and the development stack run Keycloak in development mode, wired to `localhost`, with development secrets. A real deployment needs TLS, a host name, a production Keycloak and its own secrets (see [self-hosting](docs/self-hosting.md)).
 - **Voting is not secret from the server:** with the votes in the board's document (ADR 0020) the interface shows no names while a voting runs and only counts afterwards, but the document holds who voted for what, and viewers cannot vote.
 - **Timer clocks** of two clients may differ by a few seconds (the end is worked out on every client).
-- **No images on a board yet:** the image tool is hidden and a pasted or dropped image is refused, because an image is not shared with the other people or saved with the board. It comes with the object store (Epic #670).
+- **Images are PNG, JPEG, GIF or WebP** up to 10 MiB, 200 per board (SVG is refused: it can carry script). They are kept in the object store (RustFS in the stack), which is **not in the backup yet**: there is no backup of anything in this pre-release (Epic #670).
 - **Cards show initials**, not thumbnails of the board.
 - **Dark theme:** Excalidraw darkens all colors on a dark canvas, so a sticky note is a darker shade than its pastel color in the light theme.
 - **Few browser end-to-end tests:** one suite (`apps/e2e`, Playwright, two browsers on one board: sharing, the timer, the dot voting, a viewer's limits) runs against the container stack in CI; rooms, templates, export and the canvas drawing tools are not covered.
