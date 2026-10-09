@@ -167,10 +167,10 @@ With option 1 and brokering the facts are these, and they are less comfortable t
 
 ## Open questions for the owner
 
-- Is 8 hours of SSO session the right window for the first customers, or does somebody need "now" (an admin button that revokes sessions) from the start?
+- ~~Is 8 hours of SSO session the right window?~~ **Owner answer (2026-10-09): 8 hours is fine.** An immediate cut-off stays in #666.
 - Should an administrator be able to **delete a board** without being a member? The proposal says yes (a company must be able to remove content), with
   an audit entry; the other reading is "only hand it over".
 
 ## Decision
 
-_Proposed. To be accepted by the product owner, who then removes `needs-decision` from #638._
+_Proposed. The owner has confirmed the 8-hour window; the question on an administrator deleting a board is still open. To be accepted by the product owner, who then removes `needs-decision` from #638._
