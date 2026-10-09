@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-10-05
 - Issues: #98, #266, #267, #268
+- Superseded in part by [ADR 0026](0026-board-document-compaction-and-limits.md) (compaction and limits; Proposed)
 - Builds on: [ADR 0003](0003-net10-business-backend.md), [ADR 0006](0006-shared-local-infrastructure.md), [ADR 0007](0007-rustfs-replaces-minio.md)
 
 ## Context
