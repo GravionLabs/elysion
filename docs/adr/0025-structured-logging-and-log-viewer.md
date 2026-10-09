@@ -142,3 +142,15 @@ curl -s localhost:9428/select/logsql/query -d 'query=requestId:"<id>"'
 Accepted by the product owner on 2026-10-09: **VictoriaLogs as the local log viewer**, "if it works"; it does (section 5 lists what was tried
 against a running 1.53.0), and the libraries, the log line, the request id and the redaction rules are implemented as recommended above. #627 and
 #628 are implemented as written.
+
+## Implementation notes
+
+What #627 and #628 did differently from, or in addition to, the text above (the decisions stand):
+
+- **One package for the Node services.** The BFF and the realtime service get their pino options from `packages/node-logging` (`@elysion/node-logging`), so the line, the request id rules and the redaction paths cannot drift between them.
+- **The Node services ship with their own OTLP stream, not `pino-opentelemetry-transport`.** That transport reads pino's numeric `level`, `msg` and `time`; the contract of section 2 replaces them (`level` as a word, `message`, `timestamp`), so its severity and time would have been wrong. `createOtlpStream` maps the contract's line onto an OTLP record (body, severity, time, dotted attributes) with the OpenTelemetry exporter, loaded only when `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` is set. It is protobuf, as section 5 requires, and was run against VictoriaLogs 1.53.0.
+- **`pnpm dev:logs`, not `pnpm dev:stack`, starts the viewer.** The stack and `pnpm demo` stay exactly as they were; `dev:logs` is the stack plus the `logs` profile, with `LOGS_OTLP_ENDPOINT` set for the three services.
+- **Traefik's static configuration has one source.** Its OTLP export (experimental, as section 5 says) cannot be switched on by an environment variable next to the configuration file, so `dev:logs` writes a generated copy of `traefik.yml` with the export inserted at a marker line and mounts that. It worked in the end-to-end run; the collector fallback was not needed.
+- **No health check for the viewer.** Its image holds one binary, without a shell or `wget`.
+- **`level` is an attribute.** The OpenTelemetry sink writes Serilog's names (`Warning`) as the severity text, so every component also sends `level` (`warn`) and `level:warn` finds all of them.
+- **Checked on a real stack** (a second compose project next to a running one, with a token from the running Keycloak): one `X-Request-Id` found the BFF's forwardAuth call, its `/api/boards` line and the backend's line; a WebSocket connection's id found the realtime service's lines and the backend's internal-API line; the access log arrived without its query string; the WS token appeared nowhere, in the viewer or on Traefik's stdout.

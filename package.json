@@ -20,6 +20,7 @@
     "dev:infra": "node scripts/setup-dev-env.mjs && docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d traefik postgres keycloak valkey rustfs",
     "dev:infra:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down",
     "dev:stack": "node scripts/dev-stack.mjs up",
+    "dev:logs": "node scripts/dev-stack.mjs logs",
     "demo": "docker compose up -d --build",
     "demo:check": "bash scripts/demo-smoke.sh",
     "test:browser": "pnpm --filter @elysion/e2e test:browser",

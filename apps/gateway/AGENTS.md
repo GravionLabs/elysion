@@ -25,4 +25,6 @@ Verify routing changes with `pnpm dev:stack` and `curl` against `http://localhos
 
 ## Logs and metrics
 
+`pnpm dev:logs` also ships the access log to the log viewer (VictoriaLogs): Traefik reads one static configuration only, so `scripts/traefik-logs-config.mjs` inserts the OTLP export at the `# logs:otlp` marker of `traefik.yml` and writes a generated copy (`infra/traefik/.traefik.logs.yml`, ignored by git) that compose mounts instead. Keep the marker in `accessLog`; a test (`.github/scripts/traefik-logs-config.test.mjs`) fails without it. The query parameters stay dropped there too.
+
 Access logs are JSON on stdout and **must not contain query strings**: the `/yjs` URL carries the WS token, and Traefik's `RequestPath` includes the query, so the query parameters are dropped (`accessLog.fields.queryParameters.defaultMode: drop`). Do not change that to `keep`, and do not log request headers. The Prometheus metrics of Traefik (`:8082`, entry point `metrics`), the BFF and realtime (`/metrics`) are for the compose network only; see "Logs and metrics" in `docs/specs/gateway.md`. Static config changes need `docker compose restart traefik` (the dynamic file is watched, `traefik.yml` is not).

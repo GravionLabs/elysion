@@ -10,6 +10,8 @@ export interface RealtimeConfig {
   logLevel: LogLevel;
   /** `json` or `text`; unset: text in a terminal, JSON everywhere else (a container). */
   logFormat?: LogFormat;
+  /** An OTLP/HTTP logs endpoint that every log line is also sent to: the dev stack's log viewer (ADR 0025). Unset: nothing is sent. */
+  otlpLogsEndpoint?: string;
 }
 
 /** The environment is not usable. The message names every variable that is wrong. */
@@ -65,8 +67,25 @@ export function loadConfig(env: Record<string, string | undefined>): RealtimeCon
     oneOf<LogLevel>('LOG_LEVEL', ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) ?? 'info';
   const logFormat = oneOf<LogFormat>('LOG_FORMAT', ['json', 'text']);
 
+  const otlpLogsEndpoint = env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT?.trim() || undefined;
+  if (otlpLogsEndpoint !== undefined) {
+    try {
+      if (!/^https?:$/.test(new URL(otlpLogsEndpoint).protocol)) throw new Error('not http(s)');
+    } catch {
+      problems.push(
+        `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT must be an http(s) URL, got "${otlpLogsEndpoint}"`,
+      );
+    }
+  }
+
   if (problems.length > 0) {
     throw new ConfigError(problems);
   }
-  return { wsTokenSecret, internalApiSecret, logLevel, ...(logFormat ? { logFormat } : {}) };
+  return {
+    wsTokenSecret,
+    internalApiSecret,
+    logLevel,
+    ...(logFormat ? { logFormat } : {}),
+    ...(otlpLogsEndpoint ? { otlpLogsEndpoint } : {}),
+  };
 }

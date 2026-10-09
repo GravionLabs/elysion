@@ -84,17 +84,19 @@ Rooms group boards ([ADR 0019](../adr/0019-grouping-boards.md), [business-backen
 
 Read once at startup by `src/config/` (`@nestjs/config`, validated by `validateEnv`) and used through the typed `AppConfigService` (`config.get('PORT')` is a number); nothing else reads `process.env`. A missing or malformed variable stops the process before it listens, with a message that names every problem. For local runs copy `apps/bff/.env.example` to `apps/bff/.env`; the compose file sets what the container needs.
 
-| Variable               | Default                                | Meaning                                                                                   |
-| ---------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `PORT`                 | `3000`                                 | port of the BFF                                                                           |
-| `BUSINESS_BACKEND_URL` | `http://localhost:5174`                | the business backend, whose dev port is set in `.vscode/launch.json`                      |
-| `OIDC_ISSUER_URL`      | `http://localhost:8081/realms/elysion` | the `iss` the access tokens carry ([identity.md](identity.md))                            |
-| `OIDC_AUDIENCE`        | `elysion-bff`                          | the audience an access token must contain                                                 |
-| `OIDC_JWKS_URI`        | none (derived from the issuer)         | where to fetch Keycloak's keys when that is not the issuer's address (inside compose)     |
-| `WS_TOKEN_SECRET`      | **none, required**                     | HS256 secret of the WS token, at least 32 characters, the same as in the realtime service |
-| `WS_TOKEN_TTL_SECONDS` | `60`                                   | lifetime of a WS token                                                                    |
-| `LOG_LEVEL`            | `info`                                 | `trace`, `debug`, `info`, `warn`, `error` or `fatal` (see "Logging")                      |
-| `LOG_FORMAT`           | none: text in a terminal, else `json`  | `json` or `text`                                                                          |
+| Variable                           | Default                                | Meaning                                                                                          |
+| ---------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `PORT`                             | `3000`                                 | port of the BFF                                                                                  |
+| `BUSINESS_BACKEND_URL`             | `http://localhost:5174`                | the business backend, whose dev port is set in `.vscode/launch.json`                             |
+| `OIDC_ISSUER_URL`                  | `http://localhost:8081/realms/elysion` | the `iss` the access tokens carry ([identity.md](identity.md))                                   |
+| `OIDC_AUDIENCE`                    | `elysion-bff`                          | the audience an access token must contain                                                        |
+| `OIDC_JWKS_URI`                    | none (derived from the issuer)         | where to fetch Keycloak's keys when that is not the issuer's address (inside compose)            |
+| `WS_TOKEN_SECRET`                  | **none, required**                     | HS256 secret of the WS token, at least 32 characters, the same as in the realtime service        |
+| `WS_TOKEN_TTL_SECONDS`             | `60`                                   | lifetime of a WS token                                                                           |
+| `LOG_LEVEL`                        | `info`                                 | `trace`, `debug`, `info`, `warn`, `error` or `fatal` (see "Logging")                             |
+| `LOG_FORMAT`                       | none: text in a terminal, else `json`  | `json` or `text`                                                                                 |
+| `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` | none (off)                             | also send every log line to this OTLP/HTTP logs endpoint, the dev stack's viewer (see "Logging") |
+| `OTEL_EXPORTER_OTLP_LOGS_HEADERS`  | none                                   | headers for those requests, `name=value,name2=value2`                                            |
 
 `OIDC_*` are used by the token verifier, `WS_TOKEN_*` by `WsTokenService`.
 

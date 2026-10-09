@@ -27,6 +27,8 @@ const QUIET_PATHS = ['/health', '/metrics'];
           service: 'elysion-bff',
           level: config.get('LOG_LEVEL'),
           format: config.get('LOG_FORMAT'),
+          otlpEndpoint: config.get('OTEL_EXPORTER_OTLP_LOGS_ENDPOINT'),
+          otlpHeaders: config.get('OTEL_EXPORTER_OTLP_LOGS_HEADERS'),
           quietPaths: QUIET_PATHS,
           stream,
         }),

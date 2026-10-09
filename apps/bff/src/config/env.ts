@@ -20,6 +20,10 @@ export interface AppConfig {
   LOG_LEVEL: LogLevel;
   /** `json` or `text`; unset: text in a terminal, JSON everywhere else (a container). */
   LOG_FORMAT?: LogFormat;
+  /** An OTLP/HTTP logs endpoint that every log line is also sent to: the dev stack's log viewer (ADR 0025). Unset: nothing is sent. */
+  OTEL_EXPORTER_OTLP_LOGS_ENDPOINT?: string;
+  /** Headers for those requests, `name=value,name2=value2`. */
+  OTEL_EXPORTER_OTLP_LOGS_HEADERS?: string;
 }
 
 /** The environment is not usable. The message names every variable that is wrong. */
@@ -107,6 +111,12 @@ export function validateEnv(env: Env): AppConfig {
     LOG_LEVEL:
       oneOf<LogLevel>('LOG_LEVEL', ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) ?? 'info',
     ...(logFormat === undefined ? {} : { LOG_FORMAT: logFormat }),
+    ...(text('OTEL_EXPORTER_OTLP_LOGS_ENDPOINT') === undefined
+      ? {}
+      : { OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: url('OTEL_EXPORTER_OTLP_LOGS_ENDPOINT') }),
+    ...(text('OTEL_EXPORTER_OTLP_LOGS_HEADERS') === undefined
+      ? {}
+      : { OTEL_EXPORTER_OTLP_LOGS_HEADERS: text('OTEL_EXPORTER_OTLP_LOGS_HEADERS') }),
   };
 
   if (problems.length > 0) {

@@ -63,6 +63,7 @@ pnpm install      # JS/TS workspace dependencies (frontend, frontend-canvas, bff
 pnpm kind:up      # the same services on a local kind cluster with the Helm chart (infra/kind/README.md)
 pnpm dev:infra    # only the infrastructure, for apps on the host: Traefik, Postgres, Keycloak (http://localhost:8081, realm `elysion`, dev user `dev` / `dev`, ADR 0014), Valkey (localhost:6380) and RustFS
 pnpm dev:stack    # the whole stack in containers behind Traefik: http://localhost/
+pnpm dev:logs     # the same, plus a log viewer for all four components: http://localhost:9428/select/vmui
 ```
 
 `pnpm dev:stack` builds and starts the whole stack as containers behind Traefik, the same stack as `docker compose up -d --build` with the host ports of `docker-compose.dev.yml` on top (Postgres on 5432, Valkey on 6380, the Traefik dashboard on 8080); nothing else has to be running. Traefik serves everything on port 80: `/` is the Angular app, `/api` the BFF, `/yjs` the realtime WebSocket; the business backend is only reachable from the BFF. `pnpm dev:stack:down` stops and removes the containers (the data volumes stay). The app asks you to log in (Keycloak, dev user `dev` / `dev`, and `guest` / `guest` to share a board with, see above); boards from before users existed (no owner) are not listed, see docs/specs/business-backend.md. Use `pnpm dev:infra` instead when you run the apps on the host.

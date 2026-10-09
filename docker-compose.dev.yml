@@ -16,6 +16,11 @@ services:
     ports:
       - '127.0.0.1:${VALKEY_PORT:-6380}:6379'
 
+  # The log viewer (profile `logs`, `pnpm dev:logs`): http://localhost:9428/select/vmui
+  victorialogs:
+    ports:
+      - '127.0.0.1:${VICTORIALOGS_PORT:-9428}:9428'
+
   # S3-compatible object store, reserved for exports and uploads (ADR 0007); no app uses it yet. Host ports 9100 and
   # 9101 because Portainer from local-infra may own 9000.
   rustfs:

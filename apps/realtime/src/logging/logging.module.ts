@@ -27,6 +27,8 @@ const QUIET_PATHS = ['/health', '/metrics'];
           service: 'elysion-realtime',
           level: process.env.LOG_LEVEL,
           format: process.env.LOG_FORMAT,
+          otlpEndpoint: process.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT,
+          otlpHeaders: process.env.OTEL_EXPORTER_OTLP_LOGS_HEADERS,
           quietPaths: QUIET_PATHS,
           stream,
         }),
