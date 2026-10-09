@@ -1,3 +1,4 @@
+import { REQUEST_ID_HEADER, currentRequestId } from '@elysion/node-logging';
 import { Injectable } from '@nestjs/common';
 import type { InternalTokenSigner } from '../auth/internal-token-signer.js';
 import { DocumentStore, type SaveResult, type StoredDocument } from './document-store.js';
@@ -52,7 +53,13 @@ export class HttpDocumentStore extends DocumentStore {
 
   private async request(boardId: string, init: RequestInit): Promise<Response> {
     const url = `${this.baseUrl}/internal/boards/${encodeURIComponent(boardId)}/document`;
-    const headers = { ...init.headers, authorization: `Bearer ${await this.tokens.sign()}` };
+    // The id of the connection this call is made for, so the backend's lines for it carry the same id (ADR 0025).
+    const requestId = currentRequestId();
+    const headers = {
+      ...init.headers,
+      authorization: `Bearer ${await this.tokens.sign()}`,
+      ...(requestId === undefined ? {} : { [REQUEST_ID_HEADER]: requestId }),
+    };
     return fetch(url, { ...init, headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   }
 

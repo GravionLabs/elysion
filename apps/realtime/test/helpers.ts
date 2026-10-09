@@ -1,14 +1,17 @@
 import type { AddressInfo } from 'node:net';
+import type { Writable } from 'node:stream';
 import { INestApplication } from '@nestjs/common';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { Test } from '@nestjs/testing';
+import { Logger } from 'nestjs-pino';
 import * as decoding from 'lib0/decoding';
 import * as encoding from 'lib0/encoding';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
-import type { RawData } from 'ws';
+import type { ClientOptions, RawData } from 'ws';
 import { WebSocket } from 'ws';
 import { AppModule } from '../src/app.module.js';
+import { LOG_STREAM } from '../src/logging/logging.module.js';
 import { DocumentStore } from '../src/persistence/document-store.js';
 import { MESSAGE_SYNC } from '../src/yjs/protocol.js';
 import { PERSISTENCE_OPTIONS } from '../src/yjs/yjs-room-registry.js';
@@ -27,8 +30,8 @@ export class SyncClient {
   readonly closed: Promise<number>;
   private readonly socket: WebSocket;
 
-  constructor(url: string) {
-    this.socket = new WebSocket(url);
+  constructor(url: string, options?: ClientOptions) {
+    this.socket = new WebSocket(url, options);
     this.closed = new Promise((resolve) => this.socket.once('close', (code) => resolve(code)));
     this.socket.on('open', () => {
       const encoder = encoding.createEncoder();
@@ -83,10 +86,14 @@ export function waitUntil(check: () => boolean, timeoutMs = 3000): Promise<void>
 export async function startInstance(
   store: DocumentStore,
   options: Record<string, number> = {},
+  /** Where the JSON log lines go, for a test that reads them; stdout when unset. */
+  logStream?: Writable,
 ): Promise<{ app: INestApplication; url: string }> {
   const moduleFixture = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(DocumentStore)
     .useValue(store)
+    .overrideProvider(LOG_STREAM)
+    .useValue(logStream)
     .overrideProvider(PERSISTENCE_OPTIONS)
     .useValue({
       saveDebounceMs: 50,
@@ -99,6 +106,8 @@ export async function startInstance(
     .compile();
   const app = moduleFixture.createNestApplication();
   app.useWebSocketAdapter(new WsAdapter(app));
+  // As main.ts does: Nest's own logger calls go through pino. Only when a test reads the log lines.
+  if (logStream) app.useLogger(app.get(Logger));
   await app.listen(0);
   const address = app.getHttpServer().address() as AddressInfo;
   return { app, url: `ws://127.0.0.1:${address.port}/yjs` };

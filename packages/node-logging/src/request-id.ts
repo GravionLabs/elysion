@@ -20,20 +20,56 @@ export function resolveRequestId(incoming: string | string[] | undefined): strin
   return typeof incoming === 'string' && isValidRequestId(incoming) ? incoming : randomUUID();
 }
 
-interface RequestContext {
-  requestId: string;
+interface HttpContext {
+  readonly scope: 'http';
+  readonly requestId: string;
 }
 
-const storage = new AsyncLocalStorage<RequestContext>();
+/**
+ * What a WebSocket connection knows about itself for the logs: its request id from the upgrade request, and who it
+ * is once the token is verified. Created once per connection and entered again for every callback of the socket.
+ */
+export interface ConnectionContext {
+  readonly scope: 'connection';
+  readonly requestId: string;
+  userId?: string;
+}
+
+const storage = new AsyncLocalStorage<HttpContext | ConnectionContext>();
 
 /** The id of the request being handled, or `undefined` outside one (startup, a timer): what an outgoing call forwards. */
 export function currentRequestId(): string | undefined {
   return storage.getStore()?.requestId;
 }
 
-/** Runs `work` with `requestId` as the current request id (a WebSocket connection, a test). */
-export function runWithRequestId<T>(requestId: string, work: () => T): T {
-  return storage.run({ requestId }, work);
+/** The connection whose callback is running, or `undefined` outside one: a save remembers whose edit it persists. */
+export function currentConnection(): ConnectionContext | undefined {
+  const context = storage.getStore();
+  return context?.scope === 'connection' ? context : undefined;
+}
+
+/** The context of a connection from its upgrade request (the id of the request when it is well formed, a new one otherwise). */
+export function createConnectionContext(request: IncomingMessage): ConnectionContext {
+  return { scope: 'connection', requestId: resolveRequestId(request.headers['x-request-id']) };
+}
+
+/** Runs `work` as part of `context`'s connection: its log lines carry the connection's `requestId` and `userId`. */
+export function runInConnection<T>(context: ConnectionContext, work: () => T): T {
+  return storage.run(context, work);
+}
+
+/**
+ * What to add to a log line made outside an HTTP request but inside a connection (pino's `mixin`). An HTTP request's
+ * lines get the id from the request's logger already; adding it here as well would write it twice.
+ */
+export function connectionFields(): { requestId?: string; userId?: string } {
+  const context = storage.getStore();
+  if (context?.scope !== 'connection') {
+    return {};
+  }
+  return context.userId === undefined
+    ? { requestId: context.requestId }
+    : { requestId: context.requestId, userId: context.userId };
 }
 
 /**
@@ -48,7 +84,7 @@ export function requestIdMiddleware(): (
 ) => void {
   return (request, response, next) => {
     const requestId = settleRequestId(request, response);
-    storage.run({ requestId }, next);
+    storage.run({ scope: 'http', requestId }, next);
   };
 }
 

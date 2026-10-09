@@ -1,4 +1,4 @@
-import { createServer, type Server } from 'node:http';
+import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { Writable } from 'node:stream';
 import pinoHttp from 'pino-http';
@@ -17,7 +17,9 @@ import {
   isValidRequestId,
   requestIdMiddleware,
   resolveRequestId,
-  runWithRequestId,
+  createConnectionContext,
+  connectionFields,
+  runInConnection,
 } from './request-id.js';
 
 describe('request ids', () => {
@@ -46,10 +48,29 @@ describe('request ids', () => {
     expect(resolveRequestId(['abcd1234', 'efgh5678'])).not.toBe('abcd1234');
   });
 
-  it('knows the current request only inside one', () => {
+  it('knows the current request only inside one, and a connection adds its id and user to log lines', () => {
     expect(currentRequestId()).toBeUndefined();
-    expect(runWithRequestId('req-12345678', () => currentRequestId())).toBe('req-12345678');
+    expect(connectionFields()).toEqual({});
+    const upgrade = { headers: { 'x-request-id': 'conn-12345678' } } as unknown as IncomingMessage;
+    const context = createConnectionContext(upgrade);
+    expect(context.requestId).toBe('conn-12345678');
+
+    runInConnection(context, () => {
+      expect(currentRequestId()).toBe('conn-12345678');
+      expect(connectionFields()).toEqual({ requestId: 'conn-12345678' });
+      context.userId = 'u-7';
+      expect(connectionFields()).toEqual({ requestId: 'conn-12345678', userId: 'u-7' });
+    });
+    // The user is on the context, not on one run: the next callback of the socket still has it.
+    runInConnection(context, () => expect(connectionFields().userId).toBe('u-7'));
     expect(currentRequestId()).toBeUndefined();
+  });
+
+  it('gives a connection without a usable id a new one', () => {
+    const upgrade = { headers: { 'x-request-id': 'bad id!' } } as unknown as IncomingMessage;
+    const context = createConnectionContext(upgrade);
+    expect(isValidRequestId(context.requestId)).toBe(true);
+    expect(context.requestId).not.toBe('bad id!');
   });
 });
 

@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { DestinationStream } from 'pino';
 import type { Options } from 'pino-http';
-import { settleRequestId } from './request-id.js';
+import { connectionFields, settleRequestId } from './request-id.js';
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 export type LogFormat = 'json' | 'text';
@@ -122,6 +122,8 @@ export function createPinoHttpOptions(
     level: parseLogLevel(params.level),
     base: { service: params.service },
     messageKey: 'message',
+    // A line made inside a WebSocket connection carries the connection's request id and user.
+    mixin: () => connectionFields(),
     timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
     formatters: {
       level: (label) => ({ level: label }),

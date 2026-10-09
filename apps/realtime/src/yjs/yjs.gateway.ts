@@ -3,6 +3,11 @@ import {
   WS_CLOSE_UNAUTHORIZED,
   type WsTokenClaims,
 } from '@elysion/shared-types';
+import {
+  type ConnectionContext,
+  createConnectionContext,
+  runInConnection,
+} from '@elysion/node-logging';
 import { Injectable, Logger } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway } from '@nestjs/websockets';
 import * as decoding from 'lib0/decoding';
@@ -53,6 +58,8 @@ function toUint8Array(data: RawData): Uint8Array {
 export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(YjsGateway.name);
   private readonly roomByClient = new WeakMap<WebSocket, YjsRoom>();
+  /** Each connection's request id and user for the logs (ADR 0025), from its upgrade request and verified token. */
+  private readonly contextByClient = new WeakMap<WebSocket, ConnectionContext>();
   private readonly droppedViewerWrites = new WeakMap<WebSocket, number>();
 
   constructor(
@@ -62,6 +69,14 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {}
 
   handleConnection(client: WebSocket, request: IncomingMessage): void {
+    // The upgrade request's X-Request-Id when it is well formed, a new one otherwise. Everything this connection logs
+    // or asks of the business backend carries it, so one id follows a board from the socket to a failed save.
+    const context = createConnectionContext(request);
+    this.contextByClient.set(client, context);
+    runInConnection(context, () => this.open(client, request, context));
+  }
+
+  private open(client: WebSocket, request: IncomingMessage, context: ConnectionContext): void {
     const { boardId, token } = this.readQuery(request);
     if (!boardId) {
       client.close(1008, 'Missing board id');
@@ -71,12 +86,15 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Messages can arrive while the token is being checked and the board's stored state is loading (the browser
     // sends its first sync step on open); handling them in order after the admission keeps them from being dropped.
     let queue: Promise<void> = this.admit(client, boardId, token);
+    // A socket's callbacks run outside the context they were registered in: enter the connection's again.
     client.on('message', (data: RawData) => {
-      queue = queue.then(async () => {
-        const room = this.roomByClient.get(client);
-        if (room) {
-          this.handleMessage(client, room, data);
-        }
+      runInConnection(context, () => {
+        queue = queue.then(async () => {
+          const room = this.roomByClient.get(client);
+          if (room) {
+            this.handleMessage(client, room, data);
+          }
+        });
       });
     });
   }
@@ -92,6 +110,11 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       member = await this.tokens.verify(token);
     } catch (error) {
       if (error instanceof InvalidWsTokenError) {
+        // The reason, never the token (ADR 0025).
+        this.logger.warn(
+          { reason: error.reason, boardId, closeCode: WS_CLOSE_UNAUTHORIZED },
+          'WebSocket connection refused',
+        );
         client.close(WS_CLOSE_UNAUTHORIZED, 'Invalid or missing token');
       } else {
         this.logger.error(`WS token check failed: ${String(error)}`);
@@ -99,7 +122,16 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       return;
     }
+    // From here on the connection's log lines say whose it is.
+    const context = this.contextByClient.get(client);
+    if (context) {
+      context.userId = member.sub;
+    }
     if (member.boardId !== boardId) {
+      this.logger.warn(
+        { reason: 'wrong_board', boardId, closeCode: WS_CLOSE_FORBIDDEN },
+        'WebSocket connection refused',
+      );
       client.close(WS_CLOSE_FORBIDDEN, 'Token is for another board');
       return;
     }
@@ -121,6 +153,7 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return; // gone while the token was checked and the board was loading
     }
     room.memberBySocket.set(client, { sub: member.sub, role: member.role });
+    this.logger.log({ boardId: room.boardId, role: member.role }, 'WebSocket connection admitted');
     room.clients.add(client);
     this.roomByClient.set(client, room);
     this.sendSyncStep1(client, room);
@@ -142,6 +175,16 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: WebSocket): void {
+    const context = this.contextByClient.get(client);
+    this.contextByClient.delete(client);
+    if (context) {
+      runInConnection(context, () => this.close(client));
+    } else {
+      this.close(client);
+    }
+  }
+
+  private close(client: WebSocket): void {
     const room = this.roomByClient.get(client);
     this.roomByClient.delete(client);
     if (!room) {
@@ -149,6 +192,7 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     room.clients.delete(client);
     room.memberBySocket.delete(client);
+    this.logger.log({ boardId: room.boardId }, 'WebSocket connection closed');
     this.removeAwarenessOf(room, client);
     if (room.clients.size === 0) {
       this.registry

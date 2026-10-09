@@ -1,9 +1,15 @@
+import type { LogFormat, LogLevel } from '@elysion/node-logging';
+
 /** The realtime service's configuration that must be right before it accepts a connection. */
 export interface RealtimeConfig {
   /** HS256 secret of the WS token, shared with the BFF. Required: there is no safe default. */
   wsTokenSecret: string;
   /** HS256 secret of the service token for the business backend's internal API (ADR 0017), shared with it. Required. */
   internalApiSecret: string;
+  /** `trace`, `debug`, `info`, `warn`, `error` or `fatal` (ADR 0025). */
+  logLevel: LogLevel;
+  /** `json` or `text`; unset: text in a terminal, JSON everywhere else (a container). */
+  logFormat?: LogFormat;
 }
 
 /** The environment is not usable. The message names every variable that is wrong. */
@@ -44,8 +50,23 @@ export function loadConfig(env: Record<string, string | undefined>): RealtimeCon
     problems.push('INTERNAL_API_SECRET must not be the same value as WS_TOKEN_SECRET');
   }
 
+  const oneOf = <T extends string>(name: string, allowed: readonly T[]): T | undefined => {
+    const raw = env[name]?.trim().toLowerCase();
+    if (!raw) {
+      return undefined;
+    }
+    const match = allowed.find((candidate) => candidate === raw);
+    if (match === undefined) {
+      problems.push(`${name} must be one of ${allowed.join(', ')}, got "${raw}"`);
+    }
+    return match;
+  };
+  const logLevel =
+    oneOf<LogLevel>('LOG_LEVEL', ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) ?? 'info';
+  const logFormat = oneOf<LogFormat>('LOG_FORMAT', ['json', 'text']);
+
   if (problems.length > 0) {
     throw new ConfigError(problems);
   }
-  return { wsTokenSecret, internalApiSecret };
+  return { wsTokenSecret, internalApiSecret, logLevel, ...(logFormat ? { logFormat } : {}) };
 }

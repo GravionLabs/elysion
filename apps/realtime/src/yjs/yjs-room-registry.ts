@@ -1,3 +1,4 @@
+import { type ConnectionContext, currentConnection, runInConnection } from '@elysion/node-logging';
 import { Inject, Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 import * as encoding from 'lib0/encoding';
 import * as awarenessProtocol from 'y-protocols/awareness';
@@ -62,6 +63,8 @@ interface SaveState {
   evictionTimer: NodeJS.Timeout | null;
   /** Bumped whenever someone asks for the room, so an eviction that was already under way notices and stops. */
   usage: number;
+  /** The connection whose change is waiting to be saved: the save is logged and sent to the backend as its request (ADR 0025). */
+  connection?: ConnectionContext;
 }
 
 export interface YjsRoom {
@@ -377,6 +380,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     }
     const now = Date.now();
     state.dirty = true;
+    state.connection = currentConnection() ?? state.connection;
     state.firstDirtyAt ??= now;
     const delay = Math.max(
       0,
@@ -408,7 +412,11 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     state.timer = null;
     state.dirty = false;
     state.firstDirtyAt = null;
-    state.saving = this.writeToStore(room, state).finally(() => (state.saving = null));
+    // A save runs from a timer, outside any connection: it takes the context of the connection that made the change.
+    const write = () => this.writeToStore(room, state);
+    state.saving = (state.connection ? runInConnection(state.connection, write) : write()).finally(
+      () => (state.saving = null),
+    );
     await state.saving;
   }
 
