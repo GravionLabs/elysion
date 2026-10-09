@@ -1,0 +1,36 @@
+{
+  "name": "@elysion/node-logging",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "description": "The log line, the request id and the redaction rules the Node services share (ADR 0025), as pino-http options",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "pnpm run build",
+    "lint": "oxlint src/",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "pino": "^10.4.0",
+    "pino-http": "^11.0.0"
+  },
+  "optionalDependencies": {
+    "pino-pretty": "^13.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "oxlint": "^1.86.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5"
+  }
+}

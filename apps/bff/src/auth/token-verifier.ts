@@ -9,10 +9,57 @@ export interface AccessTokenClaims {
 
 /** The token is missing, malformed, expired, signed by someone else or meant for another audience. */
 export class InvalidTokenError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
+  constructor(message: string, options?: ErrorOptions & { reason?: TokenRejection }) {
     super(message, options);
     this.name = 'InvalidTokenError';
+    this.reason = options?.reason ?? 'invalid';
   }
+
+  /** Why the token was refused, in the words of the logs (ADR 0025); never the token. */
+  readonly reason: TokenRejection;
+}
+
+export type TokenRejection =
+  | 'expired'
+  | 'not_yet_valid'
+  | 'wrong_issuer'
+  | 'wrong_audience'
+  | 'wrong_algorithm'
+  | 'invalid_signature'
+  | 'malformed'
+  | 'missing_claim'
+  | 'invalid';
+
+/** The reason a verification failed, from jose's error class and, for a claim, the claim's name. */
+export function rejectionOf(error: errors.JOSEError): TokenRejection {
+  if (error instanceof errors.JWTExpired) {
+    return 'expired';
+  }
+  if (error instanceof errors.JWTClaimValidationFailed) {
+    switch (error.claim) {
+      case 'iss':
+        return 'wrong_issuer';
+      case 'aud':
+        return 'wrong_audience';
+      case 'nbf':
+        return 'not_yet_valid';
+      default:
+        return 'missing_claim';
+    }
+  }
+  if (error instanceof errors.JOSEAlgNotAllowed) {
+    return 'wrong_algorithm';
+  }
+  if (
+    error instanceof errors.JWSSignatureVerificationFailed ||
+    error instanceof errors.JWKSNoMatchingKey
+  ) {
+    return 'invalid_signature';
+  }
+  if (error instanceof errors.JWSInvalid || error instanceof errors.JWTInvalid) {
+    return 'malformed';
+  }
+  return 'invalid';
 }
 
 export interface TokenVerifierOptions {
@@ -47,7 +94,7 @@ export class TokenVerifier {
         requiredClaims: ['sub', 'exp'],
       });
       if (typeof payload.sub !== 'string' || payload.sub.trim() === '') {
-        throw new InvalidTokenError('The token has no subject.');
+        throw new InvalidTokenError('The token has no subject.', { reason: 'missing_claim' });
       }
       return {
         sub: payload.sub,
@@ -60,7 +107,7 @@ export class TokenVerifier {
         throw error;
       }
       if (error instanceof errors.JOSEError) {
-        throw new InvalidTokenError(error.message, { cause: error });
+        throw new InvalidTokenError(error.message, { cause: error, reason: rejectionOf(error) });
       }
       // Not a verdict on the token (the realm's keys could not be fetched, ...): do not report it as an invalid
       // token, the caller should see a server problem rather than be sent to log in again.

@@ -1,3 +1,5 @@
+import type { LogFormat, LogLevel } from '@elysion/node-logging';
+
 /** The BFF's configuration, read once from the environment at startup (names: docs/specs/identity.md). */
 export interface AppConfig {
   /** Port of the BFF. */
@@ -14,6 +16,10 @@ export interface AppConfig {
   WS_TOKEN_SECRET: string;
   /** Lifetime of a WS token in seconds. */
   WS_TOKEN_TTL_SECONDS: number;
+  /** `trace`, `debug`, `info`, `warn`, `error` or `fatal` (ADR 0025). */
+  LOG_LEVEL: LogLevel;
+  /** `json` or `text`; unset: text in a terminal, JSON everywhere else (a container). */
+  LOG_FORMAT?: LogFormat;
 }
 
 /** The environment is not usable. The message names every variable that is wrong. */
@@ -68,6 +74,19 @@ export function validateEnv(env: Env): AppConfig {
     return value;
   };
 
+  const oneOf = <T extends string>(name: string, allowed: readonly T[]): T | undefined => {
+    const raw = text(name)?.toLowerCase();
+    if (raw === undefined) {
+      return undefined;
+    }
+    const match = allowed.find((candidate) => candidate === raw);
+    if (match === undefined) {
+      problems.push(`${name} must be one of ${allowed.join(', ')}, got "${raw}"`);
+    }
+    return match;
+  };
+  const logFormat = oneOf<LogFormat>('LOG_FORMAT', ['json', 'text']);
+
   const secret = text('WS_TOKEN_SECRET');
   if (secret === undefined) {
     problems.push(
@@ -85,6 +104,9 @@ export function validateEnv(env: Env): AppConfig {
     ...(text('OIDC_JWKS_URI') === undefined ? {} : { OIDC_JWKS_URI: url('OIDC_JWKS_URI') }),
     WS_TOKEN_SECRET: secret ?? '',
     WS_TOKEN_TTL_SECONDS: integer('WS_TOKEN_TTL_SECONDS', 60, 1, 3600),
+    LOG_LEVEL:
+      oneOf<LogLevel>('LOG_LEVEL', ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) ?? 'info',
+    ...(logFormat === undefined ? {} : { LOG_FORMAT: logFormat }),
   };
 
   if (problems.length > 0) {

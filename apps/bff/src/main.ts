@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { Logger } from 'nestjs-pino';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
 import { AppConfigService } from './config/config.module.js';
@@ -18,7 +19,9 @@ async function bootstrap() {
     }
     throw error;
   }
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Buffered until pino is set up, so the start-up lines have the same shape as the rest (ADR 0025).
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
   applyHttpLimits(app);
   await app.listen(app.get(AppConfigService).get('PORT'));
 }

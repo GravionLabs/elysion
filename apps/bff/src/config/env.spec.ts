@@ -23,7 +23,18 @@ describe('validateEnv', () => {
       OIDC_AUDIENCE: 'elysion-bff',
       WS_TOKEN_SECRET: SECRET,
       WS_TOKEN_TTL_SECONDS: 60,
+      LOG_LEVEL: 'info',
     });
+  });
+
+  it('reads the log level and format, in any case, and refuses other words', () => {
+    expect(validateEnv({ ...valid, LOG_LEVEL: 'DEBUG', LOG_FORMAT: 'Text' })).toMatchObject({
+      LOG_LEVEL: 'debug',
+      LOG_FORMAT: 'text',
+    });
+    const message = messageOf({ ...valid, LOG_LEVEL: 'loud', LOG_FORMAT: 'xml' });
+    expect(message).toContain('LOG_LEVEL must be one of trace, debug, info, warn, error, fatal');
+    expect(message).toContain('LOG_FORMAT must be one of json, text, got "xml"');
   });
 
   it('turns numbers into numbers and keeps what is set', () => {

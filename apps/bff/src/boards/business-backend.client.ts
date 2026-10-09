@@ -1,3 +1,4 @@
+import { REQUEST_ID_HEADER, currentRequestId } from '@elysion/node-logging';
 import type { BoardRole } from '@elysion/shared-types';
 import {
   BadGatewayException,
@@ -202,11 +203,14 @@ export class BusinessBackendClient {
     body?: unknown,
   ): Promise<T> {
     let response: Response;
+    // The id of the request being handled goes on, so the backend's lines for it carry the same id (ADR 0025).
+    const requestId = currentRequestId();
     try {
       response = await fetch(new URL(path, this.baseUrl), {
         method,
         headers: {
           authorization: `Bearer ${token}`,
+          ...(requestId === undefined ? {} : { [REQUEST_ID_HEADER]: requestId }),
           ...(body === undefined ? {} : { 'content-type': 'application/json' }),
         },
         body: body === undefined ? undefined : JSON.stringify(body),

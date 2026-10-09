@@ -138,6 +138,7 @@ apps/
   business-backend/  .NET 10 Web API: domain logic, persistence, exports
 packages/
   shared-types/      cross-app TS types, compiled to plain JS/d.ts
+  node-logging/      the JSON log line and request id of the Node services (pino-http options)
   design-tokens/     the colors, radii and shadows shared by the shell and the canvas
 infra/
   traefik/           Traefik static config and dynamic middlewares (edge authentication)

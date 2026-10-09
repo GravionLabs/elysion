@@ -15,6 +15,7 @@ Each `apps/*` subdirectory has its own `AGENTS.md` with service-specific detail 
 - `apps/site` — the documentation site (VitePress, reads `docs/`, ADR 0022); `pnpm --filter @elysion/site build` fails on a dead link
 - `apps/e2e` — Playwright browser tests of the running stack, two users on one board (`pnpm test:browser`; not part of `pnpm test`, see its `AGENTS.md`)
 - `packages/shared-types` — cross-app TS types and constants (the WS token contract), compiled to plain JS/d.ts by its `prepare` script (not consumed as raw `.ts`); rebuild with `pnpm --filter @elysion/shared-types build` after editing it
+- `packages/node-logging` — the log line, the request id and the redaction rules the BFF and the realtime service share (ADR 0025), as `pino-http` options; compiled like `shared-types` (`pnpm --filter @elysion/node-logging build` after editing it)
 - `docker-compose.yml` (the whole stack, Valkey included), `docker-compose.dev.yml` (host ports for Postgres, Valkey and the Traefik dashboard, and RustFS) and `.env.example` at the root; `infra/` — Traefik config, the Keycloak realm, the Helm chart and a kind setup
 - `docs/adr/` — architecture decision records; `docs/specs/` — per-service specs. Read these before making an architectural change, and add/update an ADR when you make one.
 
