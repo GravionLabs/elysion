@@ -4,6 +4,9 @@ import type { TimerState } from './facilitation/timer';
 import type { StartOptions, VotingView } from './facilitation/voting';
 import type { ExportFormat, ExportOptions } from './board-io';
 import { parseTheme } from './useResolvedTheme';
+import type { FileStore } from './yjs/files';
+
+export type { FileStore };
 
 /** What the host gives the canvas to get a WS token. */
 export type TokenProvider = () => Promise<string | null>;
@@ -29,6 +32,7 @@ class ElysionCanvasElement extends HTMLElement {
   #root: Root | null = null;
   #controls: CanvasControls | null = null;
   #tokenProvider: TokenProvider | undefined;
+  #fileStore: FileStore | undefined;
 
   /**
    * Asked before every connection to the board server for the board-scoped WS token (docs/specs/identity.md): it
@@ -45,21 +49,41 @@ class ElysionCanvasElement extends HTMLElement {
     this.#render();
   }
 
+  /**
+   * Where the bytes of the board's images are stored (#702): `put(file, id)` and `get(id)`, backed by the host's API.
+   * An image is uploaded when it is inserted and only a reference goes into the shared document; the other clients load
+   * the file with `get`. A property, like `tokenProvider`, because it is an object with methods. Without one, images
+   * stay on the screen they were inserted on, so the host sets `images-enabled` only together with it.
+   */
+  get fileStore(): FileStore | undefined {
+    return this.#fileStore;
+  }
+
+  set fileStore(store: FileStore | undefined) {
+    this.#fileStore = store;
+    this.#render();
+  }
+
   connectedCallback(): void {
     // A host may set properties on the element before it is upgraded (the script loads lazily, so on the first visit
     // the element can exist before this class does). That leaves an own property that hides the accessor above, and
     // the value would never arrive: move it onto the accessor.
     this.#adoptEarlyProperty('tokenProvider');
+    this.#adoptEarlyProperty('fileStore');
     this.#root = createRoot(this);
     this.#render();
     this.dispatchEvent(new CustomEvent('ready', { bubbles: true, composed: true }));
   }
 
-  #adoptEarlyProperty(name: 'tokenProvider'): void {
+  #adoptEarlyProperty(name: 'tokenProvider' | 'fileStore'): void {
     if (Object.prototype.hasOwnProperty.call(this, name)) {
       const value = (this as unknown as Record<string, unknown>)[name];
       delete (this as unknown as Record<string, unknown>)[name];
-      this[name] = value as TokenProvider | undefined;
+      if (name === 'tokenProvider') {
+        this.tokenProvider = value as TokenProvider | undefined;
+      } else {
+        this.fileStore = value as FileStore | undefined;
+      }
     }
   }
 
@@ -164,7 +188,9 @@ class ElysionCanvasElement extends HTMLElement {
         onTimerChange={(state: TimerState | null) => this.#emit('timer', { state })}
         onVotingChange={(session: VotingView | null) => this.#emit('voting', { session })}
         onError={(error) => this.#emit('error', { message: error.message })}
+        onFileError={(error) => this.#emit('fileerror', { message: error.message })}
         tokenProvider={this.#tokenProvider}
+        fileStore={this.#fileStore}
         readOnly={this.hasAttribute('readonly')}
         imagesEnabled={this.hasAttribute('images-enabled')}
         userName={this.getAttribute('user-name') ?? undefined}

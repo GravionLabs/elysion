@@ -1,10 +1,24 @@
-import { CaptureUpdateAction, reconcileElements } from '@excalidraw/excalidraw';
+import { CaptureUpdateAction, newElementWith, reconcileElements } from '@excalidraw/excalidraw';
 import type { RemoteExcalidrawElement } from '@excalidraw/excalidraw/data/reconcile';
 import type { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types';
-import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
+import type {
+  BinaryFileData,
+  BinaryFiles,
+  DataURL,
+  ExcalidrawImperativeAPI,
+} from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
+import { type FileReference, type FileStore, blobToDataUrl, dataUrlToBlob } from './files.js';
 
 const ELEMENTS_MAP_KEY = 'elements';
+const FILES_MAP_KEY = 'files';
+
+export interface BindingOptions {
+  /** Where the bytes of images live; read at every use, so a store the host sets later is used. Without one, images stay local. */
+  fileStore?: () => FileStore | undefined;
+  /** A file could not be stored or loaded. */
+  onError?: (error: Error) => void;
+}
 
 /**
  * Binds an Excalidraw scene to a shared Y.Doc: local edits are written into
@@ -25,12 +39,22 @@ const ELEMENTS_MAP_KEY = 'elements';
 export class ExcalidrawYjsBinding {
   readonly #doc: Y.Doc;
   readonly #elements: Y.Map<OrderedExcalidrawElement>;
+  readonly #files: Y.Map<FileReference>;
+  readonly #options: BindingOptions;
   #api: ExcalidrawImperativeAPI | null = null;
+  /** Ids being uploaded or fetched right now, so that a burst of changes does not start the same transfer twice. */
+  readonly #uploading = new Set<string>();
+  readonly #fetching = new Set<string>();
+  #destroyed = false;
 
-  constructor(doc: Y.Doc) {
+  constructor(doc: Y.Doc, options: BindingOptions = {}) {
     this.#doc = doc;
+    this.#options = options;
     this.#elements = doc.getMap<OrderedExcalidrawElement>(ELEMENTS_MAP_KEY);
+    this.#files = doc.getMap<FileReference>(FILES_MAP_KEY);
     this.#elements.observe(this.#handleRemoteChange);
+    // A file that arrives after the element that shows it (the upload takes a moment): load it now.
+    this.#files.observe(this.#loadMissingFiles);
   }
 
   attach(api: ExcalidrawImperativeAPI): void {
@@ -39,11 +63,19 @@ export class ExcalidrawYjsBinding {
   }
 
   destroy(): void {
+    this.#destroyed = true;
     this.#elements.unobserve(this.#handleRemoteChange);
+    this.#files.unobserve(this.#loadMissingFiles);
     this.#api = null;
   }
 
-  onLocalChange = (elements: readonly OrderedExcalidrawElement[]): void => {
+  /**
+   * `files` is Excalidraw's cache of the images of the scene (with their bytes as data URLs). What is new in it and
+   * shown by an image element is stored through the host's `FileStore`, and only then does a reference
+   * (`{ mimeType, created }`, no bytes) go into the shared `files` map for the others.
+   */
+  onLocalChange = (elements: readonly OrderedExcalidrawElement[], files?: BinaryFiles): void => {
+    this.#uploadNewFiles(elements, files);
     this.#doc.transact(() => {
       for (const element of elements) {
         const existing = this.#elements.get(element.id);
@@ -68,7 +100,20 @@ export class ExcalidrawYjsBinding {
     }
 
     const localElements = api.getSceneElementsIncludingDeleted();
-    const stored = Array.from(this.#elements.values());
+    // A stored copy that is the very version the scene has (our own write coming back through the observer) brings
+    // nothing, and must not take part: with equal version and nonce `reconcileElements` picks the stored one, and the
+    // scene would get a clone in place of its element. Excalidraw changes some elements in place after they were
+    // written, an image that is still being read for one (it sets `fileId` on the element it holds), and that work
+    // would land on an element that is no longer on the board.
+    const localById = new Map(localElements.map((element) => [element.id, element]));
+    const stored = Array.from(this.#elements.values()).filter((remote) => {
+      const local = localById.get(remote.id);
+      return !(
+        local &&
+        local.version === remote.version &&
+        local.versionNonce === remote.versionNonce
+      );
+    });
     const reconciled = reconcileElements(
       localElements,
       stored as RemoteExcalidrawElement[],
@@ -87,6 +132,122 @@ export class ExcalidrawYjsBinding {
       storedObjects.has(element) ? structuredClone(element) : element,
     );
 
-    api.updateScene({ elements: detached, captureUpdate: CaptureUpdateAction.NEVER });
+    // Our own write comes back through the observer with nothing new in it: leave the scene alone then. Replacing the
+    // scene's elements while Excalidraw is in the middle of something with one of them (an image that is still
+    // being read) throws that work away.
+    const changed =
+      detached.length !== localElements.length ||
+      detached.some((element, index) => element !== localElements[index]);
+    if (changed) {
+      api.updateScene({ elements: detached, captureUpdate: CaptureUpdateAction.NEVER });
+    }
+    this.#loadMissingFiles();
   };
+
+  #uploadNewFiles(
+    elements: readonly OrderedExcalidrawElement[],
+    files: BinaryFiles | undefined,
+  ): void {
+    const store = this.#options.fileStore?.();
+    if (!store || !files) {
+      return;
+    }
+    for (const id of shownFileIds(elements)) {
+      const file = files[id];
+      if (!file || this.#files.has(id) || this.#uploading.has(id)) {
+        continue;
+      }
+      this.#uploading.add(id);
+      void this.#upload(store, file).finally(() => this.#uploading.delete(id));
+    }
+  }
+
+  async #upload(store: FileStore, file: BinaryFileData): Promise<void> {
+    try {
+      await store.put(dataUrlToBlob(file.dataURL), file.id);
+    } catch (error) {
+      // The others never get this image, so it must not stay on the author's board either: take the element away
+      // (the deletion syncs like any other) and say why.
+      this.#removeImage(file.id);
+      this.#options.onError?.(asError(error, 'The image could not be stored.'));
+      return;
+    }
+    if (!this.#destroyed) {
+      this.#doc.transact(() => {
+        this.#files.set(file.id, { mimeType: file.mimeType, created: file.created });
+      });
+    }
+  }
+
+  #removeImage(fileId: string): void {
+    const api = this.#api;
+    if (!api) {
+      return;
+    }
+    const elements = api
+      .getSceneElementsIncludingDeleted()
+      .map((element) =>
+        isImageOf(element, fileId) && !element.isDeleted
+          ? newElementWith(element, { isDeleted: true })
+          : element,
+      );
+    api.updateScene({ elements, captureUpdate: CaptureUpdateAction.NEVER });
+  }
+
+  /** Fetches the files that an image of the scene refers to, that the shared map lists and that Excalidraw does not have yet. */
+  #loadMissingFiles = (): void => {
+    const api = this.#api;
+    const store = this.#options.fileStore?.();
+    if (!api || !store) {
+      return;
+    }
+    const known = api.getFiles();
+    for (const id of shownFileIds(api.getSceneElementsIncludingDeleted())) {
+      const reference = this.#files.get(id);
+      if (!reference || known[id] || this.#fetching.has(id)) {
+        continue;
+      }
+      this.#fetching.add(id);
+      void this.#download(store, id, reference).finally(() => this.#fetching.delete(id));
+    }
+  };
+
+  async #download(store: FileStore, id: string, reference: FileReference): Promise<void> {
+    try {
+      const dataURL = (await blobToDataUrl(await store.get(id))) as DataURL;
+      if (this.#destroyed || !this.#api) {
+        return;
+      }
+      this.#api.addFiles([
+        {
+          id: id as BinaryFileData['id'],
+          dataURL,
+          mimeType: reference.mimeType as BinaryFileData['mimeType'],
+          created: reference.created,
+          lastRetrieved: Date.now(),
+        },
+      ]);
+    } catch (error) {
+      this.#options.onError?.(asError(error, 'An image could not be loaded.'));
+    }
+  }
+}
+
+/** The ids of the files that the images of the scene show (a deleted image shows nothing). */
+function shownFileIds(elements: readonly OrderedExcalidrawElement[]): Set<string> {
+  const ids = new Set<string>();
+  for (const element of elements) {
+    if (element.type === 'image' && !element.isDeleted && element.fileId) {
+      ids.add(element.fileId);
+    }
+  }
+  return ids;
+}
+
+function isImageOf(element: OrderedExcalidrawElement, fileId: string): boolean {
+  return element.type === 'image' && element.fileId === fileId;
+}
+
+function asError(error: unknown, fallback: string): Error {
+  return error instanceof Error ? error : new Error(fallback);
 }

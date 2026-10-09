@@ -5,7 +5,7 @@ to a `kind` cluster and serves it at <http://localhost>, so two browsers can syn
 
 ```sh
 pnpm dev:stack:down    # frees host port 80 (the compose stack's Traefik)
-pnpm dev:infra         # Postgres and Keycloak, which the cluster uses as its external services
+pnpm dev:infra         # Postgres, Keycloak and RustFS, which the cluster uses as its external services
 pnpm kind:up           # builds the four images, creates the cluster, installs Traefik, a Valkey and the chart
 # open http://localhost  (log in as dev / dev), create a board, open it in two windows
 pnpm kind:down         # deletes the cluster
@@ -20,7 +20,7 @@ What the script does (`deploy.sh`):
 3. Installs Traefik (`traefik-values.yaml`: JSON access log without query strings, CRDs enabled).
 4. Provides the external services: a database `elysion_kind` in the compose stack's Postgres, the compose stack's
    Keycloak (the tokens carry the issuer `http://localhost:8081/...`, the cluster reaches the keys through the host's
-   address on the `kind` network) and a throwaway Valkey in the namespace `elysion-external` (`valkey.yaml`).
+   address on the `kind` network), the compose stack's RustFS as the object store of board files (bucket `elysion-files-kind`) and a throwaway Valkey in the namespace `elysion-external` (`valkey.yaml`).
 5. Generates the Secret `elysion-secrets` with random secrets (not committed, not printed) and installs the chart with
    `values-kind.yaml`.
 

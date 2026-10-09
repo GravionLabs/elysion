@@ -4,6 +4,12 @@
   (dict "name" "OIDC_AUDIENCE" "value" .Values.oidc.audience)
   (include "elysion.secretEnv" (dict "root" . "name" "ConnectionStrings__Elysion" "key" "POSTGRES_CONNECTION_STRING") | fromYaml)
   (include "elysion.secretEnv" (dict "root" . "name" "INTERNAL_API_SECRET") | fromYaml)
+  (dict "name" "S3_ENDPOINT" "value" (required "objectStore.endpoint is required (the S3 API that keeps the files of boards)" .Values.objectStore.endpoint))
+  (dict "name" "S3_BUCKET" "value" .Values.objectStore.bucket)
+  (dict "name" "MAX_FILE_BYTES" "value" (.Values.objectStore.maxFileBytes | int64 | toString))
+  (dict "name" "MAX_FILES_PER_BOARD" "value" (.Values.objectStore.maxFilesPerBoard | int64 | toString))
+  (include "elysion.secretEnv" (dict "root" . "name" "S3_ACCESS_KEY") | fromYaml)
+  (include "elysion.secretEnv" (dict "root" . "name" "S3_SECRET_KEY") | fromYaml)
 -}}
 {{- if .Values.oidc.jwksUri }}{{ $env = append $env (dict "name" "OIDC_JWKS_URI" "value" .Values.oidc.jwksUri) }}{{ end }}
 {{ include "elysion.component" (dict "root" . "name" "business-backend" "image" "businessBackend" "port" 8080 "probe" "/health" "env" $env) }}

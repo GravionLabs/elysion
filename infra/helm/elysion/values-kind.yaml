@@ -10,5 +10,11 @@ oidc:
   issuerUrl: http://localhost:8081/realms/elysion
   # jwksUri: set by infra/kind/deploy.sh (the host's address as the kind nodes see it)
 
+# RustFS of the compose stack (`pnpm dev:infra`); deploy.sh sets the endpoint to the host's address as the nodes see it.
+objectStore:
+  # A placeholder so that `helm lint` and `helm template` pass; deploy.sh sets the real endpoint.
+  endpoint: http://rustfs.invalid:9100
+  bucket: elysion-files-kind
+
 edge:
   corsAllowedOrigins: []

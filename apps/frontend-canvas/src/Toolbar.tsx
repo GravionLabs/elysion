@@ -193,8 +193,8 @@ export interface ToolbarProps {
   /** A viewer: no tools, no undo and redo, no sticky notes; only the zoom is shown. */
   readOnly?: boolean;
   /**
-   * Whether the image tool is offered. Off by default: Excalidraw's `files` are not shared or stored yet, so an
-   * inserted image would be seen by its author only and be gone after a reload (see `docs/specs/frontend.md`).
+   * Whether the image tool is offered. Off by default: without a file store the image would be seen by its author
+   * only and be gone after a reload (see `docs/specs/frontend.md`, "Board files").
    */
   imagesEnabled?: boolean;
 }

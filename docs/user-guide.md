@@ -39,8 +39,9 @@ bar means your changes are being sent; if the connection drops, Elysion reconnec
 board), **Templates**, **Export**, **Timer**, **Voting**, then **Share**, the people on the board, **Library**, the theme and your account menu.
 
 **The toolbar at the bottom** has undo and redo, the hand (move the view), the selection tool, rectangle, diamond, ellipse, arrow, line, freehand
-drawing, text, the **sticky note**, the eraser, and the zoom controls (zoom out, the zoom level, zoom in, fit the board in the window). Images cannot be placed on a board yet: the tool is hidden, and
-pasting or dropping an image shows "Images are disabled".
+drawing, text, the **sticky note**, the eraser, and the zoom controls (zoom out, the zoom level, zoom in, fit the board in the window), and **Insert image**. An image is a PNG, JPEG, GIF or WebP file of up to 10 MB
+(a board holds up to 200); choose it, paste it or drop it on the board. The others see it a moment later, and it is still there after a reload. A viewer sees the
+images but cannot add any. A file that is too large, of another type or one too many is refused with a message and does not stay on the board.
 The `⋯` button opens the canvas menu with the grid settings, among others. The small **map** at the bottom left shows the whole board and
 the part you see; click or drag in it to move there.
 

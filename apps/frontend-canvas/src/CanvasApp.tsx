@@ -46,6 +46,7 @@ import './styles/voting.css';
 import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
+import type { FileStore } from './yjs/files.js';
 import { YjsWebsocketClient, type YjsConnectionStatus } from './yjs/YjsWebsocketClient.js';
 import { createSessionIdentity, withHostIdentity } from './presence/identity';
 import type { PresentUser } from './presence/collaborators';
@@ -149,16 +150,22 @@ export interface CanvasAppProps {
    */
   tokenProvider?: () => Promise<string | null | undefined>;
   /**
+   * Where the bytes of the board's images are stored (#702): an image is uploaded here when it is inserted, the shared
+   * document gets a reference to it, and the other clients load it from here. Without one the images stay on this screen.
+   */
+  fileStore?: FileStore;
+  /** An image could not be stored (the element is taken off the board again) or loaded; `message` says why. */
+  onFileError?: (error: Error) => void;
+  /**
    * A viewer: Excalidraw's view mode, no drawing tools in the toolbar, no import and no "clear canvas". The
    * realtime service refuses a viewer's changes anyway; this is what the viewer sees instead of tools that would
    * silently do nothing.
    */
   readOnly?: boolean;
   /**
-   * Whether images may be inserted (the toolbar's tool, its shortcut, paste and drop). Off by default: the Yjs
-   * binding shares elements, not Excalidraw's `files`, so an image would be seen by its author only and be gone
-   * after a reload. Excalidraw refuses an image itself when this is off ("Images are disabled"). The host switches
-   * it on once the files are stored and shared.
+   * Whether images may be inserted (the toolbar's tool, its shortcut, paste and drop). Off by default: without a
+   * `fileStore` an image would be seen by its author only and be gone after a reload. Excalidraw refuses an image
+   * itself when this is off ("Images are disabled"). The host switches it on together with the `fileStore`.
    */
   imagesEnabled?: boolean;
   /** The name shown next to this user's cursor on other screens; a generated guest name when unset. */
@@ -199,6 +206,8 @@ export function CanvasApp({
   onVotingChange,
   onError,
   tokenProvider,
+  fileStore,
+  onFileError,
   readOnly = false,
   imagesEnabled = false,
   userName,
@@ -237,6 +246,10 @@ export function CanvasApp({
   errorCallback.current = onError;
   const tokenProviderRef = useRef(tokenProvider);
   tokenProviderRef.current = tokenProvider;
+  const fileStoreRef = useRef(fileStore);
+  fileStoreRef.current = fileStore;
+  const fileErrorCallback = useRef(onFileError);
+  fileErrorCallback.current = onFileError;
   const readOnlyRef = useRef(readOnly);
   readOnlyRef.current = readOnly;
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
@@ -300,7 +313,10 @@ export function CanvasApp({
       },
     );
     votingSyncRef.current = votingSync;
-    const binding = new ExcalidrawYjsBinding(doc);
+    const binding = new ExcalidrawYjsBinding(doc, {
+      fileStore: () => fileStoreRef.current,
+      onError: (error) => fileErrorCallback.current?.(error),
+    });
     bindingRef.current = binding;
     if (apiRef.current) {
       binding.attach(apiRef.current);
@@ -729,8 +745,8 @@ export function CanvasApp({
           });
         }}
         onPointerUpdate={(update) => presenceRef.current?.pointerMoved(update)}
-        onChange={(elements, appState) => {
-          bindingRef.current?.onLocalChange(elements);
+        onChange={(elements, appState, files) => {
+          bindingRef.current?.onLocalChange(elements, files);
           presenceRef.current?.selectionChanged(appState.selectedElementIds);
           setActiveTool(appState.activeTool.type);
           if (appState.gridModeEnabled !== gridRef.current.show) {

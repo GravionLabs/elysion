@@ -2,6 +2,7 @@ using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Endpoints;
+using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
 using Elysion.BusinessBackend.Api.Logging;
 using Elysion.BusinessBackend.Api.Members;
@@ -20,6 +21,8 @@ builder.Services.AddOpenApi();
 // Keycloak access tokens are the only way in; endpoints that must stay open say so (docs/specs/identity.md).
 builder.Services.AddElysionAuthentication();
 builder.Services.AddBoardAuthorization();
+// The files of boards (images) live in an S3-compatible store, not in the shared document (#702).
+builder.Services.AddElysionFileStorage();
 
 builder.Services.AddDbContext<ElysionDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Elysion")));
@@ -76,6 +79,7 @@ app.MapBoardMemberEndpoints();
 app.MapRoomEndpoints();
 app.MapRoomMemberEndpoints();
 app.MapBoardDocumentEndpoints();
+app.MapBoardFileEndpoints();
 app.MapTemplateEndpoints();
 
 app.Run();

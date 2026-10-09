@@ -2,7 +2,7 @@
 # Deploys Elysion to a local kind cluster with the Helm chart (ADR 0018, infra/kind/README.md).
 #   infra/kind/deploy.sh up      create the cluster, build and load the images, install everything
 #   infra/kind/deploy.sh down    delete the cluster
-# Needs: docker, kind, kubectl, helm; the compose infrastructure (`pnpm dev:infra`: Postgres, Keycloak) running and
+# Needs: docker, kind, kubectl, helm; the compose infrastructure (`pnpm dev:infra`: Postgres, Keycloak, RustFS) running and
 # nothing else on host port 80 (`pnpm dev:stack:down`).
 set -euo pipefail
 
@@ -37,7 +37,7 @@ up() {
   helm upgrade --install traefik traefik/traefik --namespace traefik --create-namespace \
     -f infra/kind/traefik-values.yaml --wait --timeout 6m
 
-  echo "== external services (the host's Postgres and Keycloak, a Valkey in the cluster)"
+  echo "== external services (the host's Postgres, Keycloak and RustFS, a Valkey in the cluster)"
   # The kind nodes reach the host's published ports through the gateway of the docker network `kind`.
   HOST_IP=$(docker network inspect kind -f '{{range .IPAM.Config}}{{.Gateway}} {{end}}' | tr ' ' '\n' | grep -v ':' | head -1)
   docker exec elysion-postgres-1 psql -U elysion -d postgres -tc "select 1 from pg_database where datname='elysion_kind'" | grep -q 1 \
@@ -53,13 +53,16 @@ up() {
       --from-literal=WS_TOKEN_SECRET="$(openssl rand -hex 32)" \
       --from-literal=INTERNAL_API_SECRET="$(openssl rand -hex 32)" \
       --from-literal=POSTGRES_CONNECTION_STRING="Host=$HOST_IP;Port=5432;Database=elysion_kind;Username=elysion;Password=elysion" \
-      --from-literal=REDIS_URL="redis://valkey.elysion-external:6379"
+      --from-literal=REDIS_URL="redis://valkey.elysion-external:6379" \
+      --from-literal=S3_ACCESS_KEY="${S3_ACCESS_KEY:-elysion}" \
+      --from-literal=S3_SECRET_KEY="${S3_SECRET_KEY:-elysion123}"
   fi
 
   echo "== elysion"
   helm upgrade --install elysion infra/helm/elysion --namespace "$NAMESPACE" \
     -f infra/helm/elysion/values-kind.yaml \
     --set "oidc.jwksUri=http://$HOST_IP:8081/realms/elysion/protocol/openid-connect/certs" \
+    --set "objectStore.endpoint=http://$HOST_IP:${RUSTFS_S3_PORT:-9100}" \
     --wait --timeout 5m
   # An image rebuilt under the same tag is only picked up by a restart.
   kubectl -n "$NAMESPACE" rollout restart deployment >/dev/null

@@ -21,21 +21,8 @@ services:
     ports:
       - '127.0.0.1:${VICTORIALOGS_PORT:-9428}:9428'
 
-  # S3-compatible object store, reserved for exports and uploads (ADR 0007); no app uses it yet. Host ports 9100 and
-  # 9101 because Portainer from local-infra may own 9000.
+  # RustFS (in docker-compose.yml, ADR 0007) on the host: 9100 and 9101 because Portainer from local-infra may own 9000.
   rustfs:
-    image: rustfs/rustfs:1.0.1
-    environment:
-      RUSTFS_ACCESS_KEY: elysion
-      RUSTFS_SECRET_KEY: elysion123
-      RUSTFS_CONSOLE_ENABLE: 'true'
     ports:
       - '${RUSTFS_S3_PORT:-9100}:9000' # S3 API
       - '${RUSTFS_CONSOLE_PORT:-9101}:9001' # console
-    volumes:
-      - rustfs-data:/data
-    networks:
-      - elysion
-
-volumes:
-  rustfs-data:

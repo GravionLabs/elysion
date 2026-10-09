@@ -35,7 +35,7 @@ Then open <http://localhost> and log in as `dev`, `dev1` or `dev2` (the password
 to pin one (`ELYSION_VERSION=0.1.0-beta.126`). Settings (`ELYSION_VERSION`, ports) can also go into a `.env` (copy `.env.example`). `pnpm demo` builds the images from the checkout instead.
 `docker compose down` stops it, and `down -v` also forgets the data.
 
-The stack is Traefik (port 80), the four images, Postgres, Valkey (its own, for the realtime service) and Keycloak (port 8081,
+The stack is Traefik (port 80), the four images, Postgres, Valkey (its own, for the realtime service), RustFS (the object store that keeps the images of boards) and Keycloak (port 8081,
 admin console `admin` / `admin`). The business backend applies its database migrations when it starts.
 
 ## What a real deployment needs
@@ -50,6 +50,11 @@ The demo is wired to `localhost` and uses development values. Before it faces an
 - **Your own secrets.** `WS_TOKEN_SECRET` (BFF and realtime, [identity](specs/identity.md)) and `INTERNAL_API_SECRET` (realtime and business backend, [ADR 0017](adr/0017-internal-api-authentication.md))
   have development values in the compose file: set long random ones, the same in the services that share them.
 - **Postgres with backups** (the demo's volume is a convenience), and Valkey if you run more than one realtime instance.
+- **An object store for the images of boards:** the business backend needs any S3-compatible service (path-style addressing) and does not start without
+  one it can reach. It takes `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` and `S3_BUCKET` (default `elysion-files`, created at start if it is missing),
+  and the limits `MAX_FILE_BYTES` (10 MiB) and `MAX_FILES_PER_BOARD` (200). The demo's RustFS has development credentials and no host port; in
+  production use your own S3 (the chart's `objectStore.endpoint`, and `S3_ACCESS_KEY` and `S3_SECRET_KEY` in its Secret). The bucket is state: **back it up
+  like the database** (the files are named `boards/<board id>/<file id>`, and a board's document refers to them).
 - **Keycloak and the network:** the compose file publishes Keycloak (with its development admin password) on the loopback only (`KEYCLOAK_BIND`); in a real deployment it sits behind your TLS proxy and has no development admin at all.
 - **A Content-Security-Policy.** The frontend image sends `X-Content-Type-Options`, `Referrer-Policy` and `X-Frame-Options`, but no CSP yet; set one at your proxy once you know the identity provider's origin.
 - **CORS and the rate limit:** `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_AVERAGE` and `RATE_LIMIT_BURST` ([gateway](specs/gateway.md)).

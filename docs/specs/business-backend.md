@@ -177,7 +177,21 @@ The model for the identity epic (#91); no endpoint uses it yet.
 
 `GET/PUT/DELETE /internal/boards/{boardId}/document` store the Yjs state of a board for the realtime service, one full snapshot per board with a version (ADR 0011; protocol in docs/specs/realtime.md). `boardId` is a string of at most 200 characters (not necessarily a GUID); states up to 32 MB are accepted. The endpoints are minimal APIs in `Endpoints/BoardDocumentEndpoints.cs` and are not routed at the edge.
 
+## Board files (images)
+
+The files of a board (the images drawn on it) are kept in an S3-compatible object store, never in the shared document (#702): the document holds a reference, `{ fileId, mimeType, created }`, and the bytes live under the key `boards/{boardId}/{fileId}`. `fileId` is the id Excalidraw gives a file, a hash of its content, so the same image is stored once per board.
+
+| Request                           | Result                                                                                                                                                                                                                                                                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PUT /boards/{id}/files/{fileId}` | `204`; needs the board's write role. The body is the file, `Content-Type` one of `image/png`, `image/jpeg`, `image/gif`, `image/webp`. `415` for another type, `400` for bytes that are not that image, `413` over `MAX_FILE_BYTES`, `409` when the board holds `MAX_FILES_PER_BOARD` files |
+| `GET /boards/{id}/files/{fileId}` | `200` with the bytes (`Cache-Control: private, max-age=31536000, immutable`, `X-Content-Type-Options: nosniff`, a sandboxing CSP) or `404`; needs the read role                                                                                                                             |
+
+The type is checked by the first bytes, not by the header alone. **SVG is refused:** it is a document that can carry script, and the canvas draws the four raster formats. The upload is read into memory up to the limit (10 MiB by default) before it goes to the store, so that the bytes can be checked and the SDK can sign a payload of known length; the BFF in front streams. Deleting a board deletes every object under its prefix, duplicating one copies the prefix (the copy's document refers to the same ids). Endpoints: `Endpoints/BoardFileEndpoints.cs`; the store: `Files/` (`IFileStore`, `S3FileStore` with path-style addressing, `InMemoryFileStore` for the tests).
+
+At start the service creates the bucket if it is missing and checks that it can list it, retrying for 30 seconds because the store may start after the service; it does not start without a store (a wrong endpoint or key is found at start, not on the first upload). `S3FileStoreTests` runs the real client against a store when `ELYSION_TEST_S3_ENDPOINT` is set (RustFS of `pnpm dev:infra` is `http://localhost:9100`).
+
 ## Configuration
 
+- `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` (required), `S3_BUCKET` (default `elysion-files`) — the object store of board files. `MAX_FILE_BYTES` (default 10485760) and `MAX_FILES_PER_BOARD` (default 200) — the limits. The dev stack's values are in `docker-compose.yml` and `appsettings.Development.json`.
 - `ConnectionStrings:Elysion` — the Postgres connection string.
 - `Database:MigrateOnStartup` (default `false`) — when `true`, the app applies pending EF Core migrations at startup. The dev stack's container sets it, because it starts against an empty database; local runs use `dotnet ef database update`.

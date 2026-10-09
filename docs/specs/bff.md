@@ -12,16 +12,18 @@ UI-optimized aggregation of business-backend APIs, Redis caching for heavy UI qu
 
 Under `/api`, the prefix the gateway routes to the BFF. Backed by the business backend's Board API (`docs/specs/business-backend.md`); the BFF holds no state of its own.
 
-| Request                                                                              | Result                                                    |
-| ------------------------------------------------------------------------------------ | --------------------------------------------------------- |
-| `GET /api/boards`                                                                    | `200`, boards newest first                                |
-| `GET /api/boards/:id`                                                                | `200` or `404`                                            |
-| `POST /api/boards` `{ "name": "..." }`                                               | `201` with the board                                      |
-| `PATCH /api/boards/:id` `{ "name": "..." }`                                          | `200` with the renamed board, or `404`                    |
-| `POST /api/boards/:id/duplicate`                                                     | `201` with the copy, or `404`                             |
-| `DELETE /api/boards/:id`                                                             | `204` or `404`                                            |
-| `PUT /api/boards/:id/room` `{ roomId }`                                              | `200` with the board in or out of a room (`roomId: null`) |
-| `GET /api/rooms`, `POST /api/rooms`, `PATCH /api/rooms/:id`, `DELETE /api/rooms/:id` | rooms, see Rooms below                                    |
+| Request                                                                              | Result                                                                       |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `GET /api/boards`                                                                    | `200`, boards newest first                                                   |
+| `GET /api/boards/:id`                                                                | `200` or `404`                                                               |
+| `POST /api/boards` `{ "name": "..." }`                                               | `201` with the board                                                         |
+| `PATCH /api/boards/:id` `{ "name": "..." }`                                          | `200` with the renamed board, or `404`                                       |
+| `POST /api/boards/:id/duplicate`                                                     | `201` with the copy, or `404`                                                |
+| `DELETE /api/boards/:id`                                                             | `204` or `404`                                                               |
+| `PUT /api/boards/:id/room` `{ roomId }`                                              | `200` with the board in or out of a room (`roomId: null`)                    |
+| `PUT /api/boards/:id/files/:fileId`                                                  | `204`; the body is an image, streamed to the backend (see Board files below) |
+| `GET /api/boards/:id/files/:fileId`                                                  | `200` with the image, streamed from the backend, or `404`                    |
+| `GET /api/rooms`, `POST /api/rooms`, `PATCH /api/rooms/:id`, `DELETE /api/rooms/:id` | rooms, see Rooms below                                                       |
 
 | `GET /api/templates` | `200`, the template catalog without scenes |
 | `GET /api/templates/:id` | `200` with the template and its `scene` (the text of an `.excalidraw` file), or `404` |
@@ -29,6 +31,8 @@ Under `/api`, the prefix the gateway routes to the BFF. Backed by the business b
 A board is `{ id, name, createdAt, path }`: the backend's fields plus `path`, the frontend route that opens it (`/board/:id`).
 
 Errors: an id that is not a UUID is a `404` without a call to the backend; a body without a string `name` is a `400`; a name the backend rejects (blank, over 120 characters) stays a `400` with the backend's message; an unknown board stays `404`; an unreachable or failing backend is a `502` (`The business backend is not reachable.`), while `/health` stays up.
+
+**Board files** (#702): `src/boards/files.controller.ts` pipes the request body to the business backend and the answer back, so a file is never held in memory (`test/files.e2e-spec.ts` shows the backend receiving bytes while the client is still sending). `Content-Type` and `Content-Length` are required (`400`, `411`); a body that announces more than 64 MiB is a `413` without a call; the type, size and count limits are the backend's, whose `413`, `415` and `409` stay as they are. Of the backend's answer only the content type, length, cache and ETag headers and the `nosniff` and CSP headers are passed on.
 
 JSON bodies up to 6 MB are accepted (`src/http-limits.ts`), so a template's scene gets through; the backend limits the scene itself.
 
