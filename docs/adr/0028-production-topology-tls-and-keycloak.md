@@ -167,13 +167,11 @@ the environment set (`ELYSION_APP_URL`, `ELYSION_BFF_CLIENT_SECRET`), and adds t
   says so, with the realm and the settings as the part Elysion owns.
 - `docs/specs/gateway.md` gets a "TLS" section and `docs/self-hosting.md` links this ADR from "What a real deployment needs".
 
-## Open questions for the owner
+## Questions for the owner (answered)
 
-- Is there a domain to design against? The guide uses `elysion.example` and `id.example` as placeholders; nothing depends on the answer except the
-  examples.
-- Who runs the production Keycloak: the same team in the same cluster (the Keycloak Operator is then the guide's example), or an existing one elsewhere?
-  Elysion's work is the same either way, but the guide's example differs.
+- ~~Is there a domain to design against?~~ **Owner answer (2026-10-09): no.** The guide and `values-production.example.yaml` use `elysion.example` and `id.example`; an operator replaces them.
+- ~~Who runs the production Keycloak?~~ **Owner answer (2026-10-09): not known yet.** Elysion's work is the same either way (the realm release asset, the documented Keycloak settings and the ingress rules). The guide therefore shows the Keycloak Operator as **one example** and says plainly that an existing Keycloak or another provider works the same; it does not pick one.
 
 ## Decision
 
-_Proposed. The owner has decided that production is Kubernetes through the Helm chart and compose is for development; to be accepted by the product owner, who then removes `needs-decision` from #672._
+_Proposed. The owner has decided that production is Kubernetes through the Helm chart and compose is for development, that there is no domain yet and that the operator of the production Keycloak is not known; to be accepted by the product owner, who then removes `needs-decision` from #672._
