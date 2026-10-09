@@ -86,10 +86,11 @@ routes over the `elysion_elysion` network, the compose project's own.
 
 ## TLS
 
-Proposed in [ADR 0028](../adr/0028-production-topology-tls-and-keycloak.md), implemented by #673; the stack in this repository still serves plain HTTP
-on port 80 and is a demo. Production has a `websecure` entry point with a redirect from `web`, certificates from ACME (HTTP-01) or provided, HSTS with
-`max-age=31536000` and no `includeSubDomains`, no open dashboard and no Docker socket in Traefik. Keycloak has its own host name and only `/realms/` and
-`/resources/` are routed to it. In Kubernetes the chart never does ACME: cert-manager makes the Secret that `edge.tlsSecretName` names.
+Proposed in [ADR 0028](../adr/0028-production-topology-tls-and-keycloak.md): production is Kubernetes through the Helm chart, and the compose stack in this
+repository serves plain HTTP on port 80 and is a demo and a development setup. In the chart the routes go on `websecure` with a certificate Secret that
+cert-manager (or the operator's PKI) made (`edge.tlsSecretName`; the chart never does ACME), `edge.redirectToHttps` adds the redirect from `web`, and
+`edge.hsts.maxAge` the HSTS header (`max-age=31536000` proposed, no `includeSubDomains`, no `preload`). Traefik's own chart is configured without the dashboard and
+without the Docker socket. Keycloak has its own host name and only `/realms/` and `/resources/` are routed to it. None of this is implemented yet (#673).
 
 ## In Kubernetes
 

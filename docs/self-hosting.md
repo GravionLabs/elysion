@@ -40,7 +40,7 @@ admin console `admin` / `admin`). The business backend applies its database migr
 
 ## What a real deployment needs
 
-The topology (TLS, host names, where Keycloak sits) is proposed in [ADR 0028](adr/0028-production-topology-tls-and-keycloak.md); the production overlay that implements it is #673.
+The topology (TLS, host names, where Keycloak sits) is proposed in [ADR 0028](adr/0028-production-topology-tls-and-keycloak.md); production is Kubernetes through the Helm chart, and compose stays the demo; the work that implements it is #673 (to be rewritten once the ADR is accepted).
 
 The demo is wired to `localhost` and uses development values. Before it faces anybody else:
 

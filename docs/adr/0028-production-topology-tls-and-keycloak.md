@@ -1,6 +1,6 @@
 # ADR 0028: The production topology: TLS, host names and Keycloak behind the edge
 
-- Status: Proposed
+- Status: Proposed (the owner has answered the open questions on 2026-10-09: **compose is for development and the demo, production is Kubernetes through the Helm chart**)
 - Date: 2026-10-09
 - Issues: #672 (Feature #671, Epic #670); implemented in #673
 - Builds on: [ADR 0014](0014-keycloak-identity-provider.md) (Keycloak, the realm as a file), [ADR 0018](0018-kubernetes-packaging.md) (the chart deploys the four services only), [ADR 0023](0023-own-valkey-one-compose-file.md) (one stack definition), ADR 0027 (enterprise sign-in, Proposed in #747) (brokering needs a public Keycloak)
@@ -12,6 +12,11 @@ the admin `admin`/`admin`, a realm that carries four users with their own names 
 literals in `docker-compose.yml`. [Self-hosting](../self-hosting.md) lists what a real deployment has to change and says nothing about **how**. #673
 writes that overlay and the guide; this ADR decides the shape first, because every answer reaches the realm file, the frontend's settings, the Helm
 values and the enterprise identity epic (#636, whose brokered login needs Keycloak to be reachable at a public URL).
+
+**Owner answer (2026-10-09): compose is for development and the demo; production is Kubernetes through the Helm chart.** So this ADR decides the
+production topology **for the chart**. The first draft of it also designed a production compose overlay (ACME in Traefik, required-secret variables, a
+production env script); that part is dropped, and the stack in `docker-compose.yml` stays a demo with plain HTTP and development values, which
+[self-hosting](../self-hosting.md) already says. What is left of the compose design is noted where it still matters.
 
 What exists today (checked in the code on 2026-10-09):
 
@@ -52,10 +57,13 @@ What exists today (checked in the code on 2026-10-09):
 address), which is the point of ADR 0014. A is workable but ties Keycloak's build options and routes to the app's; its one advantage, same-origin, is
 bought back by sibling subdomains.
 
-**Keycloak is exposed in part.** Traefik routes only `/realms/` and `/resources/` of the identity host to Keycloak (login, tokens, keys, the account
-pages and their assets); **`/admin` and the master realm are not routed**. Administration happens on the internal network (`docker compose exec`, an SSH
-tunnel, `kubectl port-forward`). `KC_HOSTNAME_ADMIN` keeps its links internal. The temporary bootstrap admin (`KC_BOOTSTRAP_ADMIN_*`, first start only)
-is replaced by a named administrator and deleted, as Keycloak's own guidance says.
+**In Kubernetes Keycloak is not part of the chart** (ADR 0018), so "behind the edge" means: the operator runs Keycloak in production mode next to the
+release (the Keycloak Operator or any chart, with its own database, not Elysion's) and gives it the host name. Elysion's side of that is a **documented
+set of Keycloak settings** (`start`, `KC_HOSTNAME=https://id.example`, `KC_PROXY_HEADERS=xforwarded`, `KC_HTTP_ENABLED` behind the ingress,
+`KC_HOSTNAME_ADMIN` internal) and the **realm file** (below), not a chart. The ingress in front of Keycloak routes only `/realms/` and `/resources/`
+(login, tokens, keys, the account pages and their assets); **`/admin` and the master realm are not routed**. Administration happens inside the cluster
+(`kubectl port-forward`). The temporary bootstrap admin (`KC_BOOTSTRAP_ADMIN_*`, first start only) is replaced by a named administrator and deleted, as
+Keycloak's own guidance says. B and C are therefore the same work for Elysion; they differ in who runs the Keycloak.
 
 ### TLS termination
 
@@ -71,19 +79,23 @@ behind a firewall and allows a wildcard, needs an API token for the DNS zone).
 | Fits a company with its own CA | No.                                                      | No.                                           | Yes.                                |
 | State                          | `acme.json` in a volume (mode 600).                      | The same.                                     | Files or a Secret.                  |
 
-**Recommendation:** in **compose**, Traefik with ACME HTTP-01 as the default of the production overlay, and a **provided certificate** as the documented
-alternative (a file provider entry); DNS-01 is a paragraph in the guide, not a configuration we ship. In **Kubernetes** the chart **never does ACME**: the
-cluster's cert-manager makes a Secret of type `kubernetes.io/tls` and the chart references it (`edge.tlsSecretName`, which exists), exactly because
-a chart that talks to Let's Encrypt owns a certificate lifecycle it cannot see.
+**Recommendation:** in **Kubernetes** the chart **never does ACME**: the cluster's cert-manager (or the operator's own PKI) makes a Secret of type
+`kubernetes.io/tls` and the chart references it (`edge.tlsSecretName`, which exists), because a chart that talks to Let's Encrypt owns a certificate
+lifecycle it cannot see. How cert-manager gets the certificate (HTTP-01, DNS-01, an internal CA) is the cluster's business and the guide says so in a
+paragraph. In **compose** there is no production TLS: the demo stays on port 80.
 
-**The edge in production** also means: a `websecure` entry point on `:443` and a permanent redirect from `web`; Traefik's dashboard and `api.insecure`
-off (the dashboard is reachable only on the internal network, behind a router with a password, or not at all); the `metrics` entry point still not
-published; and the Docker socket, which the dev stack mounts read-only into Traefik, replaced by a socket proxy or by the file provider
-(a service that can read the Docker API can read every container's environment, secrets included).
+**The edge in production** is Traefik installed in the cluster (its own chart, ADR 0018), and Elysion's chart renders what is Elysion's:
 
-**HSTS: yes**, `Strict-Transport-Security: max-age=31536000` on both hosts, **without** `includeSubDomains` and **without** `preload` (those commit a
-whole domain, which is not ours to commit). The guide tells an operator to start with `max-age=604800` (one week) for the first deployment and raise it
-once it is known to work, because a wrong HSTS header cannot be taken back from a browser that has seen it.
+- **the routes on `websecure`** (`edge.entryPoints: [websecure]`) with `edge.tlsSecretName`, and **a redirect from `web`**: a new
+  `edge.redirectToHttps` (default off, so the kind setup keeps working) renders a `redirectScheme` `Middleware` and a second `IngressRoute` on `web`;
+- **HSTS** as a `headers` `Middleware` (`stsSeconds`) from `edge.hsts.maxAge`;
+- on Traefik's own chart (the operator's values, with an example in the guide): the dashboard off, `api.insecure` off, the `metrics` entry point not
+  exposed, and the Kubernetes CRD provider instead of the Docker socket, which the dev stack mounts into Traefik (a service that can read the Docker API
+  can read every container's environment, secrets included, so the compose file is development only for that reason too).
+
+**HSTS: yes**, `max-age=31536000` on both hosts, **without** `includeSubDomains` and **without** `preload` (those commit a whole domain, which is not
+ours to commit). The guide tells an operator to start with `max-age=604800` (one week) for the first deployment and raise it once it is known to work,
+because a wrong HSTS header cannot be taken back from a browser that has seen it.
 
 ### Host names and the realm
 
@@ -95,59 +107,73 @@ The realm's redirect URIs and web origins must be exactly the application host (
 `sslRequired: external`, and replaces the redirect URIs, web origins and the BFF client secret with Keycloak's `${VAR}` placeholders
 (`ELYSION_APP_URL`, `ELYSION_BFF_CLIENT_SECRET`), which Keycloak's import substitutes from the environment (the same mechanism #639 uses for the
 identity provider). A test asserts the output has no `users`, no direct grants, no `localhost` and no literal secret. Two files that are edited by
-hand would diverge the first time somebody adds a client.
+hand would diverge the first time somebody adds a client. **The operator gets the production realm as a release asset** (CI builds it with the script
+and attaches `realm-elysion.production.json` to every GitHub release, next to the images and the chart's version), imports it into their Keycloak with
+the environment set (`ELYSION_APP_URL`, `ELYSION_BFF_CLIENT_SECRET`), and adds their own users or identity provider (ADR 0027) there.
 
 ### Secrets
 
-- **Compose:** a `docker-compose.prod.yml` overlay (an overlay, so ADR 0023's "one stack definition" holds: it overrides settings, it does not define
-  services) that sets every secret as `${NAME:?NAME is required}`, so an unset secret **stops** the start instead of falling back to a development value
-  in the base file. `scripts/setup-prod-env.mjs` writes a git-ignored `.env.production` with random values for what is generated (`WS_TOKEN_SECRET`,
-  `INTERNAL_API_SECRET`, database and Keycloak passwords, the BFF client secret, the object store keys) and asks for what is not (`ELYSION_APP_URL`,
-  `ELYSION_ID_URL`, the ACME email). It never overwrites a file that exists.
-- **Kubernetes:** the existing Secret (`secrets.existingSecret`), as today, with the new keys of #702 (`S3_*`); nothing in a committed values file.
-- **No development default stays reachable in the production profile:** a test in CI renders the production compose configuration
-  (`docker compose -f docker-compose.yml -f docker-compose.prod.yml config`) with a complete `.env` and fails if any of the known development values
-  (`admin`/`admin`, `dev-only-`, `elysion123`, `elysion-bff-dev-secret`) appears in it.
+- **Kubernetes:** the existing Secret (`secrets.existingSecret`), with the keys the chart README lists (`WS_TOKEN_SECRET`, `INTERNAL_API_SECRET`,
+  `POSTGRES_CONNECTION_STRING`, `REDIS_URL`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`); nothing in a committed values file, and the chart refuses a release whose
+  Secret is missing (it already fails on a missing `oidc.issuerUrl` and `objectStore.endpoint`). The operator creates it, or their secret operator does.
+- **A production example** `infra/helm/elysion/values-production.example.yaml` shows the settings of this ADR (`websecure`, the TLS Secret, the redirect,
+  HSTS, replicas above one, the issuer on the identity host) with every host as `*.example`.
+- **No development default can reach a production release:** CI renders the chart with the production example (`helm template`) and fails if any
+  known development value (`admin`/`admin`, `dev-only-`, `elysion123`, `elysion-bff-dev-secret`, `localhost`) appears in the output.
+- **Compose** keeps its development defaults, and `docker-compose.yml` says at its top that it is not a production setup (it already does).
 
 ## Decision (proposed)
 
-1. **Keycloak on its own host name behind Traefik (B)**, sibling subdomains of one registrable domain; **only `/realms/` and `/resources/` are routed**,
-   the admin console is internal; an external provider (C) is documented and needs no other change. The demo keeps `localhost:8081` and `start-dev`.
-2. **TLS:** Traefik with ACME HTTP-01 by default in compose, a provided certificate as the documented alternative; in Kubernetes the chart never does ACME
-   (cert-manager makes the Secret). HSTS `max-age=31536000` on both hosts, no `includeSubDomains`, no `preload`, one week for a first deployment.
-3. **The edge:** `websecure` on 443 with a redirect, dashboard and `api.insecure` off, no Docker socket in a production Traefik.
-4. **The realm:** derived from the development realm by `scripts/build-realm.mjs` (no users, no direct grant, `sslRequired: external`, placeholders for the
-   URLs and the BFF secret), tested.
-5. **Secrets:** a `docker-compose.prod.yml` overlay with required variables and `scripts/setup-prod-env.mjs`; the Kubernetes Secret as today; a CI check
-   that no development value survives in the rendered production configuration.
-6. **New configuration names** (documented in `docs/specs/gateway.md` and `docs/self-hosting.md`): `ELYSION_APP_URL`, `ELYSION_ID_URL`, `ELYSION_ACME_EMAIL`,
-   `ELYSION_BFF_CLIENT_SECRET`; the services' own (`OIDC_ISSUER_URL`, `OIDC_JWKS_URI`, `CORS_ALLOWED_ORIGINS`) are set from them by the overlay.
+1. **Production is Kubernetes through the Helm chart; compose is for development and the demo** (the owner's answer). There is no production compose
+   overlay.
+2. **Keycloak on its own host name behind the ingress (B)**, sibling subdomains of one registrable domain, run by the operator next to the release; **only
+   `/realms/` and `/resources/` are routed**, the admin console is internal; an external provider (C) needs nothing else. Elysion documents Keycloak's
+   settings and ships the realm. The demo keeps `localhost:8081` and `start-dev`.
+3. **TLS:** the chart never does ACME; cert-manager (or the operator's PKI) makes the Secret that `edge.tlsSecretName` names. HSTS `max-age=31536000` on
+   both hosts, no `includeSubDomains`, no `preload`, one week for a first deployment.
+4. **The edge:** the chart renders the routes on `websecure`, an optional redirect from `web` (`edge.redirectToHttps`) and an HSTS `Middleware`
+   (`edge.hsts.maxAge`); Traefik's own chart is configured by the operator without the dashboard, `api.insecure` and the Docker socket.
+5. **The realm:** derived from the development realm by `scripts/build-realm.mjs` (no users, no direct grant, `sslRequired: external`, placeholders for the
+   URLs and the BFF secret), tested, and attached to every release as `realm-elysion.production.json`.
+6. **Secrets:** the Kubernetes Secret as today, a `values-production.example.yaml`, and a CI check that no development value survives in the rendered
+   chart.
+7. **Configuration names:** Helm values `edge.host`, `edge.tlsSecretName`, `edge.redirectToHttps`, `edge.hsts.maxAge`, `oidc.issuerUrl` (the identity host plus
+   `/realms/elysion`); the realm's placeholders `ELYSION_APP_URL` and `ELYSION_BFF_CLIENT_SECRET`. Documented in `docs/specs/gateway.md` and
+   `docs/self-hosting.md`.
 
 ## Rejected options
 
+- **A production compose overlay with ACME in Traefik and required-secret variables:** drafted first, dropped on the owner's answer. A single-host
+  compose production would be a second production target to build, document and keep secure (its Docker socket, its backup, its upgrades) for a use that
+  is not planned.
 - **A (a path of the app host):** a build-time option of Keycloak and a prefix that every redirect, asset and the frontend's authority must honour; the
   one benefit (same origin) is available with sibling subdomains.
-- **DNS-01 as the default:** it needs a credential for the DNS zone in the stack; an operator who needs a wildcard or has no inbound port 80 can set it up
-  from the guide.
+- **ACME inside the chart:** a certificate lifecycle the chart cannot observe; cert-manager is the cluster's tool for it.
 - **Two realm files kept by hand:** they diverge.
 - **HSTS with `includeSubDomains` and `preload` from the start:** not reversible, and Elysion does not own the rest of an operator's domain.
 - **Exposing the admin console with a firewall rule in front of it:** one wrong rule is a public administrator login; not routing it is the safer default.
 
 ## Consequences
 
-- #673 builds the overlay, the Traefik production configuration, `build-realm.mjs`, `setup-prod-env.mjs` and the rewritten self-hosting guide; #677 (the
-  security review) and #680 (headers and CSP) use the host names decided here (the CSP allows `ELYSION_ID_URL` for `connect-src` and `form-action`).
-- The frontend's authority and every service's `OIDC_ISSUER_URL` are set from `ELYSION_ID_URL` plus `/realms/elysion`; the demo's value does not change.
-- Entra's redirect URI is `${ELYSION_ID_URL}/realms/elysion/broker/entra/endpoint` (ADR 0027).
-- A deployment now has two certificates (or one wildcard); `acme.json` is state that has to be in the backup next to the database.
+- **#673 and its tasks #674 to #676 are written for a compose overlay and have to be rewritten after this ADR is accepted** (the issue says so itself).
+  The work becomes: the chart's `websecure`, redirect and HSTS resources and `values-production.example.yaml`; `scripts/build-realm.mjs` with its test and
+  the release asset; the rendered-chart check in CI; and a self-hosting guide around Kubernetes (prerequisites: a cluster, Traefik, cert-manager, a
+  Postgres, a Valkey, an S3 store and a Keycloak; the steps; updating by `image.tag`; rotating a secret) with the compose part reduced to "the demo".
+  #677 (the security review) and #680 (headers and CSP) use the host names decided here (the CSP allows the identity host for `connect-src` and
+  `form-action`).
+- The frontend's authority and every service's `OIDC_ISSUER_URL` are set from `oidc.issuerUrl`; the demo's value does not change.
+- Entra's redirect URI is `https://<identity host>/realms/elysion/broker/entra/endpoint` (ADR 0027).
+- A deployment has two host names and two certificates (or one wildcard), and **Keycloak is the operator's to run, back up and upgrade**: the guide
+  says so, with the realm and the settings as the part Elysion owns.
 - `docs/specs/gateway.md` gets a "TLS" section and `docs/self-hosting.md` links this ADR from "What a real deployment needs".
 
 ## Open questions for the owner
 
-- Which environments come first: **compose on one host**, **Kubernetes**, or both? The proposal builds compose first (#673) and uses cert-manager
-  for the chart, but if only Kubernetes matters, the compose overlay can shrink to documentation.
-- Is there a domain to design against? The guide uses `elysion.example` and `id.example` as placeholders.
+- Is there a domain to design against? The guide uses `elysion.example` and `id.example` as placeholders; nothing depends on the answer except the
+  examples.
+- Who runs the production Keycloak: the same team in the same cluster (the Keycloak Operator is then the guide's example), or an existing one elsewhere?
+  Elysion's work is the same either way, but the guide's example differs.
 
 ## Decision
 
-_Proposed. To be accepted by the product owner, who then removes `needs-decision` from #672._
+_Proposed. The owner has decided that production is Kubernetes through the Helm chart and compose is for development; to be accepted by the product owner, who then removes `needs-decision` from #672._
