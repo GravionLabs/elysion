@@ -11,7 +11,7 @@ namespace Elysion.BusinessBackend.Api.Logging;
 
 /// <summary>
 /// One JSON object per line, in the shape all three services share (ADR 0025): <c>timestamp</c> (ISO 8601, UTC),
-/// <c>level</c> (<c>trace</c> to <c>fatal</c>), <c>service</c>, <c>requestId</c>, <c>message</c>, <c>userId</c>, and
+/// <c>level</c> (<c>trace</c> to <c>fatal</c>), <c>service</c>, <c>requestId</c>, <c>message</c>, <c>userId</c>, <c>context</c> (the category), and
 /// <c>err</c> (<c>type</c>, <c>message</c>, <c>stack</c>) for an exception. The line of a finished request adds
 /// <c>http</c> (<c>method</c>, <c>route</c>, <c>status</c>, <c>durationMs</c>). Other properties of the event follow
 /// with their names in camel case. The request path is not written: the route pattern says which endpoint it was.
@@ -45,7 +45,7 @@ public sealed class ElysionJsonFormatter(string service) : ITextFormatter
             WriteText(json, "requestId", logEvent, RequestIdMiddleware.PropertyName);
             json.WriteString("message", RenderMessage(logEvent));
             WriteText(json, "userId", logEvent, UserIdLogMiddleware.PropertyName);
-            WriteText(json, "logger", logEvent, "SourceContext");
+            WriteText(json, "context", logEvent, "SourceContext");
             WriteHttp(json, logEvent);
             WriteException(json, logEvent.Exception);
             foreach (var (name, value) in logEvent.Properties)
