@@ -1,3 +1,5 @@
+import { Readable } from 'node:stream';
+import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { REQUEST_ID_HEADER, currentRequestId } from '@elysion/node-logging';
 import type { BoardRole } from '@elysion/shared-types';
 import {
@@ -8,7 +10,9 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  PayloadTooLargeException,
   UnauthorizedException,
+  UnsupportedMediaTypeException,
 } from '@nestjs/common';
 
 /** Base URL of the business backend, e.g. `http://localhost:5174`. */
@@ -54,6 +58,24 @@ export interface BoardMember {
 }
 
 const TIMEOUT_MS = 5000;
+/** A file moves as one stream, so it gets longer than a JSON call: 10 MiB over a slow link. */
+const FILE_TIMEOUT_MS = 60_000;
+
+/** A file of a board as the business backend streams it: the headers worth passing on, and the bytes. */
+export interface BackendFile {
+  headers: Record<string, string>;
+  stream: Readable;
+}
+
+/** What the browser needs to cache and show a file safely; everything else of the backend's answer stays here. */
+const FILE_RESPONSE_HEADERS = [
+  'content-type',
+  'content-length',
+  'cache-control',
+  'etag',
+  'x-content-type-options',
+  'content-security-policy',
+];
 
 /**
  * Talks to the business backend's Board API on behalf of the signed-in user: every call carries the user's
@@ -192,8 +214,76 @@ export class BusinessBackendClient {
     }
   }
 
+  /**
+   * Streams a file to the backend without holding it: the request body is piped, so the BFF's memory does not grow
+   * with the file. `length` is the request's own `Content-Length`; the backend refuses a body over its limit.
+   */
+  async putFile(
+    token: string,
+    boardId: string,
+    fileId: string,
+    file: { contentType: string; length: number; body: Readable },
+  ): Promise<void> {
+    const response = await this.fetchBackend(`/boards/${boardId}/files/${fileId}`, {
+      method: 'PUT',
+      headers: {
+        ...this.headers(token),
+        'content-type': file.contentType,
+        'content-length': String(file.length),
+      },
+      body: Readable.toWeb(file.body) as ReadableStream,
+      duplex: 'half',
+      signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
+    } as RequestInit);
+    if (!response.ok) {
+      await this.fail(response);
+    }
+    await response.body?.cancel();
+  }
+
+  /** A file of a board; the body is a stream, to be piped to the caller and not read into memory. */
+  async getFile(token: string, boardId: string, fileId: string): Promise<BackendFile> {
+    const response = await this.fetchBackend(`/boards/${boardId}/files/${fileId}`, {
+      method: 'GET',
+      headers: this.headers(token),
+      signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      await this.fail(response);
+    }
+    const headers: Record<string, string> = {};
+    for (const name of FILE_RESPONSE_HEADERS) {
+      const value = response.headers.get(name);
+      if (value !== null) headers[name] = value;
+    }
+    return {
+      headers,
+      stream:
+        response.body === null
+          ? Readable.from([])
+          : Readable.fromWeb(response.body as unknown as NodeReadableStream),
+    };
+  }
+
   async deleteBoard(token: string, id: string): Promise<void> {
     await this.request<void>(token, 'DELETE', `/boards/${id}`);
+  }
+
+  /** The headers of every call: the caller's token and the id of the request being handled, so the backend's lines carry it (ADR 0025). */
+  private headers(token: string): Record<string, string> {
+    const requestId = currentRequestId();
+    return {
+      authorization: `Bearer ${token}`,
+      ...(requestId === undefined ? {} : { [REQUEST_ID_HEADER]: requestId }),
+    };
+  }
+
+  private async fetchBackend(path: string, init: RequestInit): Promise<Response> {
+    try {
+      return await fetch(new URL(path, this.baseUrl), init);
+    } catch {
+      throw new BadGatewayException('The business backend is not reachable.');
+    }
   }
 
   private async request<T>(
@@ -202,27 +292,24 @@ export class BusinessBackendClient {
     path: string,
     body?: unknown,
   ): Promise<T> {
-    let response: Response;
-    // The id of the request being handled goes on, so the backend's lines for it carry the same id (ADR 0025).
-    const requestId = currentRequestId();
-    try {
-      response = await fetch(new URL(path, this.baseUrl), {
-        method,
-        headers: {
-          authorization: `Bearer ${token}`,
-          ...(requestId === undefined ? {} : { [REQUEST_ID_HEADER]: requestId }),
-          ...(body === undefined ? {} : { 'content-type': 'application/json' }),
-        },
-        body: body === undefined ? undefined : JSON.stringify(body),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
-    } catch {
-      throw new BadGatewayException('The business backend is not reachable.');
-    }
+    const response = await this.fetchBackend(path, {
+      method,
+      headers: {
+        ...this.headers(token),
+        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
 
     if (response.ok) {
       return (response.status === 204 ? undefined : await response.json()) as T;
     }
+    return this.fail(response);
+  }
+
+  /** The HTTP error the BFF answers with for a failed call of the backend. */
+  private async fail(response: Response): Promise<never> {
     if (response.status === 401) {
       throw new UnauthorizedException();
     }
@@ -235,6 +322,12 @@ export class BusinessBackendClient {
     }
     if (response.status === 409) {
       throw new ConflictException(await problemDetail(response));
+    }
+    if (response.status === 413) {
+      throw new PayloadTooLargeException(await problemDetail(response));
+    }
+    if (response.status === 415) {
+      throw new UnsupportedMediaTypeException();
     }
     if (response.status === 400) {
       throw new BadRequestException(await validationMessage(response));

@@ -67,6 +67,14 @@ export class FakeBusinessBackend {
   lastTemplateRequest: { method: string; path: string; body: unknown } | null = null;
   /** Answers every template POST or DELETE with this status (a refusal of the backend's rules). */
   templateRefusal: number | null = null;
+  /** The files of boards, by `boardId/fileId`: what the file routes received and serve. */
+  readonly files = new Map<string, { contentType: string; bytes: Buffer }>();
+  /** The bytes of the file being uploaded that have arrived so far (a test reads it while the upload is still running). */
+  uploadedSoFar = 0;
+  /** With `fileRefusal`: answer at once, without reading the body (as the real backend does when a file is too large). */
+  fileRefusalEarly = false;
+  /** Answers every file PUT with this status (a refusal of the backend's rules: 413, 415, 409). */
+  fileRefusal: number | null = null;
   /** The `Authorization` header of every request, in order. */
   readonly authorizations: Array<string | undefined> = [];
   /** The `X-Request-Id` of every request, in order (ADR 0025). */
@@ -175,6 +183,35 @@ export class FakeBusinessBackend {
         return send(204);
       }
       return send(405);
+    }
+    const fileRoute = /^\/boards\/([^/]+)\/files\/([^/]+)$/.exec(req.url ?? '');
+    if (fileRoute) {
+      const key = `${fileRoute[1]}/${fileRoute[2]}`;
+      if (req.method === 'PUT') {
+        if (this.fileRefusal && this.fileRefusalEarly) return send(this.fileRefusal);
+        const parts: Buffer[] = [];
+        this.uploadedSoFar = 0;
+        for await (const chunk of req) {
+          parts.push(chunk as Buffer);
+          this.uploadedSoFar += (chunk as Buffer).length;
+        }
+        if (this.fileRefusal) return send(this.fileRefusal);
+        this.files.set(key, {
+          contentType: String(req.headers['content-type']),
+          bytes: Buffer.concat(parts),
+        });
+        return send(204);
+      }
+      const file = this.files.get(key);
+      if (!file) return send(404);
+      res.writeHead(200, {
+        'content-type': file.contentType,
+        'content-length': file.bytes.length,
+        'cache-control': 'private, max-age=31536000, immutable',
+        'x-content-type-options': 'nosniff',
+        'x-internal': 'must-not-be-passed-on',
+      });
+      return void res.end(file.bytes);
     }
     const membership = /^\/boards\/([^/]+)\/membership\/me$/.exec(req.url ?? '');
     if (membership) {
