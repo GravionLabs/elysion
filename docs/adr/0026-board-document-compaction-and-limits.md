@@ -116,8 +116,7 @@ history would arrive as concurrent writes from an unknown client, and Yjs would 
   two clients, one of them offline across a rebuild.
 - If a measurement later shows boards over 8 MiB that are not abuse, raise `MAX_DOCUMENT_BYTES` and the gateway's `maxPayload` together; nothing else
   depends on the numbers.
-- Open question for the owner: whether `MAX_ELEMENTS` should be 20,000 (a very large workshop is 3,500) or lower, which makes loading faster
-  on a weak laptop. Rendering, not storage, is the cost there, and there is no measurement yet.
+- **Owner answer (2026-10-09): 20,000 elements is fine.** It stays a constant of the canvas, to be lowered if rendering on a weak laptop turns out to need it (there is no rendering measurement yet).
 
 ## If the owner picks something else
 
@@ -128,4 +127,4 @@ history would arrive as concurrent writes from an unknown client, and Yjs would 
 
 ## Decision
 
-_Proposed. To be accepted by the product owner, who then removes `needs-decision` from #697._
+_Proposed. The owner has confirmed the element limit (20,000); to be accepted by the product owner, who then removes `needs-decision` from #697._
