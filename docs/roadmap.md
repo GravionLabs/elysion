@@ -6,7 +6,7 @@ milestone. The backlog and its order are on the project board
 ([GravionLabs project 7](https://github.com/users/GravionLabs/projects/7)). When the plan changes, update this file and the
 board together.
 
-Last refreshed on 2026-10-07. **Phases M1 to M11 are done**; there is no open issue.
+Last refreshed on 2026-10-09. **Phases M1 to M11 are done**; structured logs with a request id and a log viewer in the dev stack are done (#625); M13 to M15 are planned (Epics #636, #670 and #722).
 
 ## Done
 
@@ -37,14 +37,38 @@ documentation site.
 - **Documentation site** on GitHub Pages, built from `docs/` and the README.
 - **A container check on pull requests:** the images build and the demo stack starts.
 
+## M13 Enterprise identity
+
+A company runs Elysion with its own identity (Epic #636; the ADR of #638 decides the details):
+
+- **Sign in with Microsoft Entra ID** through Keycloak identity brokering, with a second realm as a stand-in for development
+  and the browser tests, and the shell going straight to the company's login (#637).
+- **User groups** from the token's `groups` claim or made locally, with a role on a room; the highest of board, room and
+  group role wins, and the realtime handshake does not change (#646).
+- **Administration and a user directory:** the realm role `elysion-admin`, admin pages for users, groups and rooms, and
+  finding people by name in the Share dialog (#655).
+- **Later:** group members from Microsoft Graph before they sign in, deactivation and hand-over, an audit log (#666).
+
+## M14 Production readiness
+
+What has to be true before anything real depends on Elysion (Epic #670):
+
+- **Production configuration and security** (#671): the topology decision (#672), a production overlay with TLS and
+  Keycloak in production mode, a security review with scanning in CI, security headers and a CSP.
+- **Backups, alerting and a hardened Helm chart** (#683): a rehearsed restore, alert rules on the metrics, probes,
+  security contexts, PDBs and an HPA, an upgrade test from the last pre-release.
+- **Board documents, images and limits** (#696): compaction and a size limit (decision #697), images in the object
+  store (today an image is visible to its author only and gone after a reload, #702), a load test, the bundle budget.
+- **Browser tests and housekeeping** (#713): rooms, templates, import and export, the drawing tools, reconnect; the
+  flaky canvas test and the stylesheet at its limit.
+
+## M15 Product gaps
+
+The gaps users notice first (Epic #722; PBIs written, tasks when scheduled): PDF and image import and a better export
+(#723), thumbnails, search, sorting and favorites (#728), secret votes, comments, invitation links and working through
+an outage (#731), dark theme colors, a German interface and accessibility (#736).
+
 ## After the pre-release
 
-Not planned in detail yet; roughly in this order.
-
-1. **A security review** of the services and the images, and a production configuration: TLS, a host name, a production Keycloak, secrets
-   ([ADR 0014](adr/0014-keycloak-identity-provider.md), [ADR 0017](adr/0017-internal-api-authentication.md), the Helm chart).
-2. **More browser end-to-end tests** (a first suite with two real users covers sharing, the timer and the voting): rooms, templates, export, the drawing tools.
-3. **Real board thumbnails** on the cards of the overview.
-4. **Votes on the server** if viewers must be able to vote or the votes must be secret ([ADR 0020](adr/0020-facilitation-state.md), option C).
-5. **Housekeeping:** the initial bundle is over its 500 kB warning budget, `board-list.scss` is at its limit, and one canvas test
-   (`QuickConnect.spec.tsx`) is flaky under load.
+Nothing is left over: everything of the earlier list is in M14 and M15. Structured logs with a request id and a log
+viewer in the dev stack are done ([ADR 0025](adr/0025-structured-logging-and-log-viewer.md), #625).
