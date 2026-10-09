@@ -107,6 +107,26 @@ describe('elysion-canvas custom element', () => {
     document.body.removeChild(el);
   });
 
+  it('has a fileStore property, also when it was set before the element was upgraded', () => {
+    const store = { put: vi.fn(async () => undefined), get: vi.fn(async () => new Blob()) };
+    const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
+      fileStore?: typeof store;
+    };
+    expect(el.fileStore).toBeUndefined();
+    Object.defineProperty(el, 'fileStore', {
+      value: store,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+
+    document.body.appendChild(el);
+
+    expect(Object.getOwnPropertyDescriptor(el, 'fileStore')).toBeUndefined(); // the accessor is in charge again
+    expect(el.fileStore).toBe(store);
+    document.body.removeChild(el);
+  });
+
   it('offers no image tool until the images-enabled attribute is set', async () => {
     const el = document.createElement(ELEMENT_TAG_NAME);
     document.body.appendChild(el);

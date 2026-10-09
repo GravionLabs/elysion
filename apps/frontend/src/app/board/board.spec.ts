@@ -661,6 +661,57 @@ describe('Board', () => {
     });
   });
 
+  describe('images (#702)', () => {
+    const canvas = () =>
+      fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement & {
+        fileStore?: { put(file: Blob, id: string): Promise<void>; get(id: string): Promise<Blob> };
+      };
+    const STORED = '0197a8d2-1c3e-7a10-8000-000000000001';
+    /** Opens a stored board: its canvas starts once the board and the caller's role are known. */
+    const openStored = async () => {
+      fixture.componentRef.setInput('boardId', STORED);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      http
+        .expectOne(`/api/boards/${STORED}`)
+        .flush({ id: STORED, name: 'Retro', createdAt: '', path: '' });
+      await fixture.whenStable();
+      http
+        .expectOne(`/api/boards/${STORED}/membership/me`)
+        .flush({ boardId: STORED, role: 'editor' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it('gives a stored board the images tool and the file store, backed by the BFF', async () => {
+      await openStored();
+
+      expect(canvas().hasAttribute('images-enabled')).toBe(true);
+      const loaded = canvas().fileStore!.get('abcdef0123456789abcdef0123456789abcdef01');
+      http
+        .expectOne(`/api/boards/${STORED}/files/abcdef0123456789abcdef0123456789abcdef01`)
+        .flush(new Blob(['x'], { type: 'image/png' }));
+      expect((await loaded).type).toBe('image/png');
+    });
+
+    it('keeps the images tool off for a room that has no board record: the files would have nowhere to go', () => {
+      fixture.componentRef.setInput('boardId', 'team-retro');
+      fixture.detectChanges();
+
+      expect(canvas().hasAttribute('images-enabled')).toBe(false);
+    });
+
+    it('shows why an image could not be stored, in the banner', async () => {
+      await openStored();
+
+      canvas().dispatchEvent(
+        new CustomEvent('fileerror', { detail: { message: 'The image is too large.' } }),
+      );
+
+      expect(component.notice()).toBe('The image is too large.');
+    });
+  });
+
   describe('the token for the realtime connection', () => {
     const canvas = () =>
       fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement & {

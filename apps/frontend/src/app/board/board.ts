@@ -20,6 +20,7 @@ import { SyncStatus, TopBar } from '../topbar/top-bar';
 import { RouterLink } from '@angular/router';
 import { AppBrand } from '../shared/app-brand';
 import { BoardApi, BoardLookup, BoardRole, isStoredBoardId } from './board-api';
+import { FilesApi } from './files-api';
 import { ShareDialog } from '../share/share-dialog';
 import { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename, type ExportFormat } from './download';
@@ -64,6 +65,7 @@ export class Board {
   readonly #canvasElementSrc = inject(CANVAS_ELEMENT_SRC);
   readonly #themeService = inject(ThemeService);
   readonly #api = inject(BoardApi);
+  readonly #files = inject(FilesApi);
   readonly #pageTitle = inject(Title);
   readonly #templates = inject(TemplateApi);
   readonly #location = inject(Location);
@@ -270,6 +272,20 @@ export class Board {
       throw error;
     }
   };
+
+  /** The images of this board are kept by the BFF (#702); the canvas uploads and loads through this. */
+  protected readonly fileStore = this.#files.storeFor(() => this.boardId());
+
+  /**
+   * Whether images may be inserted: only on a stored board, because the files belong to a board record (the room
+   * `default` has none, so its images would have nowhere to go).
+   */
+  protected readonly imagesEnabled = computed(() => isStoredBoardId(this.boardId()));
+
+  /** An image could not be stored or loaded; the canvas has taken an unsaved one off the board again. */
+  onFileError(event: Event): void {
+    this.notice.set((event as CustomEvent<{ message: string }>).detail.message);
+  }
 
   onCanvasReady(): void {
     this.status.set('ready');

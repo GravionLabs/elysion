@@ -1,4 +1,5 @@
 import { ExportFormat } from './download';
+import type { BoardFileStore } from './files-api';
 
 /** The board's shared timer (ADR 0020), as the canvas announces it in its `timer` event. */
 /** One element's result in a closed voting: how many votes it got and what to call it. */
@@ -52,6 +53,12 @@ export type CanvasElement = HTMLElement & {
    * growing delay. A property, not an attribute: a token lives for about a minute.
    */
   tokenProvider?: () => Promise<string | null>;
+  /**
+   * Where the bytes of the board's images are kept (`put` and `get` through the BFF, #702): the canvas uploads an image
+   * when it is inserted, shares a reference in the board's document and loads the others' images with `get`. A property,
+   * as an object with methods. The `images-enabled` attribute goes with it.
+   */
+  fileStore?: BoardFileStore;
   /** Replaces the board with an .excalidraw file; resolves with the number of elements in it. */
   importFile?(file: Blob): Promise<number>;
   /** Adds an .excalidraw file to the board around the view center, selected, as one undo step; resolves with the number of elements added. */
