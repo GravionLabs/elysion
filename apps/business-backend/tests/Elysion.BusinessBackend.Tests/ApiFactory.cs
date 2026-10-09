@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 
 using Elysion.BusinessBackend.Api.Data;
+using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -31,9 +32,17 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     public const string Audience = "elysion-bff";
 
     /// <summary>The secret of the internal API in the tests (a development value, as in appsettings.Development.json).</summary>
+    /// <summary>Small limits, so the tests of the limits stay small.</summary>
+    public const int MaxFileBytes = 1024;
+
+    public const int MaxFilesPerBoard = 3;
+
     public const string InternalSecret = "test-only-internal-api-secret-0123456789abcdef";
 
     private static readonly RsaSecurityKey SigningKey = new(RSA.Create(2048)) { KeyId = "test-key" };
+
+    /// <summary>The object store of board files; in memory, so no S3 is needed.</summary>
+    public InMemoryFileStore Files { get; } = new();
 
     private readonly string _databaseName = Guid.NewGuid().ToString();
     private readonly TimeProvider? _time;
@@ -126,6 +135,13 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting(OidcOptions.IssuerSetting, Issuer);
         builder.UseSetting(OidcOptions.AudienceSetting, Audience);
         builder.UseSetting(InternalApiOptions.SecretSetting, InternalSecret);
+        builder.UseSetting(Api.Files.FileOptions.EndpointSetting, "http://s3.test");
+        builder.UseSetting(Api.Files.FileOptions.AccessKeySetting, "test");
+        builder.UseSetting(Api.Files.FileOptions.SecretKeySetting, "test-secret");
+        builder.UseSetting(Api.Files.FileOptions.MaxFileBytesSetting,
+            MaxFileBytes.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        builder.UseSetting(Api.Files.FileOptions.MaxFilesPerBoardSetting,
+            MaxFilesPerBoard.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.ConfigureServices(services =>
         {
             // The test key stands in for the realm's published keys; issuer, audience and lifetime are still checked.
@@ -147,6 +163,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             }
 
             services.AddDbContext<ElysionDbContext>(options => options.UseInMemoryDatabase(_databaseName));
+
+            services.RemoveAll<IFileStore>();
+            services.AddSingleton<IFileStore>(Files);
 
             if (_time is not null)
             {

@@ -3,6 +3,7 @@ using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
+using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
 
 using Microsoft.AspNetCore.Http.Extensions;
@@ -126,6 +127,7 @@ public static class BoardEndpoints
         HttpRequest http,
         IBoardRepository boards,
         IBoardDocumentRepository documents,
+        IFileStore files,
         IUnitOfWork unitOfWork,
         ICurrentUser user,
         TimeProvider time,
@@ -155,6 +157,8 @@ public static class BoardEndpoints
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        // The images the copy's document refers to (the files of the source, under the same ids).
+        await files.CopyPrefixAsync(FileTypes.Prefix(id), FileTypes.Prefix(copy.Id), cancellationToken);
         var location = UriHelper.BuildAbsolute(http.Scheme, http.Host, http.PathBase, $"/boards/{copy.Id}");
         return TypedResults.Created(location, BoardDto.From(copy));
     }
@@ -180,6 +184,7 @@ public static class BoardEndpoints
         Guid id,
         IBoardRepository boards,
         IBoardDocumentRepository documents,
+        IFileStore files,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -194,6 +199,8 @@ public static class BoardEndpoints
         await documents.RemoveAsync(id.ToString(), cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        // The files go with the board; they are only reachable through it.
+        await files.DeletePrefixAsync(FileTypes.Prefix(id), cancellationToken);
         return TypedResults.NoContent();
     }
 

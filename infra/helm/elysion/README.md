@@ -20,6 +20,7 @@ helm lint infra/helm/elysion -f infra/helm/elysion/values-kind.yaml
 | ------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `oidc.issuerUrl`          | The Keycloak realm URL **as it appears in the tokens** (what the browser logs in at). Required.      |
 | `oidc.jwksUri`            | Where the services fetch the realm's keys, when that differs from the issuer (cluster-internal URL). |
+| `objectStore.endpoint`    | The S3 API that keeps the files (images) of boards. Required; bucket and limits have defaults.       |
 | `images.*`                | Repository, tag and pull policy of the four images (built from the repository's Dockerfiles).        |
 | `edge.host`               | Host name the routes answer for (empty: any).                                                        |
 | `edge.corsAllowedOrigins` | Origins that get CORS headers on `/api` and `/yjs`.                                                  |
@@ -36,7 +37,9 @@ kubectl -n elysion create secret generic elysion-secrets \
   --from-literal=WS_TOKEN_SECRET="$(openssl rand -hex 32)" \
   --from-literal=INTERNAL_API_SECRET="$(openssl rand -hex 32)" \
   --from-literal=POSTGRES_CONNECTION_STRING='Host=...;Port=5432;Database=elysion;Username=...;Password=...' \
-  --from-literal=REDIS_URL='redis://valkey.example:6379'
+  --from-literal=REDIS_URL='redis://valkey.example:6379' \
+  --from-literal=S3_ACCESS_KEY='...' \
+  --from-literal=S3_SECRET_KEY='...'
 ```
 
 `WS_TOKEN_SECRET` (BFF and realtime) and `INTERNAL_API_SECRET` (realtime and business backend) are different values of

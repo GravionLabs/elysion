@@ -62,6 +62,20 @@ services:
     networks:
       - elysion
 
+  # S3-compatible object store for the files of boards, the images (ADR 0007, #702). Elysion's own: a volume of its own, no
+  # published port (docker-compose.dev.yml publishes it for apps on the host). Development credentials only.
+  rustfs:
+    image: rustfs/rustfs:1.0.1
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-elysion}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-elysion123}
+      RUSTFS_CONSOLE_ENABLE: 'true'
+    volumes:
+      - rustfs-data:/data
+    networks:
+      - elysion
+
   # Creates Keycloak's own database in the existing Postgres. A script in /docker-entrypoint-initdb.d
   # would only run on an empty data volume; this is idempotent, so it also works on an existing one.
   keycloak-db:
@@ -134,6 +148,14 @@ services:
     environment:
       ConnectionStrings__Elysion: Host=postgres;Port=5432;Database=elysion;Username=elysion;Password=elysion
       Database__MigrateOnStartup: 'true'
+      # The files of boards (images) are kept in the object store; the bucket is created at start (#702). The service
+      # does not start without a store it can reach. Development credentials: the same as RustFS's above.
+      S3_ENDPOINT: http://rustfs:9000
+      S3_BUCKET: ${S3_BUCKET:-elysion-files}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-elysion}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-elysion123}
+      MAX_FILE_BYTES: ${MAX_FILE_BYTES:-10485760}
+      MAX_FILES_PER_BOARD: ${MAX_FILES_PER_BOARD:-200}
       # Access tokens come from Keycloak (docs/specs/identity.md). The issuer is the address the browser used;
       # the keys are fetched over the compose network.
       OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
@@ -146,6 +168,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      rustfs:
+        condition: service_started
     networks:
       - elysion
 
@@ -239,5 +263,6 @@ networks:
 
 volumes:
   postgres-data:
+  rustfs-data:
   valkey-data:
   victorialogs-data:
