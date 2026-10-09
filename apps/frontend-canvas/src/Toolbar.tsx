@@ -192,6 +192,11 @@ export interface ToolbarProps {
   menuItems?: readonly CanvasMenuItem[];
   /** A viewer: no tools, no undo and redo, no sticky notes; only the zoom is shown. */
   readOnly?: boolean;
+  /**
+   * Whether the image tool is offered. Off by default: Excalidraw's `files` are not shared or stored yet, so an
+   * inserted image would be seen by its author only and be gone after a reload (see `docs/specs/frontend.md`).
+   */
+  imagesEnabled?: boolean;
 }
 
 const UNDO_ICON = (
@@ -268,6 +273,7 @@ export function Toolbar({
   zoomPercent,
   menuItems,
   readOnly = false,
+  imagesEnabled = false,
 }: ToolbarProps) {
   const [stickyOpen, setStickyOpen] = useState(false);
 
@@ -315,23 +321,25 @@ export function Toolbar({
       {(readOnly ? [] : GROUPS).map((group, index) => (
         <div className="elysion-toolbar__group" key={group[0].tool}>
           {(index > 0 || onHistory) && <div className="elysion-toolbar__divider" />}
-          {group.map(({ tool, label, shortcut, icon }) => {
-            const active = activeTool === tool;
-            return (
-              <button
-                key={tool}
-                type="button"
-                className={active ? 'elysion-icon-button active' : 'elysion-icon-button'}
-                aria-label={label}
-                aria-pressed={active}
-                title={`${label} (${shortcut})`}
-                data-testid={`elysion-tool-${tool}`}
-                onClick={() => onSelect(tool)}
-              >
-                {icon}
-              </button>
-            );
-          })}
+          {group
+            .filter(({ tool }) => imagesEnabled || tool !== 'image')
+            .map(({ tool, label, shortcut, icon }) => {
+              const active = activeTool === tool;
+              return (
+                <button
+                  key={tool}
+                  type="button"
+                  className={active ? 'elysion-icon-button active' : 'elysion-icon-button'}
+                  aria-label={label}
+                  aria-pressed={active}
+                  title={`${label} (${shortcut})`}
+                  data-testid={`elysion-tool-${tool}`}
+                  onClick={() => onSelect(tool)}
+                >
+                  {icon}
+                </button>
+              );
+            })}
           {onAddSticky && group.some((d) => d.tool === 'text') && (
             <div className="elysion-sticky">
               {/* Split button: the main part makes a note in the current color at once, the arrow picks another. */}
