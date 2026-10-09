@@ -15,6 +15,7 @@
     <!-- Npgsql 10.0.3 pulls Relational 10.0.4; pin it to the version of the other EF packages. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>

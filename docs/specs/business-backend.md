@@ -67,6 +67,17 @@ curl -s -o /dev/null -w '%{http_code}\n' http://localhost:5174/boards           
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $TOKEN" http://localhost:5174/boards   # 200
 ```
 
+## Logging
+
+[ADR 0025](../adr/0025-structured-logging-and-log-viewer.md). Serilog replaces the framework's logger (`Logging/`, `builder.AddElysionLogging()` and `app.UseElysionRequestId()` in `Program.cs`).
+
+- **Format.** One JSON object per line on stdout (`LOG_FORMAT=json`, the default whenever stdout is not a terminal); readable text in a terminal (`LOG_FORMAT=text`). `LOG_LEVEL` is `trace`, `debug`, `info` (default), `warn`, `error` or `fatal`.
+- **Fields** (the same in the BFF and the realtime service): `timestamp` (ISO 8601, UTC), `level`, `service` (`elysion-business-backend`), `requestId`, `message`, `userId` (the token's `sub` and nothing else about the person), `err` (`type`, `message`, `stack`) on an exception, and `logger` (the category). Other properties of an event follow with camel-case names (`reason`, `scheme`). The one line per finished request adds `http`: `method`, `route` (the route pattern, `/boards/{id}`, never the URL), `status`, `durationMs`; health checks log it at `debug`.
+- **Request id.** `RequestIdMiddleware` takes the `X-Request-Id` of the request when it matches `^[A-Za-z0-9._-]{8,64}$` (the BFF sends one) and creates a UUID otherwise; it is echoed in the response and is on every line of the request. A value that does not match is replaced and never logged. The property is `requestId`, not `RequestId`: ASP.NET Core's hosting scope uses that name for its own trace id, which the formatter leaves out.
+- **Rejected tokens.** A refused bearer token logs one warning with `reason` (`expired`, `not_yet_valid`, `wrong_issuer`, `wrong_audience`, `wrong_algorithm`, `invalid_signature`, `malformed`, `invalid`) and `scheme`: `Bearer` for a Keycloak token, `Internal` for the realtime service's token on `/internal` (ADR 0017). A request to the internal API without any token logs "No bearer token". The token and the exception's message are never logged.
+- **Never logged:** `Authorization`, `Cookie`, query strings (the request line has the route, not the URL), and any configured secret. `LoggingTests` sends marker strings in each and asserts that none reaches the output.
+- **The framework's own request lines** (`Microsoft.AspNetCore`, EF Core commands, `HttpClient`) are limited to warnings; the HTTPS-redirect middleware's "no HTTPS port" warning is limited to errors, because the service speaks plain HTTP behind the edge.
+
 ## Users are created from the token (just-in-time)
 
 `UserProvisioningMiddleware` runs after authentication and before authorization, **once per authenticated request**, and puts the caller's local `User` into the scoped `ICurrentUser` (`Id`, `Subject`, `DisplayName`, `Email`). Handlers and policies (#117) take `ICurrentUser`; they do not read claims. Unauthenticated requests and anonymous endpoints (`/health`, the internal document API) are skipped: they never need a user and never write to the database. A valid token without a usable `sub` is `401`.

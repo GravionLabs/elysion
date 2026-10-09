@@ -3,11 +3,15 @@ using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Endpoints;
 using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Logging;
 using Elysion.BusinessBackend.Api.Members;
 
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Serilog, JSON lines on stdout, one line per request (ADR 0025).
+builder.AddElysionLogging();
 
 // Add services to the container.
 
@@ -55,10 +59,14 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi().AllowAnonymous();
 }
 
+// The request id first, so that every line of the request carries it; then the one line per request.
+app.UseElysionRequestId();
+
 app.UseHttpsRedirection();
 
 // Authentication has to run first: authorization only looks at the user it has established.
 app.UseAuthentication();
+app.UseMiddleware<UserIdLogMiddleware>();
 app.UseMiddleware<UserProvisioningMiddleware>();
 app.UseAuthorization();
 

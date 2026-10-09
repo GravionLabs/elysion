@@ -1,5 +1,7 @@
 using System.Text;
 
+using Elysion.BusinessBackend.Api.Logging;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
@@ -42,6 +44,19 @@ public static class AuthenticationExtensions
             .Configure<IOptions<InternalApiOptions>>((jwt, internalApi) =>
             {
                 jwt.MapInboundClaims = false;
+                jwt.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        AuthenticationFailureLog.TokenRejected(context);
+                        return Task.CompletedTask;
+                    },
+                    OnChallenge = context =>
+                    {
+                        AuthenticationFailureLog.TokenMissing(context);
+                        return Task.CompletedTask;
+                    },
+                };
                 jwt.TokenValidationParameters = new TokenValidationParameters
                 {
                     // A shared secret, no key discovery: HS256 and nothing else, so a token cannot pick another algorithm.
@@ -64,6 +79,14 @@ public static class AuthenticationExtensions
                 var settings = oidc.Value;
                 var issuer = settings.IssuerUrl.TrimEnd('/');
                 jwt.MapInboundClaims = false; // keep the claim names of the token (`sub`, `email`)
+                jwt.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        AuthenticationFailureLog.TokenRejected(context);
+                        return Task.CompletedTask;
+                    },
+                };
                 // Discovery by default: Authority is the issuer, keys come from its metadata (never pinned in config).
                 jwt.Authority = issuer;
                 jwt.RequireHttpsMetadata = issuer.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
