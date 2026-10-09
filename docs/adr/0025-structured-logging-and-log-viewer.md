@@ -1,6 +1,6 @@
 # ADR 0025: Structured logs with a request id, and VictoriaLogs as the local log viewer
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-09
 - Issues: #625, #626; implemented in #627 (the three services) and #628 (the viewer), which are written for the recommended options
 - Builds on: [ADR 0017](0017-internal-api-authentication.md), "Logs and metrics" in [gateway.md](../specs/gateway.md)
@@ -136,3 +136,9 @@ start it), with its host port in `docker-compose.dev.yml`, started by `pnpm dev:
 pnpm dev:logs                                   # VictoriaLogs on http://localhost:9428/select/vmui
 curl -s localhost:9428/select/logsql/query -d 'query=requestId:"<id>"'
 ```
+
+## Decision
+
+Accepted by the product owner on 2026-10-09: **VictoriaLogs as the local log viewer**, "if it works"; it does (section 5 lists what was tried
+against a running 1.53.0), and the libraries, the log line, the request id and the redaction rules are implemented as recommended above. #627 and
+#628 are implemented as written.
