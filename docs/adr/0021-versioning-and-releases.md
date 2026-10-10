@@ -45,6 +45,7 @@ images, and the reusable workflow makes one release per call, so it does not fit
   the `ci` repository's Actions access settings; the first run shows it. The workflow also needs `packages: write` for GHCR, and the
   published packages are private until their visibility is set to public (package settings on GitHub).
 - Building `linux/arm64` under QEMU makes the release slower (the .NET image most of all); the build cache (`type=gha`, one scope per image) keeps repeat builds short.
+- **Every pull request is tested as an upgrade** from the last pre-release (`next` on GHCR): the `upgrade` job of `container.yml` fills that stack with data (`scripts/fill-stack.mjs`), takes a backup, starts the pull request's images on the same volumes and checks that the data is all still there (#694). A change that needs a manual step carries `!` in its Conventional Commit and comes first in the release notes ("Breaking changes").
 - The images run as a non-root user (nginx-unprivileged 101, `node` 1000, `app` 1654) since #691; the chart adds a read-only root file system and drops all capabilities.
 - The Helm chart's default image names are not the GHCR ones yet; the self-hosting page says how to set them.
 - The version is not shown in the application yet; the images carry it as OCI labels (`org.opencontainers.image.version`).
