@@ -49,6 +49,7 @@ builder.Services.AddDbContext<ElysionDbContext>(options =>
 builder.Services.AddScoped<IUnitOfWork>(services => services.GetRequiredService<ElysionDbContext>());
 builder.Services.AddScoped<IBoardRepository, BoardRepository>();
 builder.Services.AddScoped<IBoardDocumentRepository, BoardDocumentRepository>();
+builder.Services.AddScoped<IBoardUserStateRepository, BoardUserStateRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMembershipRepository, MembershipRepository>();
 builder.Services.AddScoped<IRoomRepository, RoomRepository>();
@@ -112,6 +113,7 @@ app.MapBoardDocumentEndpoints();
 app.MapBoardAccessEndpoints();
 app.MapBoardFileEndpoints();
 app.MapBoardThumbnailEndpoints();
+app.MapBoardUserStateEndpoints();
 app.MapTemplateEndpoints();
 
 app.Run();

@@ -32,6 +32,7 @@ import { RoomSidebar, RoomsState } from './room-sidebar';
 import { RoomPdfExporter } from './room-pdf-export';
 import { downloadBlob, exportFilename } from '../board/download';
 import { loadSettings } from '../topbar/export-settings';
+import { BOARD_SORTS, BoardSort, loadSort, saveSort } from './list-preferences';
 
 /** The design tokens the preview placeholders are tinted with; a board always gets the same one. */
 const PREVIEW_TINTS = [
@@ -59,6 +60,27 @@ export function boardTint(id: string): string {
     hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   }
   return `var(${PREVIEW_TINTS[hash % PREVIEW_TINTS.length]})`;
+}
+
+/** Newest first by default; `opened` puts the boards never opened last; in the all-boards view the starred ones come first. */
+export function sortBoards(
+  boards: readonly BoardInfo[],
+  sort: BoardSort,
+  favoritesFirst: boolean,
+): BoardInfo[] {
+  const byNewest = (a: BoardInfo, b: BoardInfo) => b.createdAt.localeCompare(a.createdAt);
+  const order: Record<BoardSort, (a: BoardInfo, b: BoardInfo) => number> = {
+    newest: byNewest,
+    name: (a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || byNewest(a, b),
+    opened: (a, b) => (b.lastOpenedAt ?? '').localeCompare(a.lastOpenedAt ?? '') || byNewest(a, b),
+  };
+  return [...boards].sort((a, b) => {
+    if (favoritesFirst && (a.isFavorite === true) !== (b.isFavorite === true)) {
+      return a.isFavorite === true ? -1 : 1;
+    }
+    return order[sort](a, b);
+  });
 }
 
 export const DEFAULT_NEW_BOARD_NAME = $localize`:@@boards.defaultName:Untitled board`;
@@ -103,8 +125,11 @@ export class BoardList {
   readonly #theme = inject(ThemeService);
   readonly #roomExporter = inject(RoomPdfExporter);
 
-  /** The view, from the route: `undefined` for all boards, `none` for boards in no room, else a room's id. */
+  /** The view, from the route: `undefined` for all boards, `none` for boards in no room, `favorites` for the starred ones, else a room's id. */
   readonly roomId = input<string | undefined>();
+
+  /** The search, from `?q=` of the route (#730); typing in the field writes it back, so a search can be linked and reloaded. */
+  readonly q = input<string | undefined>();
 
   protected readonly canWriteRoom = canWriteInRoom;
   protected readonly canAdministerRoom = canAdministerRoom;
@@ -141,10 +166,16 @@ export class BoardList {
   protected readonly rooms = signal<RoomInfo[]>([]);
   protected readonly roomsState = signal<RoomsState>('loading');
 
-  protected readonly view = computed<'all' | 'none' | 'room'>(() => {
+  protected readonly view = computed<'all' | 'none' | 'favorites' | 'room'>(() => {
     const id = this.roomId();
-    return id === undefined ? 'all' : id === 'none' ? 'none' : 'room';
+    return id === undefined ? 'all' : id === 'none' || id === 'favorites' ? id : 'room';
   });
+
+  /** What the search field holds; boards whose name does not contain it (ignoring case) are hidden. */
+  protected readonly search = signal('');
+  protected readonly sort = signal<BoardSort>(loadSort());
+  protected readonly sortChoices = BOARD_SORTS;
+  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
 
   /** The room that is open, or `null` (another view, the rooms are not loaded yet, or there is no such room). */
   protected readonly currentRoom = computed(() =>
@@ -164,6 +195,8 @@ export class BoardList {
         return $localize`:@@boards.title.all:Boards`;
       case 'none':
         return $localize`:@@boards.sidebar.none:Not in a room`;
+      case 'favorites':
+        return $localize`:@@boards.sidebar.favorites:Favorites`;
       default:
         return (
           this.currentRoom()?.name ??
@@ -174,17 +207,35 @@ export class BoardList {
     }
   });
 
-  protected readonly visibleBoards = computed(() => {
+  /** The boards of the view, before the search narrows them. */
+  readonly #inView = computed(() => {
     const boards = this.boards();
     switch (this.view()) {
       case 'all':
         return boards;
       case 'none':
         return boards.filter((board) => board.roomId === null);
+      case 'favorites':
+        return boards.filter((board) => board.isFavorite === true);
       default:
         return boards.filter((board) => board.roomId === this.roomId());
     }
   });
+
+  protected readonly visibleBoards = computed(() => {
+    const needle = this.search().trim().toLowerCase();
+    const found = needle
+      ? this.#inView().filter((board) => board.name.toLowerCase().includes(needle))
+      : this.#inView();
+    return sortBoards(found, this.sort(), this.view() === 'all');
+  });
+
+  /** Whether a search is narrowing the view. */
+  protected readonly searching = computed(() => this.search().trim() !== '');
+
+  protected readonly favoriteCount = computed(
+    () => this.boards().filter((board) => board.isFavorite === true).length,
+  );
 
   protected readonly roomCounts = computed(() => {
     const counts: Record<string, number> = {};
@@ -240,6 +291,8 @@ export class BoardList {
   constructor() {
     this.#pageTitle.setTitle($localize`:@@boards.pageTitle:Boards · Elysion`);
     this.load();
+    // The address holds the search: arriving with `?q=` (or the back button) fills the field.
+    effect(() => this.search.set(this.q() ?? ''));
     // The room's name is selected when it is being renamed.
     effect(() => {
       const field = this.renameInput()?.nativeElement;
@@ -271,6 +324,88 @@ export class BoardList {
         });
       }
     });
+  }
+
+  protected updateSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.search.set(value);
+    void this.#router.navigate([], {
+      queryParams: { q: value.trim() || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  protected clearSearch(): void {
+    this.search.set('');
+    void this.#router.navigate([], {
+      queryParams: { q: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    this.searchInput()?.nativeElement.focus();
+  }
+
+  protected chooseSort(event: Event): void {
+    const sort = (event.target as HTMLSelectElement).value as BoardSort;
+    if (BOARD_SORTS.includes(sort)) {
+      this.sort.set(sort);
+      saveSort(sort);
+    }
+  }
+
+  protected sortLabel(sort: BoardSort): string {
+    switch (sort) {
+      case 'name':
+        return $localize`:@@boards.sort.name:Name`;
+      case 'opened':
+        return $localize`:@@boards.sort.opened:Last opened`;
+      default:
+        return $localize`:@@boards.sort.newest:Newest`;
+    }
+  }
+
+  /** `/` jumps to the search, unless the user is typing somewhere. */
+  @HostListener('document:keydown', ['$event'])
+  protected focusSearchOnSlash(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    const typing =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
+      target?.isContentEditable === true;
+    if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      const field = this.searchInput()?.nativeElement;
+      if (field) {
+        event.preventDefault();
+        field.focus();
+        field.select();
+      }
+    }
+  }
+
+  /** Stars the board, or takes the star away: shown at once, undone when saving fails. */
+  protected toggleFavorite(board: BoardInfo): void {
+    const favorite = board.isFavorite !== true;
+    const set = (value: boolean) =>
+      this.boards.update((boards) =>
+        boards.map((b) => (b.id === board.id ? { ...b, isFavorite: value } : b)),
+      );
+    set(favorite);
+    this.#api.setFavorite(board.id, favorite).subscribe({
+      error: () => {
+        set(!favorite);
+        this.roomError.set(
+          $localize`:@@boards.error.favorite:The star of the board “${board.name}:board:” could not be saved. Try again.`,
+        );
+      },
+    });
+  }
+
+  protected favoriteLabel(board: BoardInfo): string {
+    return board.isFavorite
+      ? $localize`:@@boards.card.unfavorite.aria:Remove the board ${board.name}:board: from the favorites`
+      : $localize`:@@boards.card.favorite.aria:Add the board ${board.name}:board: to the favorites`;
   }
 
   protected load(): void {

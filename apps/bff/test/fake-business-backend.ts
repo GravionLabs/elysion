@@ -30,6 +30,8 @@ interface FakeMember {
  */
 export class FakeBusinessBackend {
   readonly boards = new Map<string, FakeBoard>();
+  /** The last request for a search or a per-person state (#730): method and path with its query. */
+  lastStateRequest: { method: string; path: string } | null = null;
   requests = 0;
   /** The role per board id the caller has (`Owner`, `Editor`, `Viewer`); a board that is not in here: 404, as for a non-member. */
   readonly roles = new Map<string, string>();
@@ -185,6 +187,15 @@ export class FakeBusinessBackend {
         return send(204);
       }
       return send(405);
+    }
+    const stateRoute = /^\/boards\/([^/?]+)\/(open|favorite)$/.exec(req.url ?? '');
+    if (stateRoute) {
+      this.lastStateRequest = { method: req.method ?? '', path: req.url ?? '' };
+      return this.boards.has(stateRoute[1]!) ? send(204) : send(404);
+    }
+    if ((req.url ?? '').startsWith('/boards?')) {
+      this.lastStateRequest = { method: req.method ?? '', path: req.url ?? '' };
+      return send(200, [...this.boards.values()].reverse());
     }
     const thumbnailRoute = /^\/boards\/([^/]+)\/thumbnail$/.exec(req.url ?? '');
     if (thumbnailRoute) {

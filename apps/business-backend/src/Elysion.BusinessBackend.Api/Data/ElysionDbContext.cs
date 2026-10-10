@@ -13,6 +13,8 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
     public DbSet<Template> Templates => Set<Template>();
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<RoomMembership> RoomMemberships => Set<RoomMembership>();
+    public DbSet<BoardVisit> BoardVisits => Set<BoardVisit>();
+    public DbSet<BoardFavorite> BoardFavorites => Set<BoardFavorite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -91,6 +93,23 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
             membership.HasOne(m => m.User).WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
             // "Which rooms is this user a member of?" starts from the user.
             membership.HasIndex(m => m.UserId);
+        });
+
+        modelBuilder.Entity<BoardVisit>(visit =>
+        {
+            visit.HasKey(v => new { v.BoardId, v.UserId });
+            visit.HasOne(v => v.Board).WithMany().HasForeignKey(v => v.BoardId).OnDelete(DeleteBehavior.Cascade);
+            visit.HasOne(v => v.User).WithMany().HasForeignKey(v => v.UserId).OnDelete(DeleteBehavior.Cascade);
+            // "What did this user open lately?" starts from the user.
+            visit.HasIndex(v => v.UserId);
+        });
+
+        modelBuilder.Entity<BoardFavorite>(favorite =>
+        {
+            favorite.HasKey(f => new { f.BoardId, f.UserId });
+            favorite.HasOne(f => f.Board).WithMany().HasForeignKey(f => f.BoardId).OnDelete(DeleteBehavior.Cascade);
+            favorite.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
+            favorite.HasIndex(f => f.UserId);
         });
 
         // "Which boards are in this room?" starts from the room.

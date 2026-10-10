@@ -50,6 +50,26 @@ describe('BusinessBackendClient', () => {
     expect(lastCall().init.method).toBe('GET');
   });
 
+  it('passes a search on as an encoded query', async () => {
+    fetchMock.mockResolvedValue(respond(200, [board]));
+
+    await client.listBoards(TOKEN, 'Sprint & Retro');
+    expect(lastCall().url).toBe('http://backend.test:5174/boards?query=Sprint%20%26%20Retro');
+  });
+
+  it('records an opening and sets or removes a star', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+
+    await expect(client.openBoard(TOKEN, board.id)).resolves.toBeUndefined();
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/open`);
+    expect(lastCall().init.method).toBe('POST');
+    await client.setFavorite(TOKEN, board.id, true);
+    expect(lastCall().init.method).toBe('PUT');
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/favorite`);
+    await client.setFavorite(TOKEN, board.id, false);
+    expect(lastCall().init.method).toBe('DELETE');
+  });
+
   it('gets one board', async () => {
     fetchMock.mockResolvedValue(respond(200, board));
 

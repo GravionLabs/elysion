@@ -12,6 +12,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import type { BoardRole } from '@elysion/shared-types';
 import { AccessToken } from '../auth/access-token.decorator.js';
@@ -44,8 +45,13 @@ export class BoardsController {
   constructor(private readonly backend: BusinessBackendClient) {}
 
   @Get()
-  async list(@AccessToken() token: string): Promise<BoardResponse[]> {
-    return (await this.backend.listBoards(token)).map(toResponse);
+  async list(
+    @AccessToken() token: string,
+    @Query('query') query?: string,
+  ): Promise<BoardResponse[]> {
+    // `?query=` twice arrives as an array; only a single string is a search.
+    const search = typeof query === 'string' ? query.trim().slice(0, 100) : undefined;
+    return (await this.backend.listBoards(token, search)).map(toResponse);
   }
 
   @Get(':id')
@@ -71,6 +77,26 @@ export class BoardsController {
       throw new NotFoundException();
     }
     return { boardId: id, role };
+  }
+
+  /** The caller opened the board (the overview sorts by it); the backend ignores repeats within minutes. */
+  @Post(':id/open')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async open(@AccessToken() token: string, @Param('id', boardId) id: string): Promise<void> {
+    await this.backend.openBoard(token, id);
+  }
+
+  /** Stars the board for the caller. */
+  @Put(':id/favorite')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async favorite(@AccessToken() token: string, @Param('id', boardId) id: string): Promise<void> {
+    await this.backend.setFavorite(token, id, true);
+  }
+
+  @Delete(':id/favorite')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unfavorite(@AccessToken() token: string, @Param('id', boardId) id: string): Promise<void> {
+    await this.backend.setFavorite(token, id, false);
   }
 
   @Post()

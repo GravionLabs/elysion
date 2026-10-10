@@ -28,6 +28,10 @@ export interface Board {
   /** When the board's preview picture was stored, or null when it has none (#729); `hasThumbnail` says the same. */
   thumbnailUpdatedAt?: string | null;
   hasThumbnail?: boolean;
+  /** When the caller last opened the board, or null (#730). */
+  lastOpenedAt?: string | null;
+  /** Whether the caller starred the board (#730). */
+  isFavorite?: boolean;
 }
 
 /** A room as the business backend's room API returns it: `role` is the caller's role in it. */
@@ -91,8 +95,20 @@ const FILE_RESPONSE_HEADERS = [
 export class BusinessBackendClient {
   constructor(@Inject(BUSINESS_BACKEND_URL) private readonly baseUrl: string) {}
 
-  listBoards(token: string): Promise<Board[]> {
-    return this.request<Board[]>(token, 'GET', '/boards');
+  /** The caller's boards; `query` keeps those whose name contains it (ignoring case). */
+  listBoards(token: string, query?: string): Promise<Board[]> {
+    const search = query ? `?query=${encodeURIComponent(query)}` : '';
+    return this.request<Board[]>(token, 'GET', `/boards${search}`);
+  }
+
+  /** Records that the caller opened the board (the backend writes at most every few minutes). */
+  openBoard(token: string, id: string): Promise<void> {
+    return this.request<void>(token, 'POST', `/boards/${id}/open`);
+  }
+
+  /** Stars the board for the caller, or takes the star away. */
+  setFavorite(token: string, id: string, favorite: boolean): Promise<void> {
+    return this.request<void>(token, favorite ? 'PUT' : 'DELETE', `/boards/${id}/favorite`);
   }
 
   getBoard(token: string, id: string): Promise<Board> {

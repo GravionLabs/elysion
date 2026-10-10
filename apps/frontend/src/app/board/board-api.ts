@@ -14,6 +14,10 @@ export interface BoardInfo {
   /** When the picture of the card was made, or `null`/absent when the board has none (#729). */
   thumbnailUpdatedAt?: string | null;
   hasThumbnail?: boolean;
+  /** When the user last opened the board, or `null`/absent when never (#730). */
+  lastOpenedAt?: string | null;
+  /** Whether the user starred the board (#730). */
+  isFavorite?: boolean;
 }
 
 /** What the user may do on a board: the shell shows Share to owners and a read-only canvas to viewers. */
@@ -122,6 +126,19 @@ export class BoardApi {
   /** Puts a board in a room, or takes it out of its room with `null`. Needs write access on the board and Editor in the room. */
   moveToRoom(id: string, roomId: string | null): Observable<BoardInfo> {
     return this.#http.put<BoardInfo>(`/api/boards/${encodeURIComponent(id)}/room`, { roomId });
+  }
+
+  /** Tells the backend the user opened the board (it keeps one entry per few minutes); a failure is not worth telling anybody. */
+  recordOpened(id: string): Observable<void> {
+    return this.#http
+      .post<void>(`/api/boards/${encodeURIComponent(id)}/open`, null)
+      .pipe(catchError(() => of(undefined)));
+  }
+
+  /** Stars the board for the user, or takes the star away. */
+  setFavorite(id: string, favorite: boolean): Observable<void> {
+    const url = `/api/boards/${encodeURIComponent(id)}/favorite`;
+    return favorite ? this.#http.put<void>(url, null) : this.#http.delete<void>(url);
   }
 
   /** Deletes a board and, in the business backend, its stored content. */

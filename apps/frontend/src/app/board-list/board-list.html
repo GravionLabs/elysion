@@ -27,6 +27,7 @@
       [selected]="roomId()"
       [total]="boards().length"
       [unassigned]="unassignedCount()"
+      [favorites]="favoriteCount()"
       [counts]="roomCounts()"
       [dragging]="draggingId() !== null"
       (roomAdded)="onRoomAdded($event)"
@@ -263,6 +264,51 @@
         </div>
       }
 
+      @if (state() === 'ready' && boards().length > 0 && !roomMissing()) {
+        <div class="list-tools" role="search">
+          <div class="search">
+            <input
+              #searchInput
+              id="board-search"
+              name="search"
+              type="search"
+              autocomplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              placeholder="Search boards"
+              i18n-placeholder="@@boards.search.placeholder"
+              aria-label="Search boards"
+              i18n-aria-label="@@boards.search.aria"
+              aria-keyshortcuts="/"
+              [value]="search()"
+              (input)="updateSearch($event)"
+              (keydown.escape)="clearSearch()"
+            />
+            @if (searching()) {
+              <button
+                type="button"
+                class="icon-button search-clear"
+                aria-label="Clear the search"
+                i18n-aria-label="@@boards.search.clear"
+                (click)="clearSearch()"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+              </button>
+            }
+          </div>
+          <label class="sort">
+            <span i18n="@@boards.sort.label">Sort by</span>
+            <select name="sort" [value]="sort()" (change)="chooseSort($event)">
+              @for (choice of sortChoices; track choice) {
+                <option [value]="choice" [selected]="choice === sort()">
+                  {{ sortLabel(choice) }}
+                </option>
+              }
+            </select>
+          </label>
+        </div>
+      }
+
       @if (roomError(); as message) {
         <p class="field-error room-error" role="alert">{{ message }}</p>
       }
@@ -444,7 +490,25 @@
             </div>
           } @else if (visibleBoards().length === 0) {
             <div class="empty view-empty">
-              @if (currentRoom(); as room) {
+              @if (searching()) {
+                <h2 i18n="@@boards.searchEmpty.title">No board found</h2>
+                <p i18n="@@boards.searchEmpty.message">
+                  No board here has “{{ search().trim() }}” in its name.
+                </p>
+                <button
+                  type="button"
+                  class="button"
+                  (click)="clearSearch()"
+                  i18n="@@boards.searchEmpty.clear"
+                >
+                  Clear the search
+                </button>
+              } @else if (view() === 'favorites') {
+                <h2 i18n="@@boards.favoritesEmpty.title">No favorites yet</h2>
+                <p i18n="@@boards.favoritesEmpty.message">
+                  Star a board on its card or in its top bar and it shows up here.
+                </p>
+              } @else if (currentRoom(); as room) {
                 <h2 i18n="@@boards.roomEmpty.title">No boards in this room yet</h2>
                 <p i18n="@@boards.roomEmpty.message">
                   Create a board here, or move one in from the board's menu.
@@ -477,6 +541,21 @@
                   (dragstart)="dragStart(board, $event)"
                   (dragend)="dragEnd()"
                 >
+                  <button
+                    type="button"
+                    class="icon-button favorite-button"
+                    [class.on]="board.isFavorite"
+                    [attr.aria-pressed]="board.isFavorite === true"
+                    [attr.aria-label]="favoriteLabel(board)"
+                    [title]="favoriteLabel(board)"
+                    (click)="toggleFavorite(board)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"
+                      />
+                    </svg>
+                  </button>
                   <a class="board-card" draggable="false" [routerLink]="board.path">
                     <span class="board-preview" aria-hidden="true" [style.--tint]="tint(board.id)">
                       {{ initials(board.name) }}
@@ -490,9 +569,15 @@
                     </span>
                     <span class="board-meta">
                       <span class="board-name" [title]="board.name">{{ board.name }}</span>
-                      <span class="board-date" i18n="@@boards.card.created"
-                        >Created {{ board.createdAt | date: 'mediumDate' }}</span
-                      >
+                      @if (sort() === 'opened' && board.lastOpenedAt) {
+                        <span class="board-date" i18n="@@boards.card.opened"
+                          >Opened {{ board.lastOpenedAt | date: 'medium' }}</span
+                        >
+                      } @else {
+                        <span class="board-date" i18n="@@boards.card.created"
+                          >Created {{ board.createdAt | date: 'mediumDate' }}</span
+                        >
+                      }
                       @if (roomLabel(board); as label) {
                         <span class="board-room" [title]="roomTitle(label)">{{ label }}</span>
                       }

@@ -14,6 +14,9 @@ public interface IBoardRepository
     /// </summary>
     Task<IReadOnlyList<Board>> ListVisibleToAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>The same, only boards whose name contains <paramref name="query"/> (compared without regard to case); no query is all of them.</summary>
+    Task<IReadOnlyList<Board>> ListVisibleToAsync(Guid userId, string? query, CancellationToken cancellationToken);
+
     /// <summary>
     /// The user's role on a board, or null when they have none (not a member, or no such board). The board's
     /// owner is an Owner even without a membership row, so a board is usable before anybody was invited. When

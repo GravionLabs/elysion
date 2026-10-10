@@ -48,20 +48,34 @@ public static class BoardEndpoints
         return routes;
     }
 
+    /// <summary>The caller's boards, newest first; <c>?query=</c> keeps those whose name contains it. Each carries the caller's own state (#730).</summary>
     private static async Task<Ok<IReadOnlyList<BoardDto>>> List(IBoardRepository boards,
+        IBoardUserStateRepository states,
         ICurrentUser user,
+        string? query,
         CancellationToken cancellationToken)
     {
-        var all = await boards.ListVisibleToAsync(user.Id, cancellationToken);
-        return TypedResults.Ok<IReadOnlyList<BoardDto>>(all.Select(BoardDto.From).ToList());
+        var all = await boards.ListVisibleToAsync(user.Id, query, cancellationToken);
+        var personal = await states.StatesAsync(user.Id, all.Select(b => b.Id).ToList(), cancellationToken);
+        return TypedResults.Ok<IReadOnlyList<BoardDto>>(all
+            .Select(board => BoardDto.From(board, personal.GetValueOrDefault(board.Id)))
+            .ToList());
     }
 
     private static async Task<Results<Ok<BoardDto>, NotFound>> Get(Guid id,
         IBoardRepository boards,
+        IBoardUserStateRepository states,
+        ICurrentUser user,
         CancellationToken cancellationToken)
     {
         var board = await boards.FindAsync(id, cancellationToken);
-        return board is null ? TypedResults.NotFound() : TypedResults.Ok(BoardDto.From(board));
+        if (board is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        var personal = await states.StatesAsync(user.Id, [id], cancellationToken);
+        return TypedResults.Ok(BoardDto.From(board, personal.GetValueOrDefault(id)));
     }
 
     /// <summary>The caller's role on the board in the route, for the BFF's WS token check (#120). 404 for non-members.</summary>
