@@ -8,6 +8,9 @@ on:
       - apps/**
       - packages/**
       - docker-compose*.yml
+      - infra/backup/**
+      - scripts/restore.sh
+      - scripts/backup-rehearsal.sh
       - .env.example
       - infra/traefik/**
       - infra/keycloak/**
@@ -43,6 +46,13 @@ jobs:
       # The app is served, the three demo users log in, the API answers, a board is made and a realtime token issued.
       - name: Check that it works
         run: bash scripts/demo-smoke.sh
+      # The backup is only worth something if a restore brings the data back: two boards (one with an image) are made, backed
+      # up, destroyed together with the databases and the bucket's files, restored and checked (scripts/backup-rehearsal.sh).
+      - name: Backup and restore rehearsal
+        run: bash scripts/backup-rehearsal.sh
+      - name: The backup of the rehearsal
+        if: failure()
+        run: docker compose --profile backup run --rm --no-deps --entrypoint sh backup -c 'ls -la /backups; cat /backups/last-success' || true
       # Two browsers on one board: sharing, the shared timer, the dot voting, a viewer's limits (apps/e2e).
       - name: Install the browser tests
         run: |

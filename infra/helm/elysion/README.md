@@ -46,6 +46,13 @@ kubectl -n elysion create secret generic elysion-secrets \
 at least 32 characters. For a throwaway install `secrets.create=true` renders the Secret from `secrets.values`; those
 values then sit in the Helm release, so do not use it for anything that matters.
 
+## Backup
+
+The chart does not run Postgres, Keycloak's database or the object store, so their backup is theirs: the database service's own, and your S3
+service's versioning or replication. [`../examples/backup-cronjob.yaml`](../examples/backup-cronjob.yaml) is a CronJob that runs the same script as the
+compose stack's backup service (`infra/backup/backup.sh`, `pg_dump` of `elysion` and `keycloak`). Restoring is `infra/backup/restore.sh`, see
+[self-hosting](../../../docs/self-hosting.md#back-up-and-restore).
+
 ## Notes
 
 - The services' probes are `/health` (frontend: `/`). The business backend applies its migrations itself at start

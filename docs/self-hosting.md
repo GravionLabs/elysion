@@ -65,6 +65,35 @@ The Helm chart ([ADR 0018](adr/0018-kubernetes-packaging.md), `infra/helm/elysio
 names are still the local ones (`elysion/frontend`, ...), so set `images.<service>.repository` and `tag` to the GHCR images above. It has
 been run on a local kind cluster only.
 
+## Back up and restore
+
+The state of Elysion is in three places: **Postgres** (boards, members, the stored document of every board, and Keycloak's own database `keycloak` with the users),
+**the object store's bucket** (the images of boards, `boards/<board id>/<file id>`; a board's document refers to them), and your configuration. The
+`backup` service of the compose stack covers the first two; it is behind the profile `backup`, so the demo does not run it:
+
+```sh
+docker compose --profile backup up -d backup
+```
+
+It runs `pg_dump` of `elysion` and `keycloak` (custom format, compressed) and copies the bucket into a directory per run, `backup-data/<UTC time>/` in the
+volume `backup-data` (or a path of the host: `BACKUP_PATH=/srv/elysion-backups` in `.env`). `BACKUP_CRON` (default `0 3 * * *`, cron syntax) says when,
+`BACKUP_KEEP_DAYS` (default 14) how long runs are kept. Every run ends with one line in the container's log, `backup ok <directory> <bytes>` or
+`backup FAILED: <why>`, and writes the epoch seconds of the last good run into `last-success` next to the runs, for a check that does not read logs. One
+run by hand: `docker compose --profile backup run --rm backup backup.sh`.
+
+**Restore** with `scripts/restore.sh <time of the run | latest> [--force]`: it stops the services that use the databases, restores `elysion`, `keycloak`
+and the bucket from that run, and starts the services again. A database that has tables, or a bucket that is not empty, is **not touched without
+`--force`** (it is then dropped and made again, and the bucket made equal to the backup).
+
+The backup is only worth what a restore brings back: `scripts/backup-rehearsal.sh` makes two boards (one with an image), backs up, destroys the databases
+and the bucket's files, restores and checks that the boards and the image are back. The container workflow runs it on every pull request that touches the
+stack; run it by hand only on a stack you can lose data in.
+
+Two things the service does not do: **the backup sits on the same host** unless you point `BACKUP_PATH` somewhere else and copy it away (a backup on the
+disk of the database it protects is not a backup), and the **development credentials** of the stack are the ones it uses. In Kubernetes the chart does not run
+Postgres or the object store, so their backup is theirs; [the chart's example](../infra/helm/examples/backup-cronjob.yaml) is a CronJob with the same
+script for the databases.
+
 ## Known limits of this pre-release
 
 See [What is missing](../README.md#what-is-missing) and the [roadmap](roadmap.md): no production configuration yet, no security review
