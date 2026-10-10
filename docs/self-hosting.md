@@ -128,6 +128,13 @@ Traefik dashboard and Keycloak's `/admin` are not reachable from outside, and `h
 Content-Security-Policy and how to loosen it for a customization of yours (`security.cspMode: report`, then read `CSP violation` in the BFF's log) are in the
 [frontend spec](specs/frontend.md#headers). CORS and the rate limit are `edge.corsAllowedOrigins` and `edge.rateLimit.*` ([gateway](specs/gateway.md)).
 
+### Sizing
+
+[Performance](performance.md) has the measurements. In short, for boards of an ordinary size: a **realtime replica** carries about 300 people who are
+moving things (29 % of a core, 175 MiB) and the chart asks `250m` and `256Mi` and scales at about 180 connections; **Traefik** is the first thing that
+needs more replicas, at about 600 people drawing at the same time; two replicas of everything is the smallest setup that survives the loss of a pod
+(`values-production.example.yaml`). `pnpm test:load` repeats the measurements against your own cluster's edge.
+
 ### Rotate a secret
 
 `WS_TOKEN_SECRET` and `INTERNAL_API_SECRET` are shared by two services each: change the value in the Secret and restart both services together (`kubectl -n elysion rollout restart

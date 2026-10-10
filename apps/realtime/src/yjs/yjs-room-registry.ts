@@ -554,11 +554,13 @@ export class YjsRoomRegistry implements OnModuleDestroy {
   }
 
   private async writeToStore(room: YjsRoom, state: SaveState): Promise<void> {
+    const endTimer = this.metrics?.startSave();
     try {
       for (;;) {
         const encoded = Y.encodeStateAsUpdate(room.doc);
         const result = await this.store.save(room.boardId, encoded, state.version);
         if (result.saved) {
+          endTimer?.();
           this.metrics?.saved(encoded.byteLength);
           room.sizeBytes = encoded.byteLength;
           state.version = result.version;
@@ -570,6 +572,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
         state.version = result.current.version;
       }
     } catch (error) {
+      endTimer?.();
       state.failures += 1;
       this.metrics?.failed();
       if (error instanceof DocumentRejectedError) {
