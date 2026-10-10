@@ -115,6 +115,23 @@ order of the frames' names when they are numbered, like the pages of an imported
 the frame's name as its title and as a bookmark) or puts the whole board on one page, the **page size** (the size of the content, A4 or Letter) and the
 **orientation**; for every format the **colors** (as on the screen, light or dark), the **background** (off leaves it transparent) and, for a **PNG**,
 the **scale** (1×, 2× or 3×). With **Selection only** and frames selected, only those frames become pages. Images on the board are part of the file. **Import** takes an `.excalidraw` file into the board you have open.
+(when something is selected) only that part is exported. **Import** takes an `.excalidraw` file into the board you have open (it replaces what is on the board, and asks first) or a PDF (below).
+
+### Export a room as one PDF
+
+In a room's page, **Export room** makes one PDF of all the boards you can read in the room: for each board a title page with its name (and a note when it
+is empty or could not be loaded), then its pages as the Export menu would make them (one per frame, with your remembered options). Each board is opened in
+turn out of sight, so it takes a few seconds per board; the progress is shown and can be canceled. A room of more than 20 boards asks first and says
+how long it may take.
+
+### Bring a PDF onto the board
+
+Choose a `.pdf` file with **Import**, or drop one on the board. A window shows the pages as small pictures: leave out the pages you do not need (all of
+them are chosen at first, the first 50 of a longer PDF can be imported), choose how sharp they should be (1,600 pixels wide is a good size for a screen) and
+click **Import**. Each page becomes a picture in a frame named **Page 1**, **Page 2**, and so on; the frames sit in a grid in the middle of what you see, the
+others see them a moment later, and **Undo** takes all of them off again in one step. The PDF is read in your browser and never sent to a server; only the
+pictures of the pages are stored. A PDF that is protected by a password, larger than 10 MB or not a PDF is refused with a message, and the progress of a long
+PDF is shown per page and can be canceled.
 
 ## Running a workshop
 
