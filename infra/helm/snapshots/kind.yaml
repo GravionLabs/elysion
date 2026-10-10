@@ -441,8 +441,8 @@ spec:
             limits:
               memory: 512Mi
             requests:
-              cpu: 50m
-              memory: 128Mi
+              cpu: 250m
+              memory: 256Mi
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
