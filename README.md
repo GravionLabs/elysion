@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/GravionLabs/elysion/actions/workflows/ci.yml/badge.svg)](https://github.com/GravionLabs/elysion/actions/workflows/ci.yml)
 
-An open-source alternative to [Mural](https://mural.co): a collaborative whiteboard you can self-host. Several people draw on the same board at the same time and see each other's cursors; boards are kept, shared with roles, grouped in rooms and started from templates; and a facilitator can run a timer and a dot voting. It is a **pre-release**: it works end to end, but it is not yet a production setup (see [What is missing](#what-is-missing)).
+An open-source alternative to [Mural](https://mural.co): a collaborative whiteboard you can self-host. Several people draw on the same board at the same time and see each other's cursors; boards are kept, shared with roles, grouped in rooms and started from templates; and a facilitator can run a timer and a dot voting. It is a **pre-release**: it works end to end, and production is Kubernetes through the Helm chart (see [What is missing](#what-is-missing)).
 
 ## What it does
 
@@ -24,13 +24,13 @@ pnpm demo        # = `docker compose up -d --build`, then open http://localhost 
 pnpm demo:down   # = `docker compose down`
 ```
 
-The [Demo](#demo) section has the details. How to use it is in the [user guide](docs/user-guide.md). The published images and what a real deployment needs are in [self-hosting](docs/self-hosting.md); every merge to `main` is a (pre-)release with images on GHCR ([ADR 0021](docs/adr/0021-versioning-and-releases.md)). The documentation is also a website (`apps/site`, [ADR 0022](docs/adr/0022-documentation-site.md)) at <https://gravionlabs.github.io/elysion/> once GitHub Pages is switched on. To work on Elysion see [Getting started](#getting-started).
+The [Demo](#demo) section has the details. How to use it is in the [user guide](docs/user-guide.md). The published images and the Kubernetes setup are in [self-hosting](docs/self-hosting.md); every merge to `main` is a (pre-)release with images on GHCR ([ADR 0021](docs/adr/0021-versioning-and-releases.md)). The documentation is also a website (`apps/site`, [ADR 0022](docs/adr/0022-documentation-site.md)) at <https://gravionlabs.github.io/elysion/> once GitHub Pages is switched on. To work on Elysion see [Getting started](#getting-started).
 
 ## What is missing
 
 Known gaps, so nobody finds them by surprise (the [roadmap](docs/roadmap.md) says what comes next):
 
-- **Not a production setup:** the demo and the development stack run Keycloak in development mode, wired to `localhost`, with development secrets. A real deployment needs TLS, a host name, a production Keycloak and its own secrets (see [self-hosting](docs/self-hosting.md)).
+- **The compose stack is a demo:** it runs Keycloak in development mode, wired to `localhost`, with development secrets. Production is the Helm chart with TLS, two host names, a production Keycloak that you run and a realm file from the release ([self-hosting](docs/self-hosting.md#run-it-in-kubernetes)); it has been run on a local kind cluster only.
 - **Security:** [docs/security.md](docs/security.md) has the threat model, the review of the token flows, the internal API and the edge, and the known findings; to report a vulnerability use GitHub's private reporting, see [SECURITY.md](SECURITY.md).
 - **Voting is not secret from the server:** with the votes in the board's document (ADR 0020) the interface shows no names while a voting runs and only counts afterwards, but the document holds who voted for what, and viewers cannot vote.
 - **Timer clocks** of two clients may differ by a few seconds (the end is worked out on every client).

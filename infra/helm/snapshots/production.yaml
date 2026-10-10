@@ -528,7 +528,7 @@ spec:
             - name: CSP_MODE
               value: enforce
             - name: HSTS_MAX_AGE
-              value: "0"
+              value: "604800"
           # Readiness and liveness wait for the start-up probe: the business backend migrates the database at start.
           startupProbe:
             httpGet: { path: /, port: http }
@@ -705,7 +705,7 @@ metadata:
     helm.sh/chart: elysion-0.1.0
 spec:
   entryPoints:
-    - web
+    - websecure
   routes:
     # Where the browser reports a Content-Security-Policy violation: no token, so no forwardAuth; the rate limit applies.
     - kind: Rule
@@ -744,6 +744,28 @@ spec:
           port: 8080
   tls:
     secretName: elysion-tls
+---
+# Source: elysion/templates/edge.yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: elysion-redirect
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  entryPoints: [web]
+  routes:
+    - kind: Rule
+      match: Host(`elysion.example`)
+      middlewares:
+        - name: elysion-redirect-https
+      # Nothing is behind it: the middleware answers. Traefik needs a service, so the frontend's is named.
+      services:
+        - name: elysion-frontend
+          port: 8080
 ---
 # Source: elysion/templates/edge.yaml
 # Middlewares, in the order the routes use them (docs/specs/gateway.md): security-headers first, so that an answer the later ones give (401, 429) carries the headers, then cors, rate-limit, bff-auth.
@@ -819,9 +841,24 @@ spec:
     permissionsPolicy: camera=(), microphone=(), geolocation=()
     customResponseHeaders:
       Cross-Origin-Opener-Policy: same-origin
-    stsSeconds: 0
+    stsSeconds: 604800
     stsIncludeSubdomains: true
     forceSTSHeader: true
+---
+# Source: elysion/templates/edge.yaml
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: elysion-redirect-https
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
 ---
 # Source: elysion/templates/servicemonitor.yaml
 apiVersion: monitoring.coreos.com/v1

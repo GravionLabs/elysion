@@ -51,4 +51,11 @@ monitoring:
 
 edge:
   host: elysion.example
+  # TLS ends at Traefik: one wildcard certificate for *.elysion.example (cert-manager, DNS-01) can serve this host and the identity host.
+  entryPoints: [websecure]
   tlsSecretName: elysion-tls
+  redirectToHttps: true
+
+security:
+  # Start with one week on the first deployment and raise it to 31536000 once it is known to work: a browser keeps the header.
+  hstsMaxAge: 604800
