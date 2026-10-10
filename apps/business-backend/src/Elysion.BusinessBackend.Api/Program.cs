@@ -93,6 +93,7 @@ app.MapBoardMemberEndpoints();
 app.MapRoomEndpoints();
 app.MapRoomMemberEndpoints();
 app.MapBoardDocumentEndpoints();
+app.MapBoardAccessEndpoints();
 app.MapBoardFileEndpoints();
 app.MapTemplateEndpoints();
 

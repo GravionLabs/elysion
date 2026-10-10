@@ -104,6 +104,31 @@ describe('WS token at the handshake (e2e)', () => {
     }
   });
 
+  it('opens one socket per token: the same token a second time is refused with 4401 (#772)', async () => {
+    const id = board();
+    const target = boardUrl(url, id, { jti: `jti-${Math.random().toString(36).slice(2)}` });
+    const first = new SyncClient(target);
+    await first.waitForOpen();
+
+    const second = new SyncClient(target);
+    second.waitForOpen().catch(() => undefined);
+
+    expect(await second.closed).toBe(4401);
+    first.close();
+  });
+
+  it('lets a token without an id in, as one of a BFF that predates the rule', async () => {
+    const id = board();
+    const target = boardUrl(url, id);
+    const first = new SyncClient(target);
+    const second = new SyncClient(target);
+
+    await Promise.all([first.waitForOpen(), second.waitForOpen()]);
+
+    first.close();
+    second.close();
+  });
+
   describe('viewers are read-only', () => {
     it("does not let a viewer's edit reach an editor, but the editor's edit reaches the viewer", async () => {
       const id = board();

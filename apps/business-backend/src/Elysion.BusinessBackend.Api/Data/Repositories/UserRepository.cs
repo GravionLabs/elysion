@@ -14,6 +14,12 @@ public sealed class UserRepository(ElysionDbContext db) : IUserRepository
         return await db.Users.FirstOrDefaultAsync(u => u.Subject == subject, cancellationToken);
     }
 
+    public async Task<User?> FindBySubjectAsync(string subject, CancellationToken cancellationToken)
+    {
+        Guard.Against.NullOrWhiteSpace(subject);
+        return await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Subject == subject, cancellationToken);
+    }
+
     public async Task<User?> FindAsync(Guid id, CancellationToken cancellationToken)
     {
         Guard.Against.Default(id);
