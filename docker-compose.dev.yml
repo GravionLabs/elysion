@@ -1,14 +1,25 @@
 # For working on Elysion: `docker compose -f docker-compose.yml -f docker-compose.dev.yml ...` (`pnpm dev:infra` and
 # `pnpm dev:stack` do that). It only adds what an app running on the host, or a tool, needs to reach the services, so
 # the plain docker-compose.yml does not publish a database. See docs/adr/0023-own-valkey-one-compose-file.md.
+#
+# The host ports listen on the loopback (`DEV_BIND`, default 127.0.0.1): the services behind them have development
+# passwords. A kind cluster reaches Postgres and RustFS through the host's address on the docker network, so
+# `pnpm kind:up` needs `DEV_BIND=0.0.0.0` (infra/kind/README.md).
 services:
   traefik:
+    # The dashboard and the API are routed only here: on the entry point `dashboard` (:8080 inside the container), which has no
+    # router in docker-compose.yml, so the plain stack answers 404 there and serves no API (#780).
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.dashboard.rule=PathPrefix(`/api`) || PathPrefix(`/dashboard`)'
+      - 'traefik.http.routers.dashboard.entrypoints=dashboard'
+      - 'traefik.http.routers.dashboard.service=api@internal'
     ports:
-      - '8080:8080' # the dashboard
+      - '${DEV_BIND:-127.0.0.1}:8080:8080' # the dashboard
 
   postgres:
     ports:
-      - '5432:5432'
+      - '${DEV_BIND:-127.0.0.1}:5432:5432'
 
   # 6380, not 6379: a Valkey of local-infra (or any other) on the machine may own 6379. The host apps use
   # REDIS_URL=redis://localhost:6380 (apps/realtime/.env.example).
@@ -24,5 +35,5 @@ services:
   # RustFS (in docker-compose.yml, ADR 0007) on the host: 9100 and 9101 because Portainer from local-infra may own 9000.
   rustfs:
     ports:
-      - '${RUSTFS_S3_PORT:-9100}:9000' # S3 API
-      - '${RUSTFS_CONSOLE_PORT:-9101}:9001' # console
+      - '${DEV_BIND:-127.0.0.1}:${RUSTFS_S3_PORT:-9100}:9000' # S3 API
+      - '${DEV_BIND:-127.0.0.1}:${RUSTFS_CONSOLE_PORT:-9101}:9001' # console
