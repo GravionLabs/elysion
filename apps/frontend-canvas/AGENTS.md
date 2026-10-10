@@ -35,6 +35,10 @@ The dot grid is CSS behind a **transparent** static canvas (`grid-dots.ts`, `sty
 
 The canvas follows ariadne's design: the tokens come from `packages/design-tokens` (shared with the Angular shell), `src/styles/` has the Excalidraw variable mapping and the toolbar, `Toolbar.tsx`, `element-style.ts`, `sticky-note.ts` — see "Theming", "Bottom toolbar" and "Canvas element style" in `docs/specs/frontend.md`. The dev entry accepts `?theme=light|dark` for checking both themes.
 
+## The library
+
+The user's Excalidraw library lives in local storage (`library-store.ts`) and `CanvasApp` adds the library the library site sends back in `#addLibrary=…` (allowed hosts only, the same two the CSP opens); not `useHandleLibrary`, see "The library" in `docs/specs/frontend.md`. A change to the allowed hosts is a change to `apps/frontend/security-headers.sh` too. `apps/e2e/tests/library.spec.ts` stubs the library site.
+
 ## Localization
 
 The attribute `locale` (`en` default, `de`; unknown is `en`) reaches `CanvasApp` as `locale`; `src/i18n.tsx` has the typed dictionaries (`de` must have exactly the keys of `en`) and the `useI18n()` hook, and Excalidraw gets `langCode`. Every new user-visible string (label, title, aria-label, placeholder, hint, error the canvas raises) goes into both dictionaries, not inline; see "Localization" in `docs/specs/frontend.md`.

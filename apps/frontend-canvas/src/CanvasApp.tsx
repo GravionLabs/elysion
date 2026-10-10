@@ -32,6 +32,7 @@ import { Minimap } from './Minimap';
 import { SceneStore } from './scene-store';
 import { scrollToCenter } from './minimap-geometry';
 import { ZOOM_STEP, zoomAbout } from './zoom';
+import { isAllowedLibraryUrl, libraryAdapter, parseAddLibrary } from './library-store';
 import { I18nProvider, excalidrawLangCode, createI18n, type Locale } from './i18n';
 import { Toolbar, type HistoryAction, type ToolbarTool, type ZoomAction } from './Toolbar';
 import { ELEMENT_DEFAULTS } from './element-style';
@@ -193,6 +194,8 @@ function defaultYjsServerUrl(): string {
 const UI_OPTIONS = { canvasActions: { toggleTheme: true }, tools: { image: false } };
 const UI_OPTIONS_WITH_IMAGES = { canvasActions: { toggleTheme: true }, tools: { image: true } };
 
+const LIBRARY_ADAPTER = libraryAdapter();
+
 // Excalidraw's own library: the default sidebar, on its library tab.
 const LIBRARY_SIDEBAR = 'default';
 const LIBRARY_TAB = 'library';
@@ -263,6 +266,52 @@ export function CanvasApp({
   const readOnlyRef = useRef(readOnly);
   readOnlyRef.current = readOnly;
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
+  // The same API as a state: the library hook below has to run again when the canvas is there.
+  const [excalidrawApi, setExcalidrawApi] = useState<ExcalidrawImperativeAPI | null>(null);
+  // The user's library (library-store.ts): loaded when the canvas is there, and the library the user chose on the library site
+  // ("Browse libraries" comes back with `#addLibrary=…`) is added to it.
+  useEffect(() => {
+    const api = excalidrawApi;
+    if (!api) return;
+    let gone = false;
+    const takeUpAddress = async () => {
+      const request = parseAddLibrary(window.location.hash);
+      if (!request) return;
+      // The address is cleaned first, so a reload does not add it again; its own path stays (`replaceState` with `#…` alone would
+      // be resolved against the page's <base href>).
+      const { pathname, search } = window.location;
+      window.history.replaceState(window.history.state, '', `${pathname}${search}${request.rest}`);
+      if (!isAllowedLibraryUrl(request.url)) {
+        errorCallback.current?.(new Error(tRef.current.libraryNotAllowed));
+        return;
+      }
+      try {
+        const response = await fetch(request.url);
+        if (!response.ok) throw new Error(String(response.status));
+        await api.updateLibrary({
+          libraryItems: await response.blob(),
+          // Asks, unless this is the page that sent the user away.
+          prompt: request.token !== api.id,
+          merge: true,
+          defaultStatus: 'published',
+          openLibraryMenu: true,
+        });
+      } catch {
+        if (!gone) errorCallback.current?.(new Error(tRef.current.libraryFailed));
+      }
+    };
+    void (async () => {
+      const stored = LIBRARY_ADAPTER.load();
+      if (stored) await api.updateLibrary({ libraryItems: stored.libraryItems, merge: true });
+      if (!gone) await takeUpAddress();
+    })();
+    const onHashChange = () => void takeUpAddress();
+    window.addEventListener('hashchange', onHashChange);
+    return () => {
+      gone = true;
+      window.removeEventListener('hashchange', onHashChange);
+    };
+  }, [excalidrawApi]);
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
   const presenceRef = useRef<PresenceSync | null>(null);
   const docRef = useRef<Y.Doc | null>(null);
@@ -740,8 +789,10 @@ export function CanvasApp({
               gridSize: gridRef.current.size,
             },
           }}
+          onLibraryChange={(items) => LIBRARY_ADAPTER.save({ libraryItems: items })}
           excalidrawAPI={(api) => {
             apiRef.current = api;
+            setExcalidrawApi(api);
             // The size the document gave before the canvas was there (the initial state has the default one).
             if (gridRef.current.size !== DEFAULT_GRID.size) {
               api.updateScene({
