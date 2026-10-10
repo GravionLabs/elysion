@@ -8,6 +8,7 @@ import { TemplateInfo } from '../board/template-api';
 import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
 import { SessionService } from '../auth/session.service';
 import { BoardList, boardInitials, boardTint } from './board-list';
+import { RoomPdfExporter } from './room-pdf-export';
 
 const board = (
   id: string,
@@ -922,6 +923,79 @@ describe('BoardList', () => {
           'owner of the room',
         );
         expect(entries()).toContain('Sprint 1');
+      });
+    });
+
+    describe('exporting a room as one PDF (#727)', () => {
+      it('offers Export room in a room that has boards, also to a viewer, and not in the all-boards view', async () => {
+        await view('r1');
+        expect(button('Export room')).toBeTruthy();
+
+        await view('r2');
+        expect(button('Export room')).toBeTruthy(); // a viewer may read, so may export
+
+        await view(undefined);
+        expect(button('Export room')).toBeUndefined();
+      });
+
+      it('has no Export room for a room without boards', async () => {
+        fixture.destroy();
+        fixture = TestBed.createComponent(BoardList);
+        await fixture.whenStable();
+        await respondWith([LOOSE], [SPRINT]);
+        await view('r1');
+
+        expect(button('Export room')).toBeUndefined();
+      });
+
+      it('asks first for a room of more than 20 boards and says how long it may take', async () => {
+        const many = Array.from({ length: 21 }, (_, i) =>
+          board(`m${i}`, `Board ${i}`, '2026-10-05T10:00:00Z', 'r1'),
+        );
+        fixture.destroy();
+        fixture = TestBed.createComponent(BoardList);
+        await fixture.whenStable();
+        await respondWith(many, [SPRINT]);
+        await view('r1');
+        const exportSpy = vi.spyOn(TestBed.inject(RoomPdfExporter), 'export');
+
+        await clickButton('Export room');
+
+        const confirm = el().querySelector(
+          '[role="alertdialog"][aria-label="Confirm room export"]',
+        );
+        expect(confirm?.textContent).toContain('21 boards');
+        expect(confirm?.textContent).toMatch(/about 2\s+minutes/);
+        expect(exportSpy).not.toHaveBeenCalled(); // nothing runs until it is confirmed
+      });
+
+      it('goes on without asking for a smaller room, and shows the progress with a way to cancel', async () => {
+        const exporter = TestBed.inject(RoomPdfExporter);
+        let release!: () => void;
+        const spy = vi.spyOn(exporter, 'export').mockImplementation(
+          (_boards, _settings, options) =>
+            new Promise((resolve) => {
+              options.onProgress({ done: 0, total: 1, current: 'Retro' });
+              release = () => resolve({ pdf: null, skipped: [] });
+            }),
+        );
+        await view('r1');
+
+        await clickButton('Export room');
+        await fixture.whenStable();
+
+        expect(el().querySelector('[role="alertdialog"]')).toBeNull();
+        expect(
+          el().querySelector('[role="dialog"][aria-label="Exporting the room"]')?.textContent,
+        ).toContain('Retro');
+        expect(button('Export room')!.disabled).toBe(true);
+        expect(spy.mock.calls[0]![0]).toEqual([{ id: 'b1', name: 'Retro' }]);
+
+        await clickButton('Cancel');
+        release();
+        await fixture.whenStable();
+
+        expect(el().querySelector('[aria-label="Exporting the room"]')).toBeNull();
       });
     });
 

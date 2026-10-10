@@ -29,6 +29,9 @@ import {
 import { describeError, ShareDialog } from '../share/share-dialog';
 import { BoardThumbnail } from './board-thumbnail';
 import { RoomSidebar, RoomsState } from './room-sidebar';
+import { RoomPdfExporter } from './room-pdf-export';
+import { downloadBlob, exportFilename } from '../board/download';
+import { loadSettings } from '../topbar/export-settings';
 
 /** The design tokens the preview placeholders are tinted with; a board always gets the same one. */
 const PREVIEW_TINTS = [
@@ -61,6 +64,16 @@ export function boardTint(id: string): string {
 export const DEFAULT_NEW_BOARD_NAME = $localize`:@@boards.defaultName:Untitled board`;
 
 type ListState = 'loading' | 'ready' | 'error';
+
+/** A room with more boards than this asks before it is exported: each board takes a few seconds. */
+const LARGE_ROOM_BOARDS = 20;
+
+/** Where the export of a room is (#727). */
+export type RoomExportState =
+  | { phase: 'confirm'; room: RoomInfo; count: number; minutes: number }
+  | { phase: 'running'; room: RoomInfo; done: number; total: number; current: string }
+  | { phase: 'done'; room: RoomInfo; skipped: string[] }
+  | { phase: 'failed'; room: RoomInfo };
 type CreateState = 'closed' | 'editing' | 'saving';
 
 /** One way to move a board: into a room, or (`roomId` null) out of its room. */
@@ -88,6 +101,7 @@ export class BoardList {
   readonly #pageTitle = inject(Title);
   // Injected so the theme is applied to the page, which the board page does through its top bar.
   readonly #theme = inject(ThemeService);
+  readonly #roomExporter = inject(RoomPdfExporter);
 
   /** The view, from the route: `undefined` for all boards, `none` for boards in no room, else a room's id. */
   readonly roomId = input<string | undefined>();
@@ -201,6 +215,13 @@ export class BoardList {
   protected readonly renaming = signal(false);
   protected readonly renameDraft = signal('');
   protected readonly renameSaving = signal(false);
+
+  /**
+   * The export of a room as one PDF (#727): asking first when the room is large, then the progress with a way to cancel. `null`
+   * when nothing is going on.
+   */
+  protected readonly roomExport = signal<RoomExportState | null>(null);
+  #roomExportAbort: AbortController | null = null;
 
   protected readonly roomDeleteTarget = signal<RoomInfo | null>(null);
   protected readonly roomDeleting = signal(false);
@@ -645,5 +666,56 @@ export class BoardList {
     if (board) {
       this.moveTo(board, roomId);
     }
+  }
+
+  /** The Export room button: a room of more than 20 boards asks first and says how long it may take. */
+  protected askExportRoom(room: RoomInfo): void {
+    const count = this.visibleBoards().length;
+    if (count > LARGE_ROOM_BOARDS) {
+      this.roomExport.set({ phase: 'confirm', room, count, minutes: Math.ceil((count * 5) / 60) });
+      return;
+    }
+    void this.startExportRoom(room);
+  }
+
+  protected async startExportRoom(room: RoomInfo): Promise<void> {
+    const boards = this.visibleBoards().map((board) => ({ id: board.id, name: board.name }));
+    const abort = new AbortController();
+    this.#roomExportAbort = abort;
+    this.roomExport.set({
+      phase: 'running',
+      room,
+      done: 0,
+      total: boards.length,
+      current: boards[0]?.name ?? '',
+    });
+    try {
+      const { pdf, skipped } = await this.#roomExporter.export(boards, loadSettings(), {
+        signal: abort.signal,
+        onProgress: ({ done, total, current }) =>
+          this.roomExport.set({ phase: 'running', room, done, total, current }),
+        texts: {
+          board: (index, total) =>
+            $localize`:@@boards.roomExport.board:Board ${index}:index: of ${total}:total:`,
+          unreadable: $localize`:@@boards.roomExport.unreadable:This board could not be loaded and is not in the PDF.`,
+          empty: $localize`:@@boards.roomExport.empty:This board is empty.`,
+        },
+      });
+      if (pdf === null) {
+        this.roomExport.set(null);
+        return;
+      }
+      downloadBlob(pdf, exportFilename(room.name, room.id, 'pdf', false));
+      this.roomExport.set(skipped.length > 0 ? { phase: 'done', room, skipped } : null);
+    } catch {
+      this.roomExport.set({ phase: 'failed', room });
+    } finally {
+      this.#roomExportAbort = null;
+    }
+  }
+
+  protected cancelExportRoom(): void {
+    this.#roomExportAbort?.abort();
+    this.roomExport.set(null);
   }
 }

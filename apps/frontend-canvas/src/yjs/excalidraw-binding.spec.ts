@@ -280,6 +280,50 @@ describe('ExcalidrawYjsBinding files (#702)', () => {
     expect(doc.getMap('files').has(FILE_ID)).toBe(false);
   });
 
+  it('settles at once when nothing is being fetched or uploaded', async () => {
+    const binding = new ExcalidrawYjsBinding(new Y.Doc());
+
+    const started = Date.now();
+    await binding.whenSettled(5_000, 10);
+
+    expect(Date.now() - started).toBeLessThan(500);
+    expect(binding.pending).toBe(0);
+  });
+
+  it('waits for a file that is being fetched, and gives up after the timeout when it never arrives', async () => {
+    const doc = new Y.Doc();
+    let release!: (blob: Blob) => void;
+    const store: FileStore = {
+      put: vi.fn(),
+      get: vi.fn(() => new Promise<Blob>((resolve) => (release = resolve))),
+    };
+    const element = image();
+    doc.getMap('elements').set(element.id, element);
+    doc.getMap('files').set(FILE_ID, { mimeType: 'image/png', created: 42 });
+    const binding = new ExcalidrawYjsBinding(doc, { fileStore: () => store });
+    const { api } = createMockApi([]);
+    binding.attach(api);
+    expect(binding.pending).toBe(1);
+
+    let settled = false;
+    const waiting = binding.whenSettled(5_000, 10).then(() => (settled = true));
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(settled).toBe(false);
+
+    release(new Blob([Uint8Array.from([137, 80, 78, 71])], { type: 'image/png' }));
+    await waiting;
+    expect(binding.pending).toBe(0);
+
+    // A file that never comes: the wait ends at the timeout.
+    const stuck = new ExcalidrawYjsBinding(doc, {
+      fileStore: () => ({ put: vi.fn(), get: () => new Promise<Blob>(() => undefined) }),
+    });
+    stuck.attach(createMockApi([]).api);
+    const before = Date.now();
+    await stuck.whenSettled(80, 10);
+    expect(Date.now() - before).toBeGreaterThanOrEqual(70);
+  });
+
   it('loads the file of a remote image that the document lists', async () => {
     const doc = new Y.Doc();
     const { store, stored } = memoryStore();

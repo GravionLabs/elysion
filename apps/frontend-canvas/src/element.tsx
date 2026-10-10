@@ -113,6 +113,14 @@ class ElysionCanvasElement extends HTMLElement {
     return this.#controls ? this.#controls.exportThumbnail() : Promise.resolve(null);
   }
 
+  /**
+   * Resolves when the images of the board are loaded (nothing is being fetched or uploaded any more) or after at most
+   * `timeoutMs` (20 seconds). A host that makes an export of a board it does not show waits for it after `synced`.
+   */
+  whenSettled(timeoutMs?: number): Promise<void> {
+    return this.#controls ? this.#controls.whenSettled(timeoutMs) : Promise.resolve();
+  }
+
   /** The board (or the selection) as a file, or `null` when there is nothing to export or the canvas is not up. */
   exportBoard(format: ExportFormat, options?: ExportOptions): Promise<Blob | null> {
     return this.#controls ? this.#controls.exportBoard(format, options) : Promise.resolve(null);
@@ -214,6 +222,7 @@ class ElysionCanvasElement extends HTMLElement {
         onError={(error) => this.#emit('error', { message: error.message })}
         onNotice={(message) => this.#emit('notice', { message })}
         onFileError={(error) => this.#emit('fileerror', { message: error.message })}
+        onSynced={() => this.#emit('synced', {})}
         tokenProvider={this.#tokenProvider}
         fileStore={this.#fileStore}
         readOnly={this.hasAttribute('readonly')}

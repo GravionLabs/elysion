@@ -47,6 +47,8 @@ export type CanvasElement = HTMLElement & {
   toggleLibrary?(): void;
   /** The board as the picture of its card (#729): a 480 by 300 PNG in the light theme, or `null` for an empty board. */
   exportThumbnail?(): Promise<Blob | null>;
+  /** Resolves when the images of the board are loaded, or after `timeoutMs`; an export of a board nobody shows waits for it (#727). */
+  whenSettled?(timeoutMs?: number): Promise<void>;
   /** The board (or the selection) as a file, or `null` when there is nothing to export. */
   exportBoard?(
     format: ExportFormat,
