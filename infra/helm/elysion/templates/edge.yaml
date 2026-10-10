@@ -1,7 +1,7 @@
 {{- if .Values.edge.enabled }}
 {{- $full := include "elysion.fullname" . }}
 {{- $host := ternary (printf "Host(`%s`) && " .Values.edge.host) "" (ne .Values.edge.host "") }}
-# Middlewares, in the order the routes use them (docs/specs/gateway.md): cors, rate-limit, bff-auth, security-headers.
+# Middlewares, in the order the routes use them (docs/specs/gateway.md): security-headers first, so that an answer the later ones give (401, 429) carries the headers, then cors, rate-limit, bff-auth.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -78,18 +78,18 @@ spec:
       match: {{ $host }}Path(`/api/csp-report`)
       priority: 100
       middlewares:
-        - name: {{ $full }}-rate-limit
         - name: {{ $full }}-security-headers
+        - name: {{ $full }}-rate-limit
       services:
         - name: {{ $full }}-bff
           port: 3000
     - kind: Rule
       match: {{ $host }}PathPrefix(`/api`)
       middlewares:
+        - name: {{ $full }}-security-headers
         - name: {{ $full }}-cors
         - name: {{ $full }}-rate-limit
         - name: {{ $full }}-bff-auth
-        - name: {{ $full }}-security-headers
       services:
         - name: {{ $full }}-bff
           port: 3000
@@ -97,8 +97,8 @@ spec:
     - kind: Rule
       match: {{ $host }}PathPrefix(`/yjs`)
       middlewares:
-        - name: {{ $full }}-cors
         - name: {{ $full }}-security-headers
+        - name: {{ $full }}-cors
       services:
         - name: {{ $full }}-realtime
           port: 3000

@@ -313,7 +313,7 @@ spec:
             - name: OIDC_CLIENT_ID
               value: elysion-frontend
             - name: CSP_MODE
-              value: report
+              value: enforce
             - name: HSTS_MAX_AGE
               value: "0"
           # Readiness and liveness wait for the start-up probe: the business backend migrates the database at start.
@@ -461,18 +461,18 @@ spec:
       match: Path(`/api/csp-report`)
       priority: 100
       middlewares:
-        - name: elysion-rate-limit
         - name: elysion-security-headers
+        - name: elysion-rate-limit
       services:
         - name: elysion-bff
           port: 3000
     - kind: Rule
       match: PathPrefix(`/api`)
       middlewares:
+        - name: elysion-security-headers
         - name: elysion-cors
         - name: elysion-rate-limit
         - name: elysion-bff-auth
-        - name: elysion-security-headers
       services:
         - name: elysion-bff
           port: 3000
@@ -480,8 +480,8 @@ spec:
     - kind: Rule
       match: PathPrefix(`/yjs`)
       middlewares:
-        - name: elysion-cors
         - name: elysion-security-headers
+        - name: elysion-cors
       services:
         - name: elysion-realtime
           port: 3000
@@ -493,7 +493,7 @@ spec:
           port: 8080
 ---
 # Source: elysion/templates/edge.yaml
-# Middlewares, in the order the routes use them (docs/specs/gateway.md): cors, rate-limit, bff-auth, security-headers.
+# Middlewares, in the order the routes use them (docs/specs/gateway.md): security-headers first, so that an answer the later ones give (401, 429) carries the headers, then cors, rate-limit, bff-auth.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:

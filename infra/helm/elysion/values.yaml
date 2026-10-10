@@ -106,6 +106,6 @@ edge:
 # Response headers (docs/specs/frontend.md, "Headers").
 security:
   # The frontend's Content-Security-Policy: off, report (violations go to the BFF's log, nothing is blocked) or enforce.
-  cspMode: report
+  cspMode: enforce
   # Strict-Transport-Security in seconds on the frontend and the API; 0: none. Set it only when TLS is on.
   hstsMaxAge: 0

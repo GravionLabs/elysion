@@ -3,14 +3,14 @@
 # docs/specs/frontend.md, "Headers"). The Content-Security-Policy names the identity provider's origin, so it is made
 # here from OIDC_ISSUER_URL, the variable that feeds auth-config.json, and not fixed in the image.
 #
-#   CSP_MODE         off | report | enforce (default report for now; #682 makes it enforce). `report` sends Content-Security-Policy-Report-Only: the
+#   CSP_MODE         off | report | enforce (default enforce). `report` sends Content-Security-Policy-Report-Only: the
 #                    browser reports a violation to the BFF (POST /api/csp-report, logged) and blocks nothing.
 #   HSTS_MAX_AGE     seconds for Strict-Transport-Security; empty or 0 sends none (set it only when TLS is on).
 #   KEYCLOAK_ORIGIN  the identity provider's origin when it is not the one of OIDC_ISSUER_URL.
 set -eu
 
 target="${HEADERS_TARGET:-/etc/nginx/conf.d/security-headers.inc}"
-mode="${CSP_MODE:-report}"
+mode="${CSP_MODE:-enforce}"
 issuer="${OIDC_ISSUER_URL:-}"
 idp="${KEYCLOAK_ORIGIN:-$(printf '%s' "$issuer" | sed -n -E 's#^(https?://[^/?\#]+).*#\1#p')}"
 

@@ -10,12 +10,13 @@ TLS termination, OIDC/JWT auth validation (provider: Keycloak, ADR 0014), CORS, 
 
 ## Routes
 
-| Path        | Target                                   | Middlewares (in order)           | Notes                                                                                |
-| ----------- | ---------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------ |
-| `/api/*`    | BFF                                      | `cors`, `rate-limit`, `bff-auth` | **authenticated at the edge**: `forwardAuth` to the BFF's `GET /api/auth/verify`     |
-| `/yjs`      | Realtime backend (WebSocket)             | `cors`                           | not forwardAuth'd: the WS token in the URL is checked by the realtime service itself |
-| `/internal` | none (business backend)                  | none                             | internal only: not routed at the edge; the BFF calls `http://business-backend:8080`  |
-| `/`         | Frontend (nginx, Angular app, port 8080) | none                             | lowest priority: every more specific route wins                                      |
+| Path              | Target                                   | Middlewares (in order)                               | Notes                                                                                |
+| ----------------- | ---------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `/api/csp-report` | BFF                                      | `security-headers`, `rate-limit`                     | a browser's CSP violation report: no token, so no `bff-auth`; the longer rule wins   |
+| `/api/*`          | BFF                                      | `security-headers`, `cors`, `rate-limit`, `bff-auth` | **authenticated at the edge**: `forwardAuth` to the BFF's `GET /api/auth/verify`     |
+| `/yjs`            | Realtime backend (WebSocket)             | `security-headers`, `cors`                           | not forwardAuth'd: the WS token in the URL is checked by the realtime service itself |
+| `/internal`       | none (business backend)                  | none                                                 | internal only: not routed at the edge; the BFF calls `http://business-backend:8080`  |
+| `/`               | Frontend (nginx, Angular app, port 8080) | none                                                 | lowest priority: every more specific route wins                                      |
 
 The canvas builds its WebSocket URL from the page's host (`/yjs`), and `YjsGateway` listens on `path: '/yjs'`, so
 no path rewriting is needed. Traefik passes WebSocket upgrades through natively. Earlier drafts named the
@@ -48,6 +49,10 @@ curl -si http://localhost/api/boards -H 'Origin: http://evil.example' | grep -i 
 # a burst over the limit: some answers are 429 (401 is the normal answer without a token)
 for i in $(seq 1 200); do curl -s -o /dev/null -w '%{http_code}\n' http://localhost/api/boards; done | sort | uniq -c
 ```
+
+## Security headers
+
+The `security-headers` middleware (labels of the BFF service in `docker-compose.yml`, a `Middleware` in the chart's `edge.yaml`) sets `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy: no-referrer`, `Permissions-Policy` and `Cross-Origin-Opener-Policy` on the API's and the WebSocket's answers, and `Strict-Transport-Security` when `HSTS_MAX_AGE` (chart: `security.hstsMaxAge`) is above 0. It is first in each chain, so an answer a later middleware gives itself (401 from `bff-auth`, 429 from `rate-limit`) carries the headers too. The frontend's own headers and the Content-Security-Policy are the nginx image's ([frontend](frontend.md#headers)). `scripts/demo-smoke.sh` checks them with curl.
 
 ## Logs and metrics
 

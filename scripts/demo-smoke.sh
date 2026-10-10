@@ -32,6 +32,21 @@ expect 200 "the app is served" -H 'Accept: text/html' "$APP/"
 expect 200 "the identity provider has the realm" "$KEYCLOAK/realms/elysion"
 expect 401 "the API refuses an anonymous request" "$APP/api/boards"
 
+# The security headers (#681): on the app and on the API's answers, even a 401; the report endpoint takes a report without a token.
+has_header() { # has_header <header> <what> <curl args...>
+  local header="$1" what="$2"; shift 2
+  curl -s -D - -o /dev/null "$@" | grep -qi "^$header:" || fail "$what: no $header header"
+  echo "ok  $what"
+}
+for header in Content-Security-Policy X-Content-Type-Options Permissions-Policy Cross-Origin-Opener-Policy; do
+  has_header "$header" "the app sends $header" "$APP/"
+done
+for header in X-Content-Type-Options Permissions-Policy Cross-Origin-Opener-Policy; do
+  has_header "$header" "the API sends $header" "$APP/api/boards"
+done
+expect 204 "the CSP report endpoint takes a report without a token" -X POST -H 'Content-Type: application/csp-report' \
+  -d '{"csp-report":{"effective-directive":"img-src","blocked-uri":"inline"}}' "$APP/api/csp-report"
+
 token() {
   curl -s "$KEYCLOAK/realms/elysion/protocol/openid-connect/token" \
     -d grant_type=password -d client_id=elysion-frontend -d "username=$1" -d "password=$1" \
