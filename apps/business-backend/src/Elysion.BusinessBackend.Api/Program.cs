@@ -7,6 +7,7 @@ using Elysion.BusinessBackend.Api.Identity;
 using Elysion.BusinessBackend.Api.Logging;
 using Elysion.BusinessBackend.Api.Members;
 using Elysion.BusinessBackend.Api.Observability;
+using Elysion.BusinessBackend.Api.Quotas;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +27,19 @@ builder.Services.AddElysionAuthentication();
 builder.Services.AddBoardAuthorization();
 // The files of boards (images) live in an S3-compatible store, not in the shared document (#702).
 builder.Services.AddElysionFileStorage();
+
+// What one person may keep: templates and boards (#777).
+builder.Services.AddOptions<QuotaOptions>()
+    .Configure<IConfiguration>((options, configuration) =>
+    {
+        options.MaxTemplates =
+            configuration.GetValue(QuotaOptions.MaxTemplatesSetting, QuotaOptions.DefaultMaxTemplates);
+        options.MaxTemplateCharacters = configuration.GetValue(QuotaOptions.MaxTemplateCharactersSetting,
+            QuotaOptions.DefaultMaxTemplateCharacters);
+        options.MaxBoards = configuration.GetValue(QuotaOptions.MaxBoardsSetting, QuotaOptions.DefaultMaxBoards);
+    })
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 builder.Services.AddDbContext<ElysionDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Elysion"))

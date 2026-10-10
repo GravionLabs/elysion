@@ -41,6 +41,14 @@ migrateJob:
   # The Secret (existingSecret) has to exist before the first install. When on, the replicas do not migrate at start-up.
   enabled: false
 
+# What one person may keep (docs/specs/business-backend.md, "Quotas"): a request over a quota is answered 409.
+quotas:
+  maxTemplates: 100
+  # The scenes of a person's own templates together, in characters (one scene is at most 5,000,000).
+  maxTemplateCharacters: 20000000
+  # Boards a person owns; boards shared with them do not count.
+  maxBoards: 1000
+
 # Limits of a board's document in the realtime service (ADR 0026, docs/specs/realtime.md "Limits"). The canvas limits a board to
 # 20,000 elements besides (the `max-elements` attribute of the element).
 limits:

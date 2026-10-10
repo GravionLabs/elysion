@@ -200,3 +200,7 @@ At start the service creates the bucket if it is missing and checks that it can 
 - `ConnectionStrings:Elysion` — the Postgres connection string.
 - `Database:MigrateOnStartup` (default `false`) — when `true`, the app applies pending EF Core migrations at startup. The dev stack's container sets it, because it starts against an empty database; local runs use `dotnet ef database update`.
 - `--migrate` (command-line argument) — applies the pending migrations and exits without serving. The Helm chart runs it as a hook job before an install or upgrade (`migrateJob.enabled`), so that replicas never migrate at the same time; the replicas then keep `MigrateOnStartup` off.
+
+## Quotas
+
+What one person may keep is limited (finding F6 of the [security review](../security.md), #777), so that one account cannot store boards and templates until the database is full. A request over a quota is answered **`409`** with a problem (`Template quota reached`, `Board quota reached`) that says what to delete. `MAX_TEMPLATES_PER_USER` (100 templates of their own), `MAX_TEMPLATE_CHARACTERS_PER_USER` (20,000,000 characters of scenes together; one scene is at most 5,000,000) and `MAX_BOARDS_PER_USER` (1,000 boards they own; a copy of a board counts, boards shared with them do not). Compose, `.env.example` and the chart's `quotas.*` set them; the built-in templates never count. Rooms have no quota yet.

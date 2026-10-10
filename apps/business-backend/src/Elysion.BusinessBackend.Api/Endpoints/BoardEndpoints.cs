@@ -5,9 +5,11 @@ using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Quotas;
 
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Options;
 
 namespace Elysion.BusinessBackend.Api.Endpoints;
 
@@ -73,10 +75,11 @@ public static class BoardEndpoints
         return role is null ? TypedResults.NotFound() : TypedResults.Ok(new MembershipDto(id, role.Value.ToString()));
     }
 
-    private static async Task<Results<Created<BoardDto>, ValidationProblem>> Create(
+    private static async Task<Results<Created<BoardDto>, ValidationProblem, ProblemHttpResult>> Create(
         BoardNameRequest? request,
         HttpRequest http,
         IBoardRepository boards,
+        IOptions<QuotaOptions> quotas,
         IUnitOfWork unitOfWork,
         ICurrentUser user,
         TimeProvider time,
@@ -85,6 +88,11 @@ public static class BoardEndpoints
         if (!Board.TryNormalizeName(request?.Name, out var name))
         {
             return InvalidName();
+        }
+
+        if (await OverBoardQuotaAsync(boards, quotas.Value, user, cancellationToken))
+        {
+            return BoardQuotaReached(quotas.Value);
         }
 
         var board = NewOwnedBoard(name, user, TruncateToMicroseconds(time.GetUtcNow()));
@@ -122,10 +130,11 @@ public static class BoardEndpoints
     /// A new board named "&lt;name&gt; (copy)" with a copy of the source's stored content (ADR 0011). The copy
     /// is what was last saved: changes still inside a room's save window are not in it yet.
     /// </summary>
-    private static async Task<Results<Created<BoardDto>, NotFound>> Duplicate(
+    private static async Task<Results<Created<BoardDto>, NotFound, ProblemHttpResult>> Duplicate(
         Guid id,
         HttpRequest http,
         IBoardRepository boards,
+        IOptions<QuotaOptions> quotas,
         IBoardDocumentRepository documents,
         IFileStore files,
         IUnitOfWork unitOfWork,
@@ -137,6 +146,11 @@ public static class BoardEndpoints
         if (source is null)
         {
             return TypedResults.NotFound();
+        }
+
+        if (await OverBoardQuotaAsync(boards, quotas.Value, user, cancellationToken))
+        {
+            return BoardQuotaReached(quotas.Value);
         }
 
         var now = TruncateToMicroseconds(time.GetUtcNow());
@@ -203,6 +217,17 @@ public static class BoardEndpoints
         await files.DeletePrefixAsync(FileTypes.Prefix(id), cancellationToken);
         return TypedResults.NoContent();
     }
+
+    private static async Task<bool> OverBoardQuotaAsync(IBoardRepository boards,
+        QuotaOptions limits,
+        ICurrentUser user,
+        CancellationToken cancellationToken) =>
+        await boards.CountOwnedAsync(user.Id, cancellationToken) >= limits.MaxBoards;
+
+    private static ProblemHttpResult BoardQuotaReached(QuotaOptions limits) =>
+        TypedResults.Problem($"You own {limits.MaxBoards} boards, the most you may keep. Delete one to make another.",
+            statusCode: StatusCodes.Status409Conflict,
+            title: "Board quota reached");
 
     // Postgres keeps microseconds; without this the response to the create would show more digits than
     // every later read of the same board.
