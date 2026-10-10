@@ -1,7 +1,7 @@
 import { Location } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
 import { By, Title } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { TopBar } from '../topbar/top-bar';
@@ -1009,9 +1009,13 @@ describe('Board', () => {
       await openAs('owner');
       expect(bar().querySelector('.share-button')).toBeTruthy();
       expect(fixture.nativeElement.querySelector('app-share-dialog')).toBeNull();
+      // The dialog's code is a deferred block (#710): it has not been loaded until the button is pressed.
+      expect(await fixture.getDeferBlocks()).toHaveLength(1);
 
       (bar().querySelector('.share-button') as HTMLButtonElement).click();
       await fixture.whenStable();
+      fixture.detectChanges();
+      await (await fixture.getDeferBlocks())[0]?.render(DeferBlockState.Complete);
       fixture.detectChanges();
 
       expect(fixture.nativeElement.querySelector('app-share-dialog')).toBeTruthy();

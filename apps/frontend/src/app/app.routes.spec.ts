@@ -106,9 +106,11 @@ describe('routes', () => {
   describe('the login guard', () => {
     it("is on every page of the app, and the real routes use the login library's guard", () => {
       const pages = (list: ReturnType<typeof buildRoutes>) =>
-        list.filter((route) => route.component);
+        list.filter((route) => route.component || route.loadComponent);
 
       expect(pages(routes).length).toBe(2);
+      // Each page is a chunk of its own (#710), not part of the first load.
+      expect(pages(routes).every((route) => route.loadComponent && !route.component)).toBe(true);
       for (const route of pages(routes)) {
         expect(route.canActivate).toContain(autoLoginPartialRoutesGuard);
       }

@@ -132,7 +132,10 @@
       (voting)="onVoting($event)"
     ></elysion-canvas>
   }
-  @if (shareOpen() && canShare()) {
-    <app-share-dialog [boardId]="boardId()" (closed)="closeShare()" />
+  <!-- Loaded the first time it is opened (#710): most visits never share. -->
+  @defer (when shareOpen() && canShare()) {
+    @if (shareOpen() && canShare()) {
+      <app-share-dialog [boardId]="boardId()" (closed)="closeShare()" />
+    }
   }
 }
