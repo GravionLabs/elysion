@@ -68,6 +68,16 @@ describe('POST /api/csp-report (e2e)', () => {
     expect(String(warn.mock.calls[0][0])).toContain('img-src blocked inline');
   });
 
+  it('sends no X-Powered-By banner', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/csp-report')
+      .set('Content-Type', 'application/csp-report')
+      .send('{}')
+      .expect(204);
+
+    expect(response.headers['x-powered-by']).toBeUndefined();
+  });
+
   it('reads only the two report content types: an application/json body is answered and ignored', async () => {
     await request(app.getHttpServer())
       .post('/api/csp-report')

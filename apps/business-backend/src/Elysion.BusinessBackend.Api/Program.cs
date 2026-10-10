@@ -11,6 +11,8 @@ using Elysion.BusinessBackend.Api.Observability;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+// No `Server: Kestrel` banner (#781).
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 
 // Serilog, JSON lines on stdout, one line per request (ADR 0025).
 builder.AddElysionLogging();

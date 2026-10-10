@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { AppModule } from './app.module.js';
@@ -21,7 +22,8 @@ async function bootstrap() {
     throw error;
   }
   // Buffered until pino is set up, so the start-up lines have the same shape as the rest (ADR 0025).
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+  app.disable('x-powered-by'); // no `X-Powered-By: Express` banner (#781)
   app.useLogger(app.get(Logger));
   app.useWebSocketAdapter(new WsAdapter(app));
   // SIGTERM (a container stop, a pod's deletion) runs onModuleDestroy: the registry saves every room that has unsaved changes.
