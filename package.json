@@ -33,11 +33,14 @@
     "prepare": "simple-git-hooks"
   },
   "devDependencies": {
+    "lib0": "^0.2.119",
     "lint-staged": "^17.6.0",
     "oxlint": "^1.86.0",
     "prettier": "^3.9.9",
     "sharp": "^0.35.5",
-    "simple-git-hooks": "^2.14.0"
+    "simple-git-hooks": "^2.14.0",
+    "ws": "^8.22.0",
+    "yjs": "^13.6.33"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm exec lint-staged"

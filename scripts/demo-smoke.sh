@@ -11,7 +11,13 @@ fail() { echo "FAILED: $*" >&2; exit 1; }
 status() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 expect() { # expect <code> <what> <curl args...>
   local want="$1" what="$2"; shift 2
-  local got; got="$(status "$@")"
+  local got
+  got="$(status "$@")"
+  # A service that was just started or replaced can answer 502/503/504 for a few seconds (its first requests fetch keys, open
+  # connections): ask again before calling it a failure.
+  for _ in 1 2 3 4 5 6 7 8; do
+    case "$got" in 502|503|504) [ "$want" = "$got" ] || { sleep 4; got="$(status "$@")"; } ;; *) break ;; esac
+  done
   [ "$got" = "$want" ] || fail "$what: expected $want, got $got"
   echo "ok  $what"
 }

@@ -14,6 +14,14 @@ body = """
 {% else -%}
 ## [Unreleased]
 {% endif -%}
+{% set breaking = commits | filter(attribute="breaking", value=true) -%}
+{% if breaking | length > 0 %}
+### ⚠️ Breaking changes
+{% for commit in breaking %}\
+- {% if commit.scope %}**{{ commit.scope }}**: {% endif -%}
+{{ commit.message | upper_first }}
+{% endfor %}
+{% endif -%}
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group | striptags | trim | upper_first }}
 {% for commit in commits %}\
@@ -46,7 +54,8 @@ commit_parsers = [
   { body = ".*security", group = "Security" },
   { message = "^chore|^ci|^style|^test|^build", skip = true },
 ]
-protect_breaking_commits = false
+# A `!` after the type (`feat!: ...`) is a breaking change: it is listed first under "Breaking changes", and also under its type, and a `chore!` is not skipped.
+protect_breaking_commits = true
 filter_commits = true
 # Pre-releases are releases here (0.1.0-beta.126): the notes of a release are what came after the last tag of any kind.
 tag_pattern = "v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$"

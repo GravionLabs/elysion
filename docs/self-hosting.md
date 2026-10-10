@@ -65,6 +65,17 @@ The Helm chart ([ADR 0018](adr/0018-kubernetes-packaging.md), `infra/helm/elysio
 names are still the local ones (`elysion/frontend`, ...), so set `images.<service>.repository` and `tag` to the GHCR images above. It has
 been run on a local kind cluster only. For a real cluster the chart has non-root, read-only pods, a start-up probe, a migration job, disruption budgets, an autoscaler for the realtime service and network policies; [`values-production.example.yaml`](../infra/helm/elysion/values-production.example.yaml) turns them on, and the chart's [README](../infra/helm/elysion/README.md) explains each.
 
+## Update
+
+Pull the new images (`ELYSION_VERSION` in `.env`, or `docker compose pull && docker compose up -d`; in Kubernetes a new `images.<service>.tag` and `helm upgrade`).
+The database is migrated by the business backend when it starts, the Helm chart does it in a job first (`migrateJob.enabled`). **Read the release notes before
+you update:** a change that needs a step from you (a setting, a manual migration) is under **Breaking changes**, the first heading of the notes. Take a
+[backup](#back-up-and-restore) first.
+
+Every pull request is tested as an upgrade: the stack of the **last pre-release** is filled with rooms, boards with content, a template and a voting, the
+pull request's images are started against the same volumes, and everything has to be there (`scripts/fill-stack.mjs`, the `upgrade` job of
+`.github/workflows/container.yml`). A downgrade is not tested: restore the backup you took.
+
 ## Back up and restore
 
 The state of Elysion is in three places: **Postgres** (boards, members, the stored document of every board, and Keycloak's own database `keycloak` with the users),
