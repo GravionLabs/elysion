@@ -8,6 +8,9 @@
   (dict "name" "S3_BUCKET" "value" .Values.objectStore.bucket)
   (dict "name" "MAX_FILE_BYTES" "value" (.Values.objectStore.maxFileBytes | int64 | toString))
   (dict "name" "MAX_FILES_PER_BOARD" "value" (.Values.objectStore.maxFilesPerBoard | int64 | toString))
+  (dict "name" "MAX_TEMPLATES_PER_USER" "value" (.Values.quotas.maxTemplates | int64 | toString))
+  (dict "name" "MAX_TEMPLATE_CHARACTERS_PER_USER" "value" (.Values.quotas.maxTemplateCharacters | int64 | toString))
+  (dict "name" "MAX_BOARDS_PER_USER" "value" (.Values.quotas.maxBoards | int64 | toString))
   (include "elysion.secretEnv" (dict "root" . "name" "S3_ACCESS_KEY") | fromYaml)
   (include "elysion.secretEnv" (dict "root" . "name" "S3_SECRET_KEY") | fromYaml)
 -}}

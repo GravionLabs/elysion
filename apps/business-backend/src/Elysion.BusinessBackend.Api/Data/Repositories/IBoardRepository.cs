@@ -24,6 +24,9 @@ public interface IBoardRepository
     /// <summary>One board, or null. A copy that is not tracked: changes to it are not saved.</summary>
     Task<Board?> FindAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>How many boards a user owns (boards shared with them do not count).</summary>
+    Task<int> CountOwnedAsync(Guid userId, CancellationToken cancellationToken);
+
     /// <summary>Whether a board with this id exists.</summary>
     Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken);
 

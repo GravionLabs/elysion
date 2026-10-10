@@ -37,6 +37,15 @@ public sealed class TemplateRepository(ElysionDbContext db) : ITemplateRepositor
             cancellationToken);
     }
 
+    public async Task<(int Count, long Characters)> OwnedUsageAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(userId);
+        var owned = db.Templates.AsNoTracking().Where(t => !t.IsBuiltIn && t.OwnerId == userId);
+        var count = await owned.CountAsync(cancellationToken);
+        var characters = count == 0 ? 0L : await owned.SumAsync(t => (long)t.Scene.Length, cancellationToken);
+        return (count, characters);
+    }
+
     public void Add(Template template) => db.Templates.Add(template);
 
     public void Remove(Template template) => db.Templates.Remove(template);

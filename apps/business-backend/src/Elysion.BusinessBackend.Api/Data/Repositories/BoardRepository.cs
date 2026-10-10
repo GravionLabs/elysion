@@ -81,6 +81,12 @@ public sealed class BoardRepository(ElysionDbContext db) : IBoardRepository
         return await db.Boards.AsNoTracking().FirstOrDefaultAsync(board => board.Id == id, cancellationToken);
     }
 
+    public async Task<int> CountOwnedAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(userId);
+        return await db.Boards.AsNoTracking().CountAsync(board => board.OwnerId == userId, cancellationToken);
+    }
+
     public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken)
     {
         Guard.Against.Default(id);
