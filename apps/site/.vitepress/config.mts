@@ -73,6 +73,7 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/' },
           { text: 'User guide', link: '/user-guide' },
+          { text: 'Benutzerhandbuch (Deutsch)', link: '/user-guide.de' },
           { text: 'Self-hosting', link: '/self-hosting' },
           { text: 'Roadmap', link: '/roadmap' },
         ],

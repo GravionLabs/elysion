@@ -3,7 +3,7 @@
   class="user-button"
   aria-haspopup="menu"
   [attr.aria-expanded]="open()"
-  [title]="'Signed in as ' + user().name"
+  [title]="signedInLabel()"
   (click)="toggle()"
 >
   <span class="user-avatar" [style.background-color]="user().color" aria-hidden="true">{{
@@ -13,13 +13,33 @@
 </button>
 
 @if (open()) {
-  <div class="menu" role="menu" aria-label="Account">
+  <div class="menu" role="menu" aria-label="Account" i18n-aria-label="@@topbar.user.menu">
     <div class="menu-header">
       <span class="menu-name">{{ user().name }}</span>
       @if (user().email; as email) {
         <span class="menu-email">{{ email }}</span>
       }
     </div>
-    <button type="button" class="menu-item" role="menuitem" (click)="logout()">Log out</button>
+    @for (language of languages; track language.code) {
+      <button
+        type="button"
+        class="menu-item"
+        role="menuitemradio"
+        [attr.aria-checked]="language.code === languageService.current"
+        [attr.lang]="language.code"
+        (click)="languageService.use(language.code)"
+      >
+        {{ language.name }}
+      </button>
+    }
+    <button
+      type="button"
+      class="menu-item"
+      role="menuitem"
+      (click)="logout()"
+      i18n="@@topbar.user.logout"
+    >
+      Log out
+    </button>
   </div>
 }

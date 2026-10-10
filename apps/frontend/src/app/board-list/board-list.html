@@ -7,10 +7,11 @@
           type="button"
           class="button primary new-board"
           aria-label="New board"
+          i18n-aria-label="@@boards.new.aria"
           (click)="openCreate()"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-          <span class="new-board-label">New board</span>
+          <span class="new-board-label" i18n="@@boards.new.label">New board</span>
         </button>
       }
       <app-user-menu [user]="user" (logoutRequested)="session.logout()" />
@@ -33,7 +34,7 @@
       (retry)="loadRooms()"
     />
 
-    <section class="content" aria-label="Boards">
+    <section class="content" aria-label="Boards" i18n-aria-label="@@boards.content.aria">
       <div class="page-title">
         @if (renaming()) {
           <form
@@ -46,6 +47,7 @@
               id="room-rename"
               name="roomName"
               aria-label="Room name"
+              i18n-aria-label="@@boards.rename.aria"
               type="text"
               autocomplete="off"
               data-1p-ignore
@@ -55,12 +57,20 @@
               [disabled]="renameSaving()"
               (input)="updateRenameDraft($event)"
             />
-            <button type="submit" class="button primary" [disabled]="renameSaving()">Save</button>
+            <button
+              type="submit"
+              class="button primary"
+              [disabled]="renameSaving()"
+              i18n="@@boards.rename.save"
+            >
+              Save
+            </button>
             <button
               type="button"
               class="button"
               [disabled]="renameSaving()"
               (click)="cancelRename()"
+              i18n="@@boards.rename.cancel"
             >
               Cancel
             </button>
@@ -68,23 +78,36 @@
         } @else {
           <h1>{{ title() }}</h1>
           @if (state() === 'ready' && visibleBoards().length > 0) {
-            <span class="board-count">
-              {{ visibleBoards().length }} {{ visibleBoards().length === 1 ? 'board' : 'boards' }}
+            <span class="board-count" i18n="@@boards.count">
+              {visibleBoards().length, plural,
+                =1 {1 board}
+                other {{{ visibleBoards().length }} boards}
+              }
             </span>
           }
           @if (currentRoom(); as room) {
             <span class="room-actions">
               @if (canWriteRoom(room)) {
-                <button type="button" class="button rename-room" (click)="startRename(room)">
+                <button
+                  type="button"
+                  class="button rename-room"
+                  (click)="startRename(room)"
+                  i18n="@@boards.room.rename"
+                >
                   Rename
                 </button>
               }
               @if (canAdministerRoom(room)) {
-                <button type="button" class="button members-room" (click)="shareRoomOpen.set(true)">
+                <button
+                  type="button"
+                  class="button members-room"
+                  (click)="shareRoomOpen.set(true)"
+                  i18n="@@boards.room.members"
+                >
                   Members
                 </button>
                 <button type="button" class="button delete-room" (click)="askDeleteRoom(room)">
-                  Delete room
+                  <ng-container i18n="@@boards.room.delete">Delete room</ng-container>
                 </button>
               }
             </span>
@@ -93,11 +116,16 @@
       </div>
 
       @if (roomDeleteTarget(); as room) {
-        <div class="confirm" role="alertdialog" aria-label="Confirm room delete">
-          <p>
+        <div
+          class="confirm"
+          role="alertdialog"
+          aria-label="Confirm room delete"
+          i18n-aria-label="@@boards.roomDelete.aria"
+        >
+          <p i18n="@@boards.roomDelete.message">
             Delete the room “{{ room.name }}”? Its {{ countIn(room) }}
-            {{ countIn(room) === 1 ? 'board stays' : 'boards stay' }}, but no longer in a room, and
-            the room's members lose the access the room gave them.
+            {countIn(room), plural, =1 {board stays} other {boards stay}}, but no longer in a room,
+            and the room's members lose the access the room gave them.
           </p>
           @if (roomDeleteError(); as message) {
             <p class="field-error" role="alert">{{ message }}</p>
@@ -109,13 +137,18 @@
               [disabled]="roomDeleting()"
               (click)="confirmDeleteRoom()"
             >
-              {{ roomDeleting() ? 'Deleting…' : 'Delete room' }}
+              @if (roomDeleting()) {
+                <ng-container i18n="@@boards.deleting">Deleting…</ng-container>
+              } @else {
+                <ng-container i18n="@@boards.room.delete">Delete room</ng-container>
+              }
             </button>
             <button
               type="button"
               class="button"
               [disabled]="roomDeleting()"
               (click)="cancelDeleteRoom()"
+              i18n="@@boards.cancel"
             >
               Cancel
             </button>
@@ -132,8 +165,13 @@
       }
 
       @if (deleteTarget(); as target) {
-        <div class="confirm" role="alertdialog" aria-label="Confirm delete">
-          <p>
+        <div
+          class="confirm"
+          role="alertdialog"
+          aria-label="Confirm delete"
+          i18n-aria-label="@@boards.delete.aria"
+        >
+          <p i18n="@@boards.delete.message">
             Delete “{{ target.name }}”? The board and everything on it will be gone. This cannot be
             undone.
           </p>
@@ -147,9 +185,19 @@
               [disabled]="deleting()"
               (click)="confirmDelete()"
             >
-              {{ deleting() ? 'Deleting…' : 'Delete' }}
+              @if (deleting()) {
+                <ng-container i18n="@@boards.deleting">Deleting…</ng-container>
+              } @else {
+                <ng-container i18n="@@boards.delete.confirm">Delete</ng-container>
+              }
             </button>
-            <button type="button" class="button" [disabled]="deleting()" (click)="cancelDelete()">
+            <button
+              type="button"
+              class="button"
+              [disabled]="deleting()"
+              (click)="cancelDelete()"
+              i18n="@@boards.cancel"
+            >
               Cancel
             </button>
           </div>
@@ -166,11 +214,11 @@
             (submit)="$event.preventDefault(); create()"
             (keydown.escape)="cancelCreate()"
           >
-            <h2 id="create-title">New board</h2>
+            <h2 id="create-title" i18n="@@boards.create.title">New board</h2>
             @if (currentRoom(); as room) {
-              <p class="create-room">In the room “{{ room.name }}”</p>
+              <p class="create-room" i18n="@@boards.create.room">In the room “{{ room.name }}”</p>
             }
-            <label for="board-name">Board name</label>
+            <label for="board-name" i18n="@@boards.create.name">Board name</label>
             <div class="create-row">
               <input
                 #nameInput
@@ -188,20 +236,30 @@
                 (input)="updateName($event)"
               />
               <button type="submit" class="button primary" [disabled]="createState() === 'saving'">
-                {{ createState() === 'saving' ? 'Creating…' : 'Create' }}
+                @if (createState() === 'saving') {
+                  <ng-container i18n="@@boards.creating">Creating…</ng-container>
+                } @else {
+                  <ng-container i18n="@@boards.create.submit">Create</ng-container>
+                }
               </button>
               <button
                 type="button"
                 class="button"
                 [disabled]="createState() === 'saving'"
                 (click)="cancelCreate()"
+                i18n="@@boards.cancel"
               >
                 Cancel
               </button>
             </div>
             <fieldset class="templates" [disabled]="createState() === 'saving'">
-              <legend>Start from</legend>
-              <div class="template-tiles" role="radiogroup" aria-label="Start from">
+              <legend i18n="@@boards.create.template">Start from</legend>
+              <div
+                class="template-tiles"
+                role="radiogroup"
+                aria-label="Start from"
+                i18n-aria-label="@@boards.create.template"
+              >
                 <label class="template-option">
                   <input
                     type="radio"
@@ -209,8 +267,10 @@
                     [checked]="selectedTemplateId() === null"
                     (change)="selectTemplate(null)"
                   />
-                  <span class="template-name">Blank</span>
-                  <span class="template-description">An empty board.</span>
+                  <span class="template-name" i18n="@@boards.create.blank.name">Blank</span>
+                  <span class="template-description" i18n="@@boards.create.blank.description"
+                    >An empty board.</span
+                  >
                 </label>
                 @for (template of templates(); track template.id) {
                   <label class="template-option">
@@ -239,27 +299,38 @@
 
       @switch (state()) {
         @case ('loading') {
-          <p class="message" role="status">Loading boards…</p>
+          <p class="message" role="status" i18n="@@boards.loading">Loading boards…</p>
         }
         @case ('error') {
           <div class="message error" role="alert">
-            <p>The boards could not be loaded.</p>
-            <button type="button" class="button" (click)="load()">Try again</button>
+            <p i18n="@@boards.loadError">The boards could not be loaded.</p>
+            <button type="button" class="button" (click)="load()" i18n="@@boards.retry">
+              Try again
+            </button>
           </div>
         }
         @default {
           @if (roomMissing()) {
             <div class="empty room-missing">
-              <h2>Room not found</h2>
-              <p>This room does not exist, or you have no access to it.</p>
-              <a class="button" routerLink="/">All boards</a>
+              <h2 i18n="@@boards.roomMissing.title">Room not found</h2>
+              <p i18n="@@boards.roomMissing.message">
+                This room does not exist, or you have no access to it.
+              </p>
+              <a class="button" routerLink="/" i18n="@@boards.roomMissing.all">All boards</a>
             </div>
           } @else if (boards().length === 0) {
             <div class="empty">
-              <h2>No boards yet</h2>
-              <p>Create a board to start drawing and collaborating.</p>
+              <h2 i18n="@@boards.empty.title">No boards yet</h2>
+              <p i18n="@@boards.empty.message">
+                Create a board to start drawing and collaborating.
+              </p>
               @if (createState() === 'closed' && canCreateBoard()) {
-                <button type="button" class="button create-first" (click)="openCreate()">
+                <button
+                  type="button"
+                  class="button create-first"
+                  (click)="openCreate()"
+                  i18n="@@boards.empty.create"
+                >
                   Create your first board
                 </button>
               }
@@ -267,16 +338,25 @@
           } @else if (visibleBoards().length === 0) {
             <div class="empty view-empty">
               @if (currentRoom(); as room) {
-                <h2>No boards in this room yet</h2>
-                <p>Create a board here, or move one in from the board's menu.</p>
+                <h2 i18n="@@boards.roomEmpty.title">No boards in this room yet</h2>
+                <p i18n="@@boards.roomEmpty.message">
+                  Create a board here, or move one in from the board's menu.
+                </p>
                 @if (createState() === 'closed' && canWriteRoom(room)) {
-                  <button type="button" class="button create-first" (click)="openCreate()">
+                  <button
+                    type="button"
+                    class="button create-first"
+                    (click)="openCreate()"
+                    i18n="@@boards.roomEmpty.create"
+                  >
                     Create the first board in this room
                   </button>
                 }
               } @else {
-                <h2>Every board is in a room</h2>
-                <p>Boards that are in no room show up here.</p>
+                <h2 i18n="@@boards.unassignedEmpty.title">Every board is in a room</h2>
+                <p i18n="@@boards.unassignedEmpty.message">
+                  Boards that are in no room show up here.
+                </p>
               }
             </div>
           } @else {
@@ -296,11 +376,11 @@
                     </span>
                     <span class="board-meta">
                       <span class="board-name" [title]="board.name">{{ board.name }}</span>
-                      <span class="board-date"
+                      <span class="board-date" i18n="@@boards.card.created"
                         >Created {{ board.createdAt | date: 'mediumDate' }}</span
                       >
                       @if (roomLabel(board); as label) {
-                        <span class="board-room" [title]="'In the room ' + label">{{ label }}</span>
+                        <span class="board-room" [title]="roomTitle(label)">{{ label }}</span>
                       }
                     </span>
                   </a>
@@ -312,8 +392,9 @@
                           class="icon-button move-button"
                           aria-haspopup="menu"
                           [attr.aria-expanded]="moveMenuFor() === board.id"
-                          [attr.aria-label]="'Move the board ' + board.name + ' to a room'"
+                          [attr.aria-label]="moveLabel(board)"
                           title="Move to a room"
+                          i18n-title="@@boards.card.move.title"
                           (click)="toggleMoveMenu(board)"
                         >
                           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -341,10 +422,8 @@
                     <button
                       type="button"
                       class="icon-button duplicate-button"
-                      [attr.aria-label]="'Duplicate the board ' + board.name"
-                      [title]="
-                        duplicatingId() === board.id ? 'Duplicating…' : 'Duplicate this board'
-                      "
+                      [attr.aria-label]="duplicateLabel(board)"
+                      [title]="duplicateTitle(board)"
                       [disabled]="duplicatingId() !== null"
                       (click)="duplicate(board)"
                     >
@@ -355,8 +434,9 @@
                     <button
                       type="button"
                       class="icon-button delete-button"
-                      [attr.aria-label]="'Delete the board ' + board.name"
+                      [attr.aria-label]="deleteLabel(board)"
                       title="Delete this board"
+                      i18n-title="@@boards.card.delete.title"
                       (click)="askDelete(board)"
                     >
                       <svg viewBox="0 0 24 24" aria-hidden="true">

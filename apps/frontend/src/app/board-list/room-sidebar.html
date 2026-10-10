@@ -1,4 +1,4 @@
-<nav class="sidebar" aria-label="Rooms">
+<nav class="sidebar" aria-label="Rooms" i18n-aria-label="@@boards.sidebar.aria">
   <ul class="entries">
     <li>
       <a
@@ -7,7 +7,7 @@
         [class.active]="selected() === undefined"
         [attr.aria-current]="selected() === undefined ? 'page' : null"
       >
-        <span class="entry-name">All boards</span>
+        <span class="entry-name" i18n="@@boards.sidebar.all">All boards</span>
         <span class="entry-count">{{ total() }}</span>
       </a>
     </li>
@@ -23,26 +23,32 @@
         (dragleave)="dragLeave('none')"
         (drop)="drop($event, null)"
       >
-        <span class="entry-name">Not in a room</span>
+        <span class="entry-name" i18n="@@boards.sidebar.none">Not in a room</span>
         <span class="entry-count">{{ unassigned() }}</span>
       </a>
     </li>
   </ul>
 
-  <h2 class="rooms-heading">Rooms</h2>
+  <h2 class="rooms-heading" i18n="@@boards.sidebar.rooms">Rooms</h2>
   @switch (state()) {
     @case ('loading') {
-      <p class="note" role="status">Loading rooms…</p>
+      <p class="note" role="status" i18n="@@boards.sidebar.loading">Loading rooms…</p>
     }
     @case ('error') {
       <p class="note error" role="alert">
-        The rooms could not be loaded.
-        <button type="button" class="link" (click)="retry.emit()">Try again</button>
+        <ng-container i18n="@@boards.sidebar.loadError"
+          >The rooms could not be loaded.</ng-container
+        >
+        <button type="button" class="link" (click)="retry.emit()" i18n="@@boards.retry">
+          Try again
+        </button>
       </p>
     }
     @default {
       @if (rooms().length === 0) {
-        <p class="note">No rooms yet. A room is a shared space for the boards of a team.</p>
+        <p class="note" i18n="@@boards.sidebar.empty">
+          No rooms yet. A room is a shared space for the boards of a team.
+        </p>
       } @else {
         <ul class="entries rooms">
           @for (room of rooms(); track room.id) {
@@ -75,8 +81,10 @@
         id="room-name"
         name="room"
         aria-label="Room name"
+        i18n-aria-label="@@boards.sidebar.name"
         type="text"
         placeholder="Room name"
+        i18n-placeholder="@@boards.sidebar.name"
         autocomplete="off"
         data-1p-ignore
         data-lpignore="true"
@@ -89,9 +97,19 @@
       />
       <div class="new-room-actions">
         <button type="submit" class="small primary" [disabled]="saving()">
-          {{ saving() ? 'Creating…' : 'Create' }}
+          @if (saving()) {
+            <ng-container i18n="@@boards.creating">Creating…</ng-container>
+          } @else {
+            <ng-container i18n="@@boards.create.submit">Create</ng-container>
+          }
         </button>
-        <button type="button" class="small" [disabled]="saving()" (click)="cancelAdd()">
+        <button
+          type="button"
+          class="small"
+          [disabled]="saving()"
+          (click)="cancelAdd()"
+          i18n="@@boards.cancel"
+        >
           Cancel
         </button>
       </div>
@@ -100,6 +118,8 @@
       }
     </form>
   } @else {
-    <button type="button" class="add-room" (click)="openAdd()">+ New room</button>
+    <button type="button" class="add-room" (click)="openAdd()" i18n="@@boards.sidebar.add">
+      + New room
+    </button>
   }
 </nav>

@@ -29,7 +29,9 @@
                 "input": "public"
               }
             ],
-            "styles": ["node_modules/@elysion/design-tokens/tokens.css", "src/styles.scss"]
+            "styles": ["node_modules/@elysion/design-tokens/tokens.css", "src/styles.scss"],
+            "polyfills": ["@angular/localize/init"],
+            "i18nMissingTranslation": "error"
           },
           "configurations": {
             "production": {
@@ -45,7 +47,8 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "localize": ["en", "de"]
             },
             "development": {
               "optimization": false,
@@ -72,6 +75,26 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
+        },
+        "extract-i18n": {
+          "builder": "@angular/build:extract-i18n",
+          "options": {
+            "buildTarget": "frontend:build:development",
+            "outputPath": "src/locale",
+            "format": "xlf2"
+          }
+        }
+      },
+      "i18n": {
+        "sourceLocale": {
+          "code": "en",
+          "baseHref": ""
+        },
+        "locales": {
+          "de": {
+            "translation": "src/locale/messages.de.xlf",
+            "baseHref": ""
+          }
         }
       }
     }

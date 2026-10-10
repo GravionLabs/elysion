@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { type Browser, type Page, expect } from '@playwright/test';
+import { type Browser, type BrowserContextOptions, type Page, expect } from '@playwright/test';
 
 export const USER_A = process.env.E2E_USER_A ?? 'dev1';
 export const USER_B = process.env.E2E_USER_B ?? 'dev2';
@@ -12,8 +12,12 @@ export const USER_B = process.env.E2E_USER_B ?? 'dev2';
 export const emailOf = (user: string) => `${user}@elysion.local`;
 
 /** Logs a demo user in through Keycloak (the password is the username) in a browser context of its own. */
-export async function login(browser: Browser, user: string): Promise<Page> {
-  const context = await browser.newContext();
+export async function login(
+  browser: Browser,
+  user: string,
+  options?: BrowserContextOptions,
+): Promise<Page> {
+  const context = await browser.newContext(options);
   const page = await context.newPage();
   await page.goto('/');
   await page.fill('#username', user);

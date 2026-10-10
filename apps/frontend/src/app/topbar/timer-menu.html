@@ -14,7 +14,7 @@
       </svg>
       <span class="clock">{{ clock() }}</span>
       @if (paused()) {
-        <span class="state">paused</span>
+        <span class="state" i18n="@@topbar.timer.paused">paused</span>
       }
     </span>
 
@@ -24,7 +24,9 @@
           type="button"
           class="icon-button resume"
           aria-label="Resume the timer"
+          i18n-aria-label="@@topbar.timer.resume-aria"
           title="Resume"
+          i18n-title="@@topbar.timer.resume-title"
           (click)="resumeRequested.emit()"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
@@ -34,7 +36,9 @@
           type="button"
           class="icon-button pause"
           aria-label="Pause the timer"
+          i18n-aria-label="@@topbar.timer.pause-aria"
           title="Pause"
+          i18n-title="@@topbar.timer.pause-title"
           (click)="pauseRequested.emit()"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" /></svg>
@@ -44,7 +48,9 @@
         type="button"
         class="icon-button extend"
         aria-label="Add one minute to the timer"
+        i18n-aria-label="@@topbar.timer.extend-aria"
         title="Add one minute"
+        i18n-title="@@topbar.timer.extend-title"
         (click)="extendRequested.emit(60000)"
       >
         +1
@@ -53,7 +59,9 @@
         type="button"
         class="icon-button stop"
         aria-label="Stop the timer"
+        i18n-aria-label="@@topbar.timer.stop-aria"
         title="Stop the timer for everybody"
+        i18n-title="@@topbar.timer.stop-title"
         (click)="stopRequested.emit()"
       >
         <svg class="stop-square" viewBox="0 0 24 24" aria-hidden="true">
@@ -66,8 +74,8 @@
       type="button"
       class="icon-button mute"
       [attr.aria-pressed]="muted()"
-      [attr.aria-label]="muted() ? 'Turn the end chime on' : 'Mute the end chime'"
-      [title]="muted() ? 'The end chime is muted' : 'Mute the end chime'"
+      [attr.aria-label]="muteLabel()"
+      [title]="muteTitle()"
       (click)="toggleMute()"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -87,13 +95,14 @@
     aria-haspopup="menu"
     [attr.aria-expanded]="open()"
     title="Start a timer for everybody on this board"
+    i18n-title="@@topbar.timer.button-title"
     (click)="toggle()"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="12" cy="13" r="7" />
       <path d="M12 9v4l2.5 1.5M9.5 3h5" />
     </svg>
-    <span>Timer</span>
+    <span i18n="@@topbar.timer.button">Timer</span>
   </button>
 
   @if (open()) {
@@ -101,6 +110,7 @@
       class="menu"
       role="group"
       aria-label="Start a timer"
+      i18n-aria-label="@@topbar.timer.form"
       (submit)="$event.preventDefault(); start()"
     >
       <div class="presets">
@@ -110,6 +120,7 @@
             class="preset"
             [class.selected]="minutes() === '' + preset"
             [attr.aria-pressed]="minutes() === '' + preset"
+            i18n="@@topbar.timer.preset"
             (click)="pick(preset)"
           >
             {{ preset }} min
@@ -117,7 +128,7 @@
         }
       </div>
       <div class="custom">
-        <label for="timer-minutes">Minutes</label>
+        <label for="timer-minutes" i18n="@@topbar.timer.minutes">Minutes</label>
         <input
           id="timer-minutes"
           type="text"
@@ -127,14 +138,14 @@
           [attr.aria-invalid]="error() ? 'true' : null"
           (input)="updateMinutes($event)"
         />
-        <button type="submit" class="start">Start</button>
+        <button type="submit" class="start" i18n="@@topbar.timer.start">Start</button>
       </div>
       @if (error(); as message) {
         <p class="error" role="alert">{{ message }}</p>
       }
       <label class="mute-option">
         <input type="checkbox" [checked]="muted()" (change)="toggleMute()" />
-        Mute the end chime
+        <span i18n="@@topbar.timer.mute">Mute the end chime</span>
       </label>
     </form>
   }

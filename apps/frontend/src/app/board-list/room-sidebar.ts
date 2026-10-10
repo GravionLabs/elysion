@@ -88,11 +88,13 @@ export class RoomSidebar {
     }
     const name = this.draft().trim();
     if (!name) {
-      this.error.set('Give the room a name.');
+      this.error.set($localize`:@@boards.sidebar.error.nameRequired:Give the room a name.`);
       return;
     }
     if (name.length > MAX_ROOM_NAME_LENGTH) {
-      this.error.set(`The name can have up to ${MAX_ROOM_NAME_LENGTH} characters.`);
+      this.error.set(
+        $localize`:@@boards.sidebar.error.nameLength:The name can have up to ${MAX_ROOM_NAME_LENGTH}:max: characters.`,
+      );
       return;
     }
     this.saving.set(true);
@@ -104,7 +106,13 @@ export class RoomSidebar {
       },
       error: (error: unknown) => {
         this.saving.set(false);
-        this.error.set(describeError(error, 'The room could not be created. Try again.', 'room'));
+        this.error.set(
+          describeError(
+            error,
+            $localize`:@@boards.sidebar.error.create:The room could not be created. Try again.`,
+            'room',
+          ),
+        );
       },
     });
   }

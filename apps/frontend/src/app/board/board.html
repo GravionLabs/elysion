@@ -1,9 +1,9 @@
 @if (notFound()) {
   <header class="not-found-header"><app-brand /></header>
   <main class="not-found">
-    <h1>Board not found</h1>
-    <p>This board does not exist, or it was deleted.</p>
-    <a class="not-found-link" routerLink="/">Show all boards</a>
+    <h1 i18n="@@board.notFound.title">Board not found</h1>
+    <p i18n="@@board.notFound.text">This board does not exist, or it was deleted.</p>
+    <a class="not-found-link" routerLink="/" i18n="@@board.notFound.link">Show all boards</a>
   </main>
 } @else {
   <app-top-bar
@@ -41,21 +41,45 @@
     (votingFocus)="timerCommand((c) => c.scrollToElement?.($event))"
   />
   @if (pendingImport(); as file) {
-    <div class="board-banner confirm" role="alertdialog" aria-label="Confirm import">
-      <span>Replace everything on this board with “{{ file.name }}”?</span>
-      <button type="button" class="banner-button primary" (click)="confirmImport()">Replace</button>
-      <button type="button" class="banner-button" (click)="cancelImport()">Cancel</button>
+    <div
+      class="board-banner confirm"
+      role="alertdialog"
+      aria-label="Confirm import"
+      i18n-aria-label="@@board.import.confirmLabel"
+    >
+      <span i18n="@@board.import.confirmText"
+        >Replace everything on this board with “{{ file.name }}”?</span
+      >
+      <button
+        type="button"
+        class="banner-button primary"
+        (click)="confirmImport()"
+        i18n="@@board.import.replace"
+      >
+        Replace
+      </button>
+      <button
+        type="button"
+        class="banner-button"
+        (click)="cancelImport()"
+        i18n="@@board.import.cancel"
+      >
+        Cancel
+      </button>
     </div>
   } @else if (templateDraft(); as draft) {
     <form
       class="board-banner save-template"
       aria-label="Save as template"
+      i18n-aria-label="@@board.template.formLabel"
       (submit)="$event.preventDefault(); saveTemplate()"
     >
       <label>
-        <span>{{
-          draft.selectionOnly ? 'Template from the selection' : 'Template from the board'
-        }}</span>
+        @if (draft.selectionOnly) {
+          <span i18n="@@board.template.fromSelection">Template from the selection</span>
+        } @else {
+          <span i18n="@@board.template.fromBoard">Template from the board</span>
+        }
         <input
           #templateName
           name="template-name"
@@ -64,6 +88,7 @@
           data-1p-ignore
           data-lpignore="true"
           aria-label="Template name"
+          i18n-aria-label="@@board.template.nameLabel"
           [attr.maxlength]="maxTemplateNameLength"
           [value]="draft.name"
           [disabled]="draft.saving"
@@ -78,7 +103,9 @@
         data-1p-ignore
         data-lpignore="true"
         aria-label="Description (optional)"
+        i18n-aria-label="@@board.template.descriptionLabel"
         placeholder="Description (optional)"
+        i18n-placeholder="@@board.template.descriptionPlaceholder"
         [attr.maxlength]="maxTemplateDescriptionLength"
         [value]="draft.description"
         [disabled]="draft.saving"
@@ -89,7 +116,11 @@
         <span class="field-error" role="alert">{{ message }}</span>
       }
       <button type="submit" class="banner-button primary" [disabled]="draft.saving">
-        {{ draft.saving ? 'Saving…' : 'Save' }}
+        @if (draft.saving) {
+          <ng-container i18n="@@board.template.saving">Saving…</ng-container>
+        } @else {
+          <ng-container i18n="@@board.template.save">Save</ng-container>
+        }
       </button>
       <button
         type="button"
@@ -97,13 +128,20 @@
         [disabled]="draft.saving"
         (click)="cancelSaveTemplate()"
       >
-        Cancel
+        <ng-container i18n="@@board.template.cancel">Cancel</ng-container>
       </button>
     </form>
   } @else if (notice(); as message) {
     <div class="board-banner" role="status">
       <span>{{ message }}</span>
-      <button type="button" class="banner-button" (click)="dismissNotice()">Dismiss</button>
+      <button
+        type="button"
+        class="banner-button"
+        (click)="dismissNotice()"
+        i18n="@@board.notice.dismiss"
+      >
+        Dismiss
+      </button>
     </div>
   }
   @if (canvasVisible()) {
@@ -112,9 +150,11 @@
       class="board-canvas"
       role="main"
       aria-label="Board canvas"
+      i18n-aria-label="@@board.canvas.label"
       [attr.board-id]="boardId()"
       [attr.yjs-server-url]="yjsServerUrl()"
       [attr.theme]="theme()"
+      [attr.locale]="language.current"
       [tokenProvider]="wsTokenProvider"
       [fileStore]="fileStore"
       [attr.images-enabled]="imagesEnabled() ? '' : null"

@@ -1,6 +1,6 @@
 # User guide
 
-How to use Elysion: boards and rooms, working together on a canvas, sharing, and running a workshop with the timer and the dot voting.
+How to use Elysion (a short German version: [Benutzerhandbuch](./user-guide.de.md)): boards and rooms, working together on a canvas, sharing, and running a workshop with the timer and the dot voting.
 To run Elysion first see [self-hosting](./self-hosting.md) or the demo in the [README](../README.md#demo). The screenshots are from the demo
 stack with two people, `guest` and `dev`, working on a retrospective board.
 

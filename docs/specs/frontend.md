@@ -185,6 +185,17 @@ The shell and the canvas element's own controls meet **WCAG 2.1 level AA**, chec
 - **Reduced motion:** with `prefers-reduced-motion: reduce` transitions and animations of the shell and the canvas end at once (`styles.scss`).
 - **By hand, not automated:** a pass with a screen reader (NVDA or VoiceOver) is not part of the tests; it is done before a release that changes the page structure.
 
+## Localization
+
+The app is available in English (the source language) and German ([#738](https://github.com/GravionLabs/elysion/issues/738)).
+
+- **Shell.** Every visible string is marked with `i18n` / `i18n-<attribute>` in a template or `$localize` in TypeScript, with a stable custom id (`@@topbar.export.button`). `pnpm --filter @elysion/frontend i18n:extract` writes `src/locale/messages.xlf`; the German texts are in `src/locale/messages.de.xlf`. The production build produces one copy of the app per language (`dist/frontend/browser/en` and `/de`, both with `baseHref: ""`); a missing translation fails the build (`i18nMissingTranslation: error`) and so does `src/locale/locale.spec.ts` in `pnpm test`, which names the ids. `ng serve` is English only.
+- **Serving.** The URL is not localized. nginx (`apps/frontend/nginx.conf`) serves the copy of the cookie `elysion-lang` (`en` or `de`), else of the first language in `Accept-Language`, else English; the responses carry `Vary: Accept-Language, Cookie`. The language entry in the user menu sets the cookie (one year, `SameSite=Lax`) and loads the page again (`LanguageService`).
+- **Canvas.** The shell sets the attribute `locale` (`en` or `de`) on `<elysion-canvas>`; the canvas has its own dictionary for its strings and gives Excalidraw its `langCode` (see `apps/frontend-canvas/AGENTS.md`).
+- **Dates and numbers** go through Angular's pipes or `Intl` with the language of the app, never a fixed format.
+- **Adding a text:** mark it, run `i18n:extract`, add the German text to `messages.de.xlf`, run `pnpm --filter @elysion/frontend test`.
+- The user guide stays English; [a German page](../user-guide.de.md) covers the basics.
+
 ## Theming (ariadne design)
 
 The canvas UI follows the design of GravionLabs/ariadne:

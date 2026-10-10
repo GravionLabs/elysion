@@ -30,9 +30,9 @@ export type SyncStatus = 'connecting' | 'connected' | 'disconnected';
 const MAX_AVATARS = 3;
 
 const STATUS_LABEL: Record<SyncStatus, string> = {
-  connecting: 'Connecting…',
-  connected: 'Connected',
-  disconnected: 'Offline',
+  connecting: $localize`:@@topbar.status.connecting:Connecting…`,
+  connected: $localize`:@@topbar.status.connected:Connected`,
+  disconnected: $localize`:@@topbar.status.offline:Offline`,
 };
 
 /** The bar at the top of the board page, modeled on ariadne's: identity left, actions right. */
@@ -149,7 +149,7 @@ export class TopBar {
     const name = this.draft().trim();
     if (!name) {
       if (refuseBlank) {
-        this.nameError.set('A board needs a name.');
+        this.nameError.set($localize`:@@topbar.rename.blank:A board needs a name.`);
       } else {
         this.cancelRename();
       }
@@ -176,8 +176,8 @@ export class TopBar {
   protected readonly presenceLabel = computed(() => {
     const names = this.users().map((user) => user.name);
     return names.length === 1
-      ? `${names[0]} is on this board`
-      : `On this board: ${names.join(', ')}`;
+      ? $localize`:@@topbar.presence.one:${names[0]}:name: is on this board`
+      : $localize`:@@topbar.presence.many:On this board: ${names.join(', ')}:names:`;
   });
 
   protected initialsOf(name: string): string {
@@ -192,8 +192,13 @@ export class TopBar {
   }
 
   protected readonly title = computed(() => this.boardName() ?? this.boardId());
+  protected readonly renameLabel = computed(
+    () => $localize`:@@topbar.rename-aria:Rename the board ${this.title()}:title:`,
+  );
   protected readonly statusLabel = computed(() => STATUS_LABEL[this.status()]);
   protected readonly themeTitle = computed(() =>
-    this.theme() === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme',
+    this.theme() === 'dark'
+      ? $localize`:@@topbar.theme.to-light:Switch to the light theme`
+      : $localize`:@@topbar.theme.to-dark:Switch to the dark theme`,
   );
 }

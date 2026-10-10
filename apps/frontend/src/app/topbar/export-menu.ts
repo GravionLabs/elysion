@@ -14,7 +14,7 @@ const PREPARING: Record<ExportFormat, string> = {
   png: 'PNG',
   svg: 'SVG',
   pdf: 'PDF',
-  excalidraw: 'file',
+  excalidraw: $localize`:@@topbar.export.preparing-file:file`,
 };
 
 export interface ExportRequest {
@@ -41,16 +41,18 @@ export class ExportMenu {
   protected readonly selectionOnly = signal(false);
 
   protected readonly formats: readonly { format: ExportFormat; label: string }[] = [
-    { format: 'png', label: 'PNG image' },
-    { format: 'svg', label: 'SVG image' },
-    { format: 'pdf', label: 'PDF document' },
-    { format: 'excalidraw', label: 'Excalidraw file' },
+    { format: 'png', label: $localize`:@@topbar.export.png:PNG image` },
+    { format: 'svg', label: $localize`:@@topbar.export.svg:SVG image` },
+    { format: 'pdf', label: $localize`:@@topbar.export.pdf:PDF document` },
+    { format: 'excalidraw', label: $localize`:@@topbar.export.excalidraw:Excalidraw file` },
   ];
 
   /** The text on the button while a file is being prepared, e.g. "Preparing PDF…". */
   protected readonly busyLabel = computed(() => {
     const format = this.busy();
-    return format === null ? null : `Preparing ${PREPARING[format]}…`;
+    return format === null
+      ? null
+      : $localize`:@@topbar.export.preparing:Preparing ${PREPARING[format]}:format:…`;
   });
 
   protected toggle(): void {
