@@ -59,8 +59,7 @@ What has to be true before anything real depends on Elysion (Epic #670):
   security contexts, PDBs and an HPA, an upgrade test from the last pre-release.
 - **Board documents, images and limits** (#696): compaction and a size limit (decision #697), images in the object
   store (today an image is visible to its author only and gone after a reload, #702), a load test, the bundle budget.
-- **Browser tests and housekeeping** (#713): rooms, templates, import and export, the drawing tools, reconnect; the
-  flaky canvas test and the stylesheet at its limit.
+- **Browser tests** (#713): rooms, templates, import and export, the drawing tools, reconnect.
 
 ## M15 Product gaps
 

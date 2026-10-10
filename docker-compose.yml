@@ -212,6 +212,8 @@ services:
       # Keycloak is `keycloak:8080` here, while tokens carry the issuer the browser used (localhost:8081).
       OIDC_JWKS_URI: http://keycloak:8080/realms/elysion/protocol/openid-connect/certs
       WS_TOKEN_SECRET: dev-only-ws-token-secret-change-me-0123456789 # development value only
+      # How long a WS token is good for to open a connection; the browser tests shorten it (apps/e2e, reconnect.spec.ts).
+      WS_TOKEN_TTL_SECONDS: ${WS_TOKEN_TTL_SECONDS:-60}
       # Also send every log line to the log viewer (the `logs` profile, `pnpm dev:logs`, ADR 0025); empty: nothing is sent.
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${LOGS_OTLP_ENDPOINT:-}
     depends_on:

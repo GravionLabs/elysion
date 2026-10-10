@@ -1,0 +1,181 @@
+// The New board dialog and what is in it: the template tiles, the form fields and the messages. Part of the style of BoardList (see board-list.scss).
+// The New board form is a modal dialog: centered over the dimmed page.
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  padding: 16px;
+  overflow-y: auto;
+  place-items: center;
+  background: color-mix(in srgb, var(--c-bg) 70%, transparent);
+}
+
+.create {
+  display: grid;
+  width: min(560px, 100%);
+  gap: 8px;
+  padding: 20px;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 17px;
+  }
+
+  label {
+    color: var(--c-text-subtle);
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+
+.create-row,
+.rename {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  input {
+    flex: 1 1 220px;
+    min-width: 0;
+    height: 34px;
+    padding: 0 10px;
+    color: var(--c-text);
+    font: inherit;
+    font-size: 14px;
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+
+    &:focus-visible {
+      outline: 2px solid var(--c-focus);
+      outline-offset: 1px;
+    }
+
+    &[aria-invalid='true'] {
+      border-color: var(--c-danger);
+    }
+  }
+}
+
+.rename input {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.templates {
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    padding: 0;
+    margin-bottom: 6px;
+    color: var(--c-text-subtle);
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+
+.template-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.create .template-option {
+  position: relative;
+  display: grid;
+  flex: 0 1 200px;
+  align-content: start;
+  gap: 2px;
+  min-width: 140px;
+  padding: 10px 12px;
+  color: var(--c-text);
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
+
+  &:hover {
+    border-color: var(--c-border-muted);
+  }
+
+  &:has(input:checked) {
+    background: var(--c-primary-soft);
+    border-color: var(--c-primary);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 2px;
+  }
+
+  // Visually hidden, but still the radio that keyboard and screen readers use.
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .template-name {
+    font-weight: 600;
+  }
+
+  .template-description {
+    color: var(--c-text-subtle);
+    font-size: 12px;
+  }
+}
+
+.field-error {
+  margin: 0;
+  color: var(--c-danger);
+  font-size: 13px;
+}
+
+.message {
+  margin: 32px 0;
+  color: var(--c-text-subtle);
+  text-align: center;
+
+  &.error {
+    color: var(--c-danger);
+  }
+
+  p {
+    margin: 0 0 12px;
+  }
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 48px 16px;
+  text-align: center;
+  background: var(--c-surface-1);
+  border: 1px dashed var(--c-border-muted);
+  border-radius: var(--radius-xl);
+
+  h2 {
+    margin: 0;
+    font-size: 17px;
+  }
+
+  p {
+    margin: 0 0 12px;
+    color: var(--c-text-subtle);
+  }
+}
