@@ -133,6 +133,27 @@ export class Board {
     { initialValue: PENDING },
   );
 
+  /** Whether the user starred the board (#730); the top bar shows the star and flips it. Optimistic, undone when saving fails. */
+  readonly #starred = signal<boolean | null>(null);
+  readonly isFavorite = computed(() => {
+    const lookup = this.#lookup();
+    return this.#starred() ?? (lookup.status === 'found' && lookup.board.isFavorite === true);
+  });
+
+  /** Whether the board has a record the user can star (a room without a record has none). */
+  readonly canFavorite = computed(() => this.#lookup().status === 'found');
+
+  toggleFavorite(): void {
+    const favorite = !this.isFavorite();
+    this.#starred.set(favorite);
+    this.#api.setFavorite(this.boardId(), favorite).subscribe({
+      error: () => {
+        this.#starred.set(!favorite);
+        this.notice.set($localize`:@@board.error.favoriteFailed:The star could not be saved.`);
+      },
+    });
+  }
+
   /** The user's role on this board, as the BFF says; `pending` until it answers. */
   readonly #roleLookup = toSignal(
     toObservable(this.boardId).pipe(
@@ -202,7 +223,17 @@ export class Board {
     // Another board in the same page starts without the previous one's new name.
     effect(() => {
       this.boardId();
-      untracked(() => this.#renamedTo.set(null));
+      untracked(() => {
+        this.#renamedTo.set(null);
+        this.#starred.set(null);
+      });
+    });
+    // Opening a stored board is written down for the "Last opened" order of the overview (#730), once per board shown.
+    effect(() => {
+      if (this.canFavorite()) {
+        const id = this.boardId();
+        untracked(() => this.#api.recordOpened(id).subscribe());
+      }
     });
     // Apply the template once the canvas is connected; the creator is an owner, so a viewer never gets here.
     effect(() => {

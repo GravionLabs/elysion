@@ -19,6 +19,10 @@ it was made; the room it is in is shown as a small label.
 
 - **New board** opens a form with the name and **Start from**: a blank board or a template (Brainstorming, Kanban, Retrospective, and your own,
   see [Templates](#templates)).
+- **Search** (press `/` to jump to it) keeps the boards whose name contains what you type; the search is in the address, so a reload keeps it.
+  **Sort by** orders the list by newest, name or last opened, and the browser remembers your choice.
+- The **star** on a card (or in the top bar of a board) makes the board a **favorite**: it shows up under **Favorites** on the left and
+  comes first in the list of all boards. Stars are yours alone.
 - On a card, the icons in the corner **move** the board to a room, **duplicate** it and **delete** it (delete asks first and cannot be undone).
 - **Rooms** (the list on the left) are shared spaces for the boards of a team. **+ New room** makes one; the room's page has **Rename**,
   **Members** and **Delete room**. Everybody in a room can open its boards, with the role they have in the room (owner, editor or viewer);

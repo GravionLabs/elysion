@@ -9,9 +9,16 @@ namespace Elysion.BusinessBackend.Api.Data.Repositories;
 
 public sealed class BoardRepository(ElysionDbContext db) : IBoardRepository
 {
-    public async Task<IReadOnlyList<Board>> ListVisibleToAsync(Guid userId, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<Board>> ListVisibleToAsync(Guid userId, CancellationToken cancellationToken) =>
+        ListVisibleToAsync(userId, null, cancellationToken);
+
+    public async Task<IReadOnlyList<Board>> ListVisibleToAsync(
+        Guid userId,
+        string? query,
+        CancellationToken cancellationToken)
     {
         Guard.Against.Default(userId);
+        var needle = query?.Trim().ToLowerInvariant();
         // Visible: the user's own and shared boards, and the boards of the rooms they are in (ADR 0019).
         return await db.Boards
             .AsNoTracking()
@@ -21,6 +28,9 @@ public sealed class BoardRepository(ElysionDbContext db) : IBoardRepository
                                 && db.Rooms.Any(room => room.Id == board.RoomId
                                                         && (room.OwnerId == userId
                                                             || room.Memberships.Any(m => m.UserId == userId)))))
+#pragma warning disable CA1862 // `string.Contains(string, StringComparison)` is not translated by EF Core; this form is
+            .Where(board => string.IsNullOrEmpty(needle) || board.Name.ToLower().Contains(needle))
+#pragma warning restore CA1862
             .OrderByDescending(board => board.CreatedAt)
             .ToListAsync(cancellationToken);
     }

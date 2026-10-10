@@ -7,7 +7,7 @@ import { RoomInfo } from '../board/room-api';
 import { TemplateInfo } from '../board/template-api';
 import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
 import { SessionService } from '../auth/session.service';
-import { BoardList, boardInitials, boardTint } from './board-list';
+import { BoardList, boardInitials, boardTint, sortBoards } from './board-list';
 import { RoomPdfExporter } from './room-pdf-export';
 
 const board = (
@@ -64,6 +64,35 @@ describe('boardTint', () => {
   });
 });
 
+describe('sortBoards', () => {
+  const a = {
+    ...board('a', 'beta', '2026-10-01T00:00:00Z'),
+    lastOpenedAt: '2026-10-09T00:00:00Z',
+  };
+  const b = { ...board('b', 'Alpha', '2026-10-02T00:00:00Z'), isFavorite: true };
+  const c = {
+    ...board('c', 'gamma', '2026-10-03T00:00:00Z'),
+    lastOpenedAt: '2026-10-10T00:00:00Z',
+  };
+  const ids = (boards: BoardInfo[]) => boards.map((x) => x.id);
+
+  it('puts the newest first', () => {
+    expect(ids(sortBoards([a, b, c], 'newest', false))).toEqual(['c', 'b', 'a']);
+  });
+
+  it('sorts by name ignoring case', () => {
+    expect(ids(sortBoards([c, a, b], 'name', false))).toEqual(['b', 'a', 'c']);
+  });
+
+  it('puts the last opened first and the never opened last', () => {
+    expect(ids(sortBoards([a, b, c], 'opened', false))).toEqual(['c', 'a', 'b']);
+  });
+
+  it('floats the starred boards to the top when asked to', () => {
+    expect(ids(sortBoards([a, b, c], 'newest', true))).toEqual(['b', 'c', 'a']);
+  });
+});
+
 describe('BoardList', () => {
   let fixture: ComponentFixture<BoardList>;
   let http: HttpTestingController;
@@ -75,7 +104,7 @@ describe('BoardList', () => {
     await fixture.whenStable();
   };
   const type = async (value: string) => {
-    const input = el().querySelector('input') as HTMLInputElement;
+    const input = el().querySelector('input:not([type="search"])') as HTMLInputElement;
     input.value = value;
     input.dispatchEvent(new Event('input'));
     await fixture.whenStable();
@@ -246,7 +275,9 @@ describe('BoardList', () => {
 
       await click('.new-board');
 
-      expect((el().querySelector('input') as HTMLInputElement).value).toBe('Typed name');
+      expect((el().querySelector('input:not([type="search"])') as HTMLInputElement).value).toBe(
+        'Typed name',
+      );
     });
   });
 
@@ -294,7 +325,7 @@ describe('BoardList', () => {
     });
 
     it('asks for a name in an inline field, preset to "Untitled board" and focused', () => {
-      const input = el().querySelector('input') as HTMLInputElement;
+      const input = el().querySelector('input:not([type="search"])') as HTMLInputElement;
 
       expect(input.value).toBe('Untitled board');
       expect(input.maxLength).toBe(120);
@@ -384,7 +415,9 @@ describe('BoardList', () => {
 
       http.expectNone('/api/boards');
       expect(el().querySelector('[role="alert"]')?.textContent).toContain('Give the board a name');
-      expect(el().querySelector('input')?.getAttribute('aria-invalid')).toBe('true');
+      expect(el().querySelector('input:not([type="search"])')?.getAttribute('aria-invalid')).toBe(
+        'true',
+      );
     });
 
     it('keeps the form and says so when the board cannot be created, and lets the user retry', async () => {
@@ -393,7 +426,9 @@ describe('BoardList', () => {
       await fixture.whenStable();
 
       expect(el().querySelector('[role="alert"]')?.textContent).toContain('could not be created');
-      expect((el().querySelector('input') as HTMLInputElement).value).toBe('Untitled board');
+      expect((el().querySelector('input:not([type="search"])') as HTMLInputElement).value).toBe(
+        'Untitled board',
+      );
       expect((el().querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(
         false,
       );
@@ -404,7 +439,7 @@ describe('BoardList', () => {
       expect(el().querySelector('form')).toBeNull();
 
       await click('.new-board');
-      (el().querySelector('input') as HTMLInputElement).dispatchEvent(
+      (el().querySelector('input:not([type="search"])') as HTMLInputElement).dispatchEvent(
         new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
       );
       await fixture.whenStable();
@@ -632,10 +667,16 @@ describe('BoardList', () => {
 
     describe('the sidebar', () => {
       it('lists all boards, the boards in no room and the rooms, each with its count', () => {
-        expect(entries()).toEqual(['All boards 3', 'Not in a room 1', 'Sprint 1', 'Customer X 1']);
+        expect(entries()).toEqual([
+          'All boards 3',
+          'Favorites 0',
+          'Not in a room 1',
+          'Sprint 1',
+          'Customer X 1',
+        ]);
         expect(
           [...el().querySelectorAll('app-room-sidebar .entry')].map((a) => a.getAttribute('href')),
-        ).toEqual(['/', '/rooms/none', '/rooms/r1', '/rooms/r2']);
+        ).toEqual(['/', '/favorites', '/rooms/none', '/rooms/r1', '/rooms/r2']);
       });
 
       it('marks the open view', async () => {
@@ -773,7 +814,7 @@ describe('BoardList', () => {
         });
         await fixture.whenStable();
 
-        expect(entries().slice(2)).toEqual(['Alpha 0', 'Customer X 1', 'Sprint 1']);
+        expect(entries().slice(3)).toEqual(['Alpha 0', 'Customer X 1', 'Sprint 1']);
         expect(navigate).toHaveBeenCalledWith(['/rooms', 'r9']);
         expect(el().querySelector('app-room-sidebar form')).toBeNull();
       });
@@ -908,7 +949,12 @@ describe('BoardList', () => {
         await fixture.whenStable();
 
         expect(navigate).toHaveBeenCalledWith('/');
-        expect(entries()).toEqual(['All boards 3', 'Not in a room 2', 'Customer X 1']);
+        expect(entries()).toEqual([
+          'All boards 3',
+          'Favorites 0',
+          'Not in a room 2',
+          'Customer X 1',
+        ]);
       });
 
       it('keeps the room and says so when deleting fails', async () => {
@@ -1079,7 +1125,13 @@ describe('BoardList', () => {
         request.flush({ ...LOOSE, roomId: 'r1' });
         await fixture.whenStable();
 
-        expect(entries()).toEqual(['All boards 3', 'Not in a room 0', 'Sprint 2', 'Customer X 1']);
+        expect(entries()).toEqual([
+          'All boards 3',
+          'Favorites 0',
+          'Not in a room 0',
+          'Sprint 2',
+          'Customer X 1',
+        ]);
         expect(el().querySelector('.move-menu')).toBeNull();
       });
 
@@ -1284,6 +1336,87 @@ describe('BoardList', () => {
 
       http.expectNone('/api/boards/b9/room');
       expect(navigate).toHaveBeenCalledWith('/board/b9');
+    });
+  });
+
+  describe('search, sort and favorites (#730)', () => {
+    const boards: BoardInfo[] = [
+      board('b1', 'Sprint Retro', '2026-10-01T00:00:00Z'),
+      { ...board('b2', 'Roadmap', '2026-10-02T00:00:00Z'), isFavorite: true },
+      board('b3', 'retro notes', '2026-10-03T00:00:00Z'),
+    ];
+    const names = () =>
+      [...el().querySelectorAll('.board-name')].map((name) => name.textContent?.trim());
+    const search = async (value: string) => {
+      const input = el().querySelector('#board-search') as HTMLInputElement;
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+    };
+
+    beforeEach(async () => {
+      await respondWith(boards);
+    });
+
+    it('lists the starred board first in all boards', () => {
+      expect(names()).toEqual(['Roadmap', 'retro notes', 'Sprint Retro']);
+    });
+
+    it('narrows the list to names that contain the search, ignoring case', async () => {
+      await search(' RETRO ');
+
+      expect(names()).toEqual(['retro notes', 'Sprint Retro']);
+    });
+
+    it('says so when nothing is found and clears the search from there', async () => {
+      await search('zzz');
+      expect(el().querySelector('.view-empty')?.textContent).toContain('No board found');
+
+      await click('.view-empty .button');
+
+      expect((el().querySelector('#board-search') as HTMLInputElement).value).toBe('');
+      expect(names().length).toBe(3);
+    });
+
+    it('sorts by name and remembers the choice', async () => {
+      const select = el().querySelector('.sort select') as HTMLSelectElement;
+      select.value = 'name';
+      select.dispatchEvent(new Event('change'));
+      await fixture.whenStable();
+
+      expect(names()).toEqual(['Roadmap', 'retro notes', 'Sprint Retro']);
+      expect(localStorage.getItem('elysion.board-sort')).toBe('name');
+    });
+
+    it('shows only the starred boards in the Favorites view', async () => {
+      fixture.componentRef.setInput('roomId', 'favorites');
+      await fixture.whenStable();
+
+      expect(el().querySelector('h1')?.textContent).toBe('Favorites');
+      expect(names()).toEqual(['Roadmap']);
+    });
+
+    it('stars a board at once and sends it; the star goes back when saving fails', async () => {
+      (el().querySelectorAll('.favorite-button')[1] as HTMLButtonElement).click(); // retro notes
+      await fixture.whenStable();
+      const put = http.expectOne('/api/boards/b3/favorite');
+      expect(put.request.method).toBe('PUT');
+      expect(el().querySelectorAll('.favorite-button.on').length).toBe(2);
+
+      put.flush(null, { status: 500, statusText: 'Server Error' });
+      await fixture.whenStable();
+
+      expect(el().querySelectorAll('.favorite-button.on').length).toBe(1);
+      expect(el().querySelector('.room-error')?.textContent).toContain('could not be saved');
+    });
+
+    it('takes the star away with DELETE', async () => {
+      (el().querySelector('.favorite-button.on') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      const request = http.expectOne('/api/boards/b2/favorite');
+      expect(request.request.method).toBe('DELETE');
+      request.flush(null, { status: 204, statusText: 'No Content' });
     });
   });
 

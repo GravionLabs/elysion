@@ -64,6 +64,9 @@ export class TopBar {
   readonly canShare = input(false);
   /** A viewer: Import and Library, which only change the board, are hidden. */
   readonly readOnly = input(false);
+  /** Whether the board can be starred (it has a record), and whether it is (#730). */
+  readonly canFavorite = input(false);
+  readonly favorite = input(false);
   /** Who is signed in; the menu with the log-out action is shown for them. */
   readonly user = input<SessionUser | null>(null);
   /** The other people on the board. */
@@ -72,6 +75,7 @@ export class TopBar {
   /** The user confirmed a new name (trimmed, different from the current one). */
   readonly renameRequested = output<string>();
   readonly themeToggle = output<void>();
+  readonly favoriteToggle = output<void>();
   readonly libraryToggle = output<void>();
   readonly exportRequested = output<ExportRequest>();
   /** The user chose a template to add to the board. */
@@ -97,6 +101,8 @@ export class TopBar {
   /** A result was clicked: scroll the canvas to the element. */
   readonly votingFocus = output<string>();
 
+  protected readonly favoriteOnTitle = $localize`:@@topbar.favorite-on:Add to favorites`;
+  protected readonly favoriteOffTitle = $localize`:@@topbar.favorite-off:Remove from favorites`;
   protected readonly maxNameLength = MAX_BOARD_NAME_LENGTH;
   protected readonly editing = signal(false);
   protected readonly draft = signal('');

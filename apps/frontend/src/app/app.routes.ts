@@ -8,13 +8,16 @@ export const boardIdGuard: CanActivateFn = (route) =>
   route.paramMap.get('boardId')?.trim() ? true : inject(Router).createUrlTree(['/']);
 
 /**
- * The board list and its views: `/` (all boards), `/rooms/none` (boards that are in no room) and `/rooms/:roomId`.
+ * The board list and its views: `/` (all boards), `/favorites` (the starred ones; the view is `roomId` = `favorites`), `/rooms/none` (boards that are in no room) and `/rooms/:roomId`.
  * One route, so the same `BoardList` stays in place while the user moves between views (the list is not loaded
  * again); the matcher hands `roomId` to its input.
  */
 export const boardListMatcher: UrlMatcher = (segments) => {
   if (segments.length === 0) {
     return { consumed: [] };
+  }
+  if (segments.length === 1 && segments[0].path === 'favorites') {
+    return { consumed: segments, posParams: { roomId: segments[0] } };
   }
   if (segments.length === 2 && segments[0].path === 'rooms') {
     return { consumed: segments, posParams: { roomId: segments[1] } };

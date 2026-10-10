@@ -19,6 +19,10 @@ Die Startseite listet **deine Boards**: die selbst erstellten und die mit dir ge
 
 - **Neues Board** öffnet ein Formular mit dem Namen und **Starten mit**: ein leeres Board oder eine Vorlage (Brainstorming, Kanban,
   Retrospektive und eigene).
+- Die **Suche** (mit `/` springst du hinein) zeigt die Boards, deren Name enthält, was du tippst; die Suche steht in der Adresse und überlebt
+  ein Neuladen. **Sortieren nach** ordnet die Liste nach neuesten, Name oder zuletzt geöffnet; der Browser merkt sich deine Wahl.
+- Der **Stern** auf einer Karte (oder in der Kopfleiste eines Boards) macht das Board zum **Favoriten**: Es erscheint links unter
+  **Favoriten** und steht in der Liste aller Boards ganz oben. Sterne sehen nur du.
 - Auf einer Karte **verschieben**, **duplizieren** und **löschen** die Symbole in der Ecke das Board (Löschen fragt vorher nach und lässt sich
   nicht rückgängig machen).
 - **Räume** (die Liste links) sind gemeinsame Bereiche für die Boards eines Teams. Alle in einem Raum können seine Boards öffnen, mit ihrer

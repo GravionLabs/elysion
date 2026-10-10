@@ -75,6 +75,24 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.ToTable("BoardDocuments");
                 });
 
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.BoardFavorite", b =>
+                {
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("BoardId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BoardFavorites");
+                });
+
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.BoardMembership", b =>
                 {
                     b.Property<Guid>("BoardId")
@@ -96,6 +114,24 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("BoardMemberships");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.BoardVisit", b =>
+                {
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("LastOpenedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("BoardId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BoardVisits");
                 });
 
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Room", b =>
@@ -258,6 +294,25 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.Navigation("Room");
                 });
 
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.BoardFavorite", b =>
+                {
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.BoardMembership", b =>
                 {
                     b.HasOne("Elysion.BusinessBackend.Api.Entities.Board", "Board")
@@ -268,6 +323,25 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
 
                     b.HasOne("Elysion.BusinessBackend.Api.Entities.User", "User")
                         .WithMany("Memberships")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.BoardVisit", b =>
+                {
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.User", "User")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

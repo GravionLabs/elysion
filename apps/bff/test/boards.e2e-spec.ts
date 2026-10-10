@@ -70,6 +70,25 @@ describe('Boards (e2e, against a fake business backend)', () => {
     expect(upstream.requests).toBe(0);
   });
 
+  it('passes the search on, and the opening and the star', async () => {
+    const created = (await api().post('/api/boards').send({ name: 'Retro' })).body;
+
+    await api().get('/api/boards?query=%20ret%20').expect(200);
+    expect(upstream.lastStateRequest?.path).toBe('/boards?query=ret');
+
+    await api().post(`/api/boards/${created.id}/open`).expect(204);
+    expect(upstream.lastStateRequest).toEqual({
+      method: 'POST',
+      path: `/boards/${created.id}/open`,
+    });
+    await api().put(`/api/boards/${created.id}/favorite`).expect(204);
+    expect(upstream.lastStateRequest?.method).toBe('PUT');
+    await api().delete(`/api/boards/${created.id}/favorite`).expect(204);
+    expect(upstream.lastStateRequest?.method).toBe('DELETE');
+    await api().put(`/api/boards/${randomUUID()}/favorite`).expect(404);
+    await api().put('/api/boards/not-a-uuid/favorite').expect(404);
+  });
+
   it('duplicates a board and answers in the UI shape with the route of the copy', async () => {
     const source = (await api().post('/api/boards').send({ name: 'Retro' })).body;
 

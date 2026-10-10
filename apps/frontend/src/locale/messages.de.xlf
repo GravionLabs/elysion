@@ -21,7 +21,7 @@
     </unit>
     <unit id="boards.content.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:37</note>
+        <note category="location">src/app/board-list/board-list.html:38</note>
       </notes>
       <segment>
         <source>Boards</source>
@@ -30,7 +30,7 @@
     </unit>
     <unit id="boards.rename.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:49,50</note>
+        <note category="location">src/app/board-list/board-list.html:50,51</note>
       </notes>
       <segment>
         <source>Room name</source>
@@ -39,7 +39,7 @@
     </unit>
     <unit id="boards.rename.save">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:66,67</note>
+        <note category="location">src/app/board-list/board-list.html:67,68</note>
       </notes>
       <segment>
         <source> Save </source>
@@ -48,7 +48,7 @@
     </unit>
     <unit id="boards.rename.cancel">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:75,76</note>
+        <note category="location">src/app/board-list/board-list.html:76,77</note>
       </notes>
       <segment>
         <source> Cancel </source>
@@ -57,7 +57,7 @@
     </unit>
     <unit id="boards.count">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:82,87</note>
+        <note category="location">src/app/board-list/board-list.html:83,88</note>
       </notes>
       <segment>
         <source> <ph id="0" equiv="ICU" disp="{visibleBoards().length, plural,
@@ -72,7 +72,7 @@
     </unit>
     <unit id="7912568093385684140">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:82,84</note>
+        <note category="location">src/app/board-list/board-list.html:83,85</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 board} other {<ph id="0" equiv="INTERPOLATION"/> boards}}</source>
@@ -81,7 +81,7 @@
     </unit>
     <unit id="boards.room.export-title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:95,96</note>
+        <note category="location">src/app/board-list/board-list.html:96,97</note>
       </notes>
       <segment>
         <source>Make one PDF of all the boards of this room</source>
@@ -90,7 +90,7 @@
     </unit>
     <unit id="boards.room.export">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:100,101</note>
+        <note category="location">src/app/board-list/board-list.html:101,102</note>
       </notes>
       <segment>
         <source> Export room </source>
@@ -99,7 +99,7 @@
     </unit>
     <unit id="boards.room.rename">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:110,111</note>
+        <note category="location">src/app/board-list/board-list.html:111,112</note>
       </notes>
       <segment>
         <source> Rename </source>
@@ -108,7 +108,7 @@
     </unit>
     <unit id="boards.room.members">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:120,121</note>
+        <note category="location">src/app/board-list/board-list.html:121,122</note>
       </notes>
       <segment>
         <source> Members </source>
@@ -117,8 +117,8 @@
     </unit>
     <unit id="boards.room.delete">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:123,124</note>
-        <note category="location">src/app/board-list/board-list.html:250,252</note>
+        <note category="location">src/app/board-list/board-list.html:124,125</note>
+        <note category="location">src/app/board-list/board-list.html:251,253</note>
       </notes>
       <segment>
         <source>Delete room</source>
@@ -127,7 +127,7 @@
     </unit>
     <unit id="boards.roomExport.confirm.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:137,138</note>
+        <note category="location">src/app/board-list/board-list.html:138,139</note>
       </notes>
       <segment>
         <source>Confirm room export</source>
@@ -136,7 +136,7 @@
     </unit>
     <unit id="boards.roomExport.confirm.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:141,145</note>
+        <note category="location">src/app/board-list/board-list.html:142,146</note>
       </notes>
       <segment>
         <source> The room “<ph id="0" equiv="INTERPOLATION" disp="{{ exporting.room.name }}"/>” has <ph id="1" equiv="INTERPOLATION_1" disp="{{ exporting.count }}"/> boards. Making one PDF of them opens each board in turn and may take about <ph id="2" equiv="INTERPOLATION_2" disp="{{ exporting.minutes }}"/> <ph id="3" equiv="ICU" disp="{exporting.minutes, plural, =1 {minute} other {minutes}}" subFlows="9191257308058195560"/>. Continue? </source>
@@ -145,7 +145,7 @@
     </unit>
     <unit id="9191257308058195560">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:143</note>
+        <note category="location">src/app/board-list/board-list.html:144</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {minute} other {minutes}}</source>
@@ -154,7 +154,7 @@
     </unit>
     <unit id="boards.roomExport.confirm.yes">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:152,154</note>
+        <note category="location">src/app/board-list/board-list.html:153,155</note>
       </notes>
       <segment>
         <source> Export </source>
@@ -163,7 +163,7 @@
     </unit>
     <unit id="boards.roomExport.confirm.no">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:160,161</note>
+        <note category="location">src/app/board-list/board-list.html:161,162</note>
       </notes>
       <segment>
         <source> Cancel </source>
@@ -172,7 +172,7 @@
     </unit>
     <unit id="boards.roomExport.running.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:169,170</note>
+        <note category="location">src/app/board-list/board-list.html:170,171</note>
       </notes>
       <segment>
         <source>Exporting the room</source>
@@ -181,7 +181,7 @@
     </unit>
     <unit id="boards.roomExport.running.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:173,176</note>
+        <note category="location">src/app/board-list/board-list.html:174,177</note>
       </notes>
       <segment>
         <source> Board <ph id="0" equiv="INTERPOLATION" disp="{{ exporting.done + (exporting.done &lt; exporting.total ? 1 : 0) }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ exporting.total }}"/>: <ph id="2" equiv="INTERPOLATION_2" disp="{{ exporting.current }}"/> </source>
@@ -190,7 +190,7 @@
     </unit>
     <unit id="boards.roomExport.running.cancel">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:184,186</note>
+        <note category="location">src/app/board-list/board-list.html:185,187</note>
       </notes>
       <segment>
         <source> Cancel </source>
@@ -199,7 +199,7 @@
     </unit>
     <unit id="boards.roomExport.done.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:192,194</note>
+        <note category="location">src/app/board-list/board-list.html:193,195</note>
       </notes>
       <segment>
         <source> The PDF is ready. These boards could not be loaded and are only a title page in it: <ph id="0" equiv="INTERPOLATION" disp="{{ exporting.skipped.join(&apos;, &apos;) }}"/>. </source>
@@ -208,7 +208,7 @@
     </unit>
     <unit id="boards.roomExport.done.close">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:202,203</note>
+        <note category="location">src/app/board-list/board-list.html:203,204</note>
       </notes>
       <segment>
         <source> Close </source>
@@ -217,7 +217,7 @@
     </unit>
     <unit id="boards.roomExport.failed.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:209,210</note>
+        <note category="location">src/app/board-list/board-list.html:210,211</note>
       </notes>
       <segment>
         <source>The room could not be exported.</source>
@@ -226,7 +226,7 @@
     </unit>
     <unit id="boards.roomExport.failed.close">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:217,219</note>
+        <note category="location">src/app/board-list/board-list.html:218,220</note>
       </notes>
       <segment>
         <source> Close </source>
@@ -235,7 +235,7 @@
     </unit>
     <unit id="boards.roomDelete.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:229,230</note>
+        <note category="location">src/app/board-list/board-list.html:230,231</note>
       </notes>
       <segment>
         <source>Confirm room delete</source>
@@ -244,7 +244,7 @@
     </unit>
     <unit id="boards.roomDelete.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:233,237</note>
+        <note category="location">src/app/board-list/board-list.html:234,238</note>
       </notes>
       <segment>
         <source> Delete the room “<ph id="0" equiv="INTERPOLATION" disp="{{ room.name }}"/>”? Its <ph id="1" equiv="INTERPOLATION_1" disp="{{ countIn(room) }}"/> <ph id="2" equiv="ICU" disp="{countIn(room), plural, =1 {board stays} other {boards stay}}" subFlows="715117258882551706"/>, but no longer in a room, and the room&apos;s members lose the access the room gave them. </source>
@@ -253,7 +253,7 @@
     </unit>
     <unit id="715117258882551706">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:234</note>
+        <note category="location">src/app/board-list/board-list.html:235</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {board stays} other {boards stay}}</source>
@@ -262,8 +262,8 @@
     </unit>
     <unit id="boards.deleting">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:248,249</note>
-        <note category="location">src/app/board-list/board-list.html:296,297</note>
+        <note category="location">src/app/board-list/board-list.html:249,250</note>
+        <note category="location">src/app/board-list/board-list.html:342,343</note>
       </notes>
       <segment>
         <source>Deleting…</source>
@@ -272,19 +272,55 @@
     </unit>
     <unit id="boards.cancel">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:260,261</note>
-        <note category="location">src/app/board-list/board-list.html:308,309</note>
-        <note category="location">src/app/board-list/board-list.html:359,360</note>
-        <note category="location">src/app/board-list/room-sidebar.html:113,115</note>
+        <note category="location">src/app/board-list/board-list.html:261,262</note>
+        <note category="location">src/app/board-list/board-list.html:354,355</note>
+        <note category="location">src/app/board-list/board-list.html:405,406</note>
+        <note category="location">src/app/board-list/room-sidebar.html:124,126</note>
       </notes>
       <segment>
         <source> Cancel </source>
         <target> Abbrechen </target>
       </segment>
     </unit>
-    <unit id="boards.delete.aria">
+    <unit id="boards.search.placeholder">
       <notes>
         <note category="location">src/app/board-list/board-list.html:278,279</note>
+      </notes>
+      <segment>
+        <source>Search boards</source>
+        <target>Boards durchsuchen</target>
+      </segment>
+    </unit>
+    <unit id="boards.search.aria">
+      <notes>
+        <note category="location">src/app/board-list/board-list.html:280,281</note>
+      </notes>
+      <segment>
+        <source>Search boards</source>
+        <target>Boards durchsuchen</target>
+      </segment>
+    </unit>
+    <unit id="boards.search.clear">
+      <notes>
+        <note category="location">src/app/board-list/board-list.html:291,292</note>
+      </notes>
+      <segment>
+        <source>Clear the search</source>
+        <target>Suche löschen</target>
+      </segment>
+    </unit>
+    <unit id="boards.sort.label">
+      <notes>
+        <note category="location">src/app/board-list/board-list.html:300,301</note>
+      </notes>
+      <segment>
+        <source>Sort by</source>
+        <target>Sortieren nach</target>
+      </segment>
+    </unit>
+    <unit id="boards.delete.aria">
+      <notes>
+        <note category="location">src/app/board-list/board-list.html:324,325</note>
       </notes>
       <segment>
         <source>Confirm delete</source>
@@ -293,7 +329,7 @@
     </unit>
     <unit id="boards.delete.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:282,284</note>
+        <note category="location">src/app/board-list/board-list.html:328,330</note>
       </notes>
       <segment>
         <source> Delete “<ph id="0" equiv="INTERPOLATION" disp="{{ target.name }}"/>”? The board and everything on it will be gone. This cannot be undone. </source>
@@ -302,7 +338,7 @@
     </unit>
     <unit id="boards.delete.confirm">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:298,300</note>
+        <note category="location">src/app/board-list/board-list.html:344,346</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -311,7 +347,7 @@
     </unit>
     <unit id="boards.create.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:324,325</note>
+        <note category="location">src/app/board-list/board-list.html:370,371</note>
       </notes>
       <segment>
         <source>New board</source>
@@ -320,7 +356,7 @@
     </unit>
     <unit id="boards.create.room">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:326,327</note>
+        <note category="location">src/app/board-list/board-list.html:372,373</note>
       </notes>
       <segment>
         <source>In the room “<ph id="0" equiv="INTERPOLATION" disp="{{ room.name }}"/>”</source>
@@ -329,7 +365,7 @@
     </unit>
     <unit id="boards.create.name">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:328,329</note>
+        <note category="location">src/app/board-list/board-list.html:374,375</note>
       </notes>
       <segment>
         <source>Board name</source>
@@ -338,8 +374,8 @@
     </unit>
     <unit id="boards.creating">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:347,348</note>
-        <note category="location">src/app/board-list/room-sidebar.html:101,102</note>
+        <note category="location">src/app/board-list/board-list.html:393,394</note>
+        <note category="location">src/app/board-list/room-sidebar.html:112,113</note>
       </notes>
       <segment>
         <source>Creating…</source>
@@ -348,8 +384,8 @@
     </unit>
     <unit id="boards.create.submit">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:349,351</note>
-        <note category="location">src/app/board-list/room-sidebar.html:103,105</note>
+        <note category="location">src/app/board-list/board-list.html:395,397</note>
+        <note category="location">src/app/board-list/room-sidebar.html:114,116</note>
       </notes>
       <segment>
         <source>Create</source>
@@ -358,8 +394,8 @@
     </unit>
     <unit id="boards.create.template">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:363,365</note>
-        <note category="location">src/app/board-list/board-list.html:367,368</note>
+        <note category="location">src/app/board-list/board-list.html:409,411</note>
+        <note category="location">src/app/board-list/board-list.html:413,414</note>
       </notes>
       <segment>
         <source>Start from</source>
@@ -368,7 +404,7 @@
     </unit>
     <unit id="boards.create.blank.name">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:377,378</note>
+        <note category="location">src/app/board-list/board-list.html:423,424</note>
       </notes>
       <segment>
         <source>Blank</source>
@@ -377,7 +413,7 @@
     </unit>
     <unit id="boards.create.blank.description">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:379,381</note>
+        <note category="location">src/app/board-list/board-list.html:425,427</note>
       </notes>
       <segment>
         <source>An empty board.</source>
@@ -386,7 +422,7 @@
     </unit>
     <unit id="boards.loading">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:409,411</note>
+        <note category="location">src/app/board-list/board-list.html:455,457</note>
       </notes>
       <segment>
         <source>Loading boards…</source>
@@ -395,7 +431,7 @@
     </unit>
     <unit id="boards.loadError">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:413,414</note>
+        <note category="location">src/app/board-list/board-list.html:459,460</note>
       </notes>
       <segment>
         <source>The boards could not be loaded.</source>
@@ -404,8 +440,8 @@
     </unit>
     <unit id="boards.retry">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:415,416</note>
-        <note category="location">src/app/board-list/room-sidebar.html:43,44</note>
+        <note category="location">src/app/board-list/board-list.html:461,462</note>
+        <note category="location">src/app/board-list/room-sidebar.html:54,55</note>
       </notes>
       <segment>
         <source> Try again </source>
@@ -414,8 +450,8 @@
     </unit>
     <unit id="boards.roomMissing.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:422,423</note>
-        <note category="location">src/app/board-list/board-list.ts:170</note>
+        <note category="location">src/app/board-list/board-list.html:468,469</note>
+        <note category="location">src/app/board-list/board-list.ts:204</note>
       </notes>
       <segment>
         <source>Room not found</source>
@@ -424,7 +460,7 @@
     </unit>
     <unit id="boards.roomMissing.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:424,426</note>
+        <note category="location">src/app/board-list/board-list.html:470,472</note>
       </notes>
       <segment>
         <source> This room does not exist, or you have no access to it. </source>
@@ -433,7 +469,7 @@
     </unit>
     <unit id="boards.roomMissing.all">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:426,428</note>
+        <note category="location">src/app/board-list/board-list.html:472,474</note>
       </notes>
       <segment>
         <source>All boards</source>
@@ -442,7 +478,7 @@
     </unit>
     <unit id="boards.empty.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:430,431</note>
+        <note category="location">src/app/board-list/board-list.html:476,477</note>
       </notes>
       <segment>
         <source>No boards yet</source>
@@ -451,7 +487,7 @@
     </unit>
     <unit id="boards.empty.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:432,434</note>
+        <note category="location">src/app/board-list/board-list.html:478,480</note>
       </notes>
       <segment>
         <source> Create a board to start drawing and collaborating. </source>
@@ -460,16 +496,61 @@
     </unit>
     <unit id="boards.empty.create">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:441,442</note>
+        <note category="location">src/app/board-list/board-list.html:487,488</note>
       </notes>
       <segment>
         <source> Create your first board </source>
         <target> Erstes Board erstellen </target>
       </segment>
     </unit>
+    <unit id="boards.searchEmpty.title">
+      <notes>
+        <note category="location">src/app/board-list/board-list.html:494,495</note>
+      </notes>
+      <segment>
+        <source>No board found</source>
+        <target>Kein Board gefunden</target>
+      </segment>
+    </unit>
+    <unit id="boards.searchEmpty.message">
+      <notes>
+        <note category="location">src/app/board-list/board-list.html:496,497</note>
+      </notes>
+      <segment>
+        <source> No board here has “<ph id="0" equiv="INTERPOLATION" disp="{{ search().trim() }}"/>” in its name. </source>
+        <target> Kein Board hier hat „<ph id="0" equiv="INTERPOLATION" disp="{{ search().trim() }}"/>“ im Namen. </target>
+      </segment>
+    </unit>
+    <unit id="boards.searchEmpty.clear">
+      <notes>
+        <note category="location">src/app/board-list/board-list.html:504,505</note>
+      </notes>
+      <segment>
+        <source> Clear the search </source>
+        <target> Suche löschen </target>
+      </segment>
+    </unit>
+    <unit id="boards.favoritesEmpty.title">
+      <notes>
+        <note category="location">src/app/board-list/board-list.html:507,508</note>
+      </notes>
+      <segment>
+        <source>No favorites yet</source>
+        <target>Noch keine Favoriten</target>
+      </segment>
+    </unit>
+    <unit id="boards.favoritesEmpty.message">
+      <notes>
+        <note category="location">src/app/board-list/board-list.html:509,511</note>
+      </notes>
+      <segment>
+        <source> Star a board on its card or in its top bar and it shows up here. </source>
+        <target> Markiere ein Board auf seiner Karte oder in seiner Kopfleiste mit einem Stern, dann erscheint es hier. </target>
+      </segment>
+    </unit>
     <unit id="boards.roomEmpty.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:448,449</note>
+        <note category="location">src/app/board-list/board-list.html:512,513</note>
       </notes>
       <segment>
         <source>No boards in this room yet</source>
@@ -478,7 +559,7 @@
     </unit>
     <unit id="boards.roomEmpty.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:450,452</note>
+        <note category="location">src/app/board-list/board-list.html:514,516</note>
       </notes>
       <segment>
         <source> Create a board here, or move one in from the board&apos;s menu. </source>
@@ -487,7 +568,7 @@
     </unit>
     <unit id="boards.roomEmpty.create">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:459,460</note>
+        <note category="location">src/app/board-list/board-list.html:523,524</note>
       </notes>
       <segment>
         <source> Create the first board in this room </source>
@@ -496,7 +577,7 @@
     </unit>
     <unit id="boards.unassignedEmpty.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:463,464</note>
+        <note category="location">src/app/board-list/board-list.html:527,528</note>
       </notes>
       <segment>
         <source>Every board is in a room</source>
@@ -505,16 +586,25 @@
     </unit>
     <unit id="boards.unassignedEmpty.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:465,467</note>
+        <note category="location">src/app/board-list/board-list.html:529,531</note>
       </notes>
       <segment>
         <source> Boards that are in no room show up here. </source>
         <target> Boards ohne Raum erscheinen hier. </target>
       </segment>
     </unit>
+    <unit id="boards.card.opened">
+      <notes>
+        <note category="location">src/app/board-list/board-list.html:574,575</note>
+      </notes>
+      <segment>
+        <source>Opened <ph id="0" equiv="INTERPOLATION" disp="{{ board.lastOpenedAt | date: &apos;medium&apos; }}"/></source>
+        <target>Geöffnet <ph id="0" equiv="INTERPOLATION" disp="{{ board.lastOpenedAt | date: &apos;medium&apos; }}"/></target>
+      </segment>
+    </unit>
     <unit id="boards.card.created">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:487,488</note>
+        <note category="location">src/app/board-list/board-list.html:578,579</note>
       </notes>
       <segment>
         <source>Created <ph id="0" equiv="INTERPOLATION" disp="{{ board.createdAt | date: &apos;mediumDate&apos; }}"/></source>
@@ -523,7 +613,7 @@
     </unit>
     <unit id="boards.card.move.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:503,504</note>
+        <note category="location">src/app/board-list/board-list.html:595,596</note>
       </notes>
       <segment>
         <source>Move to a room</source>
@@ -532,7 +622,7 @@
     </unit>
     <unit id="boards.card.delete.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:545,546</note>
+        <note category="location">src/app/board-list/board-list.html:637,638</note>
       </notes>
       <segment>
         <source>Delete this board</source>
@@ -541,7 +631,7 @@
     </unit>
     <unit id="boards.defaultName">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:63</note>
+        <note category="location">src/app/board-list/board-list.ts:86</note>
       </notes>
       <segment>
         <source>Untitled board</source>
@@ -550,7 +640,7 @@
     </unit>
     <unit id="boards.title.all">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:163</note>
+        <note category="location">src/app/board-list/board-list.ts:195</note>
       </notes>
       <segment>
         <source>Boards</source>
@@ -559,17 +649,27 @@
     </unit>
     <unit id="boards.sidebar.none">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:165</note>
-        <note category="location">src/app/board-list/room-sidebar.html:26,27</note>
+        <note category="location">src/app/board-list/board-list.ts:197</note>
+        <note category="location">src/app/board-list/room-sidebar.html:37,38</note>
       </notes>
       <segment>
         <source>Not in a room</source>
         <target>Ohne Raum</target>
       </segment>
     </unit>
+    <unit id="boards.sidebar.favorites">
+      <notes>
+        <note category="location">src/app/board-list/board-list.ts:199</note>
+        <note category="location">src/app/board-list/room-sidebar.html:21,22</note>
+      </notes>
+      <segment>
+        <source>Favorites</source>
+        <target>Favoriten</target>
+      </segment>
+    </unit>
     <unit id="boards.title.room">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:171</note>
+        <note category="location">src/app/board-list/board-list.ts:205</note>
       </notes>
       <segment>
         <source>Room</source>
@@ -578,16 +678,70 @@
     </unit>
     <unit id="boards.pageTitle">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:240</note>
+        <note category="location">src/app/board-list/board-list.ts:292</note>
       </notes>
       <segment>
         <source>Boards · Elysion</source>
         <target>Boards · Elysion</target>
       </segment>
     </unit>
+    <unit id="boards.sort.name">
+      <notes>
+        <note category="location">src/app/board-list/board-list.ts:360</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
+      </segment>
+    </unit>
+    <unit id="boards.sort.opened">
+      <notes>
+        <note category="location">src/app/board-list/board-list.ts:362</note>
+      </notes>
+      <segment>
+        <source>Last opened</source>
+        <target>Zuletzt geöffnet</target>
+      </segment>
+    </unit>
+    <unit id="boards.sort.newest">
+      <notes>
+        <note category="location">src/app/board-list/board-list.ts:364</note>
+      </notes>
+      <segment>
+        <source>Newest</source>
+        <target>Neueste</target>
+      </segment>
+    </unit>
+    <unit id="boards.error.favorite">
+      <notes>
+        <note category="location">src/app/board-list/board-list.ts:399</note>
+      </notes>
+      <segment>
+        <source>The star of the board “<ph id="0" equiv="board" disp="board.name"/>” could not be saved. Try again.</source>
+        <target>Der Stern des Boards „<ph id="0" equiv="board" disp="board.name"/>“ konnte nicht gespeichert werden. Versuche es erneut.</target>
+      </segment>
+    </unit>
+    <unit id="boards.card.unfavorite.aria">
+      <notes>
+        <note category="location">src/app/board-list/board-list.ts:407</note>
+      </notes>
+      <segment>
+        <source>Remove the board <ph id="0" equiv="board" disp="board.name"/> from the favorites</source>
+        <target>Das Board <ph id="0" equiv="board" disp="board.name"/> aus den Favoriten entfernen</target>
+      </segment>
+    </unit>
+    <unit id="boards.card.favorite.aria">
+      <notes>
+        <note category="location">src/app/board-list/board-list.ts:408</note>
+      </notes>
+      <segment>
+        <source>Add the board <ph id="0" equiv="board" disp="board.name"/> to the favorites</source>
+        <target>Das Board <ph id="0" equiv="board" disp="board.name"/> zu den Favoriten hinzufügen</target>
+      </segment>
+    </unit>
     <unit id="boards.error.nameRequired">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:348</note>
+        <note category="location">src/app/board-list/board-list.ts:484</note>
       </notes>
       <segment>
         <source>Give the board a name.</source>
@@ -596,7 +750,7 @@
     </unit>
     <unit id="boards.error.nameLength">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:353</note>
+        <note category="location">src/app/board-list/board-list.ts:489</note>
       </notes>
       <segment>
         <source>The name can have up to <ph id="0" equiv="max" disp="MAX_BOARD_NAME_LENGTH"/> characters.</source>
@@ -605,7 +759,7 @@
     </unit>
     <unit id="boards.error.created">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:372</note>
+        <note category="location">src/app/board-list/board-list.ts:508</note>
       </notes>
       <segment>
         <source>The board “<ph id="0" equiv="board" disp="board.name"/>” was created, but could not be put in the room “<ph id="1" equiv="room" disp="room.name"/>”.</source>
@@ -614,7 +768,7 @@
     </unit>
     <unit id="boards.error.createdFallback">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:376</note>
+        <note category="location">src/app/board-list/board-list.ts:512</note>
       </notes>
       <segment>
         <source>Move it from its card.</source>
@@ -623,7 +777,7 @@
     </unit>
     <unit id="boards.error.create">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:387</note>
+        <note category="location">src/app/board-list/board-list.ts:523</note>
       </notes>
       <segment>
         <source>The board could not be created. Try again.</source>
@@ -632,7 +786,7 @@
     </unit>
     <unit id="boards.error.duplicate">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:417</note>
+        <note category="location">src/app/board-list/board-list.ts:553</note>
       </notes>
       <segment>
         <source>The board “<ph id="0" equiv="board" disp="board.name"/>” could not be duplicated. Try again.</source>
@@ -641,7 +795,7 @@
     </unit>
     <unit id="boards.error.delete">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:449</note>
+        <note category="location">src/app/board-list/board-list.ts:585</note>
       </notes>
       <segment>
         <source>The board could not be deleted. Try again.</source>
@@ -650,7 +804,7 @@
     </unit>
     <unit id="boards.error.roomName">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:499</note>
+        <note category="location">src/app/board-list/board-list.ts:635</note>
       </notes>
       <segment>
         <source>A room needs a name.</source>
@@ -659,7 +813,7 @@
     </unit>
     <unit id="boards.error.rename">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:519</note>
+        <note category="location">src/app/board-list/board-list.ts:655</note>
       </notes>
       <segment>
         <source>The room could not be renamed.</source>
@@ -668,7 +822,7 @@
     </unit>
     <unit id="boards.error.roomDelete">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:560</note>
+        <note category="location">src/app/board-list/board-list.ts:696</note>
       </notes>
       <segment>
         <source>The room could not be deleted. Try again.</source>
@@ -677,7 +831,7 @@
     </unit>
     <unit id="boards.card.room.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:569</note>
+        <note category="location">src/app/board-list/board-list.ts:705</note>
       </notes>
       <segment>
         <source>In the room <ph id="0" equiv="room" disp="label"/></source>
@@ -686,7 +840,7 @@
     </unit>
     <unit id="boards.card.move.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:573</note>
+        <note category="location">src/app/board-list/board-list.ts:709</note>
       </notes>
       <segment>
         <source>Move the board <ph id="0" equiv="board" disp="board.name"/> to a room</source>
@@ -695,7 +849,7 @@
     </unit>
     <unit id="boards.card.duplicate.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:577</note>
+        <note category="location">src/app/board-list/board-list.ts:713</note>
       </notes>
       <segment>
         <source>Duplicate the board <ph id="0" equiv="board" disp="board.name"/></source>
@@ -704,7 +858,7 @@
     </unit>
     <unit id="boards.card.duplicating">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:582</note>
+        <note category="location">src/app/board-list/board-list.ts:718</note>
       </notes>
       <segment>
         <source>Duplicating…</source>
@@ -713,7 +867,7 @@
     </unit>
     <unit id="boards.card.duplicate.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:583</note>
+        <note category="location">src/app/board-list/board-list.ts:719</note>
       </notes>
       <segment>
         <source>Duplicate this board</source>
@@ -722,7 +876,7 @@
     </unit>
     <unit id="boards.card.delete.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:587</note>
+        <note category="location">src/app/board-list/board-list.ts:723</note>
       </notes>
       <segment>
         <source>Delete the board <ph id="0" equiv="board" disp="board.name"/></source>
@@ -731,7 +885,7 @@
     </unit>
     <unit id="boards.move.to">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:596</note>
+        <note category="location">src/app/board-list/board-list.ts:732</note>
       </notes>
       <segment>
         <source>Move to <ph id="0" equiv="room" disp="room.name"/></source>
@@ -740,7 +894,7 @@
     </unit>
     <unit id="boards.move.remove">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:599</note>
+        <note category="location">src/app/board-list/board-list.ts:735</note>
       </notes>
       <segment>
         <source>Remove from room</source>
@@ -749,7 +903,7 @@
     </unit>
     <unit id="boards.error.move">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:637</note>
+        <note category="location">src/app/board-list/board-list.ts:773</note>
       </notes>
       <segment>
         <source>The board “<ph id="0" equiv="board" disp="board.name"/>” could not be moved.</source>
@@ -758,7 +912,7 @@
     </unit>
     <unit id="boards.error.moveFallback">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:639</note>
+        <note category="location">src/app/board-list/board-list.ts:775</note>
       </notes>
       <segment>
         <source>Try again.</source>
@@ -767,7 +921,7 @@
     </unit>
     <unit id="boards.roomExport.board">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:698</note>
+        <note category="location">src/app/board-list/board-list.ts:834</note>
       </notes>
       <segment>
         <source>Board <ph id="0" equiv="index" disp="index"/> of <ph id="1" equiv="total" disp="total"/></source>
@@ -776,7 +930,7 @@
     </unit>
     <unit id="boards.roomExport.unreadable">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:699</note>
+        <note category="location">src/app/board-list/board-list.ts:835</note>
       </notes>
       <segment>
         <source>This board could not be loaded and is not in the PDF.</source>
@@ -785,7 +939,7 @@
     </unit>
     <unit id="boards.roomExport.empty">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:700</note>
+        <note category="location">src/app/board-list/board-list.ts:836</note>
       </notes>
       <segment>
         <source>This board is empty.</source>
@@ -812,7 +966,7 @@
     </unit>
     <unit id="boards.sidebar.rooms">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.html:32,34</note>
+        <note category="location">src/app/board-list/room-sidebar.html:43,45</note>
       </notes>
       <segment>
         <source>Rooms</source>
@@ -821,7 +975,7 @@
     </unit>
     <unit id="boards.sidebar.loading">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.html:35,38</note>
+        <note category="location">src/app/board-list/room-sidebar.html:46,49</note>
       </notes>
       <segment>
         <source>Loading rooms…</source>
@@ -830,7 +984,7 @@
     </unit>
     <unit id="boards.sidebar.loadError">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.html:40,42</note>
+        <note category="location">src/app/board-list/room-sidebar.html:51,53</note>
       </notes>
       <segment>
         <source>The rooms could not be loaded.</source>
@@ -839,7 +993,7 @@
     </unit>
     <unit id="boards.sidebar.empty">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.html:50,52</note>
+        <note category="location">src/app/board-list/room-sidebar.html:61,63</note>
       </notes>
       <segment>
         <source> No rooms yet. A room is a shared space for the boards of a team. </source>
@@ -848,8 +1002,8 @@
     </unit>
     <unit id="boards.sidebar.name">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.html:83,84</note>
-        <note category="location">src/app/board-list/room-sidebar.html:86,87</note>
+        <note category="location">src/app/board-list/room-sidebar.html:94,95</note>
+        <note category="location">src/app/board-list/room-sidebar.html:97,98</note>
       </notes>
       <segment>
         <source>Room name</source>
@@ -858,7 +1012,7 @@
     </unit>
     <unit id="boards.sidebar.add">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.html:122,126</note>
+        <note category="location">src/app/board-list/room-sidebar.html:133,137</note>
       </notes>
       <segment>
         <source> + New room </source>
@@ -867,7 +1021,7 @@
     </unit>
     <unit id="boards.sidebar.error.nameRequired">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.ts:91</note>
+        <note category="location">src/app/board-list/room-sidebar.ts:92</note>
       </notes>
       <segment>
         <source>Give the room a name.</source>
@@ -876,7 +1030,7 @@
     </unit>
     <unit id="boards.sidebar.error.nameLength">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.ts:96</note>
+        <note category="location">src/app/board-list/room-sidebar.ts:97</note>
       </notes>
       <segment>
         <source>The name can have up to <ph id="0" equiv="max" disp="MAX_ROOM_NAME_LENGTH"/> characters.</source>
@@ -885,7 +1039,7 @@
     </unit>
     <unit id="boards.sidebar.error.create">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.ts:112</note>
+        <note category="location">src/app/board-list/room-sidebar.ts:113</note>
       </notes>
       <segment>
         <source>The room could not be created. Try again.</source>
@@ -921,7 +1075,7 @@
     </unit>
     <unit id="board.import.confirmLabel">
       <notes>
-        <note category="location">src/app/board/board.html:47,48</note>
+        <note category="location">src/app/board/board.html:50,51</note>
       </notes>
       <segment>
         <source>Confirm import</source>
@@ -930,7 +1084,7 @@
     </unit>
     <unit id="board.import.confirmText">
       <notes>
-        <note category="location">src/app/board/board.html:51,53</note>
+        <note category="location">src/app/board/board.html:54,56</note>
       </notes>
       <segment>
         <source>Replace everything on this board with “<ph id="0" equiv="INTERPOLATION" disp="{{ file.name }}"/>”?</source>
@@ -939,7 +1093,7 @@
     </unit>
     <unit id="board.import.replace">
       <notes>
-        <note category="location">src/app/board/board.html:59,61</note>
+        <note category="location">src/app/board/board.html:62,64</note>
       </notes>
       <segment>
         <source> Replace </source>
@@ -948,7 +1102,7 @@
     </unit>
     <unit id="board.import.cancel">
       <notes>
-        <note category="location">src/app/board/board.html:67,69</note>
+        <note category="location">src/app/board/board.html:70,72</note>
       </notes>
       <segment>
         <source> Cancel </source>
@@ -957,7 +1111,7 @@
     </unit>
     <unit id="board.template.formLabel">
       <notes>
-        <note category="location">src/app/board/board.html:73,74</note>
+        <note category="location">src/app/board/board.html:76,77</note>
       </notes>
       <segment>
         <source>Save as template</source>
@@ -966,7 +1120,7 @@
     </unit>
     <unit id="board.template.fromSelection">
       <notes>
-        <note category="location">src/app/board/board.html:79,81</note>
+        <note category="location">src/app/board/board.html:82,84</note>
       </notes>
       <segment>
         <source>Template from the selection</source>
@@ -975,7 +1129,7 @@
     </unit>
     <unit id="board.template.fromBoard">
       <notes>
-        <note category="location">src/app/board/board.html:81,84</note>
+        <note category="location">src/app/board/board.html:84,87</note>
       </notes>
       <segment>
         <source>Template from the board</source>
@@ -984,7 +1138,7 @@
     </unit>
     <unit id="board.template.nameLabel">
       <notes>
-        <note category="location">src/app/board/board.html:90,91</note>
+        <note category="location">src/app/board/board.html:93,94</note>
       </notes>
       <segment>
         <source>Template name</source>
@@ -993,7 +1147,7 @@
     </unit>
     <unit id="board.template.descriptionLabel">
       <notes>
-        <note category="location">src/app/board/board.html:105,106</note>
+        <note category="location">src/app/board/board.html:108,109</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -1002,7 +1156,7 @@
     </unit>
     <unit id="board.template.descriptionPlaceholder">
       <notes>
-        <note category="location">src/app/board/board.html:107,108</note>
+        <note category="location">src/app/board/board.html:110,111</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -1011,7 +1165,7 @@
     </unit>
     <unit id="board.template.saving">
       <notes>
-        <note category="location">src/app/board/board.html:120,122</note>
+        <note category="location">src/app/board/board.html:123,125</note>
       </notes>
       <segment>
         <source>Saving…</source>
@@ -1020,7 +1174,7 @@
     </unit>
     <unit id="board.template.save">
       <notes>
-        <note category="location">src/app/board/board.html:122,124</note>
+        <note category="location">src/app/board/board.html:125,127</note>
       </notes>
       <segment>
         <source>Save</source>
@@ -1029,7 +1183,7 @@
     </unit>
     <unit id="board.template.cancel">
       <notes>
-        <note category="location">src/app/board/board.html:131,133</note>
+        <note category="location">src/app/board/board.html:134,136</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -1038,7 +1192,7 @@
     </unit>
     <unit id="board.notice.dismiss">
       <notes>
-        <note category="location">src/app/board/board.html:143,146</note>
+        <note category="location">src/app/board/board.html:146,149</note>
       </notes>
       <segment>
         <source> Dismiss </source>
@@ -1047,7 +1201,7 @@
     </unit>
     <unit id="board.canvas.label">
       <notes>
-        <note category="location">src/app/board/board.html:152,153</note>
+        <note category="location">src/app/board/board.html:155,156</note>
       </notes>
       <segment>
         <source>Board canvas</source>
@@ -1056,16 +1210,25 @@
     </unit>
     <unit id="board.error.canvasNotReady">
       <notes>
-        <note category="location">src/app/board/board.ts:51</note>
+        <note category="location">src/app/board/board.ts:53</note>
       </notes>
       <segment>
         <source>The canvas is not ready yet.</source>
         <target>Die Zeichenfläche ist noch nicht bereit.</target>
       </segment>
     </unit>
+    <unit id="board.error.favoriteFailed">
+      <notes>
+        <note category="location">src/app/board/board.ts:152</note>
+      </notes>
+      <segment>
+        <source>The star could not be saved.</source>
+        <target>Der Stern konnte nicht gespeichert werden.</target>
+      </segment>
+    </unit>
     <unit id="board.pageTitle.notFound">
       <notes>
-        <note category="location">src/app/board/board.ts:218</note>
+        <note category="location">src/app/board/board.ts:255</note>
       </notes>
       <segment>
         <source>Board not found · Elysion</source>
@@ -1074,7 +1237,7 @@
     </unit>
     <unit id="board.pageTitle.named">
       <notes>
-        <note category="location">src/app/board/board.ts:220</note>
+        <note category="location">src/app/board/board.ts:257</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> · Elysion</source>
@@ -1083,7 +1246,7 @@
     </unit>
     <unit id="board.error.templateNotApplied">
       <notes>
-        <note category="location">src/app/board/board.ts:251</note>
+        <note category="location">src/app/board/board.ts:288</note>
       </notes>
       <segment>
         <source>The template could not be applied. The board is blank.</source>
@@ -1092,7 +1255,7 @@
     </unit>
     <unit id="board.error.renameFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:264</note>
+        <note category="location">src/app/board/board.ts:301</note>
       </notes>
       <segment>
         <source>The board could not be renamed.</source>
@@ -1101,7 +1264,7 @@
     </unit>
     <unit id="board.error.accessLost">
       <notes>
-        <note category="location">src/app/board/board.ts:281</note>
+        <note category="location">src/app/board/board.ts:318</note>
       </notes>
       <segment>
         <source>You no longer have access to this board.</source>
@@ -1110,7 +1273,7 @@
     </unit>
     <unit id="board.error.timerFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:350</note>
+        <note category="location">src/app/board/board.ts:431</note>
       </notes>
       <segment>
         <source>The timer could not be changed.</source>
@@ -1119,8 +1282,8 @@
     </unit>
     <unit id="board.error.nothingSelected">
       <notes>
-        <note category="location">src/app/board/board.ts:383</note>
-        <note category="location">src/app/board/board.ts:530</note>
+        <note category="location">src/app/board/board.ts:464</note>
+        <note category="location">src/app/board/board.ts:611</note>
       </notes>
       <segment>
         <source>Nothing is selected.</source>
@@ -1129,7 +1292,7 @@
     </unit>
     <unit id="board.error.exportEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:384</note>
+        <note category="location">src/app/board/board.ts:465</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to export.</source>
@@ -1138,7 +1301,7 @@
     </unit>
     <unit id="board.error.exportFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:394</note>
+        <note category="location">src/app/board/board.ts:475</note>
       </notes>
       <segment>
         <source>The export failed.</source>
@@ -1147,8 +1310,8 @@
     </unit>
     <unit id="board.error.importFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:425</note>
-        <note category="location">src/app/board/board.ts:453</note>
+        <note category="location">src/app/board/board.ts:506</note>
+        <note category="location">src/app/board/board.ts:534</note>
       </notes>
       <segment>
         <source>The import failed.</source>
@@ -1157,7 +1320,7 @@
     </unit>
     <unit id="board.notice.imported.one">
       <notes>
-        <note category="location">src/app/board/board.ts:446</note>
+        <note category="location">src/app/board/board.ts:527</note>
       </notes>
       <segment>
         <source>Imported 1 element from <ph id="0" equiv="file" disp="file.name"/>.</source>
@@ -1166,7 +1329,7 @@
     </unit>
     <unit id="board.notice.imported.many">
       <notes>
-        <note category="location">src/app/board/board.ts:447</note>
+        <note category="location">src/app/board/board.ts:528</note>
       </notes>
       <segment>
         <source>Imported <ph id="0" equiv="count" disp="count"/> elements from <ph id="1" equiv="file" disp="file.name"/>.</source>
@@ -1175,7 +1338,7 @@
     </unit>
     <unit id="board.error.templateAddFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:473</note>
+        <note category="location">src/app/board/board.ts:554</note>
       </notes>
       <segment>
         <source>The template could not be added.</source>
@@ -1184,7 +1347,7 @@
     </unit>
     <unit id="board.template.defaultSelectionName">
       <notes>
-        <note category="location">src/app/board/board.ts:484</note>
+        <note category="location">src/app/board/board.ts:565</note>
       </notes>
       <segment>
         <source>Selection</source>
@@ -1193,7 +1356,7 @@
     </unit>
     <unit id="board.template.defaultBoardName">
       <notes>
-        <note category="location">src/app/board/board.ts:485</note>
+        <note category="location">src/app/board/board.ts:566</note>
       </notes>
       <segment>
         <source>Board</source>
@@ -1202,7 +1365,7 @@
     </unit>
     <unit id="board.template.nameRequired">
       <notes>
-        <note category="location">src/app/board/board.ts:514</note>
+        <note category="location">src/app/board/board.ts:595</note>
       </notes>
       <segment>
         <source>Give the template a name.</source>
@@ -1211,7 +1374,7 @@
     </unit>
     <unit id="board.error.templateEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:531</note>
+        <note category="location">src/app/board/board.ts:612</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to save as a template.</source>
@@ -1220,7 +1383,7 @@
     </unit>
     <unit id="board.notice.templateSaved">
       <notes>
-        <note category="location">src/app/board/board.ts:542</note>
+        <note category="location">src/app/board/board.ts:623</note>
       </notes>
       <segment>
         <source>Saved the template “<ph id="0" equiv="name" disp="name"/>”.</source>
@@ -1229,7 +1392,7 @@
     </unit>
     <unit id="board.error.templateSaveFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:553</note>
+        <note category="location">src/app/board/board.ts:634</note>
       </notes>
       <segment>
         <source>The template could not be saved.</source>
@@ -2102,9 +2265,18 @@
         <target>Boardname</target>
       </segment>
     </unit>
+    <unit id="topbar.favorite">
+      <notes>
+        <note category="location">src/app/topbar/top-bar.html:57,58</note>
+      </notes>
+      <segment>
+        <source>Favorite</source>
+        <target>Favorit</target>
+      </segment>
+    </unit>
     <unit id="topbar.import-title">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:73,74</note>
+        <note category="location">src/app/topbar/top-bar.html:89,90</note>
       </notes>
       <segment>
         <source>Import an .excalidraw file or a PDF into this board</source>
@@ -2113,7 +2285,7 @@
     </unit>
     <unit id="topbar.import">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:80,82</note>
+        <note category="location">src/app/topbar/top-bar.html:96,98</note>
       </notes>
       <segment>
         <source>Import</source>
@@ -2122,7 +2294,7 @@
     </unit>
     <unit id="topbar.share-title">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:120,121</note>
+        <note category="location">src/app/topbar/top-bar.html:136,137</note>
       </notes>
       <segment>
         <source>Share this board</source>
@@ -2131,7 +2303,7 @@
     </unit>
     <unit id="topbar.share">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:129,131</note>
+        <note category="location">src/app/topbar/top-bar.html:145,147</note>
       </notes>
       <segment>
         <source>Share</source>
@@ -2140,7 +2312,7 @@
     </unit>
     <unit id="topbar.library-title">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:148,149</note>
+        <note category="location">src/app/topbar/top-bar.html:164,165</note>
       </notes>
       <segment>
         <source>Show or hide the shape library</source>
@@ -2149,7 +2321,7 @@
     </unit>
     <unit id="topbar.library">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:157,159</note>
+        <note category="location">src/app/topbar/top-bar.html:173,175</note>
       </notes>
       <segment>
         <source>Library</source>
@@ -2158,7 +2330,7 @@
     </unit>
     <unit id="topbar.theme.light">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:174,176</note>
+        <note category="location">src/app/topbar/top-bar.html:190,192</note>
       </notes>
       <segment>
         <source>Light</source>
@@ -2167,7 +2339,7 @@
     </unit>
     <unit id="topbar.theme.dark">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:179,182</note>
+        <note category="location">src/app/topbar/top-bar.html:195,198</note>
       </notes>
       <segment>
         <source>Dark</source>
@@ -2201,9 +2373,27 @@
         <target>Offline</target>
       </segment>
     </unit>
+    <unit id="topbar.favorite-on">
+      <notes>
+        <note category="location">src/app/topbar/top-bar.ts:104</note>
+      </notes>
+      <segment>
+        <source>Add to favorites</source>
+        <target>Zu den Favoriten hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="topbar.favorite-off">
+      <notes>
+        <note category="location">src/app/topbar/top-bar.ts:105</note>
+      </notes>
+      <segment>
+        <source>Remove from favorites</source>
+        <target>Aus den Favoriten entfernen</target>
+      </segment>
+    </unit>
     <unit id="topbar.rename.blank">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:152</note>
+        <note category="location">src/app/topbar/top-bar.ts:158</note>
       </notes>
       <segment>
         <source>A board needs a name.</source>
@@ -2212,7 +2402,7 @@
     </unit>
     <unit id="topbar.presence.one">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:179</note>
+        <note category="location">src/app/topbar/top-bar.ts:185</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="names[0]"/> is on this board</source>
@@ -2221,7 +2411,7 @@
     </unit>
     <unit id="topbar.presence.many">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:180</note>
+        <note category="location">src/app/topbar/top-bar.ts:186</note>
       </notes>
       <segment>
         <source>On this board: <ph id="0" equiv="names" disp="names.join(&apos;, &apos;)"/></source>
@@ -2230,7 +2420,7 @@
     </unit>
     <unit id="topbar.rename-aria">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:196</note>
+        <note category="location">src/app/topbar/top-bar.ts:202</note>
       </notes>
       <segment>
         <source>Rename the board <ph id="0" equiv="title" disp="this.title()"/></source>
@@ -2239,7 +2429,7 @@
     </unit>
     <unit id="topbar.theme.to-light">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:201</note>
+        <note category="location">src/app/topbar/top-bar.ts:207</note>
       </notes>
       <segment>
         <source>Switch to the light theme</source>
@@ -2248,7 +2438,7 @@
     </unit>
     <unit id="topbar.theme.to-dark">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:202</note>
+        <note category="location">src/app/topbar/top-bar.ts:208</note>
       </notes>
       <segment>
         <source>Switch to the dark theme</source>

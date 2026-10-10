@@ -48,6 +48,22 @@
       {{ title() }}
     }
   </h1>
+  @if (canFavorite()) {
+    <button
+      type="button"
+      class="menu-button favorite-button"
+      [class.on]="favorite()"
+      [attr.aria-pressed]="favorite()"
+      aria-label="Favorite"
+      i18n-aria-label="@@topbar.favorite"
+      [title]="favorite() ? favoriteOffTitle : favoriteOnTitle"
+      (click)="favoriteToggle.emit()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" />
+      </svg>
+    </button>
+  }
   @if (nameError(); as message) {
     <span id="title-error" class="title-error" role="alert">{{ message }}</span>
   }
