@@ -9,14 +9,15 @@ import {
 } from './board-io';
 import type { CanvasMenuItem } from './CanvasMenu';
 import {
+  DEFAULT_GRID,
   GRID_SIZES,
-  readGridSettings,
-  readStickyColor,
-  writeGridSettings,
-  writeStickyColor,
+  observeGrid,
+  readGrid,
+  writeGrid,
   type GridSettings,
   type GridSize,
-} from './canvas-settings';
+} from './board-settings';
+import { forgetLegacyGridSettings, readStickyColor, writeStickyColor } from './canvas-settings';
 import { ConnectionPoints } from './ConnectionPoints';
 import { VoteBadges } from './facilitation/VoteBadges';
 import { commitConnector } from './connector-commit';
@@ -277,14 +278,16 @@ export function CanvasApp({
   const [zoomPercent, setZoomPercent] = useState(100);
   // Exactly two connectable elements are selected: the Connect button is shown, and C connects them.
   const [canConnect, setCanConnect] = useState(false);
-  // The grid, kept per browser: `show` draws the dots in the background (grid-dots.ts), `snap` is Excalidraw's grid mode.
-  const [grid, setGrid] = useState<GridSettings>(readGridSettings);
+  // The grid is a setting of the board (board-settings.ts, #754): everybody sees the same one. `show` draws the dots in the
+  // background (grid-dots.ts), `snap` is Excalidraw's grid mode. The defaults hold until the document has synced.
+  const [grid, setGrid] = useState<GridSettings>(DEFAULT_GRID);
   // The color of the next sticky note: the one used last, kept per browser (yellow at first).
   const [stickyColor, setStickyColor] = useState<StickyColor>(readStickyColor);
   const stickyColorRef = useRef(stickyColor);
   stickyColorRef.current = stickyColor;
   const gridRef = useRef(grid);
   gridRef.current = grid;
+  const changeGridRef = useRef<(change: Partial<GridSettings>) => void>(() => undefined);
   const selectionOrder = useRef<SelectionOrder>(NO_SELECTION);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -299,6 +302,9 @@ export function CanvasApp({
   useEffect(() => {
     const doc = new Y.Doc();
     docRef.current = doc;
+    forgetLegacyGridSettings(); // what a browser kept of the grid before it was the board's
+    setGrid(readGrid(doc));
+    const stopGrid = observeGrid(doc, setGrid);
     const timerSync = observeTimer(doc, (state) => timerCallback.current?.(state));
     timerSyncRef.current = timerSync;
     // A person is told apart by the host's user id, else by the tab's own id (so votes are per tab then).
@@ -356,6 +362,7 @@ export function CanvasApp({
     allVotedRef.current = allVotedWatch;
 
     return () => {
+      stopGrid();
       timerSync.destroy();
       timerSyncRef.current = null;
       votingSync.destroy();
@@ -539,7 +546,24 @@ export function CanvasApp({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  useEffect(() => writeGridSettings(grid), [grid]);
+  // The dots and Excalidraw's grid size follow the setting, whoever changed it.
+  useEffect(() => {
+    const api = apiRef.current;
+    if (!api) return;
+    api.updateScene({
+      appState: { gridSize: grid.size },
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+    const state = api.getAppState();
+    if (rootRef.current) {
+      applyGridDots(rootRef.current, {
+        zoom: state.zoom.value,
+        scrollX: state.scrollX,
+        scrollY: state.scrollY,
+        size: grid.size,
+      });
+    }
+  }, [grid.size]);
   // Excalidraw's own shortcut for its grid (Ctrl+') toggles the dots here: its line grid is switched off in the build
   // (vite-plugin-excalidraw-no-grid.ts) and its grid mode means snapping. Caught before Excalidraw sees it.
   useEffect(() => {
@@ -551,29 +575,20 @@ export function CanvasApp({
       if (target !== document.body && !rootRef.current?.contains(target)) return;
       event.preventDefault();
       event.stopPropagation();
-      setGrid((current) => ({ ...current, show: !current.show }));
+      changeGridRef.current({ show: !gridRef.current.show });
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, []);
 
-  const setGridShown = (show: boolean) => setGrid((current) => ({ ...current, show }));
-  const setGridSize = (size: GridSize) => {
-    apiRef.current?.updateScene({
-      appState: { gridSize: size },
-      captureUpdate: CaptureUpdateAction.NEVER,
-    });
-    setGrid((current) => ({ ...current, size }));
-    const state = apiRef.current?.getAppState();
-    if (state && rootRef.current) {
-      applyGridDots(rootRef.current, {
-        zoom: state.zoom.value,
-        scrollX: state.scrollX,
-        scrollY: state.scrollY,
-        size,
-      });
-    }
+  /** A change of the grid goes into the document (editors only); every client, this one too, takes it from there. */
+  const changeGrid = (change: Partial<GridSettings>) => {
+    const doc = docRef.current;
+    if (doc && !readOnlyRef.current) writeGrid(doc, change);
   };
+  changeGridRef.current = changeGrid;
+  const setGridShown = (show: boolean) => changeGrid({ show });
+  const setGridSize = (size: GridSize) => changeGrid({ size });
 
   /** Presses a key on the canvas, for what Excalidraw offers only as a shortcut (undo, the help dialog). */
   const pressKey = (init: KeyboardEventInit) => {
@@ -603,25 +618,25 @@ export function CanvasApp({
       id: 'grid-show',
       label: 'Show grid',
       checked: grid.show,
+      disabled: readOnly,
       onSelect: () => setGridShown(!grid.show),
     },
-    ...(readOnly
-      ? []
-      : [
-          {
-            type: 'check' as const,
-            id: 'grid-snap',
-            label: 'Snap to grid',
-            checked: grid.snap,
-            onSelect: () => setGrid((current) => ({ ...current, snap: !current.snap })),
-          },
-        ]),
-    { type: 'heading', label: 'Grid size' },
+    {
+      type: 'check',
+      id: 'grid-snap',
+      label: 'Snap to grid',
+      checked: grid.snap,
+      disabled: readOnly,
+      onSelect: () => changeGrid({ snap: !grid.snap }),
+    },
+    // The grid belongs to the board: a viewer sees it and does not change it.
+    { type: 'heading', label: readOnly ? 'Grid size (set by the editors)' : 'Grid size' },
     ...GRID_SIZES.map((size) => ({
       type: 'radio' as const,
       id: `grid-size-${size}`,
       label: `${size} px`,
       checked: grid.size === size,
+      disabled: readOnly,
       keepOpen: true,
       onSelect: () => setGridSize(size),
     })),
@@ -695,6 +710,13 @@ export function CanvasApp({
         }}
         excalidrawAPI={(api) => {
           apiRef.current = api;
+          // The size the document gave before the canvas was there (the initial state has the default one).
+          if (gridRef.current.size !== DEFAULT_GRID.size) {
+            api.updateScene({
+              appState: { gridSize: gridRef.current.size },
+              captureUpdate: CaptureUpdateAction.NEVER,
+            });
+          }
           bindingRef.current?.attach(api);
           presenceRef.current?.refresh(); // the collaborators that were there before the canvas was
           controlsCallback.current?.({

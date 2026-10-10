@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  DEFAULT_GRID,
-  GRID_KEYS,
-  readGridSettings,
-  readStickyColor,
-  writeGridSettings,
-  writeStickyColor,
-} from './canvas-settings';
+import { forgetLegacyGridSettings, readStickyColor, writeStickyColor } from './canvas-settings';
 import { DEFAULT_STICKY_COLOR, STICKY_COLORS } from './sticky-note';
 
 /** A minimal in-memory `Storage`. */
@@ -25,37 +18,24 @@ const throwing = {
   setItem: () => {
     throw new Error('blocked');
   },
+  removeItem: () => {
+    throw new Error('blocked');
+  },
 } as unknown as Storage;
 
-describe('grid settings', () => {
-  it('start as: grid hidden, not snapping, 20 px', () => {
-    expect(DEFAULT_GRID).toEqual({ show: false, snap: false, size: 20 });
-    expect(readGridSettings(memory())).toEqual(DEFAULT_GRID);
+describe('the grid of a browser before #754', () => {
+  it('is forgotten', () => {
+    const removed: string[] = [];
+    const store = { removeItem: (key: string) => removed.push(key) } as unknown as Storage;
+
+    forgetLegacyGridSettings(store);
+
+    expect(removed).toEqual(['elysion.grid.show', 'elysion.grid.snap', 'elysion.grid.size']);
   });
 
-  it('are stored and read back', () => {
-    const store = memory();
-
-    writeGridSettings({ show: true, snap: true, size: 40 }, store);
-
-    expect(readGridSettings(store)).toEqual({ show: true, snap: true, size: 40 });
-  });
-
-  it('fall back to 20 px for a size that is not offered, and to false for anything but "true"', () => {
-    const store = memory({
-      [GRID_KEYS.size]: '33',
-      [GRID_KEYS.show]: 'yes',
-      [GRID_KEYS.snap]: '1',
-    });
-
-    expect(readGridSettings(store)).toEqual(DEFAULT_GRID);
-  });
-
-  it('use the defaults without storage, and survive a storage that throws', () => {
-    expect(readGridSettings(null)).toEqual(DEFAULT_GRID);
-    expect(readGridSettings(throwing)).toEqual(DEFAULT_GRID);
-    expect(() => writeGridSettings({ show: true, snap: false, size: 10 }, throwing)).not.toThrow();
-    expect(() => writeGridSettings({ show: true, snap: false, size: 10 }, null)).not.toThrow();
+  it('is left alone without storage and with a storage that throws', () => {
+    expect(() => forgetLegacyGridSettings(null)).not.toThrow();
+    expect(() => forgetLegacyGridSettings(throwing)).not.toThrow();
   });
 });
 
