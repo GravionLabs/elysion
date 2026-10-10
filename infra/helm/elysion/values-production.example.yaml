@@ -1,0 +1,54 @@
+# An example of what differs in a real cluster (docs/self-hosting.md, "Kubernetes"): `helm install elysion infra/helm/elysion -f
+# values-production.example.yaml -f my-values.yaml`. Every host is a placeholder (`*.example`); replace them. Nothing secret
+# belongs here: the Secret is created by you (README.md) before the first install, because the migration job needs it.
+images:
+  frontend:
+    { repository: ghcr.io/gravionlabs/elysion-frontend, tag: latest, pullPolicy: IfNotPresent }
+  bff: { repository: ghcr.io/gravionlabs/elysion-bff, tag: latest, pullPolicy: IfNotPresent }
+  realtime:
+    { repository: ghcr.io/gravionlabs/elysion-realtime, tag: latest, pullPolicy: IfNotPresent }
+  businessBackend:
+    {
+      repository: ghcr.io/gravionlabs/elysion-business-backend,
+      tag: latest,
+      pullPolicy: IfNotPresent,
+    }
+
+replicas:
+  frontend: 2
+  bff: 2
+  realtime: 2 # the autoscaler below owns this number once it is on
+  businessBackend: 2
+
+oidc:
+  issuerUrl: https://id.example/realms/elysion
+
+objectStore:
+  endpoint: https://s3.example
+  bucket: elysion-files
+
+# One job migrates before an install or upgrade; the replicas do not race each other at start.
+migrateJob:
+  enabled: true
+
+autoscaling:
+  realtime:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    cpuTarget: 70
+    # connectionsTarget: 400 # with the Prometheus adapter serving elysion_realtime_websocket_connections
+
+networkPolicy:
+  enabled: true
+  traefikNamespace: traefik
+  monitoringNamespace: monitoring
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+    labels: { release: kube-prometheus-stack }
+
+edge:
+  host: elysion.example
+  tlsSecretName: elysion-tls

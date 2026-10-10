@@ -2,7 +2,8 @@
 # One backup run: pg_dump of the databases (custom format, compressed) and a copy of the object store's bucket, into
 # BACKUP_PATH/<UTC timestamp>/, then the runs older than BACKUP_KEEP_DAYS are removed. The last line says how it went:
 #   backup ok <directory> <bytes>      or      backup FAILED: <why>
-# `<BACKUP_PATH>/last-success` holds the epoch seconds of the last good run, for a check that does not read logs.
+# `<BACKUP_PATH>/last-success` holds the epoch seconds of the last good run, for a check that does not read logs, and
+# `<BACKUP_PATH>/backup.prom` the same as Prometheus metrics for a textfile collector (infra/observability, alert BackupTooOld).
 # Needs PGHOST, PGUSER and PGPASSWORD (the libpq variables); S3_* for the files unless BACKUP_FILES=false.
 set -euo pipefail
 
@@ -37,11 +38,22 @@ fi
 
 # What the restore reads first: the directory of the newest good run.
 ln -sfn "$stamp" "$BACKUP_PATH/latest"
-date -u +%s > "$BACKUP_PATH/last-success"
+bytes="$(du -sb "$target" | cut -f1)"
+now="$(date -u +%s)"
+echo "$now" > "$BACKUP_PATH/last-success"
+# Written aside and moved in place: a collector never reads half a file.
+cat > "$BACKUP_PATH/.backup.prom.tmp" <<PROM
+# HELP elysion_backup_last_success_timestamp_seconds When the last good backup finished (Unix time).
+# TYPE elysion_backup_last_success_timestamp_seconds gauge
+elysion_backup_last_success_timestamp_seconds $now
+# HELP elysion_backup_last_size_bytes Size of the last good backup.
+# TYPE elysion_backup_last_size_bytes gauge
+elysion_backup_last_size_bytes $bytes
+PROM
+mv "$BACKUP_PATH/.backup.prom.tmp" "$BACKUP_PATH/backup.prom"
 
 # A run is removed when it is older than the retention; the one just made never is.
 find "$BACKUP_PATH" -mindepth 1 -maxdepth 1 -type d -mtime "+$BACKUP_KEEP_DAYS" ! -name "$stamp" -exec rm -rf {} +
 
-bytes="$(du -sb "$target" | cut -f1)"
 trap - ERR
 echo "backup ok $target $bytes"

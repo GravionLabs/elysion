@@ -6,4 +6,4 @@
 -}}
 {{- if .Values.oidc.jwksUri }}{{ $env = append $env (dict "name" "OIDC_JWKS_URI" "value" .Values.oidc.jwksUri) }}{{ end }}
 {{- $env = append $env (include "elysion.secretEnv" (dict "root" . "name" "WS_TOKEN_SECRET") | fromYaml) -}}
-{{ include "elysion.component" (dict "root" . "name" "bff" "image" "bff" "port" 3000 "probe" "/health" "env" $env) }}
+{{ include "elysion.component" (dict "root" . "name" "bff" "image" "bff" "port" 3000 "probe" "/health" "env" $env "runAsUser" 1000 "startupSeconds" 30) }}

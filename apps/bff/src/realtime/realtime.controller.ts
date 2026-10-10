@@ -12,6 +12,7 @@ import type { BoardRole, WsTokenResponse } from '@elysion/shared-types';
 import { AccessToken } from '../auth/access-token.decorator.js';
 import type { AuthenticatedRequest } from '../auth/auth.types.js';
 import { BusinessBackendClient } from '../boards/business-backend.client.js';
+import { MetricsService } from '../metrics/metrics.service.js';
 import { WsTokenService } from './ws-token.service.js';
 
 const BOARD_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -22,6 +23,7 @@ export class RealtimeController {
   constructor(
     private readonly backend: BusinessBackendClient,
     private readonly tokens: WsTokenService,
+    private readonly metrics: MetricsService,
   ) {}
 
   /**
@@ -41,10 +43,12 @@ export class RealtimeController {
       throw new BadRequestException('A token needs a boardId.');
     }
     // Only stored boards (UUIDs) have members; any other id has no role for anybody, so ask nobody.
-    const role: BoardRole | null = BOARD_ID.test(boardId)
+    const stored = BOARD_ID.test(boardId);
+    const role: BoardRole | null = stored
       ? await this.backend.getMyRole(accessToken, boardId)
       : null;
     if (role === null) {
+      this.metrics.realtimeTokenRefused(stored ? 'no_role' : 'not_uuid');
       throw new ForbiddenException('You may not open this board.');
     }
     return this.tokens.issue({ sub: request.auth.claims.sub, boardId, role });

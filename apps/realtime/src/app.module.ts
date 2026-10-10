@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { LoggingModule } from './logging/logging.module.js';
 import { MetricsController } from './metrics/metrics.controller.js';
 import { MetricsService } from './metrics/metrics.service.js';
+import { SaveMetrics } from './metrics/save-metrics.js';
 import { DocumentRelay } from './document/document-relay.js';
 import { PersistenceModule } from './persistence/persistence.module.js';
 import { PresenceRelay } from './presence/presence-relay.js';
@@ -23,6 +24,7 @@ import {
   providers: [
     AppService,
     MetricsService,
+    SaveMetrics,
     YjsGateway,
     YjsRoomRegistry,
     PresenceRelay,

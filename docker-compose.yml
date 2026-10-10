@@ -111,9 +111,12 @@ services:
     command:
       - sh
       - -c
+      # Retried: Docker's DNS can answer "Try again" for `postgres` in the first seconds of a start (it failed a stack start once).
       - >-
-        psql -h postgres -U elysion -d elysion -tAc "SELECT 1 FROM pg_database WHERE datname = 'keycloak'" | grep -q 1
-        || psql -h postgres -U elysion -d elysion -c "CREATE DATABASE keycloak"
+        for i in 1 2 3 4 5 6 7 8 9 10; do
+        { psql -h postgres -U elysion -d elysion -tAc "SELECT 1 FROM pg_database WHERE datname = 'keycloak'" | grep -q 1
+        || psql -h postgres -U elysion -d elysion -c "CREATE DATABASE keycloak"; } && exit 0;
+        sleep 2; done; exit 1
     depends_on:
       postgres:
         condition: service_healthy
@@ -279,7 +282,7 @@ services:
       - 'traefik.enable=true'
       - 'traefik.http.routers.frontend.rule=PathPrefix(`/`)'
       - 'traefik.http.routers.frontend.priority=1' # every more specific route wins
-      - 'traefik.http.services.frontend.loadbalancer.server.port=80'
+      - 'traefik.http.services.frontend.loadbalancer.server.port=8080'
     networks:
       - elysion
 

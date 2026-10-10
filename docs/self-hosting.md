@@ -63,7 +63,7 @@ The demo is wired to `localhost` and uses development values. Before it faces an
 
 The Helm chart ([ADR 0018](adr/0018-kubernetes-packaging.md), `infra/helm/elysion`) is the way to run it on Kubernetes; its default image
 names are still the local ones (`elysion/frontend`, ...), so set `images.<service>.repository` and `tag` to the GHCR images above. It has
-been run on a local kind cluster only.
+been run on a local kind cluster only. For a real cluster the chart has non-root, read-only pods, a start-up probe, a migration job, disruption budgets, an autoscaler for the realtime service and network policies; [`values-production.example.yaml`](../infra/helm/elysion/values-production.example.yaml) turns them on, and the chart's [README](../infra/helm/elysion/README.md) explains each.
 
 ## Back up and restore
 
@@ -93,6 +93,11 @@ Two things the service does not do: **the backup sits on the same host** unless 
 disk of the database it protects is not a backup), and the **development credentials** of the stack are the ones it uses. In Kubernetes the chart does not run
 Postgres or the object store, so their backup is theirs; [the chart's example](../infra/helm/examples/backup-cronjob.yaml) is a CronJob with the same
 script for the databases.
+
+## Watch it
+
+Prometheus, Alertmanager and Grafana are an overlay of the compose file (`docker-compose.observability.yml`), with alert rules for a service that is down, 5xx errors, slow
+requests, saves that fail, a backup that is too old and more; [Operations](operations.md) starts it, explains each alert and says what to do.
 
 ## Known limits of this pre-release
 

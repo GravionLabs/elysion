@@ -1,5 +1,5 @@
 {{- $env := list
-  (dict "name" "Database__MigrateOnStartup" "value" (.Values.migrateOnStartup | toString))
+  (dict "name" "Database__MigrateOnStartup" "value" (and .Values.migrateOnStartup (not .Values.migrateJob.enabled) | toString))
   (dict "name" "OIDC_ISSUER_URL" "value" (required "oidc.issuerUrl is required" .Values.oidc.issuerUrl))
   (dict "name" "OIDC_AUDIENCE" "value" .Values.oidc.audience)
   (include "elysion.secretEnv" (dict "root" . "name" "ConnectionStrings__Elysion" "key" "POSTGRES_CONNECTION_STRING") | fromYaml)
@@ -12,4 +12,4 @@
   (include "elysion.secretEnv" (dict "root" . "name" "S3_SECRET_KEY") | fromYaml)
 -}}
 {{- if .Values.oidc.jwksUri }}{{ $env = append $env (dict "name" "OIDC_JWKS_URI" "value" .Values.oidc.jwksUri) }}{{ end }}
-{{ include "elysion.component" (dict "root" . "name" "business-backend" "image" "businessBackend" "port" 8080 "probe" "/health" "env" $env) }}
+{{ include "elysion.component" (dict "root" . "name" "business-backend" "image" "businessBackend" "port" 8080 "probe" "/health" "env" $env "runAsUser" 1654 "startupSeconds" 180) }}

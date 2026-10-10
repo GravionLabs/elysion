@@ -64,4 +64,18 @@ describe('Metrics (e2e)', () => {
       expect(gauge(await scrape(), 'elysion_realtime_websocket_connections')).toBe(0),
     );
   });
+
+  it('counts a saved document and observes its size', async () => {
+    const a = new SyncClient(boardUrl(url, 'board-a'));
+    await a.waitForOpen();
+    a.doc.getMap('elements').set('rect-1', { type: 'rectangle', x: 1, y: 2 });
+
+    await eventually(async () => {
+      const text = await scrape(); // saved a debounce after the change
+      expect(gauge(text, 'elysion_realtime_document_saves_total')).toBe(1);
+      expect(gauge(text, 'elysion_realtime_document_size_bytes_count')).toBe(1);
+    });
+    a.close();
+    expect(gauge(await scrape(), 'elysion_realtime_document_save_failures_total')).toBe(0);
+  });
 });

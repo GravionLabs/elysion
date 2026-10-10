@@ -61,6 +61,17 @@ describe('POST /api/realtime/token (e2e, against a fake business backend)', () =
     expect(upstream.requests).toBe(1); // the backend was asked
   });
 
+  it('counts the refusals by reason on /metrics', async () => {
+    await post({ boardId: BOARD }, await bearer()); // no role on a stored board
+    await post({ boardId: 'not-a-uuid' }, await bearer());
+    await post({ boardId: 'default' }, await bearer());
+
+    const text = (await request(app.getHttpServer()).get('/metrics')).text;
+
+    expect(text).toContain('elysion_bff_realtime_token_refusals_total{reason="no_role"} 1');
+    expect(text).toContain('elysion_bff_realtime_token_refusals_total{reason="not_uuid"} 2');
+  });
+
   it('is 403 for a board id that is not a stored board, without asking the backend', async () => {
     for (const boardId of ['default', 'not-a-uuid', '../etc']) {
       expect((await post({ boardId }, await bearer())).status).toBe(403);

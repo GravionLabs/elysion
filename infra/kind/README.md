@@ -5,7 +5,8 @@ to a `kind` cluster and serves it at <http://localhost>, so two browsers can syn
 
 ```sh
 pnpm dev:stack:down    # frees host port 80 (the compose stack's Traefik)
-pnpm dev:infra         # Postgres, Keycloak and RustFS, which the cluster uses as its external services
+KEYCLOAK_BIND=0.0.0.0 pnpm dev:infra   # Postgres, Keycloak and RustFS, which the cluster uses as its external services
+                       # (Keycloak must listen on all interfaces: the pods fetch its keys through the host's address)
 pnpm kind:up           # builds the four images, creates the cluster, installs Traefik, a Valkey and the chart
 # open http://localhost  (log in as dev / dev), create a board, open it in two windows
 pnpm kind:down         # deletes the cluster

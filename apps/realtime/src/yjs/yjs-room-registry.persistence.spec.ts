@@ -9,6 +9,7 @@ import {
 import { InMemoryDocumentStore } from '../persistence/in-memory-document-store.js';
 import { inertDocumentRelay } from '../testing/fake-document-relay.js';
 import type { PresenceRelay } from '../presence/presence-relay.js';
+import { SaveMetrics } from '../metrics/save-metrics.js';
 import { YjsRoomRegistry } from './yjs-room-registry.js';
 
 const OPTIONS = {
@@ -212,6 +213,26 @@ describe('YjsRoomRegistry persistence', () => {
 
       expect(store.saves).toHaveLength(3);
       expect(await registry.getOrLoad('b')).toBe(room);
+    });
+
+    it('counts saves, failed saves and the size of the saved state', async () => {
+      const metrics = new SaveMetrics();
+      registry = new YjsRoomRegistry(fakePresence(), store, inertDocumentRelay(), OPTIONS, metrics);
+      const room = await registry.getOrLoad('b');
+      let attempt = 0;
+      store.saveResult = async () => {
+        if (++attempt === 1) throw new Error('backend down');
+        return { saved: true, version: '1' };
+      };
+
+      room.doc.getMap('elements').set('a', '1');
+      await vi.advanceTimersByTimeAsync(1_100); // fails
+      await vi.advanceTimersByTimeAsync(1_100); // retried, works
+
+      const text = await metrics.registry.metrics();
+      expect(text).toContain('elysion_realtime_document_save_failures_total 1');
+      expect(text).toContain('elysion_realtime_document_saves_total 1');
+      expect(text).toContain('elysion_realtime_document_size_bytes_count 1');
     });
 
     it('flush saves a changed room immediately and does nothing for an unchanged one', async () => {

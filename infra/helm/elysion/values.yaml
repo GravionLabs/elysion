@@ -30,8 +30,40 @@ oidc:
   # Optional: where the services fetch the realm's keys when that differs from the issuer (e.g. a cluster-internal address).
   jwksUri: ''
 
-# The business backend applies its migrations itself at start-up; turn off when a pipeline migrates.
+# The business backend applies its migrations itself at start-up; turn off when a pipeline migrates. With more than one replica
+# use the job below instead: replicas that migrate at the same time race each other.
 migrateOnStartup: true
+
+migrateJob:
+  # A Helm hook (pre-install, pre-upgrade) that runs the business backend image with `--migrate` and exits; the release waits for it.
+  # The Secret (existingSecret) has to exist before the first install. When on, the replicas do not migrate at start-up.
+  enabled: false
+
+# The realtime service scales on CPU and, with the Prometheus adapter, on its open WebSocket connections. Off: `replicas.realtime`.
+autoscaling:
+  realtime:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    cpuTarget: 70
+    # Needs the Prometheus adapter to serve the pod metric `elysion_realtime_websocket_connections` (docs/operations.md). 0: CPU only.
+    connectionsTarget: 0
+
+# Ingress rules per component: Traefik (its namespace below) may reach the frontend, the BFF and the realtime service; the
+# business backend only the BFF and the realtime service; the monitoring namespace may scrape the three services. It is a
+# NetworkPolicy, so the cluster's network plugin has to enforce them. Egress is not restricted (the external services differ).
+networkPolicy:
+  enabled: false
+  traefikNamespace: traefik
+  monitoringNamespace: monitoring
+
+monitoring:
+  # A ServiceMonitor of the Prometheus Operator for the BFF, the realtime service and the business backend.
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    # Labels the operator's Prometheus selects ServiceMonitors by (for example `release: kube-prometheus-stack`).
+    labels: {}
 
 # The object store that keeps the files of boards, the images (ADR 0007, #702): any S3-compatible service with path-style
 # addressing. The business backend creates the bucket at start if it is missing, and does not start without a store it can

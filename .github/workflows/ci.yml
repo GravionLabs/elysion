@@ -43,8 +43,20 @@ jobs:
       - run: helm lint infra/helm/elysion -f infra/helm/elysion/values-kind.yaml
       - run: helm template elysion infra/helm/elysion -f infra/helm/elysion/values-kind.yaml > /dev/null
       - run: bash -n infra/kind/deploy.sh
+      - run: helm lint infra/helm/elysion -f infra/helm/elysion/values-production.example.yaml
+      # The rendered chart is a test: a template change shows up as a change of infra/helm/snapshots/.
+      - run: bash infra/helm/snapshot.sh
       # The backup and restore scripts (docs/self-hosting.md); shellcheck is on the runner's image.
       - run: shellcheck -x -P SCRIPTDIR infra/backup/*.sh scripts/restore.sh scripts/backup-rehearsal.sh
+      # The alert rules and their tests (docs/operations.md), and the dashboard as JSON.
+      - run: >-
+          docker run --rm --entrypoint promtool -v "$PWD/infra/observability:/etc/prometheus:ro" -w /etc/prometheus
+          prom/prometheus:v3.5.0 check config prometheus.yml
+      - run: >-
+          docker run --rm --entrypoint promtool -v "$PWD/infra/observability:/etc/prometheus:ro" -w /etc/prometheus
+          prom/prometheus:v3.5.0 test rules alerts.test.yml
+      - run: jq . infra/observability/dashboard.json > /dev/null
+      - run: docker compose -f docker-compose.yml -f docker-compose.observability.yml config -q
 
   dotnet-coverage:
     name: .NET coverage

@@ -17,5 +17,7 @@ ENV NODE_ENV=production
 COPY --from=build /out/dist ./dist
 COPY --from=build /out/node_modules ./node_modules
 COPY --from=build /out/package.json ./package.json
+# The `node` user of the image (uid 1000); the files stay owned by root and are only read.
+USER 1000
 EXPOSE 3000
 CMD ["node", "dist/main.js"]
