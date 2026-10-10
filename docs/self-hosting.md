@@ -1,8 +1,7 @@
 # Self-hosting Elysion
 
 Elysion is a **pre-release**. It runs end to end and the images are published, but the stack in this repository is a
-demo and a development setup, not a production one. This page says how to run the published images and what has to change
-before anything real depends on them.
+demo and a development setup; production is Kubernetes through the Helm chart. This page says how to run the published images as a demo and how to install the chart.
 
 ## The images
 
@@ -35,35 +34,122 @@ Then open <http://localhost> and log in as `dev`, `dev1` or `dev2` (the password
 to pin one (`ELYSION_VERSION=0.1.0-beta.126`). Settings (`ELYSION_VERSION`, ports) can also go into a `.env` (copy `.env.example`). `pnpm demo` builds the images from the checkout instead.
 `docker compose down` stops it, and `down -v` also forgets the data.
 
+This is the demo: plain HTTP, development values, a Keycloak in development mode. For anything real see [Run it in Kubernetes](#run-it-in-kubernetes).
+
 The stack is Traefik (port 80), the four images, Postgres, Valkey (its own, for the realtime service), RustFS (the object store that keeps the images of boards) and Keycloak (port 8081,
 admin console `admin` / `admin`). The business backend applies its database migrations when it starts.
 
-## What a real deployment needs
+## Run it in Kubernetes
 
-The topology (TLS, host names, where Keycloak sits) is decided in [ADR 0028](adr/0028-production-topology-tls-and-keycloak.md); production is Kubernetes through the Helm chart, and compose stays the demo; the work that implements it is #673 (rewritten for the chart).
+Production is Kubernetes through the Helm chart (`infra/helm/elysion`, [ADR 0018](adr/0018-kubernetes-packaging.md)); the compose stack above is the demo and
+stays on plain HTTP with development values. The topology is decided in [ADR 0028](adr/0028-production-topology-tls-and-keycloak.md): the application on
+one host name (`elysion.example` below), the identity provider on its own (`id.example`), both behind Traefik with TLS, and **Keycloak run by you**, not by the
+chart. The chart has been run on a local kind cluster ([infra/kind](../infra/kind/README.md)) and has not yet been run on a managed cluster.
 
-The demo is wired to `localhost` and uses development values. Before it faces anybody else:
+### What you bring
 
-- **A host name and TLS.** The identity provider's address is part of every token: `OIDC_ISSUER_URL` (the address the browser uses) is
-  `http://localhost:8081/realms/elysion` in the demo, in the frontend, the business backend and the BFF. Put TLS in front (Traefik or your
-  ingress), and set the issuer, the redirect URIs and the web origins of the realm's clients to your host name.
-- **A production Keycloak:** not `start-dev` with an imported demo realm. Create your own realm, clients and users, a strong admin
-  password, and a database of its own ([ADR 0014](adr/0014-keycloak-identity-provider.md)).
-- **Your own secrets.** `WS_TOKEN_SECRET` (BFF and realtime, [identity](specs/identity.md)) and `INTERNAL_API_SECRET` (realtime and business backend, [ADR 0017](adr/0017-internal-api-authentication.md))
-  have development values in the compose file: set long random ones, the same in the services that share them.
-- **Postgres with backups** (the demo's volume is a convenience), and Valkey if you run more than one realtime instance.
-- **An object store for the images of boards:** the business backend needs any S3-compatible service (path-style addressing) and does not start without
-  one it can reach. It takes `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` and `S3_BUCKET` (default `elysion-files`, created at start if it is missing),
-  and the limits `MAX_FILE_BYTES` (10 MiB) and `MAX_FILES_PER_BOARD` (200). The demo's RustFS has development credentials and no host port; in
-  production use your own S3 (the chart's `objectStore.endpoint`, and `S3_ACCESS_KEY` and `S3_SECRET_KEY` in its Secret). The bucket is state: **back it up
-  like the database** (the files are named `boards/<board id>/<file id>`, and a board's document refers to them).
-- **Keycloak and the network:** the compose file publishes Keycloak (with its development admin password) on the loopback only (`KEYCLOAK_BIND`); in a real deployment it sits behind your TLS proxy and has no development admin at all.
-- **Security headers and the Content-Security-Policy:** the frontend image sends the plain security headers and an enforced CSP that names your identity provider (its origin comes from `OIDC_ISSUER_URL`; `KEYCLOAK_ORIGIN` overrides it); Traefik adds the plain headers to the API's answers. `CSP_MODE` is `enforce` (default), `report` (nothing is blocked; the browser reports to the BFF, which logs `CSP violation: <directive> blocked <uri>` at warn: `docker compose logs bff | grep "CSP violation"`, or the log viewer) or `off`: switch to `report` first if a customization of yours (another font or image host, a script of a proxy) is blocked, read the log, then adjust. `HSTS_MAX_AGE` (seconds, chart: `security.hstsMaxAge`) switches on `Strict-Transport-Security`; set it only when TLS is on, a browser keeps it. The policy and the reason for each exception are in the [frontend spec](specs/frontend.md#headers).
-- **CORS and the rate limit:** `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_AVERAGE` and `RATE_LIMIT_BURST` ([gateway](specs/gateway.md)).
+| You need                                                                                           | Why                                                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A cluster and `helm`                                                                               | The chart is in this repository (`infra/helm/elysion`); install from a checkout of the tag you run.                                                                                    |
+| **Traefik** with its CRDs ([Traefik's chart](https://github.com/traefik/traefik-helm-chart))       | The edge: the chart renders Traefik `Middleware` and `IngressRoute` resources. Configure it **without** the dashboard, without `api.insecure` and without a Docker socket (see below). |
+| **cert-manager** (or your PKI)                                                                     | Makes the TLS Secret. The chart never talks to an ACME server.                                                                                                                         |
+| Two DNS names to the cluster's ingress: `elysion.example` and `id.example`                         | The application and the identity provider. Use two names of one registrable domain (sibling subdomains) so that cookies stay first-party.                                              |
+| **Postgres** for Elysion, **Valkey**, an **S3-compatible object store** (path-style) with a bucket | Nothing of this is in the chart. Back up Postgres and the bucket yourself ([Back up and restore](#back-up-and-restore)).                                                               |
+| **Keycloak** in production mode with a database of its own, or another OpenID Connect provider     | Below. The services only validate tokens ([ADR 0014](adr/0014-keycloak-identity-provider.md)).                                                                                         |
 
-The Helm chart ([ADR 0018](adr/0018-kubernetes-packaging.md), `infra/helm/elysion`) is the way to run it on Kubernetes; its default image
-names are still the local ones (`elysion/frontend`, ...), so set `images.<service>.repository` and `tag` to the GHCR images above. It has
-been run on a local kind cluster only. For a real cluster the chart has non-root, read-only pods, a start-up probe, a migration job, disruption budgets, an autoscaler for the realtime service and network policies; [`values-production.example.yaml`](../infra/helm/elysion/values-production.example.yaml) turns them on, and the chart's [README](../infra/helm/elysion/README.md) explains each.
+### 1. Certificates
+
+One **wildcard certificate** for `*.example.com` is enough for both hosts; cert-manager gets it with DNS-01, or your PKI issues it. What the chart needs is a Secret
+of type `kubernetes.io/tls` in Elysion's namespace (`edge.tlsSecretName`); the Keycloak ingress names the same Secret (or its own, in its namespace). How the
+certificate is obtained (HTTP-01, DNS-01, an internal CA) is the cluster's business.
+
+### 2. Traefik
+
+Install Traefik in its own namespace with its Kubernetes CRD provider and the entry points `web` (80) and `websecure` (443). The values that matter, in
+Traefik's chart: `api.dashboard: false`, `api.insecure: false`, the `metrics` entry point not exposed, and **no Docker provider** (the dev stack mounts the
+Docker socket into Traefik; a service that can read the Docker API can read every container's environment, secrets included, which is one more reason the compose file is development only).
+
+### 3. Keycloak
+
+Run Keycloak next to the release (the [Keycloak Operator](https://www.keycloak.org/operator/installation) is one way; any chart or an existing Keycloak works the
+same, and so does another provider that speaks OpenID Connect). Elysion's side of it is a set of settings and a realm file:
+
+- `start` (production mode), a Postgres of its own, `KC_HOSTNAME=https://id.example`, `KC_PROXY_HEADERS=xforwarded`, `KC_HTTP_ENABLED=true` behind the ingress,
+  `KC_HOSTNAME_ADMIN` an internal address.
+- The ingress in front of Keycloak routes **only `/realms/` and `/resources/`** (login, tokens, keys, the account pages and their assets). **`/admin` and the master
+  realm are not routed**; administer from inside the cluster (`kubectl port-forward`). Replace the bootstrap admin (`KC_BOOTSTRAP_ADMIN_*`, first start only) with a
+  named administrator and delete it.
+- **The realm:** every release has `realm-elysion.production.json` among its assets ([releases](https://github.com/GravionLabs/elysion/releases)), derived from the
+  development realm by `scripts/build-realm.mjs`: no users, no direct password grant, `sslRequired: external`. Import it into an **empty** realm with the environment of
+  Keycloak set (it substitutes the placeholders): `ELYSION_APP_URL=https://elysion.example` (no trailing slash) and `ELYSION_BFF_CLIENT_SECRET` (a long random string; the
+  BFF client's secret). Then add your users, or an identity provider ([ADR 0027](adr/0027-enterprise-sign-in-groups-and-administration.md)).
+
+### 4. The Secret
+
+Create the Secret before the first install (the migration job needs it); nothing secret goes into a values file. `secrets.existingSecret` names it (default
+`elysion-secrets`); the keys are listed in `values.yaml`:
+
+```sh
+kubectl create namespace elysion
+kubectl -n elysion create secret generic elysion-secrets \
+  --from-literal=WS_TOKEN_SECRET="$(openssl rand -base64 48)" \
+  --from-literal=INTERNAL_API_SECRET="$(openssl rand -base64 48)" \
+  --from-literal=POSTGRES_CONNECTION_STRING='Host=...;Database=elysion;Username=...;Password=...' \
+  --from-literal=REDIS_URL='redis://...' \
+  --from-literal=S3_ACCESS_KEY=... --from-literal=S3_SECRET_KEY=...
+```
+
+`WS_TOKEN_SECRET` ([identity](specs/identity.md)) and `INTERNAL_API_SECRET` ([ADR 0017](adr/0017-internal-api-authentication.md)) are different values of at least
+32 characters. The bucket (`objectStore.bucket`, default `elysion-files`) is created at start if it is missing, so the key needs to be allowed to do that; the limits are
+`MAX_FILE_BYTES` (10 MiB) and `MAX_FILES_PER_BOARD` (200). The bucket is state: **back it up like the database**.
+
+### 5. Install
+
+Copy [`values-production.example.yaml`](../infra/helm/elysion/values-production.example.yaml), replace the `*.example` names and the image tags (the chart's default
+repositories are the local ones; use `ghcr.io/gravionlabs/elysion-*` and a version, [The images](#the-images)), and install:
+
+```sh
+helm upgrade --install elysion infra/helm/elysion -n elysion -f my-values.yaml
+```
+
+What the example sets: the routes on `websecure` with `edge.tlsSecretName`, `edge.redirectToHttps` (a permanent redirect from `web`), `security.hstsMaxAge`, two replicas of
+every service, the migration job, an autoscaler for the realtime service, network policies and a `ServiceMonitor`; `oidc.issuerUrl` is
+`https://id.example/realms/elysion`, the address in the tokens, and the services fetch the keys from it (set `oidc.jwksUri` when you want them to use a cluster-internal
+address). The chart's [README](../infra/helm/elysion/README.md) explains each value. CI renders the example and fails if a value of the demo (`admin/admin`, `dev-only-`,
+`localhost`, ...) is in it, and the chart refuses an empty `secrets.existingSecret`.
+
+**HSTS:** the example starts with `604800` (one week). A wrong HSTS header cannot be taken back from a browser that has seen it, so raise it to `31536000` once
+everything works. There is no `includeSubDomains` and no `preload`: those commit a whole domain, which is not Elysion's to commit.
+
+### 6. Check it
+
+Open `https://elysion.example`, log in with a user you made in the realm, create a board and open it in a second browser. `http://elysion.example` redirects, the
+Traefik dashboard and Keycloak's `/admin` are not reachable from outside, and `https://elysion.example/api/boards` without a token is a `401`. Headers, the
+Content-Security-Policy and how to loosen it for a customization of yours (`security.cspMode: report`, then read `CSP violation` in the BFF's log) are in the
+[frontend spec](specs/frontend.md#headers). CORS and the rate limit are `edge.corsAllowedOrigins` and `edge.rateLimit.*` ([gateway](specs/gateway.md)).
+
+### Rotate a secret
+
+`WS_TOKEN_SECRET` and `INTERNAL_API_SECRET` are shared by two services each: change the value in the Secret and restart both services together (`kubectl -n elysion rollout restart
+deploy/elysion-bff deploy/elysion-realtime`, and `deploy/elysion-business-backend` for the internal one). Open sockets keep working until they reconnect; a WS token lives about a
+minute, so the only effect is a fresh token. To rotate the BFF client's secret, change it in Keycloak's client and in the environment you import with, then restart the BFF. A database
+or S3 key is changed at its owner first and in the Secret second.
+
+### Checklist
+
+| Item                                                       | Who                                                                                        |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| TLS at the edge, redirect from HTTP, HSTS                  | The chart, with your certificate Secret                                                    |
+| Security headers and an enforced CSP                       | The chart and the images                                                                   |
+| Realm without users, without password grant                | The release asset; you import it                                                           |
+| Own secrets, no development value                          | You (the Secret); CI checks the chart                                                      |
+| Traefik without dashboard and Docker socket                | You (Traefik's values)                                                                     |
+| Keycloak in production mode, admin not routed, named admin | You                                                                                        |
+| Postgres, Valkey, object store, and their backups          | You                                                                                        |
+| Alerts and dashboards                                      | [Operations](operations.md) (Prometheus Operator `ServiceMonitor` is in the chart example) |
+
+Not part of this yet: Keycloak as an optional part of the chart, and Microsoft Entra ID without Keycloak ([ADR 0028](adr/0028-production-topology-tls-and-keycloak.md),
+[ADR 0027](adr/0027-enterprise-sign-in-groups-and-administration.md)).
 
 ## Update
 
@@ -112,5 +198,5 @@ requests, saves that fail, a backup that is too old and more; [Operations](opera
 
 ## Known limits of this pre-release
 
-See [What is missing](../README.md#what-is-missing) and the [roadmap](roadmap.md): no production configuration yet, a [security review](security.md) whose findings are still being fixed,
+See [What is missing](../README.md#what-is-missing) and the [roadmap](roadmap.md): the Kubernetes setup above is untested on a managed cluster, a [security review](security.md) whose findings are still being fixed,
 and votes that are not secret from the server.

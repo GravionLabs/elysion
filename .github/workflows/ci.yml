@@ -46,6 +46,8 @@ jobs:
       - run: helm lint infra/helm/elysion -f infra/helm/elysion/values-production.example.yaml
       # The rendered chart is a test: a template change shows up as a change of infra/helm/snapshots/.
       - run: bash infra/helm/snapshot.sh
+      # No development value (admin/admin, dev-only-, localhost, ...) survives in a production rendering (ADR 0028).
+      - run: bash infra/helm/check-no-dev-values.sh
       # The backup and restore scripts (docs/self-hosting.md); shellcheck is on the runner's image.
       - run: shellcheck -x -P SCRIPTDIR infra/backup/*.sh scripts/restore.sh scripts/backup-rehearsal.sh
       # The alert rules and their tests (docs/operations.md), and the dashboard as JSON.
@@ -273,3 +275,10 @@ jobs:
         with:
           version: ${{ needs.version.outputs.semver }}
           cliff-config: cliff.toml
+      # The realm an operator imports into their Keycloak (ADR 0028): derived from the development realm, no users, no direct grant.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - run: node scripts/build-realm.mjs realm-elysion.production.json
+      - run: gh release upload "v$SEMVER" realm-elysion.production.json --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SEMVER: ${{ needs.version.outputs.semver }}
