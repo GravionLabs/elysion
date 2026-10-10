@@ -82,14 +82,23 @@ A short-lived JWT, signed by the BFF and verified by the realtime service with a
 | `sub`        | the user's id: the access token's `sub`                                                                          |
 | `boardId`    | the board the token opens, exactly the id used in `?board=`                                                      |
 | `role`       | `owner`, `editor` or `viewer`, as the business backend answered; a viewer is read-only (#303)                    |
+| `jti`        | a random id; the token opens one socket (below)                                                                  |
 | `iat`, `exp` | issued-at and expiry; the lifetime is `WS_TOKEN_TTL_SECONDS`, 60 by default                                      |
 
 - **Transport:** a query parameter, `wss://<host>/yjs?board=<id>&token=<jwt>`. `@nestjs/platform-ws` gives a
   gateway no access to headers during the handshake, and the board id already travels in the URL. Because a URL
   can end up in logs, the token is short-lived and only good for one board; nothing else is in it.
-- **Checked once, at the handshake.** An open connection outlives its token. The client fetches a new token
-  every time it connects, so each reconnect (the client reconnects on its own) asks the BFF again; a revoked
-  membership therefore ends at the next reconnect at the latest, not instantly.
+- **Checked at the handshake, and again while the socket is open (#772).** An open connection outlives its token, so
+  the realtime service asks the business backend every `MEMBERSHIP_RECHECK_MS` (15 s by default, `0` is off) what role
+  each person has on each board of the instance (`GET /internal/boards/{id}/access?sub=`, the service token of
+  ADR 0017, one call per person and board however many sockets they have). **No role any more** (removed, the board
+  deleted): the person's sockets are closed with `4403`, and the client's reconnect asks the BFF for a new token and
+  is told no. **Another role:** it applies to the open sockets at once (a viewer's writes are dropped from then on).
+  **The backend cannot be reached:** nothing changes and the next round tries again. So a revoked membership ends
+  within the interval, not at the next reconnect.
+- **Single-use.** A token has a `jti`; the realtime service remembers it in Valkey (`elysion:wsjti:<jti>`, `SET NX`
+  for the rest of the token's life) and refuses a second socket with the same token (`4401`). A token without a
+  `jti` (an older BFF) is not checked; with Valkey unreachable the token is let in and the failure is logged.
 - **Refusal:** the gateway closes the socket right after the upgrade with code `4401` (missing, malformed,
   expired or wrongly signed token) or `4403` (the token is valid but for another board). The canvas reports
   that as the element's `error` event; it does not retry with the same token.

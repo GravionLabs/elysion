@@ -6,6 +6,7 @@ import {
   WS_TOKEN_AUDIENCE,
   WS_TOKEN_ISSUER,
 } from '@elysion/shared-types';
+import { randomUUID } from 'node:crypto';
 import { SignJWT } from 'jose';
 import { AppConfigService } from '../config/config.module.js';
 
@@ -31,6 +32,8 @@ export class WsTokenService {
     const token = await new SignJWT({ boardId: claims.boardId, role: claims.role })
       .setProtectedHeader({ alg: WS_TOKEN_ALGORITHM })
       .setSubject(claims.sub)
+      // Single-use: the realtime service lets a token open one socket (a token travels in a URL).
+      .setJti(randomUUID())
       .setIssuer(WS_TOKEN_ISSUER)
       .setAudience(WS_TOKEN_AUDIENCE)
       .setIssuedAt(issuedAt)

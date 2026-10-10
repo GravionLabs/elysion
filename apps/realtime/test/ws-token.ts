@@ -20,6 +20,8 @@ export interface WsTokenOptions {
   /** Leave claims out to build a malformed token. */
   omit?: Array<'sub' | 'boardId' | 'role' | 'exp'>;
   algorithm?: string;
+  /** The token's id; a token with one opens a single socket. Tests leave it out unless they test that. */
+  jti?: string;
 }
 
 const b64 = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -35,6 +37,7 @@ export function signWsToken(boardId: string, options: WsTokenOptions = {}): stri
     aud: options.audience ?? WS_TOKEN_AUDIENCE,
     iat: now,
     exp: now + (options.expiresIn ?? 60),
+    ...(options.jti === undefined ? {} : { jti: options.jti }),
   };
   for (const name of options.omit ?? []) delete claims[name];
   const unsigned = `${b64({ alg: options.algorithm ?? WS_TOKEN_ALGORITHM, typ: 'JWT' })}.${b64(claims)}`;

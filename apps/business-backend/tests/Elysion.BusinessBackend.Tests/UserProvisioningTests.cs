@@ -159,6 +159,9 @@ public class UserProvisioningTests
         public Task<User?> FindBySubjectForUpdateAsync(string subject, CancellationToken cancellationToken) =>
             Task.FromResult<User?>(null);
 
+        public Task<User?> FindBySubjectAsync(string subject, CancellationToken cancellationToken) =>
+            inner.FindBySubjectAsync(subject, cancellationToken);
+
         public Task<User?> FindAsync(Guid id, CancellationToken cancellationToken) =>
             inner.FindAsync(id, cancellationToken);
 

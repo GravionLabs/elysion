@@ -132,6 +132,11 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     return load;
   }
 
+  /** The rooms held in memory right now (a snapshot, safe to iterate while rooms come and go). */
+  activeRooms(): YjsRoom[] {
+    return [...this.rooms.values()];
+  }
+
   /** What is held in memory right now: the rooms and the connections admitted to them (for the metrics). */
   stats(): { rooms: number; connections: number } {
     let connections = 0;
