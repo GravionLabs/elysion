@@ -19,20 +19,23 @@ export interface GridSettings {
   /** Snap to the grid while dragging, whether it is shown or not. */
   snap: boolean;
   size: GridSize;
+  /** Snap to the edges and centers of other elements, with guide lines while dragging (Excalidraw's object snapping, #755). */
+  guides: boolean;
 }
 
-export const DEFAULT_GRID: GridSettings = { show: true, snap: true, size: 20 };
+export const DEFAULT_GRID: GridSettings = { show: true, snap: true, size: 20, guides: true };
 
 /** A stored value as grid settings: what is valid is taken, the rest is the default (another client may have written anything). */
 export function parseGrid(value: unknown): GridSettings {
   if (typeof value !== 'object' || value === null) return DEFAULT_GRID;
-  const v = value as { show?: unknown; snap?: unknown; size?: unknown };
+  const v = value as { show?: unknown; snap?: unknown; size?: unknown; guides?: unknown };
   return {
     show: typeof v.show === 'boolean' ? v.show : DEFAULT_GRID.show,
     snap: typeof v.snap === 'boolean' ? v.snap : DEFAULT_GRID.snap,
     size: (GRID_SIZES as readonly unknown[]).includes(v.size)
       ? (v.size as GridSize)
       : DEFAULT_GRID.size,
+    guides: typeof v.guides === 'boolean' ? v.guides : DEFAULT_GRID.guides,
   };
 }
 
@@ -47,8 +50,12 @@ export function readGrid(doc: Y.Doc): GridSettings {
 export function writeGrid(doc: Y.Doc, change: Partial<GridSettings>): void {
   const current = readGrid(doc);
   const next = { ...current, ...change };
-  if (next.show === current.show && next.snap === current.snap && next.size === current.size)
-    return;
+  const same =
+    next.show === current.show &&
+    next.snap === current.snap &&
+    next.size === current.size &&
+    next.guides === current.guides;
+  if (same) return;
   doc.getMap<unknown>(META_MAP_KEY).set(GRID_KEY, next);
 }
 

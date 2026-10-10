@@ -546,6 +546,17 @@ export function CanvasApp({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Object snapping is Excalidraw state, not a controlled prop: the setting is put into it when it changes (and for a viewer's
+  // canvas it is off), and `onChange` puts it back when Excalidraw's own Alt+S or menu item changed it.
+  const guidesOn = grid.guides && !readOnly;
+  const guidesOnRef = useRef(guidesOn);
+  guidesOnRef.current = guidesOn;
+  useEffect(() => {
+    apiRef.current?.updateScene({
+      appState: { objectsSnapModeEnabled: guidesOn },
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+  }, [guidesOn]);
   // The dots and Excalidraw's grid size follow the setting, whoever changed it.
   useEffect(() => {
     const api = apiRef.current;
@@ -629,6 +640,14 @@ export function CanvasApp({
       disabled: readOnly,
       onSelect: () => changeGrid({ snap: !grid.snap }),
     },
+    {
+      type: 'check',
+      id: 'snap-objects',
+      label: 'Snap to objects',
+      checked: grid.guides,
+      disabled: readOnly,
+      onSelect: () => changeGrid({ guides: !grid.guides }),
+    },
     // The grid belongs to the board: a viewer sees it and does not change it.
     { type: 'heading', label: readOnly ? 'Grid size (set by the editors)' : 'Grid size' },
     ...GRID_SIZES.map((size) => ({
@@ -699,6 +718,9 @@ export function CanvasApp({
         viewModeEnabled={readOnly}
         // Excalidraw's grid mode is snapping (its lines are switched off, the dots are ours): set by the setting, never by the user's keys.
         gridModeEnabled={grid.snap && !readOnly}
+        // Snap to the edges and centers of other elements, with guide lines: a board setting too (#755). Excalidraw reads this
+        // prop once, for its first state; after that the setting is put into its state (below), and kept there.
+        objectsSnapModeEnabled={grid.guides && !readOnly}
         UIOptions={imagesEnabled ? UI_OPTIONS_WITH_IMAGES : UI_OPTIONS}
         initialData={{
           appState: {
@@ -767,6 +789,12 @@ export function CanvasApp({
           bindingRef.current?.onLocalChange(elements, files);
           presenceRef.current?.selectionChanged(appState.selectedElementIds);
           setActiveTool(appState.activeTool.type);
+          if (appState.objectsSnapModeEnabled !== guidesOnRef.current) {
+            apiRef.current?.updateScene({
+              appState: { objectsSnapModeEnabled: guidesOnRef.current },
+              captureUpdate: CaptureUpdateAction.NEVER,
+            });
+          }
           if (rootRef.current) {
             applyGridDots(rootRef.current, {
               zoom: appState.zoom.value,
