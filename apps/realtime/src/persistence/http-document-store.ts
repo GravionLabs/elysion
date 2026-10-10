@@ -1,7 +1,12 @@
 import { REQUEST_ID_HEADER, currentRequestId } from '@elysion/node-logging';
 import { Injectable } from '@nestjs/common';
 import type { InternalTokenSigner } from '../auth/internal-token-signer.js';
-import { DocumentStore, type SaveResult, type StoredDocument } from './document-store.js';
+import {
+  DocumentRejectedError,
+  DocumentStore,
+  type SaveResult,
+  type StoredDocument,
+} from './document-store.js';
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -65,6 +70,12 @@ export class HttpDocumentStore extends DocumentStore {
 
   private expect(response: Response, status: number): void {
     if (response.status !== status) {
+      if (DocumentRejectedError.isPermanent(response.status)) {
+        throw new DocumentRejectedError(
+          response.status,
+          `Document store answered ${response.status}, expected ${status}`,
+        );
+      }
       throw new Error(`Document store answered ${response.status}, expected ${status}`);
     }
   }

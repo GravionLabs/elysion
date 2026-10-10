@@ -6,9 +6,9 @@ import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
 import type { WebSocket } from 'ws';
 import { DocumentRelay, type DocumentMessage } from '../document/document-relay.js';
-import { DocumentStore } from '../persistence/document-store.js';
+import { DocumentRejectedError, DocumentStore } from '../persistence/document-store.js';
 import { PresenceRelay } from '../presence/presence-relay.js';
-import type { BoardRole } from '@elysion/shared-types';
+import { type BoardRole, WS_CLOSE_FORBIDDEN } from '@elysion/shared-types';
 import { SaveMetrics } from '../metrics/save-metrics.js';
 import { MESSAGE_SYNC } from './protocol.js';
 
@@ -22,6 +22,8 @@ export interface PersistenceOptions {
   readonly retryMaxMs: number;
   /** A room without clients is unloaded this long after its last client left. */
   readonly evictAfterMs: number;
+  /** A room without clients whose save failed this many times in a row is given up: its unsaved state is dropped and it is unloaded. */
+  readonly maxFailuresWithoutClients: number;
 }
 
 export const PERSISTENCE_OPTIONS = Symbol('PERSISTENCE_OPTIONS');
@@ -32,6 +34,7 @@ const DEFAULT_PERSISTENCE_OPTIONS: PersistenceOptions = {
   retryBaseMs: 1_000,
   retryMaxMs: 30_000,
   evictAfterMs: 30_000,
+  maxFailuresWithoutClients: 30,
 };
 
 /** The defaults, with the grace period before an empty room is unloaded overridable by `ROOM_EVICT_AFTER_MS`. */
@@ -443,9 +446,25 @@ export class YjsRoomRegistry implements OnModuleDestroy {
         state.version = result.current.version;
       }
     } catch (error) {
-      state.dirty = true;
       state.failures += 1;
       this.metrics?.failed();
+      if (error instanceof DocumentRejectedError) {
+        // The board is gone (deleted) or its state is refused: asking again changes nothing.
+        this.logger.error(
+          `Saving board ${room.boardId} was refused (${error.status}), giving up: ${error.message}`,
+        );
+        this.giveUp(room, state, 'The board no longer exists or cannot be stored');
+        return;
+      }
+      if (room.clients.size === 0 && state.failures >= this.options.maxFailuresWithoutClients) {
+        // Nobody has the board open and the store has been failing for a long time: stop holding it in memory for ever.
+        this.logger.error(
+          `Saving board ${room.boardId} failed ${state.failures} times and nobody is connected, dropping its unsaved state: ${String(error)}`,
+        );
+        this.giveUp(room, state, 'The board could not be stored');
+        return;
+      }
+      state.dirty = true;
       const delay = Math.min(
         this.options.retryBaseMs * 2 ** (state.failures - 1),
         this.options.retryMaxMs,
@@ -454,6 +473,23 @@ export class YjsRoomRegistry implements OnModuleDestroy {
         `Saving board ${room.boardId} failed (attempt ${state.failures}), retrying in ${delay} ms: ${String(error)}`,
       );
       this.schedule(room, state, delay);
+    }
+  }
+
+  /**
+   * Stops saving a room for good: the unsaved state is not kept, the connected clients are closed (their reconnect asks
+   * the BFF for a token and is told what is true), and the room is unloaded once the last one is gone.
+   */
+  private giveUp(room: YjsRoom, state: SaveState, reason: string): void {
+    state.dirty = false;
+    state.firstDirtyAt = null;
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = null;
+    for (const client of room.clients) {
+      client.close(WS_CLOSE_FORBIDDEN, reason);
+    }
+    if (room.clients.size === 0) {
+      this.scheduleEviction(room);
     }
   }
 }
