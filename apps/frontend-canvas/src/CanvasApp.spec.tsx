@@ -440,12 +440,42 @@ describe('the grid', () => {
     });
   }, 20000);
 
+  it("keeps Excalidraw's object snapping in step with Snap to objects (on by default)", async () => {
+    // jsdom cannot show the guides (the browser test does); what is checked is the state Excalidraw snaps by (`window.h` is its
+    // debug handle in a test environment).
+    const state = () =>
+      (window as unknown as { h: { state: { objectsSnapModeEnabled: boolean } } }).h.state
+        .objectsSnapModeEnabled;
+    await setup();
+    expect(state()).toBe(true);
+    open();
+    expect(
+      screen
+        .getByRole('menuitemcheckbox', { name: 'Snap to objects' })
+        .getAttribute('aria-checked'),
+    ).toBe('true');
+
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Snap to objects' }));
+    await waitFor(() => expect(state()).toBe(false));
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Snap to objects' }));
+    await waitFor(() => expect(state()).toBe(true));
+  });
+
+  it('turns object snapping off on a viewer canvas', async () => {
+    const state = () =>
+      (window as unknown as { h: { state: { objectsSnapModeEnabled: boolean } } }).h.state
+        .objectsSnapModeEnabled;
+    await setup({ readOnly: true });
+
+    expect(state()).toBe(false);
+  });
+
   it('shows a viewer the grid and its menu items, disabled: the grid is the editors', async () => {
     await setup({ readOnly: true });
 
     open();
 
-    for (const name of ['Show grid', 'Snap to grid']) {
+    for (const name of ['Show grid', 'Snap to grid', 'Snap to objects']) {
       const item = screen.getByRole('menuitemcheckbox', { name });
       expect(item.getAttribute('aria-disabled')).toBe('true');
     }

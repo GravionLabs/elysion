@@ -43,7 +43,7 @@ Board documents survive a restart ([ADR 0011](../adr/0011-board-document-persist
 
 ## Board settings in the document
 
-The document's map `meta` holds settings of the board (not of a person), outside the Excalidraw binding: `grid` is `{ show, snap, size }` (#754; `size` is 10, 20 or 40; a board without it has `{ show: true, snap: true, size: 20 }`), `generation` is compaction's (ADR 0026). The realtime service does not read them: it stores and relays them like any other part of the document, and a copy of a board keeps them. Editors write them, a viewer's canvas never does; the canvas treats a value that is not valid as the default.
+The document's map `meta` holds settings of the board (not of a person), outside the Excalidraw binding: `grid` is `{ show, snap, size, guides }` (#754, #755; `size` is 10, 20 or 40; `guides` is snapping to other elements; a board without the key has `{ show: true, snap: true, size: 20, guides: true }`, a missing `guides` is `true`), `generation` is compaction's (ADR 0026). The realtime service does not read them: it stores and relays them like any other part of the document, and a copy of a board keeps them. Editors write them, a viewer's canvas never does; the canvas treats a value that is not valid as the default.
 
 ## Limits
 

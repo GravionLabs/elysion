@@ -14,19 +14,24 @@ let other: Page;
 let boardUrl: string;
 const BOARD_NAME = 'E2E grid';
 
-/** The first rectangle of the board as exported: where it ended up. */
-async function firstRectangle(): Promise<{ x: number; y: number } | undefined> {
+/** The rectangles of the board as exported, in the order they were made. */
+async function rectangles(): Promise<{ x: number; y: number; width: number }[]> {
   return page.evaluate(async () => {
     const canvas = document.querySelector('elysion-canvas') as HTMLElement & {
       exportBoard(format: string): Promise<Blob | null>;
     };
     const blob = await canvas.exportBoard('excalidraw');
-    if (!blob) return undefined;
+    if (!blob) return [];
     const scene = JSON.parse(await blob.text()) as {
-      elements: { type: string; x: number; y: number }[];
+      elements: { type: string; x: number; y: number; width: number }[];
     };
-    return scene.elements.find((element) => element.type === 'rectangle');
+    return scene.elements.filter((element) => element.type === 'rectangle');
   });
+}
+
+/** The first rectangle of the board as exported: where it ended up. */
+async function firstRectangle() {
+  return (await rectangles())[0];
 }
 
 /** How many pixels of a row of the static canvas are not transparent. */
@@ -113,4 +118,42 @@ test('a rectangle snaps to the grid by default, with no line grid showing while 
   const rectangle = (await firstRectangle())!;
   expect(rectangle.x % 20).toBe(0);
   expect(rectangle.y % 20).toBe(0);
+});
+
+test('a dragged rectangle aligns its center with another one by default, with a guide line', async () => {
+  // The grid alone would put it anywhere on a grid point: turn that off, so that only the guides can explain the result.
+  await page.getByRole('button', { name: 'Canvas menu' }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Snap to grid' }).click();
+  await page.keyboard.press('Escape');
+
+  const first = (await rectangles())[0]!;
+  const target = first.x + first.width / 2;
+  await page.getByRole('button', { name: 'Rectangle' }).click();
+  await page.mouse.move(700, 150);
+  await page.mouse.down();
+  await page.mouse.move(780, 190, { steps: 4 });
+  await page.mouse.move(850, 230, { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(async () => (await rectangles()).length).toBe(2);
+  const second = (await rectangles())[1]!;
+  expect(Math.abs(second.x + second.width / 2 - target)).toBeGreaterThan(50); // far from the first one's center
+
+  // Drag it by its top edge so that its center ends 2 px from the first one's: the guide pulls it the rest of the way. The
+  // export has scene coordinates; the mouse has the page's, so the canvas's own offset (the top bar) is added.
+  const canvas = (await page.locator('canvas.interactive').boundingBox())!;
+  const dx = target + 2 - (second.x + second.width / 2);
+  const startX = canvas.x + second.x + second.width / 2;
+  const startY = canvas.y + second.y;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + dx / 2, startY + 5, { steps: 4 });
+  await page.mouse.move(startX + dx, startY + 10, { steps: 4 });
+  await page.mouse.up();
+
+  await expect
+    .poll(async () => {
+      const moved = (await rectangles())[1]!;
+      return Math.abs(moved.x + moved.width / 2 - target);
+    })
+    .toBeLessThan(0.01);
 });

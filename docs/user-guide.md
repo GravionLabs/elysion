@@ -42,7 +42,7 @@ board), **Templates**, **Export**, **Timer**, **Voting**, then **Share**, the pe
 drawing, text, the **sticky note**, the eraser, and the zoom controls (zoom out, the zoom level, zoom in, fit the board in the window), and **Insert image**. An image is a PNG, JPEG, GIF or WebP file of up to 10 MB
 (a board holds up to 200); choose it, paste it or drop it on the board. The others see it a moment later, and it is still there after a reload. A viewer sees the
 images but cannot add any. A file that is too large, of another type or one too many is refused with a message and does not stay on the board.
-The `⋯` button opens the canvas menu with the grid settings, among others: **Show grid** (a quiet dot grid in the background; `Ctrl+'` toggles it), **Snap to grid** (elements line up on the grid points, whether the dots are shown or not) and the grid size. The grid is on by default and belongs to the board: everybody on it sees the same one, and only editors change it. The small **map** at the bottom left shows the whole board and
+The `⋯` button opens the canvas menu with the grid settings, among others: **Show grid** (a quiet dot grid in the background; `Ctrl+'` toggles it), **Snap to grid** (elements line up on the grid points, whether the dots are shown or not), **Snap to objects** (while you drag or resize, an element snaps to the edges and centers of the others, with red guide lines) and the grid size. The grid and the guides are on by default and belong to the board: everybody on it sees the same ones, and only editors change them. The small **map** at the bottom left shows the whole board and
 the part you see; click or drag in it to move there.
 
 ### Sticky notes
