@@ -41,7 +41,7 @@ esac
     echo "add_header Strict-Transport-Security \"max-age=${HSTS_MAX_AGE}; includeSubDomains\" always;"
   fi
   if [ "$mode" != "off" ]; then
-    policy="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ${idp} wss:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' ${idp}; report-uri /api/csp-report; report-to csp"
+    policy="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ${idp} wss: https://libraries.excalidraw.com https://raw.githubusercontent.com; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' ${idp}; report-uri /api/csp-report; report-to csp"
     header=Content-Security-Policy
     [ "$mode" = "report" ] && header=Content-Security-Policy-Report-Only
     echo "add_header ${header} \"${policy}\" always;"

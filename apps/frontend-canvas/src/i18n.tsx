@@ -83,6 +83,8 @@ export const en = {
   errorReadOnly: 'This board is read-only.',
   errorNotReady: 'The canvas is not ready yet.',
   errorNotOnBoard: 'That element is not on the board.',
+  libraryNotAllowed: 'Only libraries from libraries.excalidraw.com can be added.',
+  libraryFailed: 'The library could not be added.',
 };
 
 export type Messages = typeof en;
@@ -145,6 +147,8 @@ export const de: Messages = {
   errorReadOnly: 'Dieses Board ist schreibgeschützt.',
   errorNotReady: 'Der Canvas ist noch nicht bereit.',
   errorNotOnBoard: 'Dieses Element befindet sich nicht auf dem Board.',
+  libraryNotAllowed: 'Es können nur Bibliotheken von libraries.excalidraw.com hinzugefügt werden.',
+  libraryFailed: 'Die Bibliothek konnte nicht hinzugefügt werden.',
 };
 
 /** The name of a sticky note color (`StickyColor.name`, which stays English: it is the stored key) in the locale. */
