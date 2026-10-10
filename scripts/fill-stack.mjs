@@ -14,7 +14,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import * as decoding from 'lib0/decoding';
 import * as encoding from 'lib0/encoding';
-import * as syncProtocol from 'y-protocols/sync';
 import WebSocket from 'ws';
 import * as Y from 'yjs';
 
@@ -22,6 +21,11 @@ const APP = process.env.APP ?? 'http://localhost';
 const KEYCLOAK = process.env.KEYCLOAK ?? 'http://localhost:8081';
 const USER = process.env.FILL_USER ?? 'dev1';
 const MESSAGE_SYNC = 0; // apps/realtime/src/yjs/protocol.ts
+// The three messages of the Yjs sync protocol (y-protocols/sync), written out here: that package's peer dependency on yjs
+// does not resolve from the repository root, and the protocol is only these.
+const SYNC_STEP1 = 0; // "this is what I have" (a state vector); answered with step 2
+const SYNC_STEP2 = 1; // "this is what you lack" (an update)
+const SYNC_UPDATE = 2; // a change
 
 const [mode, manifestPath = 'fill-manifest.json'] = process.argv.slice(2);
 if (mode !== 'fill' && mode !== 'verify') {
@@ -86,23 +90,38 @@ async function openDocument(boardId) {
       20000,
     );
     socket.on('error', reject);
-    socket.on('open', () => send((encoder) => syncProtocol.writeSyncStep1(encoder, doc)));
+    socket.on('open', () =>
+      send((encoder) => {
+        encoding.writeVarUint(encoder, SYNC_STEP1);
+        encoding.writeVarUint8Array(encoder, Y.encodeStateVector(doc));
+      }),
+    );
     socket.on('message', (data) => {
       const decoder = decoding.createDecoder(new Uint8Array(data));
       if (decoding.readVarUint(decoder) !== MESSAGE_SYNC) return;
-      const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, MESSAGE_SYNC);
-      const type = syncProtocol.readSyncMessage(decoder, encoder, doc, 'server');
-      if (encoding.length(encoder) > 1) socket.send(encoding.toUint8Array(encoder));
-      if (type === syncProtocol.messageYjsSyncStep2 && !synced) {
-        synced = true;
-        clearTimeout(timer);
-        resolve();
+      const type = decoding.readVarUint(decoder);
+      if (type === SYNC_STEP1) {
+        const missing = Y.encodeStateAsUpdate(doc, decoding.readVarUint8Array(decoder));
+        send((encoder) => {
+          encoding.writeVarUint(encoder, SYNC_STEP2);
+          encoding.writeVarUint8Array(encoder, missing);
+        });
+      } else if (type === SYNC_STEP2 || type === SYNC_UPDATE) {
+        Y.applyUpdate(doc, decoding.readVarUint8Array(decoder), 'server');
+        if (type === SYNC_STEP2 && !synced) {
+          synced = true;
+          clearTimeout(timer);
+          resolve();
+        }
       }
     });
   });
   doc.on('update', (update, origin) => {
-    if (origin !== 'server') send((encoder) => syncProtocol.writeUpdate(encoder, update));
+    if (origin === 'server') return;
+    send((encoder) => {
+      encoding.writeVarUint(encoder, SYNC_UPDATE);
+      encoding.writeVarUint8Array(encoder, update);
+    });
   });
   return {
     doc,
