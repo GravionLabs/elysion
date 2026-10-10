@@ -75,7 +75,7 @@ export interface MoveOption {
 @Component({
   imports: [AppBrand, DatePipe, RouterLink, RoomSidebar, ShareDialog, UserMenu],
   selector: 'app-board-list',
-  styleUrl: './board-list.scss',
+  styleUrls: ['./board-list.scss', './board-list-create.scss', './board-list-cards.scss'],
   templateUrl: './board-list.html',
 })
 export class BoardList {
