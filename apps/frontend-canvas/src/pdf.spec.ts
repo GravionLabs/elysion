@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { MAX_PAGE_PX, pageSize, svgToPdf, setTextInHelvetica } from './pdf';
+import { MAX_PAGE_PX, pageSize, placePage, svgToPdf, svgsToPdf, setTextInHelvetica } from './pdf';
 
 /** What jsdom lacks and svg2pdf.js asks every element for. */
 beforeEach(() => {
@@ -110,5 +110,83 @@ describe('svgToPdf', () => {
     const pdf = await inspect(await svgToPdf(svgOf(400, 200, content, false)));
 
     expect(pdf.width).toBeCloseTo(300, 1);
+  });
+});
+
+describe('placePage', () => {
+  it('makes the page as large as the content when the format is fit, with a band above it for a title', () => {
+    const plain = placePage({ width: 400, height: 200 }, false);
+    const titled = placePage({ width: 400, height: 200 }, true);
+
+    expect(plain.page).toEqual({ width: 400, height: 200 });
+    expect(plain.content).toEqual({ x: 0, y: 0, width: 400, height: 200 });
+    expect(titled.page.height).toBeGreaterThan(200);
+    expect(titled.content.y).toBeGreaterThan(0);
+  });
+
+  it('gives A4 and Letter their sizes, portrait for content that is higher than wide and landscape otherwise', () => {
+    const tall = placePage({ width: 100, height: 300 }, false, { format: 'a4' });
+    const wide = placePage({ width: 300, height: 100 }, false, { format: 'a4' });
+    const letter = placePage({ width: 100, height: 300 }, false, { format: 'letter' });
+
+    expect(tall.page.width).toBeCloseTo(793.7, 1);
+    expect(tall.page.height).toBeCloseTo(1122.52, 1);
+    expect(tall.orientation).toBe('portrait');
+    expect(wide.page.width).toBeCloseTo(1122.52, 1);
+    expect(wide.orientation).toBe('landscape');
+    expect(letter.page).toEqual({ width: 816, height: 1056 });
+  });
+
+  it('turns the page the way it is told, whatever the content', () => {
+    const forced = placePage({ width: 300, height: 100 }, false, {
+      format: 'a4',
+      orientation: 'portrait',
+    });
+
+    expect(forced.orientation).toBe('portrait');
+    expect(forced.page.height).toBeGreaterThan(forced.page.width);
+  });
+
+  it('scales the content to the largest size inside the margins and centers it', () => {
+    const placed = placePage({ width: 100, height: 100 }, false, { format: 'a4' });
+
+    expect(placed.content.width).toBeCloseTo(placed.content.height, 5);
+    expect(placed.content.x).toBeCloseTo(38, 5); // the width is the limit: it fills the box
+    expect(placed.content.y).toBeGreaterThan(38); // and is centered in the height
+    expect(placed.content.x + placed.content.width).toBeCloseTo(placed.page.width - 38, 5);
+  });
+});
+
+describe('svgsToPdf', () => {
+  const content = '<rect x="10" y="10" width="50" height="30" fill="#ff0000"/>';
+
+  it('makes one page per entry, each with a title that is text in the page', async () => {
+    const blob = await svgsToPdf([
+      { svg: svgOf(400, 200, content), title: 'First frame' },
+      { svg: svgOf(300, 300, content), title: 'Second frame' },
+      { svg: svgOf(200, 400, content), title: 'Third frame' },
+    ]);
+
+    const pdf = await inspect(blob);
+    expect(pdf.pages).toBe(3);
+    // Each title is a line on its page (a compressed stream) and a bookmark in the document's outline (readable in the file).
+    expect(pdf.text).toContain('/Title (First frame)');
+    expect(pdf.text).toContain('/Title (Third frame)');
+  });
+
+  it('gives every page of a fixed format the same size', async () => {
+    const pdf = await inspect(
+      await svgsToPdf([{ svg: svgOf(400, 200, content) }, { svg: svgOf(400, 200, content) }], {
+        format: 'letter',
+      }),
+    );
+
+    expect(pdf.pages).toBe(2);
+    expect(pdf.width).toBeCloseTo(792, 0); // 816 px, 792 points
+    expect(pdf.height).toBeCloseTo(612, 0); // landscape
+  });
+
+  it('refuses a document without a page', async () => {
+    await expect(svgsToPdf([])).rejects.toThrow();
   });
 });

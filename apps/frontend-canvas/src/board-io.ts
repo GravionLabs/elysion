@@ -8,18 +8,16 @@ import {
 } from '@excalidraw/excalidraw';
 import type {
   ExcalidrawElement,
+  ExcalidrawFrameLikeElement,
   NonDeletedExcalidrawElement,
 } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { VIEW_BACKGROUND_COLOR } from './element-style';
-import { svgToPdf } from './pdf';
+import { framesInOrder, type ExportOptions } from './export-options';
+import { svgsToPdf } from './pdf';
 
 export type ExportFormat = 'png' | 'svg' | 'excalidraw' | 'pdf';
-
-export interface ExportOptions {
-  /** Export only what is selected (with the text bound to selected shapes). */
-  selectionOnly?: boolean;
-}
+export type { ExportOptions } from './export-options';
 
 /** The elements to export: everything, or the selected ones plus the text inside selected shapes. */
 export function elementsToExport(
@@ -76,17 +74,30 @@ export function replaceScene(
   return [...next, ...incoming.values()];
 }
 
+/** The frames to make pages of: the frames of the board, or only those that are selected when the selection holds any. */
+function framesToExport(
+  elements: readonly NonDeletedExcalidrawElement[],
+  selectedIds: Readonly<Record<string, boolean>> | null,
+): ExcalidrawFrameLikeElement[] {
+  const frames = elements.filter(
+    (element): element is ExcalidrawFrameLikeElement =>
+      element.type === 'frame' || element.type === 'magicframe',
+  );
+  const chosen = selectedIds ? frames.filter((frame) => selectedIds[frame.id] === true) : frames;
+  return framesInOrder(chosen);
+}
+
 /** The board as a file in the chosen format, or `null` when there is nothing to export. */
 export async function exportBoard(
   api: ExcalidrawImperativeAPI,
   format: ExportFormat,
-  { selectionOnly = false }: ExportOptions = {},
+  options: ExportOptions = {},
 ): Promise<Blob | null> {
+  const { selectionOnly = false, background = true, theme = 'current', scale = 1 } = options;
   const appState = api.getAppState();
-  const elements = elementsToExport(
-    api.getSceneElements(),
-    selectionOnly ? appState.selectedElementIds : null,
-  );
+  const scene = api.getSceneElements();
+  const selected = selectionOnly ? appState.selectedElementIds : null;
+  const elements = elementsToExport(scene, selected);
   if (elements.length === 0) return null;
 
   const files = api.getFiles();
@@ -95,7 +106,9 @@ export async function exportBoard(
     ...appState,
     // The canvas itself is transparent (the board's color and grid are CSS), so the export brings the board's color.
     viewBackgroundColor: VIEW_BACKGROUND_COLOR,
-    exportBackground: true,
+    exportBackground: background,
+    exportScale: scale,
+    ...(theme === 'current' ? {} : { exportWithDarkMode: theme === 'dark' }),
   };
 
   switch (format) {
@@ -105,8 +118,31 @@ export async function exportBoard(
       const svg = await exportToSvg({ elements, appState: exportState, files });
       return new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' });
     }
-    case 'pdf':
-      return svgToPdf(await exportToSvg({ elements, appState: exportState, files }));
+    case 'pdf': {
+      const layout = { format: options.pageFormat, orientation: options.orientation };
+      // A board with frames is a document: one page per frame, in the order of their names or their places, each with its
+      // name as a title. A selection that holds frames makes pages of those; anything else is one page, as before.
+      const frames = options.pdfPages === 'whole' ? [] : framesToExport(scene, selected);
+      if (frames.length === 0) {
+        return svgsToPdf(
+          [{ svg: await exportToSvg({ elements, appState: exportState, files }) }],
+          layout,
+        );
+      }
+      const pages = [];
+      for (const [index, frame] of frames.entries()) {
+        pages.push({
+          title: frame.name?.trim() || `${index + 1}`,
+          svg: await exportToSvg({
+            elements: scene,
+            appState: exportState,
+            files,
+            exportingFrame: frame,
+          }),
+        });
+      }
+      return svgsToPdf(pages, layout);
+    }
     case 'excalidraw':
       return new Blob(
         [

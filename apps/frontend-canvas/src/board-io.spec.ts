@@ -193,6 +193,66 @@ describe('exportBoard', () => {
       expect(pdf.width).toBeGreaterThan(0);
     });
 
+    describe('of a board with frames (#726)', () => {
+      function frameWith(id: string, name: string, x: number, y: number): ExcalidrawElement[] {
+        const [frame] = convertToExcalidrawElements([
+          { type: 'frame', x, y, width: 200, height: 150, name, children: [] },
+        ]);
+        const inside = { ...rect(`${id}-shape`, x + 20, y + 20, 40), frameId: id };
+        return [{ ...frame, id } as unknown as ExcalidrawElement, inside as ExcalidrawElement];
+      }
+
+      const framed = [
+        ...frameWith('f2', 'Page 2', 400, 0),
+        ...frameWith('f1', 'Page 1', 0, 0),
+        rect('loose', 900, 900),
+      ];
+
+      it('is one page per frame, in the order of their names, whatever the order in the scene', async () => {
+        const pdf = await inspect((await exportBoard(fakeApi(framed).api, 'pdf'))!);
+
+        expect(pdf.pages).toBe(2);
+        expect(pdf.text.indexOf('/Title (Page 1)')).toBeGreaterThan(-1);
+        expect(pdf.text.indexOf('/Title (Page 1)')).toBeLessThan(
+          pdf.text.indexOf('/Title (Page 2)'),
+        );
+      });
+
+      it('is the whole board on one page when asked to', async () => {
+        const pdf = await inspect(
+          (await exportBoard(fakeApi(framed).api, 'pdf', { pdfPages: 'whole' }))!,
+        );
+
+        expect(pdf.pages).toBe(1);
+      });
+
+      it('makes pages of the selected frames only when the selection holds frames', async () => {
+        const pdf = await inspect(
+          (await exportBoard(fakeApi(framed, { f2: true }).api, 'pdf', { selectionOnly: true }))!,
+        );
+
+        expect(pdf.pages).toBe(1);
+        expect(pdf.text).toContain('/Title (Page 2)');
+        expect(pdf.text).not.toContain('/Title (Page 1)');
+      });
+
+      it('keeps a board without frames on one page', async () => {
+        expect((await inspect((await exportBoard(fakeApi(scene).api, 'pdf'))!)).pages).toBe(1);
+      });
+
+      it('takes the page format and orientation of the options', async () => {
+        const pdf = await inspect(
+          (await exportBoard(fakeApi(framed).api, 'pdf', {
+            pageFormat: 'a4',
+            orientation: 'portrait',
+          }))!,
+        );
+
+        expect(pdf.width).toBeCloseTo(595.28, 0);
+        expect(pdf.height).toBeCloseTo(841.89, 0);
+      });
+    });
+
     it('answers null for an empty board and for an empty selection', async () => {
       expect(await exportBoard(fakeApi([]).api, 'pdf')).toBeNull();
       expect(await exportBoard(fakeApi(scene, {}).api, 'pdf', { selectionOnly: true })).toBeNull();

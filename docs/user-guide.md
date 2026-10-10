@@ -108,6 +108,13 @@ show in this menu and in the **New board** form. Viewers do not see the menu.
 ![The export menu](images/13-export.png)
 
 **Export** saves the board as a **PNG** or **SVG** image, a **PDF** document or an **Excalidraw file** (`.excalidraw`). With **Selection only**
+(when something is selected) only that part is exported.
+
+The **Options** below the formats are remembered in your browser: for a **PDF**, whether a board that has frames makes **one page per frame** (in the
+order of the frames' names when they are numbered, like the pages of an imported PDF, otherwise from the top left to the bottom right; each page has
+the frame's name as its title and as a bookmark) or puts the whole board on one page, the **page size** (the size of the content, A4 or Letter) and the
+**orientation**; for every format the **colors** (as on the screen, light or dark), the **background** (off leaves it transparent) and, for a **PNG**,
+the **scale** (1×, 2× or 3×). With **Selection only** and frames selected, only those frames become pages. Images on the board are part of the file. **Import** takes an `.excalidraw` file into the board you have open.
 (when something is selected) only that part is exported. **Import** takes an `.excalidraw` file into the board you have open (it replaces what is on the board, and asks first) or a PDF (below).
 
 ### Bring a PDF onto the board

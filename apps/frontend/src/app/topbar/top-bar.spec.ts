@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { DEFAULT_EXPORT_SETTINGS } from './export-settings';
 import { TopBar } from './top-bar';
 
 describe('TopBar', () => {
@@ -140,7 +141,9 @@ describe('TopBar', () => {
     await fixture.whenStable();
     (el().querySelector('[role="menuitem"]') as HTMLButtonElement).click();
 
-    expect(requests).toEqual([{ format: 'png', selectionOnly: false }]);
+    expect(requests).toEqual([
+      { format: 'png', selectionOnly: false, settings: DEFAULT_EXPORT_SETTINGS },
+    ]);
     expect(
       (el().querySelector('input[type="checkbox"]') as HTMLInputElement | null)?.disabled,
     ).not.toBe(true);
