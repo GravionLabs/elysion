@@ -395,10 +395,34 @@ export class Board {
     }
   }
 
-  /** A file was picked: ask first, because an import replaces what is on the board. */
+  /**
+   * A file was picked. A PDF is added to the board (the canvas shows its pages to choose from, #725), so nothing is asked here;
+   * anything else is an .excalidraw file, which replaces what is on the board, so the person is asked first.
+   */
   chooseImport(file: File): void {
     this.notice.set(null);
+    if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+      void this.importPdf(file);
+      return;
+    }
     this.pendingImport.set(file);
+  }
+
+  private async importPdf(file: File): Promise<void> {
+    const canvas = this.canvas()?.nativeElement;
+    if (!canvas?.importPdf) {
+      this.notice.set(CANVAS_NOT_READY);
+      return;
+    }
+    try {
+      await canvas.importPdf(file);
+    } catch (error) {
+      this.notice.set(
+        error instanceof Error
+          ? error.message
+          : $localize`:@@board.error.importFailed:The import failed.`,
+      );
+    }
   }
 
   cancelImport(): void {

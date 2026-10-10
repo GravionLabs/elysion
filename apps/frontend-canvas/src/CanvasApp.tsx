@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import {
   exportBoard,
   clearScene,
@@ -30,6 +30,7 @@ import {
 import { NO_SELECTION, trackSelection, type SelectionOrder } from './selection-order';
 import { Minimap } from './Minimap';
 import { insertImages, isImageFile } from './image-insert';
+import { isPdf } from './pdf-import/pdf-pages';
 import { SceneStore } from './scene-store';
 import { scrollToCenter } from './minimap-geometry';
 import { ZOOM_STEP, zoomAbout } from './zoom';
@@ -53,6 +54,7 @@ import './styles/grid.css';
 import './styles/toolbar.css';
 import './styles/connection-points.css';
 import './styles/voting.css';
+import './styles/pdf-import.css';
 import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
@@ -92,6 +94,8 @@ export interface CanvasControls {
   exportBoard(format: ExportFormat, options?: ExportOptions): Promise<Blob | null>;
   /** Replaces the board with the contents of an .excalidraw file; resolves with its element count. */
   importFile(file: Blob): Promise<number>;
+  /** Opens the PDF import (#725): a dialog with the pages, then a picture in a frame per chosen page; resolves with the number of pages put on the board (0 when canceled). */
+  importPdf(file: Blob): Promise<number>;
   /** Adds the contents of an .excalidraw file next to what is on the board, around the view center; resolves with the count added. */
   insertFile(file: Blob): Promise<number>;
   /**
@@ -201,6 +205,9 @@ function defaultYjsServerUrl(): string {
 
 // Excalidraw only offers its own light/dark toggle when it is not given a `theme`; we always pass one
 // (the host or the system decides), so the toggle has to be switched on explicitly.
+/** The PDF dialog and pdf.js with it are loaded when a PDF is chosen or dropped, not with the canvas (#725). */
+const PdfImportDialog = lazy(() => import('./pdf-import/PdfImportDialog'));
+
 const UI_OPTIONS = { canvasActions: { toggleTheme: true }, tools: { image: false } };
 const UI_OPTIONS_WITH_IMAGES = { canvasActions: { toggleTheme: true }, tools: { image: true } };
 
@@ -369,6 +376,29 @@ export function CanvasApp({
   const imagesEnabledRef = useRef(imagesEnabled);
   imagesEnabledRef.current = imagesEnabled;
 
+  // The PDF that is being imported (#725): the dialog is shown while there is one, and the promise of `importPdf` is settled by it.
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const pdfSettle = useRef<((inserted: number) => void) | null>(null);
+  const finishPdf = (inserted: number, notice?: string) => {
+    setPdfFile(null);
+    pdfSettle.current?.(inserted);
+    pdfSettle.current = null;
+    if (notice) noticeCallback.current?.(notice);
+  };
+  const startPdf = (file: Blob): Promise<number> => {
+    if (readOnlyRef.current) return Promise.reject(new Error(tRef.current.errorReadOnly));
+    if (!imagesEnabledRef.current) return Promise.reject(new Error(tRef.current.pdfNeedsImages));
+    if (pdfSettle.current) return Promise.reject(new Error(tRef.current.errorBusy));
+    return new Promise<number>((resolve) => {
+      pdfSettle.current = resolve;
+      setPdfFile(
+        file instanceof File ? file : new File([file], 'document.pdf', { type: 'application/pdf' }),
+      );
+    });
+  };
+  const startPdfRef = useRef(startPdf);
+  startPdfRef.current = startPdf;
+
   /**
    * Image files dropped on the canvas or pasted into it (#724): several become a row, an SVG a PNG, and what cannot be
    * added is said. Taken before Excalidraw sees the event (capture phase) so that it does not insert the first one a second
@@ -379,6 +409,13 @@ export function CanvasApp({
     files: FileList | null | undefined,
     at?: { x: number; y: number },
   ) => {
+    const pdf = [...(files ?? [])].find(isPdf);
+    if (pdf && imagesEnabledRef.current && apiRef.current && !pdfSettle.current) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (!readOnlyRef.current) void startPdfRef.current(pdf);
+      return;
+    }
     const images = [...(files ?? [])].filter(isImageFile);
     const api = apiRef.current;
     if (images.length === 0 || !api || !imagesEnabledRef.current) return;
@@ -860,6 +897,11 @@ export function CanvasApp({
         data-grid={grid.show ? 'dots' : undefined}
         style={{ position: 'absolute', inset: 0 }}
       >
+        {pdfFile && excalidrawApi && (
+          <Suspense fallback={null}>
+            <PdfImportDialog file={pdfFile} api={excalidrawApi} onDone={finishPdf} />
+          </Suspense>
+        )}
         <Excalidraw
           theme={activeTheme}
           langCode={excalidrawLangCode(locale)}
@@ -898,6 +940,7 @@ export function CanvasApp({
                 readOnlyRef.current
                   ? Promise.reject(new Error(tRef.current.errorReadOnly))
                   : importFile(api, file),
+              importPdf: (file) => startPdfRef.current(file),
               insertFile: (file) =>
                 readOnlyRef.current
                   ? Promise.reject(new Error(tRef.current.errorReadOnly))

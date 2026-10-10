@@ -17,6 +17,7 @@
     "@excalidraw/excalidraw": "^0.18.1",
     "jspdf": "^4.2.1",
     "lib0": "^0.2.119",
+    "pdfjs-dist": "^6.4.299",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "svg2pdf.js": "^2.8.1",

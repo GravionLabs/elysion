@@ -108,7 +108,16 @@ show in this menu and in the **New board** form. Viewers do not see the menu.
 ![The export menu](images/13-export.png)
 
 **Export** saves the board as a **PNG** or **SVG** image, a **PDF** document or an **Excalidraw file** (`.excalidraw`). With **Selection only**
-(when something is selected) only that part is exported. **Import** takes an `.excalidraw` file into the board you have open.
+(when something is selected) only that part is exported. **Import** takes an `.excalidraw` file into the board you have open (it replaces what is on the board, and asks first) or a PDF (below).
+
+### Bring a PDF onto the board
+
+Choose a `.pdf` file with **Import**, or drop one on the board. A window shows the pages as small pictures: leave out the pages you do not need (all of
+them are chosen at first, the first 50 of a longer PDF can be imported), choose how sharp they should be (1,600 pixels wide is a good size for a screen) and
+click **Import**. Each page becomes a picture in a frame named **Page 1**, **Page 2**, and so on; the frames sit in a grid in the middle of what you see, the
+others see them a moment later, and **Undo** takes all of them off again in one step. The PDF is read in your browser and never sent to a server; only the
+pictures of the pages are stored. A PDF that is protected by a password, larger than 10 MB or not a PDF is refused with a message, and the progress of a long
+PDF is shown per page and can be canceled.
 
 ## Running a workshop
 

@@ -1809,8 +1809,8 @@
         <note category="location">src/app/topbar/top-bar.html:73,74</note>
       </notes>
       <segment>
-        <source>Import an .excalidraw file into this board</source>
-        <target>Eine .excalidraw-Datei in dieses Board importieren</target>
+        <source>Import an .excalidraw file or a PDF into this board</source>
+        <target>Eine .excalidraw-Datei oder ein PDF in dieses Board importieren</target>
       </segment>
     </unit>
     <unit id="topbar.import">

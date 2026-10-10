@@ -117,6 +117,17 @@ class ElysionCanvasElement extends HTMLElement {
       : Promise.reject(new Error(this.#notReady()));
   }
 
+  /**
+   * Opens the PDF import (#725): a dialog with the pages of the PDF, then one picture in a frame per chosen page, in one undo
+   * step. Resolves with the number of pages put on the board, `0` when it was canceled; rejects on a read-only canvas, on a
+   * board that cannot take pictures and before the canvas is up.
+   */
+  importPdf(file: Blob): Promise<number> {
+    return this.#controls
+      ? this.#controls.importPdf(file)
+      : Promise.reject(new Error(this.#notReady()));
+  }
+
   /** Adds an .excalidraw file to the board with fresh ids, at the middle of the view, and selects it; one undo step. Resolves with the number of elements added. */
   insertFile(file: Blob): Promise<number> {
     return this.#controls
