@@ -224,7 +224,7 @@ services:
       # Edge authentication: the token is verified by the BFF before the request is let through (#121).
       # Order matters: CORS first (it answers a browser's preflight, which carries no token), then the rate limit
       # (an unauthenticated flood is stopped before it reaches the BFF's verify call), then authentication.
-      - 'traefik.http.routers.bff.middlewares=cors,rate-limit,bff-auth@file'
+      - 'traefik.http.routers.bff.middlewares=security-headers,cors,rate-limit,bff-auth@file'
       - 'traefik.http.services.bff.loadbalancer.server.port=3000'
       # CORS and rate limiting at the edge (#344, docs/specs/gateway.md). Defined here and not in the dynamic file,
       # because the file has no way to read the environment: the allowed origins and the limit are compose variables.
@@ -241,6 +241,22 @@ services:
       - 'traefik.http.middlewares.rate-limit.ratelimit.average=${RATE_LIMIT_AVERAGE:-50}'
       - 'traefik.http.middlewares.rate-limit.ratelimit.burst=${RATE_LIMIT_BURST:-100}'
       - 'traefik.http.middlewares.rate-limit.ratelimit.period=1s'
+      # The plain security headers on the API's answers too (the frontend's nginx sets them on its own); HSTS only when
+      # HSTS_MAX_AGE is set (0: none), the same variable as the frontend's.
+      - 'traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true'
+      - 'traefik.http.middlewares.security-headers.headers.frameDeny=true'
+      - 'traefik.http.middlewares.security-headers.headers.referrerPolicy=no-referrer'
+      - 'traefik.http.middlewares.security-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()'
+      - 'traefik.http.middlewares.security-headers.headers.customResponseHeaders.Cross-Origin-Opener-Policy=same-origin'
+      - 'traefik.http.middlewares.security-headers.headers.stsSeconds=${HSTS_MAX_AGE:-0}'
+      - 'traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true'
+      - 'traefik.http.middlewares.security-headers.headers.forceSTSHeader=true'
+      # Where the browser reports a Content-Security-Policy violation: it carries no token, so no bff-auth; the same
+      # rate limit protects it. The longer rule wins over the router above.
+      - 'traefik.http.routers.csp-report.rule=Path(`/api/csp-report`)'
+      - 'traefik.http.routers.csp-report.priority=100'
+      - 'traefik.http.routers.csp-report.middlewares=security-headers,rate-limit'
+      - 'traefik.http.routers.csp-report.service=bff'
     networks:
       - elysion
 
@@ -266,7 +282,7 @@ services:
       - 'traefik.enable=true'
       - 'traefik.http.routers.realtime.rule=PathPrefix(`/yjs`)'
       # CORS only (defined on the bff service): a rate limit counts connects, not messages (docs/specs/gateway.md).
-      - 'traefik.http.routers.realtime.middlewares=cors'
+      - 'traefik.http.routers.realtime.middlewares=security-headers,cors'
       - 'traefik.http.services.realtime.loadbalancer.server.port=3000'
     networks:
       - elysion
@@ -280,6 +296,10 @@ services:
       # Where the browser logs in (the address the browser uses, so localhost:8081) and as which client.
       OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
       OIDC_CLIENT_ID: elysion-frontend
+      # The Content-Security-Policy (docs/specs/frontend.md, "Headers"): off, report (the browser reports to the BFF, nothing
+      # is blocked) or enforce; and Strict-Transport-Security in seconds, only when TLS is on (empty: none).
+      CSP_MODE: ${CSP_MODE:-enforce}
+      HSTS_MAX_AGE: ${HSTS_MAX_AGE:-}
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.frontend.rule=PathPrefix(`/`)'

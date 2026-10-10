@@ -1,7 +1,7 @@
 {{- if .Values.edge.enabled }}
 {{- $full := include "elysion.fullname" . }}
 {{- $host := ternary (printf "Host(`%s`) && " .Values.edge.host) "" (ne .Values.edge.host "") }}
-# Middlewares, in the order the routes use them (docs/specs/gateway.md): cors, rate-limit, bff-auth.
+# Middlewares, in the order the routes use them (docs/specs/gateway.md): security-headers first, so that an answer the later ones give (401, 429) carries the headers, then cors, rate-limit, bff-auth.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -45,6 +45,25 @@ spec:
     period: 1s
 ---
 apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $full }}-security-headers
+  labels:
+    {{- include "elysion.labels" . | nindent 4 }}
+spec:
+  # The plain security headers on the API's answers (the frontend's nginx sets its own); HSTS only when hstsMaxAge is set.
+  headers:
+    contentTypeNosniff: true
+    frameDeny: true
+    referrerPolicy: no-referrer
+    permissionsPolicy: camera=(), microphone=(), geolocation=()
+    customResponseHeaders:
+      Cross-Origin-Opener-Policy: same-origin
+    stsSeconds: {{ .Values.security.hstsMaxAge }}
+    stsIncludeSubdomains: true
+    forceSTSHeader: true
+---
+apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: {{ $full }}
@@ -54,9 +73,20 @@ spec:
   entryPoints:
     {{- toYaml .Values.edge.entryPoints | nindent 4 }}
   routes:
+    # Where the browser reports a Content-Security-Policy violation: no token, so no forwardAuth; the rate limit applies.
+    - kind: Rule
+      match: {{ $host }}Path(`/api/csp-report`)
+      priority: 100
+      middlewares:
+        - name: {{ $full }}-security-headers
+        - name: {{ $full }}-rate-limit
+      services:
+        - name: {{ $full }}-bff
+          port: 3000
     - kind: Rule
       match: {{ $host }}PathPrefix(`/api`)
       middlewares:
+        - name: {{ $full }}-security-headers
         - name: {{ $full }}-cors
         - name: {{ $full }}-rate-limit
         - name: {{ $full }}-bff-auth
@@ -67,6 +97,7 @@ spec:
     - kind: Rule
       match: {{ $host }}PathPrefix(`/yjs`)
       middlewares:
+        - name: {{ $full }}-security-headers
         - name: {{ $full }}-cors
       services:
         - name: {{ $full }}-realtime

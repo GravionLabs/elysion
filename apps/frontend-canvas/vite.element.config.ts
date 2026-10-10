@@ -2,6 +2,7 @@ import { cpSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { excalidrawLocalAssets } from './vite-plugin-excalidraw-local-assets';
 import { excalidrawNoGridLines } from './vite-plugin-excalidraw-no-grid';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 
@@ -24,6 +25,21 @@ function copyToFrontendWhenWatching(): Plugin {
   };
 }
 
+// Excalidraw's fonts, next to the bundle: its default is a CDN (vite-plugin-excalidraw-local-assets.ts). The Xiaolai folder (CJK) is most
+// of the 14 MB; the browser loads a font file only when a text needs it.
+function copyExcalidrawFonts(): Plugin {
+  return {
+    name: 'copy-excalidraw-fonts',
+    apply: 'build',
+    writeBundle() {
+      const fonts = fileURLToPath(
+        new URL('node_modules/@excalidraw/excalidraw/dist/prod/fonts', import.meta.url),
+      );
+      cpSync(fonts, `${outDir}/fonts`, { recursive: true });
+    },
+  };
+}
+
 // Library build producing a dependency-free bundle that registers the
 // <elysion-canvas> custom element, including its own React runtime and CSS
 // so any host page (Angular or otherwise) can load it with one <script
@@ -35,7 +51,9 @@ export default defineConfig({
   plugins: [
     react(),
     excalidrawNoGridLines(),
+    excalidrawLocalAssets(),
     cssInjectedByJsPlugin(),
+    copyExcalidrawFonts(),
     copyToFrontendWhenWatching(),
   ],
   // React/ReactDOM's CJS entry points branch on `process.env.NODE_ENV` to

@@ -151,7 +151,8 @@ jobs:
           git worktree add ../previous "$tag"
           docker compose -f ../previous/docker-compose.yml pull bff realtime business-backend frontend
           docker compose -f ../previous/docker-compose.yml up -d --no-build
-          bash scripts/demo-smoke.sh
+          # The security headers of #680 are not in that version.
+          SMOKE_HEADERS=0 bash scripts/demo-smoke.sh
       - name: Fill it with data
         run: node scripts/fill-stack.mjs fill fill-manifest.json
       # What a failed upgrade is restored from (#684).
