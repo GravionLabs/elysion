@@ -87,6 +87,19 @@
           }
           @if (currentRoom(); as room) {
             <span class="room-actions">
+              @if (visibleBoards().length > 0) {
+                <button
+                  type="button"
+                  class="button export-room"
+                  [disabled]="roomExport() !== null"
+                  title="Make one PDF of all the boards of this room"
+                  i18n-title="@@boards.room.export-title"
+                  (click)="askExportRoom(room)"
+                  i18n="@@boards.room.export"
+                >
+                  Export room
+                </button>
+              }
               @if (canWriteRoom(room)) {
                 <button
                   type="button"
@@ -114,6 +127,100 @@
           }
         }
       </div>
+
+      @if (roomExport(); as exporting) {
+        @switch (exporting.phase) {
+          @case ('confirm') {
+            <div
+              class="confirm"
+              role="alertdialog"
+              aria-label="Confirm room export"
+              i18n-aria-label="@@boards.roomExport.confirm.aria"
+            >
+              <p i18n="@@boards.roomExport.confirm.message">
+                The room “{{ exporting.room.name }}” has {{ exporting.count }} boards. Making one
+                PDF of them opens each board in turn and may take about {{ exporting.minutes }}
+                {exporting.minutes, plural, =1 {minute} other {minutes}}. Continue?
+              </p>
+              <div class="confirm-actions">
+                <button
+                  type="button"
+                  class="button primary"
+                  (click)="startExportRoom(exporting.room)"
+                  i18n="@@boards.roomExport.confirm.yes"
+                >
+                  Export
+                </button>
+                <button
+                  type="button"
+                  class="button"
+                  (click)="cancelExportRoom()"
+                  i18n="@@boards.roomExport.confirm.no"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          }
+          @case ('running') {
+            <div
+              class="confirm"
+              role="dialog"
+              aria-label="Exporting the room"
+              i18n-aria-label="@@boards.roomExport.running.aria"
+            >
+              <p role="status" i18n="@@boards.roomExport.running.message">
+                Board {{ exporting.done + (exporting.done < exporting.total ? 1 : 0) }} of
+                {{ exporting.total }}: {{ exporting.current }}
+              </p>
+              <progress [value]="exporting.done" [max]="exporting.total"></progress>
+              <div class="confirm-actions">
+                <button
+                  type="button"
+                  class="button"
+                  (click)="cancelExportRoom()"
+                  i18n="@@boards.roomExport.running.cancel"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          }
+          @case ('done') {
+            <div class="confirm" role="status">
+              <p i18n="@@boards.roomExport.done.message">
+                The PDF is ready. These boards could not be loaded and are only a title page in it:
+                {{ exporting.skipped.join(', ') }}.
+              </p>
+              <div class="confirm-actions">
+                <button
+                  type="button"
+                  class="button"
+                  (click)="roomExport.set(null)"
+                  i18n="@@boards.roomExport.done.close"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          }
+          @case ('failed') {
+            <div class="confirm" role="alert">
+              <p i18n="@@boards.roomExport.failed.message">The room could not be exported.</p>
+              <div class="confirm-actions">
+                <button
+                  type="button"
+                  class="button"
+                  (click)="roomExport.set(null)"
+                  i18n="@@boards.roomExport.failed.close"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          }
+        }
+      }
 
       @if (roomDeleteTarget(); as room) {
         <div

@@ -90,6 +90,11 @@ import {
 export interface CanvasControls {
   /** Opens Excalidraw's library sidebar, or closes it when it is open. */
   toggleLibrary(): void;
+  /**
+   * Resolves when the images the board shows have been loaded (nothing is being fetched or uploaded any more), or after at
+   * most `timeoutMs`. For an export of a board nobody is looking at (#727): the pictures must be there before it is made.
+   */
+  whenSettled(timeoutMs?: number): Promise<void>;
   /** The board (or the selection) as a file, or `null` when there is nothing to export. */
   exportBoard(format: ExportFormat, options?: ExportOptions): Promise<Blob | null>;
   /** Replaces the board with the contents of an .excalidraw file; resolves with its element count. */
@@ -174,6 +179,8 @@ export interface CanvasAppProps {
   fileStore?: FileStore;
   /** An image could not be stored (the element is taken off the board again) or loaded; `message` says why. */
   onFileError?: (error: Error) => void;
+  /** The server's state of the board has arrived (after every connect): what the scene shows is what the board holds. */
+  onSynced?: () => void;
   /**
    * A viewer: Excalidraw's view mode, no drawing tools in the toolbar, no import and no "clear canvas". The
    * realtime service refuses a viewer's changes anyway; this is what the viewer sees instead of tools that would
@@ -235,6 +242,7 @@ export function CanvasApp({
   tokenProvider,
   fileStore,
   onFileError,
+  onSynced: onSyncedProp,
   readOnly = false,
   imagesEnabled = false,
   maxElements,
@@ -284,6 +292,8 @@ export function CanvasApp({
   fileStoreRef.current = fileStore;
   const fileErrorCallback = useRef(onFileError);
   fileErrorCallback.current = onFileError;
+  const syncedCallback = useRef(onSyncedProp);
+  syncedCallback.current = onSyncedProp;
   const readOnlyRef = useRef(readOnly);
   readOnlyRef.current = readOnly;
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
@@ -503,6 +513,7 @@ export function CanvasApp({
     let pushed = false;
     const client = new YjsWebsocketClient(url.toString(), doc, {
       onSynced: () => {
+        syncedCallback.current?.();
         if (replaced && !pushed) {
           pushed = true;
           binding.pushScene();
@@ -934,6 +945,8 @@ export function CanvasApp({
             bindingRef.current?.attach(api);
             presenceRef.current?.refresh(); // the collaborators that were there before the canvas was
             controlsCallback.current?.({
+              whenSettled: (timeoutMs) =>
+                bindingRef.current?.whenSettled(timeoutMs) ?? Promise.resolve(),
               toggleLibrary: () => api.toggleSidebar({ name: LIBRARY_SIDEBAR, tab: LIBRARY_TAB }),
               exportBoard: (format, options) => exportBoard(api, format, options),
               importFile: (file) =>
