@@ -1,0 +1,14 @@
+# Where the alerts go. The receiver is a placeholder: replace the URL (a webhook of your chat, an incident tool) or
+# use another receiver type (email, Slack, PagerDuty): https://prometheus.io/docs/alerting/latest/configuration/
+route:
+  receiver: placeholder
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: placeholder
+    webhook_configs:
+      - url: http://example.invalid/alerts
+        send_resolved: true

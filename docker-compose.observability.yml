@@ -1,0 +1,66 @@
+# Prometheus, Alertmanager and Grafana on top of the stack, for development and as an example for an operator (not part of
+# the demo): `pnpm dev:observability`, or
+#   docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+# Everything is configured in infra/observability; docs/operations.md says how to use it and what each alert means.
+# The ports are published on the loopback interface only: nothing here has a login worth the name.
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+    volumes:
+      - ./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - '127.0.0.1:${PROMETHEUS_PORT:-9090}:9090'
+    networks:
+      - elysion
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    restart: unless-stopped
+    volumes:
+      - ./infra/observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - '127.0.0.1:${ALERTMANAGER_PORT:-9093}:9093'
+    networks:
+      - elysion
+
+  # Serves nothing but the metrics file of the backup (infra/backup writes backup.prom next to the backups).
+  backup-metrics:
+    image: prom/node-exporter:v1.9.1
+    restart: unless-stopped
+    command:
+      - '--collector.disable-defaults'
+      - '--collector.textfile'
+      - '--collector.textfile.directory=/backups'
+    volumes:
+      - ${BACKUP_PATH:-backup-data}:/backups:ro
+    networks:
+      - elysion
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    restart: unless-stopped
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: 'true'
+    volumes:
+      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/observability/dashboard.json:/var/lib/grafana/dashboards/elysion.json:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - '127.0.0.1:${GRAFANA_PORT:-3030}:3000'
+    depends_on:
+      - prometheus
+    networks:
+      - elysion
+
+volumes:
+  backup-data:
+  grafana-data:
+  prometheus-data:

@@ -94,6 +94,11 @@ disk of the database it protects is not a backup), and the **development credent
 Postgres or the object store, so their backup is theirs; [the chart's example](../infra/helm/examples/backup-cronjob.yaml) is a CronJob with the same
 script for the databases.
 
+## Watch it
+
+Prometheus, Alertmanager and Grafana are an overlay of the compose file (`docker-compose.observability.yml`), with alert rules for a service that is down, 5xx errors, slow
+requests, saves that fail, a backup that is too old and more; [Operations](operations.md) starts it, explains each alert and says what to do.
+
 ## Known limits of this pre-release
 
 See [What is missing](../README.md#what-is-missing) and the [roadmap](roadmap.md): no production configuration yet, no security review

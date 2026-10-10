@@ -51,7 +51,7 @@ for i in $(seq 1 200); do curl -s -o /dev/null -w '%{http_code}\n' http://localh
 
 ## Logs and metrics
 
-Which scraper or dashboards run is not decided here; this is what the services provide (#347).
+Which scraper or dashboards run is not decided here; this is what the services provide (#347). Alert rules and a dashboard on them, to start from, are in [Operations](../operations.md).
 
 The application logs are being moved to one JSON shape with a request id, and a local log viewer is added; the decisions are in [ADR 0025](../adr/0025-structured-logging-and-log-viewer.md).
 

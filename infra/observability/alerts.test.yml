@@ -1,0 +1,88 @@
+# `promtool test rules alerts.test.yml`: the rules fire on the series they are written for, and stay quiet otherwise.
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    name: a service that cannot be scraped for 2 minutes
+    input_series:
+      - series: 'up{job="bff", instance="bff:3000"}'
+        values: '1 1 0 0 0 0'
+      - series: 'up{job="realtime", instance="realtime:3000"}'
+        values: '1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: ServiceDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: ServiceDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: bff
+              instance: 'bff:3000'
+            exp_annotations:
+              summary: 'bff cannot be scraped'
+              runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#servicedown
+
+  - interval: 1m
+    name: a failed save
+    input_series:
+      - series: 'elysion_realtime_document_save_failures_total{instance="realtime:3000"}'
+        values: '0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: RealtimeSaveFailing
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: RealtimeSaveFailing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              instance: 'realtime:3000'
+            exp_annotations:
+              summary: 'A board could not be saved: its changes exist in memory only'
+              runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#realtimesavefailing
+      - eval_time: 17m # ten minutes after the failure, the counter has not moved
+        alertname: RealtimeSaveFailing
+        exp_alerts: []
+
+  - interval: 1m
+    name: a backup older than 36 hours
+    input_series:
+      - series: 'elysion_backup_last_success_timestamp_seconds'
+        values: '0+0x2500'
+    alert_rule_test:
+      - eval_time: 30h
+        alertname: BackupTooOld
+        exp_alerts: []
+      - eval_time: 40h
+        alertname: BackupTooOld
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: 'The last good backup is older than 36 hours'
+              runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#backuptooold
+
+  - interval: 1m
+    name: more than 2 percent of the requests fail
+    input_series:
+      - series: 'elysion_bff_http_requests_total{status_code="200"}'
+        values: '0+90x20'
+      - series: 'elysion_bff_http_requests_total{status_code="500"}'
+        values: '0+10x20'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: BffErrorRateHigh
+        exp_alerts: []
+      - eval_time: 12m
+        alertname: BffErrorRateHigh
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: 'More than 2 percent of the BFF requests fail with 5xx'
+              runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#bfferrorratehigh
