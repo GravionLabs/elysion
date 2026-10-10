@@ -84,8 +84,7 @@ test('the pages of a PDF are shown to choose from, and each chosen page becomes 
 });
 
 test('one undo takes all the pages off the board again', async () => {
-  await a.locator('elysion-canvas').click({ position: { x: 20, y: 20 } });
-  await a.keyboard.press('Control+z');
+  await a.getByRole('button', { name: 'Undo' }).click();
 
   await expect.poll(async () => (await live(a)).length).toBe(0);
   await expect.poll(async () => (await live(b)).length).toBe(0);

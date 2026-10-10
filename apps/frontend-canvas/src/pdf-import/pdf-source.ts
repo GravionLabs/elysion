@@ -20,9 +20,13 @@ export interface OpenedPdf {
   destroy(): void;
 }
 
-/** Where pdf.js finds its worker, fonts and decoders: next to this bundle (apps/frontend-canvas, `vite.element.config.ts` copies them). */
+/**
+ * Where pdf.js finds its fonts, character maps and decoders: next to this bundle (`vite.element.config.ts` copies them). The
+ * address is made with string operations on purpose: Vite turns `new URL(<template>, import.meta.url)` into an asset lookup, which
+ * finds nothing for a folder that is only copied.
+ */
 function resource(path: string): string {
-  return new URL(`./pdfjs/${path}`, import.meta.url).href;
+  return `${import.meta.url.replace(/[^/]*$/, '')}pdfjs/${path}`;
 }
 
 /**
@@ -33,9 +37,9 @@ function resource(path: string): string {
 export async function openPdf(file: Blob): Promise<OpenedPdf> {
   if (file.size > MAX_PDF_BYTES) throw new PdfError('too-large');
   const pdfjs = await import('pdfjs-dist');
-  pdfjs.GlobalWorkerOptions.workerSrc = (
-    await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
-  ).default;
+  // The worker is a file next to the bundle, not an `?url` import: in a library build Vite writes an asset into the code as a
+  // `data:` URL, which the Content-Security-Policy refuses for a script.
+  pdfjs.GlobalWorkerOptions.workerSrc = resource('pdf.worker.js');
   let document: PDFDocumentProxy;
   const task = pdfjs.getDocument({
     data: new Uint8Array(await file.arrayBuffer()),
@@ -48,6 +52,7 @@ export async function openPdf(file: Blob): Promise<OpenedPdf> {
   try {
     document = await task.promise;
   } catch (error) {
+    console.warn('pdf.js could not open the file', error);
     void task.destroy();
     throw new PdfError(
       (error as { name?: string })?.name === 'PasswordException' ? 'encrypted' : 'invalid',

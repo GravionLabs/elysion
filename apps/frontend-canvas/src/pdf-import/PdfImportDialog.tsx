@@ -38,6 +38,7 @@ export default function PdfImportDialog({ file, api, onDone }: Props) {
       try {
         opened = await openPdf(file);
       } catch (error) {
+        console.warn('The PDF could not be opened', error);
         const problem = error instanceof PdfError ? error.problem : 'invalid';
         if (!gone) {
           onDone(

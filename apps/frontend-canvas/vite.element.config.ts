@@ -51,6 +51,8 @@ function copyPdfjsResources(): Plugin {
       for (const folder of ['cmaps', 'standard_fonts', 'wasm', 'iccs']) {
         cpSync(`${root}/${folder}`, `${outDir}/pdfjs/${folder}`, { recursive: true });
       }
+      // A module worker; named .js so that every web server sends a JavaScript type for it.
+      cpSync(`${root}/build/pdf.worker.min.mjs`, `${outDir}/pdfjs/pdf.worker.js`);
     },
   };
 }
