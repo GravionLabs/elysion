@@ -81,6 +81,12 @@ public sealed class BoardRepository(ElysionDbContext db) : IBoardRepository
         return await db.Boards.AsNoTracking().FirstOrDefaultAsync(board => board.Id == id, cancellationToken);
     }
 
+    public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(id);
+        return await db.Boards.AnyAsync(board => board.Id == id, cancellationToken);
+    }
+
     public async Task<Board?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken)
     {
         Guard.Against.Default(id);
