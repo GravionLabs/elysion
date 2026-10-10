@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { excalidrawNoGridLines } from './vite-plugin-excalidraw-no-grid';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), excalidrawNoGridLines()],
   test: {
     environment: 'jsdom',
     globals: true,

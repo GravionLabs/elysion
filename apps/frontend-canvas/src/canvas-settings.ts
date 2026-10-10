@@ -9,9 +9,9 @@ export const GRID_SIZES = [10, 20, 40] as const;
 export type GridSize = (typeof GRID_SIZES)[number];
 
 export interface GridSettings {
-  /** Draw the grid. In Excalidraw a shown grid is also snapped to. */
+  /** Draw the grid as dots in the background (grid-dots.ts). Independent of snapping. */
   show: boolean;
-  /** Snap to the grid while dragging, also when it is not shown. */
+  /** Snap to the grid while dragging, whether it is shown or not. */
   snap: boolean;
   size: GridSize;
 }
@@ -36,9 +36,11 @@ export function readGridSettings(store: Storage | null = storage()): GridSetting
   if (!store) return DEFAULT_GRID;
   try {
     const size = Number(store.getItem(GRID_KEYS.size));
+    const show = store.getItem(GRID_KEYS.show) === 'true';
     return {
-      show: store.getItem(GRID_KEYS.show) === 'true',
-      snap: store.getItem(GRID_KEYS.snap) === 'true',
+      show,
+      // Until the dots, a shown grid was always snapped to: a browser that kept it shown keeps snapping.
+      snap: show || store.getItem(GRID_KEYS.snap) === 'true',
       size: (GRID_SIZES as readonly number[]).includes(size)
         ? (size as GridSize)
         : DEFAULT_GRID.size,

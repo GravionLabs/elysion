@@ -370,26 +370,26 @@ describe('the grid', () => {
     ).toEqual(['false', 'true', 'false']);
   });
 
-  it('shows the grid at the chosen size, remembers it, and a reload starts with it', async () => {
-    const { controls, canvas } = await setup();
+  it('shows the dots at the chosen size, remembers it, and a reload starts with it', async () => {
+    const { container, controls, canvas } = await setup();
     draw(canvas, [100, 100], [260, 200]); // an empty board exports as nothing
+    const root = container.querySelector('.elysion-canvas') as HTMLElement;
+    expect(root.getAttribute('data-grid')).toBeNull();
 
     open();
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Show grid' }));
     fireEvent.click(screen.getByRole('menuitemradio', { name: '40 px' }));
 
-    await waitFor(async () =>
-      expect((await exported(controls)).grid).toMatchObject({
-        gridModeEnabled: true,
-        gridSize: 40,
-      }),
-    );
+    await waitFor(async () => expect((await exported(controls)).grid.gridSize).toBe(40));
+    expect(root.getAttribute('data-grid')).toBe('dots');
+    expect(root.style.getPropertyValue('--grid-spacing')).toBe('40px');
     expect(localStorage.getItem('elysion.grid.show')).toBe('true');
     expect(localStorage.getItem('elysion.grid.size')).toBe('40');
-    // The menu stays open for a size (to try them), and a shown grid is always snapped to: the switch is on and disabled.
+    // Showing the grid and snapping to it are two settings: the dots do not turn snapping on.
     const snap = screen.getByRole('menuitemcheckbox', { name: 'Snap to grid' });
-    expect(snap.getAttribute('aria-checked')).toBe('true');
-    expect(snap.getAttribute('aria-disabled')).toBe('true');
+    expect(snap.getAttribute('aria-checked')).toBe('false');
+    expect(snap.getAttribute('aria-disabled')).toBeNull();
+    expect((await exported(controls)).grid.gridModeEnabled).toBe(false);
 
     cleanup();
     const again = render(<CanvasApp boardId="test-board" onControls={vi.fn()} />);
@@ -402,6 +402,32 @@ describe('the grid', () => {
       'true',
     );
   }, 20000);
+
+  it("toggles the dots with Excalidraw's grid shortcut, Ctrl+', and does not turn snapping on", async () => {
+    const { container, controls, canvas } = await setup();
+    draw(canvas, [100, 100], [260, 200]); // an empty board exports as nothing
+    const root = container.querySelector('.elysion-canvas') as HTMLElement;
+    const excalidraw = container.querySelector('.excalidraw') as HTMLElement;
+
+    fireEvent.keyDown(excalidraw, { key: "'", ctrlKey: true });
+    expect(root.getAttribute('data-grid')).toBe('dots');
+    fireEvent.keyDown(excalidraw, { key: "'", ctrlKey: true });
+    expect(root.getAttribute('data-grid')).toBeNull();
+    expect((await exported(controls)).grid.gridModeEnabled).toBe(false);
+  });
+
+  it('keeps the canvas itself transparent: the board color and the dots are the background behind it', async () => {
+    const { controls, canvas } = await setup();
+    draw(canvas, [100, 100], [260, 200]);
+
+    await waitFor(
+      async () =>
+        expect(
+          JSON.parse(await ((await controls.exportBoard('excalidraw')) as Blob).text()).appState
+            .viewBackgroundColor,
+        ).toBe('#f4f5f7'), // what leaves the canvas carries the board's color
+    );
+  });
 
   it('snaps a new rectangle to the grid while Snap to grid is on, and not without it', async () => {
     const { controls, canvas } = await setup();

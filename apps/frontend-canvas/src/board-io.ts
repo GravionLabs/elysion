@@ -11,6 +11,7 @@ import type {
   NonDeletedExcalidrawElement,
 } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
+import { VIEW_BACKGROUND_COLOR } from './element-style';
 import { svgToPdf } from './pdf';
 
 export type ExportFormat = 'png' | 'svg' | 'excalidraw' | 'pdf';
@@ -90,7 +91,12 @@ export async function exportBoard(
 
   const files = api.getFiles();
   // What you see, on its background: the current theme and view background are kept.
-  const exportState = { ...appState, exportBackground: true };
+  const exportState = {
+    ...appState,
+    // The canvas itself is transparent (the board's color and grid are CSS), so the export brings the board's color.
+    viewBackgroundColor: VIEW_BACKGROUND_COLOR,
+    exportBackground: true,
+  };
 
   switch (format) {
     case 'png':
@@ -102,9 +108,19 @@ export async function exportBoard(
     case 'pdf':
       return svgToPdf(await exportToSvg({ elements, appState: exportState, files }));
     case 'excalidraw':
-      return new Blob([serializeAsJSON(elements, appState, files, 'local')], {
-        type: 'application/json',
-      });
+      return new Blob(
+        [
+          serializeAsJSON(
+            elements,
+            { ...appState, viewBackgroundColor: VIEW_BACKGROUND_COLOR },
+            files,
+            'local',
+          ),
+        ],
+        {
+          type: 'application/json',
+        },
+      );
   }
 }
 

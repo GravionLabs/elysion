@@ -1,0 +1,21 @@
+/*
+ * The board's background and its dot grid. Excalidraw's static canvas is transparent (CanvasApp sets `viewBackgroundColor`),
+ * so what is behind it is the board: the page color, and the dots when the grid is shown. The dots are one radial gradient
+ * per tile, placed by --grid-spacing and --grid-offset-x/y (grid-dots.ts) so that a dot lies on every grid point; the dark
+ * theme only changes the colors (the canvas filter of the dark theme touches the drawing, not this).
+ */
+.elysion-canvas .excalidraw {
+  --grid-dot-color: color-mix(in srgb, var(--c-border-muted) 70%, transparent);
+  background-color: var(--c-bg);
+}
+
+.elysion-canvas[data-grid='dots']:not([data-grid-faded]) .excalidraw {
+  background-image: radial-gradient(
+    circle at center,
+    var(--grid-dot-color) 0,
+    var(--grid-dot-color) 1px,
+    transparent 1.5px
+  );
+  background-size: var(--grid-spacing, 20px) var(--grid-spacing, 20px);
+  background-position: var(--grid-offset-x, 0) var(--grid-offset-y, 0);
+}
