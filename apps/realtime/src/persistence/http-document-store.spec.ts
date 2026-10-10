@@ -4,6 +4,7 @@ import { INTERNAL_TOKEN_AUDIENCE, INTERNAL_TOKEN_ISSUER } from '@elysion/shared-
 import { jwtVerify } from 'jose';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { InternalTokenSigner } from '../auth/internal-token-signer.js';
+import { DocumentRejectedError } from './document-store.js';
 import { HttpDocumentStore } from './http-document-store.js';
 
 const SECRET = 'a-test-secret-that-is-at-least-32-characters-long';
@@ -59,6 +60,24 @@ describe('HttpDocumentStore', () => {
 
   it('answers null for a board without a document', async () => {
     expect(await store.load('b')).toBeNull();
+  });
+
+  it.each([404, 410, 413, 422])('says a save will never work for a %s', async (status) => {
+    respond = () => ({ status });
+
+    const error = await store.save('b', new Uint8Array([1]), '1').catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(DocumentRejectedError);
+    expect((error as DocumentRejectedError).status).toBe(status);
+  });
+
+  it.each([401, 403, 500, 503])('treats a %s as a failure that may pass', async (status) => {
+    respond = () => ({ status });
+
+    const error = await store.save('b', new Uint8Array([1]), '1').catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(DocumentRejectedError);
   });
 
   it('throws instead of answering null when the backend fails', async () => {
