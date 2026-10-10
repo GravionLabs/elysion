@@ -85,6 +85,10 @@ export const en = {
   errorNotOnBoard: 'That element is not on the board.',
   libraryNotAllowed: 'Only libraries from libraries.excalidraw.com can be added.',
   libraryFailed: 'The library could not be added.',
+  imageTypeNotSupported: (name: string) =>
+    `${name} was not added: only PNG, JPEG, GIF, WebP and SVG images can be.`,
+  imageTooLarge: (name: string) => `${name} was not added: it is larger than 4 MB.`,
+  imageUnreadable: (name: string) => `${name} was not added: it could not be read as an image.`,
   boardFull: 'This board is full: 20,000 elements.',
   boardFullServer: 'This board is full. Delete something to make room.',
   updateTooLarge: 'That change is too large to send.',
@@ -152,6 +156,12 @@ export const de: Messages = {
   errorNotOnBoard: 'Dieses Element befindet sich nicht auf dem Board.',
   libraryNotAllowed: 'Es können nur Bibliotheken von libraries.excalidraw.com hinzugefügt werden.',
   libraryFailed: 'Die Bibliothek konnte nicht hinzugefügt werden.',
+  imageTypeNotSupported: (name: string) =>
+    `${name} wurde nicht hinzugefügt: Nur PNG-, JPEG-, GIF-, WebP- und SVG-Bilder sind möglich.`,
+  imageTooLarge: (name: string) =>
+    `${name} wurde nicht hinzugefügt: Die Datei ist größer als 4 MB.`,
+  imageUnreadable: (name: string) =>
+    `${name} wurde nicht hinzugefügt: Die Datei ist kein lesbares Bild.`,
   boardFull: 'Dieses Board ist voll: 20.000 Elemente.',
   boardFullServer: 'Dieses Board ist voll. Lösche etwas, um Platz zu schaffen.',
   updateTooLarge: 'Diese Änderung ist zu groß zum Senden.',
