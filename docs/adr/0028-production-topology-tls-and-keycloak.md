@@ -1,6 +1,6 @@
 # ADR 0028: The production topology: TLS, host names and Keycloak behind the edge
 
-- Status: Proposed (the owner has answered the open questions on 2026-10-09: **compose is for development and the demo, production is Kubernetes through the Helm chart**)
+- Status: Accepted (2026-10-10, by the product owner; on 2026-10-09 the owner had answered the open questions: **compose is for development and the demo, production is Kubernetes through the Helm chart**)
 - Date: 2026-10-09
 - Issues: #672 (Feature #671, Epic #670); implemented in #673
 - Builds on: [ADR 0014](0014-keycloak-identity-provider.md) (Keycloak, the realm as a file), [ADR 0018](0018-kubernetes-packaging.md) (the chart deploys the four services only), [ADR 0023](0023-own-valkey-one-compose-file.md) (one stack definition), ADR 0027 (enterprise sign-in, Proposed in #747) (brokering needs a public Keycloak)
@@ -172,6 +172,18 @@ the environment set (`ELYSION_APP_URL`, `ELYSION_BFF_CLIENT_SECRET`), and adds t
 - ~~Is there a domain to design against?~~ **Owner answer (2026-10-09): no.** The guide and `values-production.example.yaml` use `elysion.example` and `id.example`; an operator replaces them.
 - ~~Who runs the production Keycloak?~~ **Owner answer (2026-10-09): not known yet.** Elysion's work is the same either way (the realm release asset, the documented Keycloak settings and the ingress rules). The guide therefore shows the Keycloak Operator as **one example** and says plainly that an existing Keycloak or another provider works the same; it does not pick one.
 
+## Follow-ups the owner asked about (2026-10-10)
+
+- **A wildcard certificate is enough.** One certificate for `*.elysion.example` serves the application host and the identity host (sibling subdomains,
+  see above); it is the cluster's cert-manager (DNS-01) or the operator's PKI that makes it, and the same `kubernetes.io/tls` Secret can be named by
+  `edge.tlsSecretName` and by the Keycloak ingress. The guide uses it as its example.
+- **Keycloak as an optional part of the chart** is possible and does not change this decision (the chart takes an issuer URL either way), but it
+  reverses ADR 0018 ("external services are values, never subcharts") and adds a service to run: its own database, backup, upgrades, the admin
+  bootstrap, the realm import with the placeholders above and high availability. It is therefore a **separate PBI with its own ADR** (a
+  `keycloak.enabled` switch, off by default) that supersedes that part of ADR 0018. #673 builds the realm import so that the PBI can use it unchanged.
+- **Microsoft Entra ID without Keycloak** is variant B of [ADR 0027](0027-enterprise-sign-in-groups-and-administration.md) (direct); it is not
+  decided here and needs no change to this ADR, because the chart and the realm file only depend on an issuer URL. It is decided with #638.
+
 ## Decision
 
-_Proposed. The owner has decided that production is Kubernetes through the Helm chart and compose is for development, that there is no domain yet and that the operator of the production Keycloak is not known; to be accepted by the product owner, who then removes `needs-decision` from #672._
+_Accepted by the product owner on 2026-10-10 as written under "Decision (proposed)", with the follow-ups above. `needs-decision` is removed from #672; #673 is rewritten for the Helm chart._
