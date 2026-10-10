@@ -995,7 +995,7 @@
     <unit id="board.error.nothingSelected">
       <notes>
         <note category="location">src/app/board/board.ts:383</note>
-        <note category="location">src/app/board/board.ts:506</note>
+        <note category="location">src/app/board/board.ts:530</note>
       </notes>
       <segment>
         <source>Nothing is selected.</source>
@@ -1017,9 +1017,18 @@
         <source>The export failed.</source>
       </segment>
     </unit>
+    <unit id="board.error.importFailed">
+      <notes>
+        <note category="location">src/app/board/board.ts:425</note>
+        <note category="location">src/app/board/board.ts:453</note>
+      </notes>
+      <segment>
+        <source>The import failed.</source>
+      </segment>
+    </unit>
     <unit id="board.notice.imported.one">
       <notes>
-        <note category="location">src/app/board/board.ts:422</note>
+        <note category="location">src/app/board/board.ts:446</note>
       </notes>
       <segment>
         <source>Imported 1 element from <ph id="0" equiv="file" disp="file.name"/>.</source>
@@ -1027,23 +1036,15 @@
     </unit>
     <unit id="board.notice.imported.many">
       <notes>
-        <note category="location">src/app/board/board.ts:423</note>
+        <note category="location">src/app/board/board.ts:447</note>
       </notes>
       <segment>
         <source>Imported <ph id="0" equiv="count" disp="count"/> elements from <ph id="1" equiv="file" disp="file.name"/>.</source>
       </segment>
     </unit>
-    <unit id="board.error.importFailed">
-      <notes>
-        <note category="location">src/app/board/board.ts:429</note>
-      </notes>
-      <segment>
-        <source>The import failed.</source>
-      </segment>
-    </unit>
     <unit id="board.error.templateAddFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:449</note>
+        <note category="location">src/app/board/board.ts:473</note>
       </notes>
       <segment>
         <source>The template could not be added.</source>
@@ -1051,7 +1052,7 @@
     </unit>
     <unit id="board.template.defaultSelectionName">
       <notes>
-        <note category="location">src/app/board/board.ts:460</note>
+        <note category="location">src/app/board/board.ts:484</note>
       </notes>
       <segment>
         <source>Selection</source>
@@ -1059,7 +1060,7 @@
     </unit>
     <unit id="board.template.defaultBoardName">
       <notes>
-        <note category="location">src/app/board/board.ts:461</note>
+        <note category="location">src/app/board/board.ts:485</note>
       </notes>
       <segment>
         <source>Board</source>
@@ -1067,7 +1068,7 @@
     </unit>
     <unit id="board.template.nameRequired">
       <notes>
-        <note category="location">src/app/board/board.ts:490</note>
+        <note category="location">src/app/board/board.ts:514</note>
       </notes>
       <segment>
         <source>Give the template a name.</source>
@@ -1075,7 +1076,7 @@
     </unit>
     <unit id="board.error.templateEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:507</note>
+        <note category="location">src/app/board/board.ts:531</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to save as a template.</source>
@@ -1083,7 +1084,7 @@
     </unit>
     <unit id="board.notice.templateSaved">
       <notes>
-        <note category="location">src/app/board/board.ts:518</note>
+        <note category="location">src/app/board/board.ts:542</note>
       </notes>
       <segment>
         <source>Saved the template “<ph id="0" equiv="name" disp="name"/>”.</source>
@@ -1091,7 +1092,7 @@
     </unit>
     <unit id="board.error.templateSaveFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:529</note>
+        <note category="location">src/app/board/board.ts:553</note>
       </notes>
       <segment>
         <source>The template could not be saved.</source>
@@ -1379,7 +1380,7 @@
     </unit>
     <unit id="topbar.export.menu">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:22</note>
+        <note category="location">src/app/topbar/export-menu.html:23</note>
       </notes>
       <segment>
         <source>Export</source>
@@ -1387,7 +1388,7 @@
     </unit>
     <unit id="topbar.export.selection-only">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:42,44</note>
+        <note category="location">src/app/topbar/export-menu.html:43,46</note>
       </notes>
       <segment>
         <source>Selection only</source>
@@ -1395,7 +1396,7 @@
     </unit>
     <unit id="topbar.export.options">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:45,47</note>
+        <note category="location">src/app/topbar/export-menu.html:47,49</note>
       </notes>
       <segment>
         <source>Options</source>
@@ -1403,7 +1404,7 @@
     </unit>
     <unit id="topbar.export.pdf-pages">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:47,48</note>
+        <note category="location">src/app/topbar/export-menu.html:49,50</note>
       </notes>
       <segment>
         <source>PDF pages</source>
@@ -1411,7 +1412,7 @@
     </unit>
     <unit id="topbar.export.page-size">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:57,58</note>
+        <note category="location">src/app/topbar/export-menu.html:59,60</note>
       </notes>
       <segment>
         <source>Page size</source>
@@ -1419,7 +1420,7 @@
     </unit>
     <unit id="topbar.export.orientation">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:67,68</note>
+        <note category="location">src/app/topbar/export-menu.html:69,70</note>
       </notes>
       <segment>
         <source>Orientation</source>
@@ -1427,7 +1428,7 @@
     </unit>
     <unit id="topbar.export.colors">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:77,78</note>
+        <note category="location">src/app/topbar/export-menu.html:79,80</note>
       </notes>
       <segment>
         <source>Colors</source>
@@ -1435,7 +1436,7 @@
     </unit>
     <unit id="topbar.export.scale">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:87,88</note>
+        <note category="location">src/app/topbar/export-menu.html:89,90</note>
       </notes>
       <segment>
         <source>PNG scale</source>
@@ -1443,7 +1444,7 @@
     </unit>
     <unit id="topbar.export.background">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:102,105</note>
+        <note category="location">src/app/topbar/export-menu.html:104,107</note>
       </notes>
       <segment>
         <source>Background</source>
