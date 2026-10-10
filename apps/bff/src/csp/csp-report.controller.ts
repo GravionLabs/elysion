@@ -5,6 +5,9 @@ import { Public } from '../auth/public.decorator.js';
 /** The largest report body read; a violation report is a few hundred bytes. */
 export const MAX_CSP_REPORT_BYTES = 8 * 1024;
 
+/** The content types a browser reports with. */
+const REPORT_CONTENT_TYPES = new Set(['application/csp-report', 'application/reports+json']);
+
 /** What a report says, reduced to what the log line carries: nothing of the page's own URL, no query. */
 export interface CspViolation {
   directive: string;
@@ -91,21 +94,29 @@ export class CspReportController {
   @Post()
   @HttpCode(204)
   async report(@Req() req: Request): Promise<void> {
-    let body: unknown = req.body;
-    if (body === undefined || (typeof body === 'object' && Object.keys(body ?? {}).length === 0)) {
-      const text = await readBody(req);
-      if (text === null) {
-        return;
-      }
-      try {
-        body = JSON.parse(text);
-      } catch {
-        return;
-      }
+    // Only what a browser sends: `report-uri` (application/csp-report) and the Reporting API (application/reports+json).
+    // Anything else, application/json included, is not read. The global JSON parser skips this path (http-limits.ts), so
+    // the 8 kB limit of readBody is the only limit that applies.
+    const contentType = (req.headers['content-type'] ?? '').split(';')[0].trim().toLowerCase();
+    if (!REPORT_CONTENT_TYPES.has(contentType)) {
+      return;
     }
-    for (const violation of violationsOf(body).slice(0, 10)) {
+    const text = await readBody(req);
+    if (text === null) {
+      return;
+    }
+    let body: unknown;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      return;
+    }
+    // One line per request, so that a request cannot multiply what the rate limit allows: the first violation, and how
+    // many more the report held.
+    const [first, ...more] = violationsOf(body).slice(0, 10);
+    if (first) {
       this.logger.warn(
-        `CSP violation: ${violation.directive} blocked ${violation.blocked}`,
+        `CSP violation: ${first.directive} blocked ${first.blocked}${more.length > 0 ? ` (+${more.length} more in this report)` : ''}`,
         'CspReport',
       );
     }

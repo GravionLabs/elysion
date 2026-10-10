@@ -2,6 +2,8 @@ import { Test } from '@nestjs/testing';
 import { INestApplication, Logger } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { applyHttpLimits } from '../src/http-limits.js';
 import { AppModule } from './../src/app.module.js';
 import { MAX_CSP_REPORT_BYTES } from '../src/csp/csp-report.controller.js';
 import { TokenVerifier } from '../src/auth/token-verifier.js';
@@ -16,7 +18,8 @@ describe('POST /api/csp-report (e2e)', () => {
       .overrideProvider(TokenVerifier)
       .useValue(testVerifier())
       .compile();
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication<NestExpressApplication>();
+    applyHttpLimits(app as NestExpressApplication); // as main.ts does: the 6 MB JSON parser is on
     await app.init();
     warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
   });
@@ -65,13 +68,43 @@ describe('POST /api/csp-report (e2e)', () => {
     expect(String(warn.mock.calls[0][0])).toContain('img-src blocked inline');
   });
 
-  it('takes an application/json body too', async () => {
+  it('reads only the two report content types: an application/json body is answered and ignored', async () => {
     await request(app.getHttpServer())
       .post('/api/csp-report')
       .send({ 'csp-report': { 'violated-directive': 'style-src', 'blocked-uri': 'eval' } })
       .expect(204);
 
-    expect(String(warn.mock.calls[0][0])).toContain('style-src blocked eval');
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('answers a 5.5 MB application/json body with 204 and logs nothing', async () => {
+    const body = JSON.stringify({ 'csp-report': { 'blocked-uri': 'x'.repeat(5_500_000) } });
+
+    await request(app.getHttpServer())
+      .post('/api/csp-report')
+      .set('Content-Type', 'application/json')
+      .send(body)
+      .expect(204);
+
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('logs one line per request, however many violations a report holds', async () => {
+    await request(app.getHttpServer())
+      .post('/api/csp-report')
+      .set('Content-Type', 'application/reports+json')
+      .send(
+        JSON.stringify(
+          Array.from({ length: 10 }, (_, i) => ({
+            type: 'csp-violation',
+            body: { effectiveDirective: 'img-src', blockedURL: `https://x.example/${i}` },
+          })),
+        ),
+      )
+      .expect(204);
+
+    expect(warn).toHaveBeenCalledOnce();
+    expect(String(warn.mock.calls[0][0])).toContain('(+9 more in this report)');
   });
 
   it('answers 204 and logs nothing for garbage and for a body over the limit', async () => {
