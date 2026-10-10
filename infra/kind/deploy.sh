@@ -45,7 +45,7 @@ up() {
   # The kind nodes reach the host's published ports through the gateway of the docker network `kind`.
   HOST_IP=$(docker network inspect kind -f '{{range .IPAM.Config}}{{.Gateway}} {{end}}' | tr ' ' '\n' | grep -v ':' | head -1)
   # Fallback: the node's default route is the host (on a runner the network's Gateway can come back empty).
-  [ -n "$HOST_IP" ] || HOST_IP=$(docker exec "$CLUSTER-control-plane" ip route | awk '/^default/ {print $3; exit}')
+  [ -n "$HOST_IP" ] || HOST_IP=$(docker exec "$CLUSTER-control-plane" ip route | awk '/^default/ {print $3}')
   [ -n "$HOST_IP" ] || { echo "Cannot find the host's address as the kind nodes see it."; exit 1; }
   echo "the host as the nodes see it: $HOST_IP"
   docker exec "$POSTGRES_CONTAINER" psql -U elysion -d postgres -tc "select 1 from pg_database where datname='elysion_kind'" | grep -q 1 \
