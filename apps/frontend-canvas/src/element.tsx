@@ -106,6 +106,14 @@ class ElysionCanvasElement extends HTMLElement {
   }
 
   /**
+   * The board as the picture of its card (#729): a 480 by 300 PNG in the light theme, or `null` when the board is empty or the
+   * canvas is not up. The shell uploads it when an editor leaves the board.
+   */
+  exportThumbnail(): Promise<Blob | null> {
+    return this.#controls ? this.#controls.exportThumbnail() : Promise.resolve(null);
+  }
+
+  /**
    * Resolves when the images of the board are loaded (nothing is being fetched or uploaded any more) or after at most
    * `timeoutMs` (20 seconds). A host that makes an export of a board it does not show waits for it after `synced`.
    */

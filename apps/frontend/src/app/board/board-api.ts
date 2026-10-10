@@ -11,6 +11,9 @@ export interface BoardInfo {
   roomId: string | null;
   /** The route that opens the board. */
   path: string;
+  /** When the picture of the card was made, or `null`/absent when the board has none (#729). */
+  thumbnailUpdatedAt?: string | null;
+  hasThumbnail?: boolean;
 }
 
 /** What the user may do on a board: the shell shows Share to owners and a read-only canvas to viewers. */

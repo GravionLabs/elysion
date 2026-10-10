@@ -164,6 +164,29 @@ describe('BoardList', () => {
     });
   });
 
+  describe('the picture of a card (#729)', () => {
+    it('shows the picture for a board that has one, and the initials for one that has none', async () => {
+      await respondWith([
+        {
+          ...board('b2', 'Sprint review'),
+          hasThumbnail: true,
+          thumbnailUpdatedAt: '2026-10-10T10:00:00Z',
+        },
+        board('b1', 'Plain board'),
+      ]);
+
+      const [withPicture, without] = [...el().querySelectorAll('.board-item')];
+
+      expect(withPicture.querySelector('app-board-thumbnail')).not.toBeNull();
+      expect(without.querySelector('app-board-thumbnail')).toBeNull();
+      expect(without.querySelector('.board-preview')?.textContent?.trim()).toBe('PB');
+      // The picture is fetched once its card is in view (here at once: the test browser has no IntersectionObserver or shows all).
+      for (const request of http.match((r) => r.url === '/api/boards/b2/thumbnail')) {
+        request.flush(new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' }));
+      }
+    });
+  });
+
   it('shows an empty state with a way to create the first board', async () => {
     await respondWith([]);
 

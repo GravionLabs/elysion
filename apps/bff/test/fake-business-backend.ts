@@ -69,6 +69,8 @@ export class FakeBusinessBackend {
   templateRefusal: number | null = null;
   /** The files of boards, by `boardId/fileId`: what the file routes received and serve. */
   readonly files = new Map<string, { contentType: string; bytes: Buffer }>();
+  /** The preview pictures of boards, by board id, with the version the ETag is made of (#729). */
+  readonly thumbnails = new Map<string, { bytes: Buffer; version: number }>();
   /** The bytes of the file being uploaded that have arrived so far (a test reads it while the upload is still running). */
   uploadedSoFar = 0;
   /** With `fileRefusal`: answer at once, without reading the body (as the real backend does when a file is too large). */
@@ -183,6 +185,29 @@ export class FakeBusinessBackend {
         return send(204);
       }
       return send(405);
+    }
+    const thumbnailRoute = /^\/boards\/([^/]+)\/thumbnail$/.exec(req.url ?? '');
+    if (thumbnailRoute) {
+      const id = thumbnailRoute[1]!;
+      if (req.method === 'PUT') {
+        const parts: Buffer[] = [];
+        for await (const chunk of req) parts.push(chunk as Buffer);
+        const version = (this.thumbnails.get(id)?.version ?? 0) + 1;
+        this.thumbnails.set(id, { bytes: Buffer.concat(parts), version });
+        return send(204);
+      }
+      const picture = this.thumbnails.get(id);
+      if (!picture) return send(404);
+      const etag = `"${picture.version}"`;
+      if (req.headers['if-none-match'] === etag) return send(304);
+      res.writeHead(200, {
+        'content-type': 'image/png',
+        'content-length': picture.bytes.length,
+        'cache-control': 'private, no-cache',
+        etag,
+        'x-internal': 'must-not-be-passed-on',
+      });
+      return void res.end(picture.bytes);
     }
     const fileRoute = /^\/boards\/([^/]+)\/files\/([^/]+)$/.exec(req.url ?? '');
     if (fileRoute) {

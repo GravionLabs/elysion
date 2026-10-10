@@ -27,6 +27,12 @@ public class Board
 
     public Room? Room { get; set; }
 
+    /// <summary>
+    /// When the board's preview picture (the card's image, #729) was last stored in the object store, or null when it has none.
+    /// The picture itself is not in the database.
+    /// </summary>
+    public DateTimeOffset? ThumbnailUpdatedAt { get; set; }
+
     public List<BoardMembership> Memberships { get; set; } = [];
 
     /// <summary>

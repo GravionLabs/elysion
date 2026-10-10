@@ -480,6 +480,13 @@
                   <a class="board-card" draggable="false" [routerLink]="board.path">
                     <span class="board-preview" aria-hidden="true" [style.--tint]="tint(board.id)">
                       {{ initials(board.name) }}
+                      @if (board.hasThumbnail && board.thumbnailUpdatedAt) {
+                        <app-board-thumbnail
+                          class="board-thumbnail"
+                          [boardId]="board.id"
+                          [version]="board.thumbnailUpdatedAt"
+                        />
+                      }
                     </span>
                     <span class="board-meta">
                       <span class="board-name" [title]="board.name">{{ board.name }}</span>

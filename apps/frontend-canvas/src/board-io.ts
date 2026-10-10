@@ -1,6 +1,7 @@
 import {
   CaptureUpdateAction,
   exportToBlob,
+  exportToCanvas,
   exportToSvg,
   getCommonBounds,
   loadFromBlob,
@@ -18,6 +19,57 @@ import { svgsToPdf } from './pdf';
 
 export type ExportFormat = 'png' | 'svg' | 'excalidraw' | 'pdf';
 export type { ExportOptions } from './export-options';
+
+/** The size of a board's preview picture (the image on its card, #729). */
+export const THUMBNAIL_WIDTH = 480;
+export const THUMBNAIL_HEIGHT = 300;
+
+/**
+ * Where content of a given size goes in a box of the thumbnail's size: as large as fits, its proportions kept, centered.
+ * Content that is smaller than the box is not enlarged beyond twice its size (a single small note is not a poster).
+ */
+export function fitInto(
+  content: { width: number; height: number },
+  box: { width: number; height: number } = { width: THUMBNAIL_WIDTH, height: THUMBNAIL_HEIGHT },
+): { x: number; y: number; width: number; height: number } {
+  const scale = Math.min(box.width / content.width, box.height / content.height, 2);
+  const width = content.width * scale;
+  const height = content.height * scale;
+  return { x: (box.width - width) / 2, y: (box.height - height) / 2, width, height };
+}
+
+/**
+ * The whole board as a picture of {@link THUMBNAIL_WIDTH} by {@link THUMBNAIL_HEIGHT} pixels, always in the light theme on the
+ * board's color (whatever the screen shows), or `null` for an empty board. The grid is not in it: the canvas does not draw it.
+ */
+export async function exportThumbnail(api: ExcalidrawImperativeAPI): Promise<Blob | null> {
+  const elements = api.getSceneElements();
+  if (elements.length === 0) return null;
+  const rendered = await exportToCanvas({
+    elements,
+    appState: {
+      ...api.getAppState(),
+      viewBackgroundColor: VIEW_BACKGROUND_COLOR,
+      exportBackground: false,
+      exportWithDarkMode: false,
+      exportScale: 1,
+    },
+    files: api.getFiles(),
+    maxWidthOrHeight: THUMBNAIL_WIDTH * 2, // sharp enough to be scaled down
+    exportPadding: 12,
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = THUMBNAIL_WIDTH;
+  canvas.height = THUMBNAIL_HEIGHT;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+  context.fillStyle = VIEW_BACKGROUND_COLOR;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.imageSmoothingQuality = 'high';
+  const place = fitInto({ width: rendered.width, height: rendered.height });
+  context.drawImage(rendered, place.x, place.y, place.width, place.height);
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+}
 
 /** The elements to export: everything, or the selected ones plus the text inside selected shapes. */
 export function elementsToExport(

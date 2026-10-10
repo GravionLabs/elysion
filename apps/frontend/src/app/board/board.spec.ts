@@ -10,6 +10,7 @@ import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
 import { SessionService } from '../auth/session.service';
 import { ThemeService } from '../theme/theme.service';
 import { DEFAULT_EXPORT_SETTINGS, toCanvasOptions } from '../topbar/export-settings';
+import { ThumbnailUploader } from './thumbnail-uploader';
 import { Board } from './board';
 import { CanvasElementLoader } from './canvas-element-loader';
 
@@ -1187,6 +1188,82 @@ describe('Board', () => {
       await fixture.whenStable();
       fixture.detectChanges();
       expect(canvas()!.hasAttribute('readonly')).toBe(true);
+    });
+
+    describe('the picture of the card (#729)', () => {
+      let start: ReturnType<typeof vi.spyOn>;
+      const ready = () => canvas()!.dispatchEvent(new CustomEvent('ready'));
+
+      beforeEach(() => {
+        start = vi
+          .spyOn(TestBed.inject(ThumbnailUploader), 'start')
+          .mockReturnValue({ rendered: Promise.resolve(), done: Promise.resolve(true) });
+      });
+
+      it('is drawn when the router asks to leave, which it may do', async () => {
+        await openAs('editor');
+        ready();
+
+        expect(await component.prepareToLeave()).toBe(true);
+
+        expect(start).toHaveBeenCalledOnce();
+        expect(start.mock.calls[0]![0]).toBe(uuid);
+      });
+
+      it('lets the person leave even when the canvas does not answer', async () => {
+        start.mockReturnValue({
+          rendered: new Promise(() => undefined),
+          done: new Promise(() => undefined),
+        });
+        await openAs('editor');
+        ready();
+
+        expect(await component.prepareToLeave(20)).toBe(true);
+      });
+
+      it('is drawn when the tab is hidden or closed, and not when it is shown', async () => {
+        await openAs('owner');
+        ready();
+
+        Object.defineProperty(document, 'visibilityState', {
+          configurable: true,
+          value: 'visible',
+        });
+        document.dispatchEvent(new Event('visibilitychange'));
+        expect(start).not.toHaveBeenCalled();
+        Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+        document.dispatchEvent(new Event('visibilitychange'));
+        expect(start).toHaveBeenCalledTimes(1);
+        window.dispatchEvent(new Event('pagehide'));
+        expect(start).toHaveBeenCalledTimes(2);
+        Object.defineProperty(document, 'visibilityState', {
+          configurable: true,
+          value: 'visible',
+        });
+      });
+
+      it('is never drawn for a viewer', async () => {
+        await openAs('viewer');
+        ready();
+
+        expect(await component.prepareToLeave()).toBe(true);
+
+        expect(start).not.toHaveBeenCalled();
+      });
+
+      it('is not drawn before the canvas is ready, and not for a room that is no stored board', async () => {
+        await openAs('editor');
+        expect(await component.prepareToLeave()).toBe(true);
+        expect(start).not.toHaveBeenCalled();
+
+        fixture = TestBed.createComponent(Board);
+        fixture.componentRef.setInput('boardId', 'default');
+        fixture.detectChanges();
+        await fixture.whenStable();
+        canvas()!.dispatchEvent(new CustomEvent('ready'));
+        expect(await fixture.componentInstance.prepareToLeave()).toBe(true);
+        expect(start).not.toHaveBeenCalled();
+      });
     });
 
     it('treats a user without a role like an editor in the interface: the backend refuses what they may not do', async () => {

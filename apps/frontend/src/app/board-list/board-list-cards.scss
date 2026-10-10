@@ -37,7 +37,9 @@
 
 // A neutral placeholder until boards get real thumbnails: the initials on a tint of a node token.
 .board-preview {
+  position: relative;
   display: grid;
+  overflow: hidden;
   height: 84px;
   place-items: center;
   // The initials are decorative, but still readable (WCAG AA): the tint toward the text color.
@@ -244,4 +246,11 @@
 
 .duplicate-error {
   margin-bottom: 12px;
+}
+
+// The picture of the board covers the initials once it is loaded (#729).
+.board-thumbnail {
+  position: absolute;
+  inset: 0;
+  background: var(--c-surface-1);
 }
