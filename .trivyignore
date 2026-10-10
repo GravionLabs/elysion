@@ -1,0 +1,2 @@
+# Vulnerabilities the image scan (`scan` in .github/workflows/ci.yml) does not fail on. One entry per line, a comment above it
+# with the reason and the date it is looked at again (docs/security.md). An empty list is the goal.
