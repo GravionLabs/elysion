@@ -17,7 +17,7 @@ import {
 
 /**
  * Losing and regaining the connection (#718): the realtime service is stopped while two people are on a board; the
- * top bar says "Offline", the person who draws during the outage keeps what was drawn, and when the service is back
+ * top bar no longer says "Connected", the person who draws during the outage keeps what was drawn, and when the service is back
  * the status returns and the other person has everything. A second run with a WS token of 5 seconds shows that a token
  * that has run out neither ends an open connection nor stops a reconnect.
  *
@@ -52,7 +52,10 @@ async function bothSee(expected: number) {
 async function outage(during: () => Promise<void>) {
   await compose(['stop', 'realtime']);
   try {
-    await expect(a.getByText('Offline', { exact: true })).toBeVisible({ timeout: 30_000 });
+    // "Offline" between two attempts and "Connecting…" during one: since the realtime service shuts down gracefully
+    // (SIGTERM saves the rooms) an attempt takes about a second to fail, so the bar mostly says "Connecting…".
+    await expect(a.getByText('Connected', { exact: true })).toHaveCount(0, { timeout: 30_000 });
+    await expect(a.getByText(/^\s*(Offline|Connecting…)\s*$/)).toBeVisible();
     await during();
   } finally {
     await compose(['start', 'realtime']);
@@ -94,7 +97,7 @@ test('what one person draws during an outage reaches the other when the service 
   await bothSee(1);
 
   await outage(async () => {
-    await expect(b.getByText('Offline', { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(b.getByText('Connected', { exact: true })).toHaveCount(0, { timeout: 30_000 });
     await drawRectangle(a, 320, 350);
     await drawRectangle(a, 520, 350);
     expect(await elementCount(a)).toBe(3);
