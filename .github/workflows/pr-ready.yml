@@ -4,6 +4,7 @@ name: PR readiness
 # ready): labeled needs-refinement or needs-decision, or blocked by an issue that is still open.
 on:
   pull_request:
+    branches: [main]
     types: [opened, edited, synchronize, reopened]
 
 permissions:
