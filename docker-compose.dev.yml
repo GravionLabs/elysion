@@ -22,7 +22,7 @@ services:
       - '${DEV_BIND:-127.0.0.1}:5432:5432'
 
   # 6380, not 6379: a Valkey of local-infra (or any other) on the machine may own 6379. The host apps use
-  # REDIS_URL=redis://localhost:6380 (apps/realtime/.env.example).
+  # REDIS_URL=redis://:dev-only-valkey-password@localhost:6380 (apps/realtime/.env.example).
   valkey:
     ports:
       - '127.0.0.1:${VALKEY_PORT:-6380}:6379'
