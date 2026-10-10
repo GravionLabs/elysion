@@ -85,6 +85,9 @@ export const en = {
   errorNotOnBoard: 'That element is not on the board.',
   libraryNotAllowed: 'Only libraries from libraries.excalidraw.com can be added.',
   libraryFailed: 'The library could not be added.',
+  boardFull: 'This board is full: 20,000 elements.',
+  boardFullServer: 'This board is full. Delete something to make room.',
+  updateTooLarge: 'That change is too large to send.',
 };
 
 export type Messages = typeof en;
@@ -149,6 +152,9 @@ export const de: Messages = {
   errorNotOnBoard: 'Dieses Element befindet sich nicht auf dem Board.',
   libraryNotAllowed: 'Es können nur Bibliotheken von libraries.excalidraw.com hinzugefügt werden.',
   libraryFailed: 'Die Bibliothek konnte nicht hinzugefügt werden.',
+  boardFull: 'Dieses Board ist voll: 20.000 Elemente.',
+  boardFullServer: 'Dieses Board ist voll. Lösche etwas, um Platz zu schaffen.',
+  updateTooLarge: 'Diese Änderung ist zu groß zum Senden.',
 };
 
 /** The name of a sticky note color (`StickyColor.name`, which stays English: it is the stored key) in the locale. */

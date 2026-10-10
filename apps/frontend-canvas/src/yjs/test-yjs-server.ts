@@ -6,7 +6,7 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
 import { WebSocketServer, type WebSocket as NodeWebSocket } from 'ws';
-import { MESSAGE_AWARENESS, MESSAGE_SYNC } from './protocol.js';
+import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC } from './protocol.js';
 
 export interface TestYjsServer {
   url: string;
@@ -19,6 +19,10 @@ export interface TestYjsServer {
   closeConnections: (code: number) => void;
   /** The URL of every connection the server has accepted, in order (to see which token each one carried). */
   connectionUrls: () => string[];
+  /** The server's document of a board, to put something into it as if another client had (a generation, for example). */
+  docOf: (boardId: string) => Y.Doc;
+  /** Tells every client that the board is full (message type 4), as the gateway does for a refused update. */
+  sendBoardFull: () => void;
 }
 
 interface Room {
@@ -154,6 +158,12 @@ export function startTestYjsServer(): Promise<TestYjsServer> {
         connectionUrls: () => [...connectionUrls],
         closeConnections: (code) => {
           for (const client of wss.clients) client.close(code);
+        },
+        docOf: (boardId) => getOrCreateRoom(boardId).doc,
+        sendBoardFull: () => {
+          const encoder = encoding.createEncoder();
+          encoding.writeVarUint(encoder, MESSAGE_BOARD_FULL);
+          for (const client of wss.clients) client.send(encoding.toUint8Array(encoder));
         },
       });
     });

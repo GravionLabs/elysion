@@ -24,6 +24,7 @@ const OBSERVED_ATTRIBUTES = [
   'user-color',
   'readonly',
   'images-enabled',
+  'max-elements',
 ] as const;
 
 class ElysionCanvasElement extends HTMLElement {
@@ -192,11 +193,13 @@ class ElysionCanvasElement extends HTMLElement {
         onTimerChange={(state: TimerState | null) => this.#emit('timer', { state })}
         onVotingChange={(session: VotingView | null) => this.#emit('voting', { session })}
         onError={(error) => this.#emit('error', { message: error.message })}
+        onNotice={(message) => this.#emit('notice', { message })}
         onFileError={(error) => this.#emit('fileerror', { message: error.message })}
         tokenProvider={this.#tokenProvider}
         fileStore={this.#fileStore}
         readOnly={this.hasAttribute('readonly')}
         imagesEnabled={this.hasAttribute('images-enabled')}
+        maxElements={positiveInteger(this.getAttribute('max-elements'))}
         userName={this.getAttribute('user-name') ?? undefined}
         userId={this.getAttribute('user-id') ?? undefined}
         userColor={this.getAttribute('user-color') ?? undefined}
@@ -207,6 +210,12 @@ class ElysionCanvasElement extends HTMLElement {
       />,
     );
   }
+}
+
+/** The attribute as a positive whole number, or `undefined` (use the default). */
+function positiveInteger(value: string | null): number | undefined {
+  const number = Number(value);
+  return value !== null && Number.isInteger(number) && number > 0 ? number : undefined;
 }
 
 export function registerElysionCanvasElement(): void {

@@ -398,4 +398,87 @@ describe('YjsWebsocketClient', () => {
       a.destroy();
     });
   });
+
+  describe('the generation of the document (ADR 0026)', () => {
+    const options = { WebSocketImpl, reconnectDelayMs: 30 };
+    const generationOf = (url: string) => new URL(url, 'http://x').searchParams.get('generation');
+
+    it('sends no generation on the first connection', async () => {
+      const client = new YjsWebsocketClient(`${server.url}?board=g1`, new Y.Doc(), options);
+
+      await waitUntil(() => server.connectionUrls().length === 1);
+
+      expect(generationOf(server.connectionUrls()[0])).toBeNull();
+      client.destroy();
+    });
+
+    it('sends the generation it learned after the first sync on every reconnect', async () => {
+      server.docOf('g2').getMap('meta').set('generation', 'gen-1');
+      const synced: number[] = [];
+      const client = new YjsWebsocketClient(`${server.url}?board=g2`, new Y.Doc(), {
+        ...options,
+        onSynced: () => synced.push(1),
+      });
+      await waitUntil(() => synced.length === 1);
+
+      server.dropConnections();
+      await waitUntil(() => server.connectionUrls().length === 2);
+
+      expect(generationOf(server.connectionUrls()[1])).toBe('gen-1');
+      client.destroy();
+    });
+
+    it('sends an empty generation when the document had none, so that a later rebuild is noticed', async () => {
+      const synced: number[] = [];
+      const client = new YjsWebsocketClient(`${server.url}?board=g3`, new Y.Doc(), {
+        ...options,
+        onSynced: () => synced.push(1),
+      });
+      await waitUntil(() => synced.length === 1);
+
+      server.dropConnections();
+      await waitUntil(() => server.connectionUrls().length === 2);
+
+      expect(generationOf(server.connectionUrls()[1])).toBe('');
+      client.destroy();
+    });
+
+    it('reports a stale copy (4409) and does not reconnect', async () => {
+      const stale: number[] = [];
+      const statuses: string[] = [];
+      const client = new YjsWebsocketClient(`${server.url}?board=g4`, new Y.Doc(), {
+        ...options,
+        onStaleCopy: () => stale.push(1),
+        onStatusChange: (status) => statuses.push(status),
+      });
+      await waitUntil(() => statuses.includes('connected'));
+
+      server.closeConnections(4409);
+      await waitUntil(() => stale.length === 1);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      expect(server.connectionUrls()).toHaveLength(1);
+      expect(statuses.at(-1)).toBe('disconnected');
+      client.destroy();
+    });
+
+    it('reports a refused update (1009) and a full board (message 4)', async () => {
+      const events: string[] = [];
+      const client = new YjsWebsocketClient(`${server.url}?board=g5`, new Y.Doc(), {
+        ...options,
+        onUpdateTooLarge: () => events.push('too-large'),
+        onBoardFull: () => events.push('full'),
+      });
+      await waitUntil(() => server.connectionUrls().length === 1);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      server.sendBoardFull();
+      await waitUntil(() => events.includes('full'));
+      server.closeConnections(1009);
+      await waitUntil(() => events.includes('too-large'));
+
+      expect(events).toEqual(['full', 'too-large']);
+      client.destroy();
+    });
+  });
 });

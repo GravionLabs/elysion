@@ -396,6 +396,12 @@ spec:
               value: "3000"
             - name: BUSINESS_BACKEND_URL
               value: http://elysion-business-backend:8080
+            - name: MAX_UPDATE_BYTES
+              value: "2097152"
+            - name: MAX_DOCUMENT_BYTES
+              value: "8388608"
+            - name: COMPACT_THRESHOLD_BYTES
+              value: "1048576"
             - name: REDIS_URL
               valueFrom:
                 secretKeyRef:

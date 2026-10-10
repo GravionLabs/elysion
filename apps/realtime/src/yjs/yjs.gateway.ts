@@ -1,5 +1,6 @@
 import {
   WS_CLOSE_FORBIDDEN,
+  WS_CLOSE_STALE_COPY,
   WS_CLOSE_UNAUTHORIZED,
   type WsTokenClaims,
 } from '@elysion/shared-types';
@@ -8,7 +9,7 @@ import {
   createConnectionContext,
   runInConnection,
 } from '@elysion/node-logging';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway } from '@nestjs/websockets';
 import * as decoding from 'lib0/decoding';
 import * as encoding from 'lib0/encoding';
@@ -17,8 +18,10 @@ import * as syncProtocol from 'y-protocols/sync';
 import type { IncomingMessage } from 'node:http';
 import type { RawData, WebSocket } from 'ws';
 import { InvalidWsTokenError, WsTokenVerifier } from '../auth/ws-token-verifier.js';
+import { SaveMetrics } from '../metrics/save-metrics.js';
 import { PresenceRelay } from '../presence/presence-relay.js';
-import { MESSAGE_AWARENESS, MESSAGE_SYNC } from './protocol.js';
+import { readGeneration } from './generation.js';
+import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC } from './protocol.js';
 import { YjsRoom, YjsRoomRegistry } from './yjs-room-registry.js';
 
 /**
@@ -66,6 +69,7 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly registry: YjsRoomRegistry,
     private readonly presence: PresenceRelay,
     private readonly tokens: WsTokenVerifier,
+    @Optional() private readonly metrics?: SaveMetrics,
   ) {}
 
   handleConnection(client: WebSocket, request: IncomingMessage): void {
@@ -77,7 +81,7 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private open(client: WebSocket, request: IncomingMessage, context: ConnectionContext): void {
-    const { boardId, token } = this.readQuery(request);
+    const { boardId, token, generation } = this.readQuery(request);
     if (!boardId) {
       client.close(1008, 'Missing board id');
       return;
@@ -85,7 +89,7 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // Messages can arrive while the token is being checked and the board's stored state is loading (the browser
     // sends its first sync step on open); handling them in order after the admission keeps them from being dropped.
-    let queue: Promise<void> = this.admit(client, boardId, token);
+    let queue: Promise<void> = this.admit(client, boardId, token, generation);
     // A socket's callbacks run outside the context they were registered in: enter the connection's again.
     client.on('message', (data: RawData) => {
       runInConnection(context, () => {
@@ -104,7 +108,12 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * another board would otherwise open every board, which is the point of the token. Failures close the socket
    * with 4401 (no usable token) or 4403 (a valid token for a different board), before the board is even loaded.
    */
-  private async admit(client: WebSocket, boardId: string, token: string | null): Promise<void> {
+  private async admit(
+    client: WebSocket,
+    boardId: string,
+    token: string | null,
+    generation: string | null,
+  ): Promise<void> {
     let member: WsTokenClaims;
     try {
       member = await this.tokens.verify(token);
@@ -145,7 +154,30 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.close(1011, 'Board could not be loaded');
       return;
     }
+    // A client that holds an older generation of the document must not merge into the rebuilt one (ADR 0026): it throws its
+    // copy away and connects again. No `generation` parameter is a first connection; an empty one is a client whose copy has
+    // no generation (the board was never rebuilt), which is stale as soon as the document has one.
+    if (generation !== null && generation !== (readGeneration(room.doc) ?? '')) {
+      this.logger.log(
+        { boardId, closeCode: WS_CLOSE_STALE_COPY },
+        'WebSocket connection closed: the client holds an older copy of the board',
+      );
+      client.close(WS_CLOSE_STALE_COPY, 'The board was rebuilt while you were away');
+      this.releaseIfEmpty(room);
+      return;
+    }
     await this.join(client, room, member);
+  }
+
+  /** A room that was loaded for a connection that is refused must not stay in memory for ever: let it go the normal way. */
+  private releaseIfEmpty(room: YjsRoom): void {
+    if (room.clients.size === 0) {
+      this.registry
+        .release(room)
+        .catch((error: unknown) =>
+          this.logger.error(`Saving board ${room.boardId} failed: ${String(error)}`),
+        );
+    }
   }
 
   private async join(client: WebSocket, room: YjsRoom, member: WsTokenClaims): Promise<void> {
@@ -203,9 +235,17 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  private readQuery(request: IncomingMessage): { boardId: string | null; token: string | null } {
+  private readQuery(request: IncomingMessage): {
+    boardId: string | null;
+    token: string | null;
+    generation: string | null;
+  } {
     const url = new URL(request.url ?? '', 'http://localhost');
-    return { boardId: url.searchParams.get('board'), token: url.searchParams.get('token') };
+    return {
+      boardId: url.searchParams.get('board'),
+      token: url.searchParams.get('token'),
+      generation: url.searchParams.get('generation'),
+    };
   }
 
   private sendSyncStep1(client: WebSocket, room: YjsRoom): void {
@@ -260,6 +300,30 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
           this.dropViewerWrite(client, room);
           break;
         }
+        const written = this.writtenBytes(decoder);
+        if (written !== null) {
+          const { maxUpdateBytes } = this.registry.limits;
+          if (written.isUpdate && written.bytes > maxUpdateBytes) {
+            // One update is a change of one gesture; this is a client that does not behave (ADR 0026).
+            this.logger.warn(
+              { boardId: room.boardId, bytes: written.bytes },
+              'Update refused: larger than one update may be',
+            );
+            this.metrics?.refused('update');
+            client.close(1009, 'That change is too large');
+            return;
+          }
+          if (!this.registry.fits(room, written.bytes)) {
+            this.logger.warn(
+              { boardId: room.boardId, bytes: written.bytes },
+              'Update refused: the board is full',
+            );
+            this.metrics?.refused('document');
+            this.sendBoardFull(client);
+            break;
+          }
+          this.registry.grew(room, written.bytes);
+        }
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, MESSAGE_SYNC);
         syncProtocol.readSyncMessage(decoder, encoder, room.doc, client);
@@ -285,6 +349,29 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       default:
         this.logger.warn(`Unknown Yjs message type ${messageType}`);
     }
+  }
+
+  /**
+   * What a sync message writes into the document, without consuming it: step 2 and an update carry a Yjs update, step 1
+   * (a question) none. `null` for a message that writes nothing.
+   */
+  private writtenBytes(decoder: decoding.Decoder): { bytes: number; isUpdate: boolean } | null {
+    const peek = decoding.clone(decoder);
+    const type = decoding.readVarUint(peek);
+    if (type !== syncProtocol.messageYjsSyncStep2 && type !== syncProtocol.messageYjsUpdate) {
+      return null;
+    }
+    return {
+      bytes: decoding.readVarUint8Array(peek).byteLength,
+      isUpdate: type === syncProtocol.messageYjsUpdate,
+    };
+  }
+
+  /** Tells a client that its update was refused because the board is full; it shows the message and keeps what it has. */
+  private sendBoardFull(client: WebSocket): void {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, MESSAGE_BOARD_FULL);
+    this.send(client, encoding.toUint8Array(encoder));
   }
 
   /** Drops a viewer's write, and closes the connection when the viewer keeps trying (4403, the contract's "forbidden"). */

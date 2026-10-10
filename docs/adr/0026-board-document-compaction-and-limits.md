@@ -118,6 +118,12 @@ history would arrive as concurrent writes from an unknown client, and Yjs would 
   depends on the numbers.
 - **Owner answer (2026-10-09): 20,000 elements is fine.** It stays a constant of the canvas, to be lowered if rendering on a weak laptop turns out to need it (there is no rendering measurement yet).
 
+## Implementation notes (#698)
+
+- **The generation is written by the first rebuild, not at load.** The ADR says a document without `meta` is given a generation the first time it is loaded. That would make every board that is merely opened save a document (a new row, a changed version) and break the rule that an unchanged board is not saved. Instead a document has no generation until it is rebuilt, the client sends an empty `generation` when its copy had none, and the gateway treats `''` as "none": a copy without a generation is stale as soon as the document has one. The effect on clients is the one the ADR describes.
+- **"Nobody is connected" is checked across instances** with the presence snapshot in Valkey (empty means nobody anywhere), which the ADR left open for the scheduled variant; if the check fails the board is not rebuilt. A `reset` on the relay channel makes other instances drop an idle copy.
+- **The canvas gets a `notice` event** next to `error` (the shell turns `error` into its error state), and the limit of 20,000 elements can be lowered by the `max-elements` attribute for tests.
+
 ## If the owner picks something else
 
 - No compaction: the stored size grows with the writes; at the measured rates it takes many hours of dragging to reach a few MB, and the limits

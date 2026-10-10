@@ -1,6 +1,9 @@
 {{- $env := list
   (dict "name" "PORT" "value" "3000")
   (dict "name" "BUSINESS_BACKEND_URL" "value" (printf "http://%s-business-backend:8080" (include "elysion.fullname" .)))
+  (dict "name" "MAX_UPDATE_BYTES" "value" (.Values.limits.maxUpdateBytes | int64 | toString))
+  (dict "name" "MAX_DOCUMENT_BYTES" "value" (.Values.limits.maxDocumentBytes | int64 | toString))
+  (dict "name" "COMPACT_THRESHOLD_BYTES" "value" (.Values.limits.compactThresholdBytes | int64 | toString))
   (include "elysion.secretEnv" (dict "root" . "name" "REDIS_URL") | fromYaml)
   (include "elysion.secretEnv" (dict "root" . "name" "WS_TOKEN_SECRET") | fromYaml)
   (include "elysion.secretEnv" (dict "root" . "name" "INTERNAL_API_SECRET") | fromYaml)

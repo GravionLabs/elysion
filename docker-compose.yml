@@ -270,6 +270,10 @@ services:
       dockerfile: apps/realtime/Dockerfile
     environment:
       REDIS_URL: redis://:${VALKEY_PASSWORD:-dev-only-valkey-password}@valkey:6379
+      # The limits of a board's document and when an idle one is rebuilt (ADR 0026, docs/specs/realtime.md).
+      MAX_UPDATE_BYTES: ${MAX_UPDATE_BYTES:-2097152}
+      MAX_DOCUMENT_BYTES: ${MAX_DOCUMENT_BYTES:-8388608}
+      COMPACT_THRESHOLD_BYTES: ${COMPACT_THRESHOLD_BYTES:-1048576}
       # Board documents are stored by the business backend (ADR 0011); without it no board opens.
       BUSINESS_BACKEND_URL: http://business-backend:8080
       # Verifies the WS tokens the BFF issues; the same value as the BFF's. Development value only.
