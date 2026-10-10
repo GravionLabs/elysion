@@ -1,10 +1,16 @@
+# The API is not served on its own open port (`insecure: false`, #780). It is only reachable through a router to `api@internal`,
+# and only docker-compose.dev.yml defines one (on the entry point `dashboard`, published on the loopback).
 api:
   dashboard: true
-  insecure: true
+  insecure: false
 
 entryPoints:
+  dashboard:
+    address: ':8080'
   web:
     address: ':80'
+    # The routers of the services name no entry point: they belong to the default ones, so `dashboard` serves only what names it.
+    asDefault: true
   # Prometheus metrics, on their own port so they are not reachable through the public entry point. Not published
   # by compose: a scraper on the compose network reads http://traefik:8082/metrics.
   metrics:

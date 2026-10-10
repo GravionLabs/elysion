@@ -86,10 +86,11 @@ jobs:
       HELM_ARGS: --set migrateJob.enabled=true --set replicas.businessBackend=2 --set networkPolicy.enabled=true
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      # Keycloak listens on all interfaces: the cluster's pods fetch its keys through the host's address.
+      # Keycloak, Postgres and the object store listen on all interfaces: the cluster's pods reach them through the host's address.
       - name: Postgres, Keycloak and the object store
         env:
           KEYCLOAK_BIND: 0.0.0.0
+          DEV_BIND: 0.0.0.0
         run: |
           docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres keycloak-db keycloak rustfs
           timeout 240 bash -c 'until curl -sf http://localhost:8081/realms/elysion >/dev/null; do sleep 3; done'
