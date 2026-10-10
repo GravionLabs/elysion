@@ -95,12 +95,12 @@ kubectl -n elysion create secret generic elysion-secrets \
   --from-literal=WS_TOKEN_SECRET="$(openssl rand -base64 48)" \
   --from-literal=INTERNAL_API_SECRET="$(openssl rand -base64 48)" \
   --from-literal=POSTGRES_CONNECTION_STRING='Host=...;Database=elysion;Username=...;Password=...' \
-  --from-literal=REDIS_URL='redis://...' \
+  --from-literal=REDIS_URL='redis://:<password>@host:6379' \
   --from-literal=S3_ACCESS_KEY=... --from-literal=S3_SECRET_KEY=...
 ```
 
 `WS_TOKEN_SECRET` ([identity](specs/identity.md)) and `INTERNAL_API_SECRET` ([ADR 0017](adr/0017-internal-api-authentication.md)) are different values of at least
-32 characters. The bucket (`objectStore.bucket`, default `elysion-files`) is created at start if it is missing, so the key needs to be allowed to do that; the limits are
+32 characters. **Valkey needs a password** in `REDIS_URL` (or an ACL user) and a NetworkPolicy that lets only the realtime pods reach it: the realtime instances trust every message on the relay channels, so whoever can publish there can write into any board ([security review](security.md), F4). The bucket (`objectStore.bucket`, default `elysion-files`) is created at start if it is missing, so the key needs to be allowed to do that; the limits are
 `MAX_FILE_BYTES` (10 MiB) and `MAX_FILES_PER_BOARD` (200). The bucket is state: **back it up like the database**.
 
 ### 5. Install

@@ -81,7 +81,7 @@ secrets:
   #   WS_TOKEN_SECRET              HS256 secret of the board WS tokens (BFF and realtime), at least 32 characters
   #   INTERNAL_API_SECRET          HS256 secret of the internal API token (realtime and business backend), at least 32 characters, a different value
   #   POSTGRES_CONNECTION_STRING   Npgsql connection string of the business backend
-  #   REDIS_URL                    redis://... of the Valkey instance (realtime)
+  #   REDIS_URL                    redis://:<password>@host:6379 of the Valkey instance (realtime); it MUST carry a password or an ACL user (#775)
   #   S3_ACCESS_KEY, S3_SECRET_KEY  credentials of the object store (business backend); read and write on the bucket, and creating it
   existingSecret: elysion-secrets
   # For throwaway installs only: render the Secret from `values` (which then sit in the release). Off by default.

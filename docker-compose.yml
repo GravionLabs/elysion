@@ -50,12 +50,15 @@ services:
   valkey:
     image: valkey/valkey:9.1.2-alpine
     restart: unless-stopped
+    # A password (#775): anything on the network that can reach Valkey could otherwise publish Yjs updates into any board. The
+    # development value is public, like every other one in this file; production sets its own in REDIS_URL (docs/self-hosting.md).
     environment:
-      ALLOW_EMPTY_PASSWORD: 'yes'
+      VALKEY_PASSWORD: ${VALKEY_PASSWORD:-dev-only-valkey-password}
+    command: ['sh', '-c', 'exec valkey-server --requirepass "$$VALKEY_PASSWORD"']
     volumes:
       - valkey-data:/data
     healthcheck:
-      test: ['CMD', 'valkey-cli', 'ping']
+      test: ['CMD-SHELL', 'valkey-cli --no-auth-warning -a "$$VALKEY_PASSWORD" ping | grep -q PONG']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -266,7 +269,7 @@ services:
       context: .
       dockerfile: apps/realtime/Dockerfile
     environment:
-      REDIS_URL: redis://valkey:6379
+      REDIS_URL: redis://:${VALKEY_PASSWORD:-dev-only-valkey-password}@valkey:6379
       # Board documents are stored by the business backend (ADR 0011); without it no board opens.
       BUSINESS_BACKEND_URL: http://business-backend:8080
       # Verifies the WS tokens the BFF issues; the same value as the BFF's. Development value only.

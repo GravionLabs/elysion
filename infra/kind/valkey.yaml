@@ -16,6 +16,12 @@ spec:
       containers:
         - name: valkey
           image: valkey/valkey:8-alpine
+          # The password is the Secret `valkey-auth` (made by deploy.sh).
+          command: ['sh', '-c', 'exec valkey-server --requirepass "$VALKEY_PASSWORD"']
+          env:
+            - name: VALKEY_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: valkey-auth, key: password }
           ports:
             - containerPort: 6379
 ---

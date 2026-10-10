@@ -59,13 +59,13 @@ kubectl -n elysion create secret generic elysion-secrets \
   --from-literal=WS_TOKEN_SECRET="$(openssl rand -hex 32)" \
   --from-literal=INTERNAL_API_SECRET="$(openssl rand -hex 32)" \
   --from-literal=POSTGRES_CONNECTION_STRING='Host=...;Port=5432;Database=elysion;Username=...;Password=...' \
-  --from-literal=REDIS_URL='redis://valkey.example:6379' \
+  --from-literal=REDIS_URL='redis://:<password>@valkey.example:6379' \
   --from-literal=S3_ACCESS_KEY='...' \
   --from-literal=S3_SECRET_KEY='...'
 ```
 
 `WS_TOKEN_SECRET` (BFF and realtime) and `INTERNAL_API_SECRET` (realtime and business backend) are different values of
-at least 32 characters. For a throwaway install `secrets.create=true` renders the Secret from `secrets.values`; those
+at least 32 characters. **Valkey must have a password** (or an ACL user) in `REDIS_URL`, and only the realtime pods and the Valkey's own tooling should be able to reach it (a NetworkPolicy of the namespace it runs in): the realtime instances trust every message on the relay channels, so whoever can publish there can write into any board. For a throwaway install `secrets.create=true` renders the Secret from `secrets.values`; those
 values then sit in the Helm release, so do not use it for anything that matters.
 
 ## Backup

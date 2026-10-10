@@ -96,7 +96,7 @@ pnpm format:dotnet  # formats the backend's C# with the JetBrains tools (Prettie
 pnpm format:check    # Prettier (pnpm format fixes)
 ```
 
-The browser tests (`apps/e2e`) need the running stack: `pnpm demo`, then `pnpm test:browser` (see its `AGENTS.md`). To verify a change as a whole, run `pnpm format:check && pnpm lint && pnpm test && pnpm build` (CI runs the same commands). CI (`.github/workflows/ci.yml`) has three jobs: that command chain; the .NET tests with a coverage report; and the BFF and realtime end-to-end tests against a Valkey service container, plus their coverage. Coverage reports are uploaded as workflow artifacts; there is no threshold yet. The .NET parts need the .NET 10 SDK; the realtime end-to-end tests need a Valkey: `pnpm dev:infra` starts the stack's on `localhost:6380`, so run them with `REDIS_URL=redis://localhost:6380 pnpm --filter @elysion/realtime test:e2e` (CI uses a service container on 6379).
+The browser tests (`apps/e2e`) need the running stack: `pnpm demo`, then `pnpm test:browser` (see its `AGENTS.md`). To verify a change as a whole, run `pnpm format:check && pnpm lint && pnpm test && pnpm build` (CI runs the same commands). CI (`.github/workflows/ci.yml`) has three jobs: that command chain; the .NET tests with a coverage report; and the BFF and realtime end-to-end tests against a Valkey service container, plus their coverage. Coverage reports are uploaded as workflow artifacts; there is no threshold yet. The .NET parts need the .NET 10 SDK; the realtime end-to-end tests need a Valkey: `pnpm dev:infra` starts the stack's on `localhost:6380`, so run them with `REDIS_URL=redis://:dev-only-valkey-password@localhost:6380 pnpm --filter @elysion/realtime test:e2e` (CI uses a service container on 6379).
 
 Each app has a `Dockerfile`; build from the repo root so the workspace files are in context:
 
@@ -122,7 +122,7 @@ The BFF reaches the business backend at `BUSINESS_BACKEND_URL` (default `http://
 
 Valkey is **Elysion's own**: `docker-compose.yml` defines it with the image and the settings of `local-infra`'s Valkey, so the stack needs nothing from the machine ([ADR 0023](docs/adr/0023-own-valkey-one-compose-file.md), which replaces the sharing of ADR 0006). RabbitMQ, Portainer and other projects' services stay in [`local-infra`](../local-infra), and Elysion does not need them.
 
-- Containers reach Valkey at `valkey:6379`. Apps on the host use `REDIS_URL=redis://localhost:6380`: `pnpm dev:infra` publishes it on **6380** (`VALKEY_PORT`), not 6379, so it cannot clash with a Valkey of `local-infra` on the machine. The realtime service's default is `redis://localhost:6379` (what CI's service container has); `apps/realtime/.env.example` and the VS Code configuration set 6380.
+- Containers reach Valkey at `valkey:6379`. Apps on the host use `REDIS_URL=redis://:dev-only-valkey-password@localhost:6380`: `pnpm dev:infra` publishes it on **6380** (`VALKEY_PORT`), not 6379, so it cannot clash with a Valkey of `local-infra` on the machine. The realtime service's default is `redis://localhost:6379` (what CI's service container has); `apps/realtime/.env.example` and the VS Code configuration set 6380.
 - Everything Elysion stores in Valkey is still prefixed with `elysion:` (for example `elysion:presence:<board>`).
 - RustFS (reserved, no app uses it yet) is only in `docker-compose.dev.yml`, on 9100 (S3) and 9101 (console), because Portainer from `local-infra` may own 9000. If a port is taken on your machine, copy `.env.example` to `.env` and change it.
 

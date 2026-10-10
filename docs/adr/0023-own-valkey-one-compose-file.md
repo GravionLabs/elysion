@@ -26,7 +26,7 @@ The real nuisance of local-infra is host port 6379.
    and **no published port**. Containers use `valkey:6379`. No external network, nothing from the machine.
 3. **`docker-compose.dev.yml`** is the only addition for working on Elysion (`pnpm dev:infra` and `pnpm dev:stack` use it, with `-f` on top of the first file): host ports for
    Postgres (5432), the Traefik dashboard (8080) and **Valkey on 6380**, and the reserved RustFS (9100 and 9101). 6380, not 6379, so it does not clash with a Valkey of
-   local-infra (or anything else) on the machine; apps on the host use `REDIS_URL=redis://localhost:6380`. It is not named `docker-compose.override.yml` on purpose, so that
+   local-infra (or anything else) on the machine; apps on the host use `REDIS_URL=redis://:dev-only-valkey-password@localhost:6380`. It is not named `docker-compose.override.yml` on purpose, so that
    a plain `docker compose up` never publishes a database.
 4. **The settings are in `.env`** (copied from `.env.example`): the version, Keycloak's port, CORS and the rate limit, and the dev host ports.
 5. **What stays of ADR 0006:** the key and channel prefix `elysion:`, RustFS on 9100 and 9101, and the rule that RabbitMQ and Portainer are not defined in Elysion's compose file
@@ -40,5 +40,5 @@ The real nuisance of local-infra is host port 6379.
   not durable data).
 - `pnpm dev:stack` and `pnpm demo` now share one project, so one set of containers and volumes; the data volumes of the former development stack (`elysion_postgres-data`) are reused.
   The Keycloak realm is imported only into an empty Keycloak database: an existing one does not get `dev1` and `dev2` until it is dropped.
-- The realtime end-to-end tests locally need `REDIS_URL=redis://localhost:6380` (CI has a service container on 6379); the realtime service's default stays `redis://localhost:6379`.
+- The realtime end-to-end tests locally need `REDIS_URL=redis://:dev-only-valkey-password@localhost:6380` (CI has a service container on 6379); the realtime service's default stays `redis://localhost:6379`.
 - The identity provider's address is still `localhost` in the file; a host name variable for a real deployment is a separate change (see [self-hosting](../self-hosting.md)).

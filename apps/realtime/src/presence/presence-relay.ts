@@ -1,6 +1,7 @@
-import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Redis } from 'ioredis';
+import { parseEnvelope, rateLimited } from '../redis/envelope.js';
 import { REDIS_PUB_CLIENT, REDIS_SUB_CLIENT } from '../redis/redis.provider.js';
 
 export type PresenceHandler = (message: Uint8Array) => void;
@@ -27,6 +28,7 @@ const STATE_KEY_TTL_SECONDS = 24 * 60 * 60;
  */
 @Injectable()
 export class PresenceRelay implements OnModuleDestroy {
+  private readonly logger = new Logger(PresenceRelay.name);
   private readonly instanceId = randomUUID();
   private readonly handlersByBoard = new Map<string, PresenceHandler>();
   /** The subscription of each board, kept while it is under way so a second caller waits for it too. */
@@ -132,12 +134,20 @@ export class PresenceRelay implements OnModuleDestroy {
       return;
     }
 
-    const envelope = JSON.parse(raw) as { from: string; data: string };
+    const envelope = parseEnvelope(raw);
+    if (!envelope) {
+      this.warnMalformed();
+      return;
+    }
     if (envelope.from === this.instanceId) {
       return;
     }
-    handler(new Uint8Array(Buffer.from(envelope.data, 'base64')));
+    handler(envelope.data);
   }
+
+  private readonly warnMalformed = rateLimited(() =>
+    this.logger.warn('Dropped a malformed message on a presence relay channel'),
+  );
 
   private channelFor(boardId: string): string {
     return `${CHANNEL_PREFIX}${boardId}`;
