@@ -1,0 +1,10 @@
+{
+  "name": "reconnect-storm",
+  "description": "200 clients on 20 boards; after one minute every client reconnects within 5 seconds, as after a network change or a deployment.",
+  "clients": 200,
+  "boards": 20,
+  "durationMs": 180000,
+  "rampMs": 20000,
+  "writeEveryMs": 500,
+  "events": [{ "atMs": 60000, "action": "reconnect-all", "withinMs": 5000 }]
+}

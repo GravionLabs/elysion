@@ -26,7 +26,7 @@ Die Startseite listet **deine Boards**: die selbst erstellten und die mit dir ge
 
 ## Das Board
 
-Zeichne mit der Werkzeugleiste unten: Formen, Pfeile, Text, Haftnotizen. Alle Personen auf dem Board sehen Änderungen sofort; ihre Cursor und
+Zeichne mit der Werkzeugleiste unten: Formen, Pfeile, Text, Haftnotizen, Bilder. **Bilder** (PNG, JPEG, GIF, WebP oder SVG bis 4 MB) kannst du über das Werkzeug wählen, einfügen oder auf das Board ziehen; mehrere Dateien auf einmal liegen nebeneinander an der Stelle, an der du sie fallen lässt, und sind höchstens halb so hoch wie dein Ausschnitt. Alle Personen auf dem Board sehen Änderungen sofort; ihre Cursor und
 Avatare erscheinen oben rechts. **Teilen** lädt Personen per E-Mail-Adresse ein, **Vorlagen**, **Exportieren** und **Importieren** bringen
 Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema.
 

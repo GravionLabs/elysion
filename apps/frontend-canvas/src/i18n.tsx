@@ -86,6 +86,10 @@ export const en = {
   errorNotOnBoard: 'That element is not on the board.',
   libraryNotAllowed: 'Only libraries from libraries.excalidraw.com can be added.',
   libraryFailed: 'The library could not be added.',
+  imageTypeNotSupported: (name: string) =>
+    `${name} was not added: only PNG, JPEG, GIF, WebP and SVG images can be.`,
+  imageTooLarge: (name: string) => `${name} was not added: it is larger than 4 MB.`,
+  imageUnreadable: (name: string) => `${name} was not added: it could not be read as an image.`,
   pdfTitle: (name: string) => `Bring ${name} onto the board`,
   pdfLoading: 'Reading the PDF…',
   pdfSelectAll: 'All pages',
@@ -174,6 +178,12 @@ export const de: Messages = {
   errorNotOnBoard: 'Dieses Element befindet sich nicht auf dem Board.',
   libraryNotAllowed: 'Es können nur Bibliotheken von libraries.excalidraw.com hinzugefügt werden.',
   libraryFailed: 'Die Bibliothek konnte nicht hinzugefügt werden.',
+  imageTypeNotSupported: (name: string) =>
+    `${name} wurde nicht hinzugefügt: Nur PNG-, JPEG-, GIF-, WebP- und SVG-Bilder sind möglich.`,
+  imageTooLarge: (name: string) =>
+    `${name} wurde nicht hinzugefügt: Die Datei ist größer als 4 MB.`,
+  imageUnreadable: (name: string) =>
+    `${name} wurde nicht hinzugefügt: Die Datei ist kein lesbares Bild.`,
   pdfTitle: (name: string) => `${name} auf das Board bringen`,
   pdfLoading: 'Das PDF wird gelesen …',
   pdfSelectAll: 'Alle Seiten',

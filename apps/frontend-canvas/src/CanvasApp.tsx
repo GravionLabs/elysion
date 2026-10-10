@@ -29,6 +29,8 @@ import {
 } from './connector';
 import { NO_SELECTION, trackSelection, type SelectionOrder } from './selection-order';
 import { Minimap } from './Minimap';
+import { insertImages, isImageFile } from './image-insert';
+import { isPdf } from './pdf-import/pdf-pages';
 import { SceneStore } from './scene-store';
 import { scrollToCenter } from './minimap-geometry';
 import { ZOOM_STEP, zoomAbout } from './zoom';
@@ -39,7 +41,12 @@ import { ELEMENT_DEFAULTS } from './element-style';
 import { applyGridDots } from './grid-dots';
 import { createStickyNote, type StickyColor } from './sticky-note';
 import { useResolvedTheme, type CanvasTheme } from './useResolvedTheme';
-import { CaptureUpdateAction, DefaultSidebar, Excalidraw } from '@excalidraw/excalidraw';
+import {
+  CaptureUpdateAction,
+  DefaultSidebar,
+  Excalidraw,
+  viewportCoordsToSceneCoords,
+} from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import '@elysion/design-tokens/tokens.css';
 import './styles/excalidraw-theme.css';
@@ -366,6 +373,90 @@ export function CanvasApp({
   const changeGridRef = useRef<(change: Partial<GridSettings>) => void>(() => undefined);
   const selectionOrder = useRef<SelectionOrder>(NO_SELECTION);
   const rootRef = useRef<HTMLDivElement>(null);
+  const imagesEnabledRef = useRef(imagesEnabled);
+  imagesEnabledRef.current = imagesEnabled;
+
+  // The PDF that is being imported (#725): the dialog is shown while there is one, and the promise of `importPdf` is settled by it.
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const pdfSettle = useRef<((inserted: number) => void) | null>(null);
+  const finishPdf = (inserted: number, notice?: string) => {
+    setPdfFile(null);
+    pdfSettle.current?.(inserted);
+    pdfSettle.current = null;
+    if (notice) noticeCallback.current?.(notice);
+  };
+  const startPdf = (file: Blob): Promise<number> => {
+    if (readOnlyRef.current) return Promise.reject(new Error(tRef.current.errorReadOnly));
+    if (!imagesEnabledRef.current) return Promise.reject(new Error(tRef.current.pdfNeedsImages));
+    if (pdfSettle.current) return Promise.reject(new Error(tRef.current.errorBusy));
+    return new Promise<number>((resolve) => {
+      pdfSettle.current = resolve;
+      setPdfFile(
+        file instanceof File ? file : new File([file], 'document.pdf', { type: 'application/pdf' }),
+      );
+    });
+  };
+  const startPdfRef = useRef(startPdf);
+  startPdfRef.current = startPdf;
+
+  /**
+   * Image files dropped on the canvas or pasted into it (#724): several become a row, an SVG a PNG, and what cannot be
+   * added is said. Taken before Excalidraw sees the event (capture phase) so that it does not insert the first one a second
+   * time. With images off Excalidraw answers itself ("Images are disabled"); a viewer's drop is swallowed.
+   */
+  const takeImages = (
+    event: Event,
+    files: FileList | null | undefined,
+    at?: { x: number; y: number },
+  ) => {
+    const pdf = [...(files ?? [])].find(isPdf);
+    if (pdf && imagesEnabledRef.current && apiRef.current && !pdfSettle.current) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (!readOnlyRef.current) void startPdfRef.current(pdf);
+      return;
+    }
+    const images = [...(files ?? [])].filter(isImageFile);
+    const api = apiRef.current;
+    if (images.length === 0 || !api || !imagesEnabledRef.current) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (readOnlyRef.current) return;
+    void insertImages(
+      {
+        api,
+        notify: (message) => noticeCallback.current?.(message),
+        messages: tRef.current,
+      },
+      images,
+      at,
+    );
+  };
+  const takeImagesRef = useRef(takeImages);
+  takeImagesRef.current = takeImages;
+  const onDropCapture = (event: React.DragEvent) => {
+    const api = apiRef.current;
+    const point =
+      api &&
+      viewportCoordsToSceneCoords(
+        { clientX: event.clientX, clientY: event.clientY },
+        api.getAppState(),
+      );
+    takeImages(event.nativeEvent, event.dataTransfer.files, point ?? undefined);
+  };
+  // A paste goes to the focused element, which is the page's body while the canvas has the focus, so the listener is on the
+  // document, in the capture phase: before Excalidraw's own (a bubbling one on the document).
+  useEffect(() => {
+    const onPaste = (event: ClipboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      // A paste into a text being edited, or into a field of the page, is that field's own business.
+      if (target?.closest('textarea, input, [contenteditable="true"]')) return;
+      if (target !== document.body && !rootRef.current?.contains(target)) return;
+      takeImagesRef.current(event, event.clipboardData?.files);
+    };
+    document.addEventListener('paste', onPaste, true);
+    return () => document.removeEventListener('paste', onPaste, true);
+  }, []);
 
   // Connection setup lives in the effect, not render, and is re-created (not
   // just torn down) on cleanup: React StrictMode's dev-only
@@ -801,6 +892,7 @@ export function CanvasApp({
       <div
         ref={rootRef}
         className="elysion-canvas"
+        onDropCapture={onDropCapture}
         data-theme={activeTheme}
         data-grid={grid.show ? 'dots' : undefined}
         style={{ position: 'absolute', inset: 0 }}

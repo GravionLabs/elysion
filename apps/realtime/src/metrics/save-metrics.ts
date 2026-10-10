@@ -28,6 +28,21 @@ export class SaveMetrics {
     registers: [this.registry],
   });
 
+  readonly #durations = new Histogram({
+    name: 'elysion_realtime_document_save_duration_seconds',
+    help: 'How long a save of a board document to the business backend takes, in seconds (the whole exchange, with a merge after a conflict).',
+    buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+    registers: [this.registry],
+  });
+
+  /** Starts timing a save; call the result when it ends, saved or not. */
+  startSave(): () => void {
+    const end = this.#durations.startTimer();
+    return () => {
+      end();
+    };
+  }
+
   readonly #compactions = new Counter({
     name: 'elysion_realtime_document_compactions_total',
     help: 'Board documents rebuilt from their live elements when nobody had them open (ADR 0026).',

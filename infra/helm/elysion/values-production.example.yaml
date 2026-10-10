@@ -37,7 +37,7 @@ autoscaling:
     minReplicas: 2
     maxReplicas: 6
     cpuTarget: 70
-    # connectionsTarget: 400 # with the Prometheus adapter serving elysion_realtime_websocket_connections
+    # connectionsTarget: 200 # with the Prometheus adapter serving elysion_realtime_websocket_connections (docs/performance.md)
 
 networkPolicy:
   enabled: true
