@@ -185,8 +185,7 @@ async function main(): Promise<number> {
     counters,
     reconnects,
     use,
-    before,
-    after,
+    growth: growth(before, after),
     valkeyCommands: valkeyAfter - valkeyBefore,
     seconds: (Date.now() - runStarted) / 1000,
     lost,
@@ -231,7 +230,34 @@ interface Scrape {
   bytesCount: number;
 }
 
-async function scrape(names: string[]): Promise<Scrape> {
+/** The counters of every realtime container by name; a container that is down has nothing to scrape. */
+async function scrape(names: string[]): Promise<Map<string, Scrape>> {
+  const result = new Map<string, Scrape>();
+  for (const name of names) {
+    try {
+      const text = await realtimeMetrics(name);
+      result.set(name, {
+        connections: metricValue(text, 'elysion_realtime_websocket_connections'),
+        saves: metricValue(text, 'elysion_realtime_document_saves_total'),
+        saveFailures: metricValue(text, 'elysion_realtime_document_save_failures_total'),
+        saveSeconds: metricValue(text, 'elysion_realtime_document_save_duration_seconds_sum'),
+        saveCount: metricValue(text, 'elysion_realtime_document_save_duration_seconds_count'),
+        refused: metricValue(text, 'elysion_realtime_document_updates_refused_total'),
+        bytesSum: metricValue(text, 'elysion_realtime_document_size_bytes_sum'),
+        bytesCount: metricValue(text, 'elysion_realtime_document_size_bytes_count'),
+      });
+    } catch {
+      // A replica that is down has nothing to scrape.
+    }
+  }
+  return result;
+}
+
+/**
+ * What the counters grew by between two scrapes, per container: a container that was restarted (the killed replica) starts
+ * its counters at 0 again, so its growth is what it has now.
+ */
+function growth(before: Map<string, Scrape>, after: Map<string, Scrape>): Scrape {
   const total: Scrape = {
     connections: 0,
     saves: 0,
@@ -242,19 +268,11 @@ async function scrape(names: string[]): Promise<Scrape> {
     bytesSum: 0,
     bytesCount: 0,
   };
-  for (const name of names) {
-    try {
-      const text = await realtimeMetrics(name);
-      total.connections += metricValue(text, 'elysion_realtime_websocket_connections');
-      total.saves += metricValue(text, 'elysion_realtime_document_saves_total');
-      total.saveFailures += metricValue(text, 'elysion_realtime_document_save_failures_total');
-      total.saveSeconds += metricValue(text, 'elysion_realtime_document_save_duration_seconds_sum');
-      total.saveCount += metricValue(text, 'elysion_realtime_document_save_duration_seconds_count');
-      total.refused += metricValue(text, 'elysion_realtime_document_updates_refused_total');
-      total.bytesSum += metricValue(text, 'elysion_realtime_document_size_bytes_sum');
-      total.bytesCount += metricValue(text, 'elysion_realtime_document_size_bytes_count');
-    } catch {
-      // A replica that is down has nothing to scrape.
+  for (const [name, now] of after) {
+    const was = before.get(name);
+    for (const key of Object.keys(total) as (keyof Scrape)[]) {
+      const base = was && was[key] <= now[key] ? was[key] : 0;
+      total[key] += now[key] - base;
     }
   }
   return total;
@@ -291,8 +309,7 @@ interface Rendered {
   };
   reconnects: number;
   use: Map<string, Use>;
-  before: Scrape;
-  after: Scrape;
+  growth: Scrape;
   valkeyCommands: number;
   seconds: number;
   lost: string[];
@@ -301,14 +318,10 @@ interface Rendered {
 }
 
 function render(r: Rendered): string {
-  const saves = r.after.saves - r.before.saves;
-  const saveCount = r.after.saveCount - r.before.saveCount;
+  const saves = r.growth.saves;
   const saveMs =
-    saveCount > 0 ? ((r.after.saveSeconds - r.before.saveSeconds) / saveCount) * 1000 : Number.NaN;
-  const avgBytes =
-    r.after.bytesCount - r.before.bytesCount > 0
-      ? (r.after.bytesSum - r.before.bytesSum) / (r.after.bytesCount - r.before.bytesCount)
-      : Number.NaN;
+    r.growth.saveCount > 0 ? (r.growth.saveSeconds / r.growth.saveCount) * 1000 : Number.NaN;
+  const avgBytes = r.growth.bytesCount > 0 ? r.growth.bytesSum / r.growth.bytesCount : Number.NaN;
   const rows = [...r.use.entries()].map(([name, u]) => {
     const peak = Math.max(...u.memory);
     const cpu = u.cpu.reduce((a, b) => a + b, 0) / Math.max(1, u.cpu.length);
@@ -341,7 +354,7 @@ ${r.scenario.description}
 | Updates refused (board full) | ${r.counters.boardFull} |
 | Saves | ${saves} |
 | Save duration (mean) | ${formatMs(saveMs)} |
-| Failed saves | ${r.after.saveFailures - r.before.saveFailures} |
+| Failed saves | ${r.growth.saveFailures} |
 | Mean size of a saved document | ${Number.isNaN(avgBytes) ? 'n/a' : `${(avgBytes / 1024).toFixed(1)} KiB`} |
 | Valkey commands per second | ${(r.valkeyCommands / Math.max(1, r.seconds)).toFixed(0)} |
 | Clients whose last write is missing | ${r.lost.length} |

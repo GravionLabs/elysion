@@ -21,7 +21,7 @@ pnpm test:load -- --scenario path/to/my.json    # your own
   of the stack's containers with `docker stats` every 10 s, scrapes `/metrics` of every realtime container (`docker exec`: the port is not
   published) and Valkey's command counter, runs the events, then stops writing and reads every board four times through the edge (so
   both replicas serve reads): **a client's last write (`c<i>`.`n`) must be in the document, and the four reads must be equal.** It deletes
-  the boards, writes a Markdown report to `reports/` (git-ignored for JSON, the Markdown of the runs in `docs/performance.md` is copied by hand)
+  the boards, writes a Markdown report to `reports/` (git-ignored; the numbers of `docs/performance.md` are copied from the runs by hand)
   and exits 1 when `maxP95Ms` is exceeded or a write is lost.
 - It needs `docker` on the PATH and runs it in `COMPOSE_DIR` (default: the current directory, so run it from the repository root, or set it).
   `APP` (default `http://localhost`), `KEYCLOAK` (default `http://localhost:8081`) and `COMPOSE_PROJECT` (default `elysion`) say which stack.

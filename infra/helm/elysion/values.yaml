@@ -18,7 +18,9 @@ replicas:
 resources:
   frontend: { requests: { cpu: 25m, memory: 32Mi }, limits: { memory: 128Mi } }
   bff: { requests: { cpu: 50m, memory: 96Mi }, limits: { memory: 256Mi } }
-  realtime: { requests: { cpu: 50m, memory: 128Mi }, limits: { memory: 512Mi } }
+  # Measured (docs/performance.md): 300 connections on a replica, each moving an element twice a second, take about 30 % of a core
+  # and 175 MiB; an idle replica 55 MiB. With a request of 250m and a target of 70 % the autoscaler adds a replica at about 180 connections each.
+  realtime: { requests: { cpu: 250m, memory: 256Mi }, limits: { memory: 512Mi } }
   businessBackend: { requests: { cpu: 100m, memory: 160Mi }, limits: { memory: 512Mi } }
 
 # The identity provider (Keycloak, ADR 0014) is external: where tokens come from and what they are for.
