@@ -1,8 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, Routes, UrlMatcher } from '@angular/router';
 import { autoLoginPartialRoutesGuard } from 'angular-auth-oidc-client';
-import { Board } from './board/board';
-import { BoardList } from './board-list/board-list';
 
 /** A board id becomes a Yjs room name, so an empty or whitespace-only one is never usable. */
 export const boardIdGuard: CanActivateFn = (route) =>
@@ -30,8 +28,17 @@ export const boardListMatcher: UrlMatcher = (segments) => {
  */
 export function buildRoutes(loginGuard: CanActivateFn): Routes {
   return [
-    { matcher: boardListMatcher, component: BoardList, canActivate: [loginGuard] },
-    { path: 'board/:boardId', component: Board, canActivate: [boardIdGuard, loginGuard] },
+    // Each page is a chunk of its own (#710): the first load holds the shell and the login, not the board and its dialogs.
+    {
+      matcher: boardListMatcher,
+      loadComponent: () => import('./board-list/board-list').then((m) => m.BoardList),
+      canActivate: [loginGuard],
+    },
+    {
+      path: 'board/:boardId',
+      loadComponent: () => import('./board/board').then((m) => m.Board),
+      canActivate: [boardIdGuard, loginGuard],
+    },
     { path: '**', redirectTo: '' },
   ];
 }

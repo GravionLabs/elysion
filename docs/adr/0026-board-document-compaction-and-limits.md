@@ -1,6 +1,6 @@
 # ADR 0026: How board documents are compacted and limited
 
-- Status: Proposed
+- Status: Accepted (2026-10-10, by the product owner, option B with the limits as proposed)
 - Date: 2026-10-09
 - Issues: #697 (Feature #696); implemented in #698
 - Builds on: [ADR 0011](0011-board-document-persistence.md) (full snapshots; compaction "out of scope until measured" and "unsafe while clients may reconnect with old copies"), [ADR 0017](0017-internal-api-authentication.md)
@@ -133,4 +133,4 @@ history would arrive as concurrent writes from an unknown client, and Yjs would 
 
 ## Decision
 
-_Proposed. The owner has confirmed the element limit (20,000); to be accepted by the product owner, who then removes `needs-decision` from #697._
+_Accepted by the product owner on 2026-10-10 as written under "Decision (proposed)": option B, the limits of 2 MiB per update, 20,000 elements and 8 MiB per document. `needs-decision` is removed from #697 and #698 is rewritten for option B._
