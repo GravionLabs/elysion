@@ -51,7 +51,7 @@ The document's map `meta` holds settings of the board (not of a person), outside
 
 ## Limits
 
-Proposed in [ADR 0026](../adr/0026-board-document-compaction-and-limits.md), implemented by #698: `MAX_UPDATE_BYTES` (2 MiB per Yjs update), `MAX_DOCUMENT_BYTES` (8 MiB encoded state, then updates are refused with a `board-full` message), compaction of a room that empties and is over 1 MiB (the document's `meta.generation` changes; a client that reconnects with an older one is closed with 4409 and reloads its document), and the canvas's limit of 20,000 elements. The measurements are made by `apps/realtime/scripts/measure-compaction.mjs`. Until #698 is done none of this is enforced.
+Decided in [ADR 0026](../adr/0026-board-document-compaction-and-limits.md), implemented by #698: `MAX_UPDATE_BYTES` (2 MiB per Yjs update), `MAX_DOCUMENT_BYTES` (8 MiB encoded state, then updates are refused with a `board-full` message), compaction of a room that empties and is over 1 MiB (the document's `meta.generation` changes; a client that reconnects with an older one is closed with 4409 and reloads its document), and the canvas's limit of 20,000 elements. The measurements are made by `apps/realtime/scripts/measure-compaction.mjs`. Until #698 is done none of this is enforced.
 
 ## Document relay
 
