@@ -134,6 +134,24 @@ export class ExcalidrawYjsBinding {
     }
   }
 
+  /** How many files are being fetched or uploaded right now. */
+  get pending(): number {
+    return this.#fetching.size + this.#uploading.size;
+  }
+
+  /**
+   * Resolves when nothing has been pending for a moment (the files that the scene shows are in), or after `timeoutMs`. A file
+   * that is listed after its image arrived starts its fetch a moment later, so one quiet look is not enough: two, `quietMs` apart.
+   */
+  async whenSettled(timeoutMs = 20_000, quietMs = 150): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    let quiet = 0;
+    while (quiet < 2 && Date.now() < deadline && !this.#destroyed) {
+      quiet = this.pending === 0 ? quiet + 1 : 0;
+      await new Promise((resolve) => setTimeout(resolve, quietMs));
+    }
+  }
+
   #takeOffScene(ids: readonly string[]): void {
     const api = this.#api;
     if (!api) return;
