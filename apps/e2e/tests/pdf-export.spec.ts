@@ -68,8 +68,8 @@ test('a board with two frames exports a PDF with two pages, one per frame', asyn
 });
 
 test('the whole board on one page when that is chosen', async () => {
-  const menu = await openMenu(a);
-  await menu.getByLabel('PDF pages').selectOption('whole');
+  await openMenu(a);
+  await a.getByLabel('PDF pages').selectOption('whole');
   await a.keyboard.press('Escape');
 
   const pdf = await exportPdf(a);
@@ -78,10 +78,10 @@ test('the whole board on one page when that is chosen', async () => {
 });
 
 test('A4 in landscape, and the choices are still there after a reload', async () => {
-  let menu = await openMenu(a);
-  await menu.getByLabel('PDF pages').selectOption('auto');
-  await menu.getByLabel('Page size').selectOption('a4');
-  await menu.getByLabel('Orientation').selectOption('landscape');
+  await openMenu(a);
+  await a.getByLabel('PDF pages').selectOption('auto');
+  await a.getByLabel('Page size').selectOption('a4');
+  await a.getByLabel('Orientation').selectOption('landscape');
   await a.keyboard.press('Escape');
 
   const pdf = await exportPdf(a);
@@ -93,7 +93,7 @@ test('A4 in landscape, and the choices are still there after a reload', async ()
 
   await a.reload();
   await expect(a.getByText('Connected', { exact: true })).toBeVisible();
-  menu = await openMenu(a);
-  await expect(menu.getByLabel('Page size')).toHaveValue('a4');
-  await expect(menu.getByLabel('Orientation')).toHaveValue('landscape');
+  await openMenu(a);
+  await expect(a.getByLabel('Page size')).toHaveValue('a4');
+  await expect(a.getByLabel('Orientation')).toHaveValue('landscape');
 });

@@ -40,7 +40,7 @@
   }
 }
 
-.menu {
+.popup {
   position: absolute;
   z-index: 30;
   top: calc(100% + 6px);
@@ -53,6 +53,11 @@
   border: 1px solid var(--c-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
 }
 
 .menu-item {
