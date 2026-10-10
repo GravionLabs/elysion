@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Gauge, Registry, collectDefaultMetrics } from 'prom-client';
 import { YjsRoomRegistry } from '../yjs/yjs-room-registry.js';
+import { SaveMetrics } from './save-metrics.js';
 
 /**
  * Prometheus metrics of the realtime service, served at `GET /metrics` (docs/specs/gateway.md): the process's
@@ -11,7 +12,10 @@ import { YjsRoomRegistry } from '../yjs/yjs-room-registry.js';
 export class MetricsService {
   readonly registry = new Registry();
 
-  constructor(rooms: YjsRoomRegistry) {
+  constructor(
+    rooms: YjsRoomRegistry,
+    private readonly saveMetrics: SaveMetrics,
+  ) {
     collectDefaultMetrics({ register: this.registry });
     new Gauge({
       name: 'elysion_realtime_websocket_connections',
@@ -32,6 +36,6 @@ export class MetricsService {
   }
 
   render(): Promise<string> {
-    return this.registry.metrics();
+    return Registry.merge([this.registry, this.saveMetrics.registry]).metrics();
   }
 }

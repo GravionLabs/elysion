@@ -24,6 +24,13 @@ export class MetricsService {
     registers: [this.registry],
   });
 
+  readonly #tokenRefusals = new Counter({
+    name: 'elysion_bff_realtime_token_refusals_total',
+    help: 'Realtime tokens refused, by reason (not_uuid: the id is no stored board; no_role: the caller has no role on it).',
+    labelNames: ['reason'],
+    registers: [this.registry],
+  });
+
   constructor() {
     collectDefaultMetrics({ register: this.registry });
   }
@@ -36,6 +43,11 @@ export class MetricsService {
     const labels = { method, route, status_code: String(statusCode) };
     this.#requests.inc(labels);
     this.#durations.observe(labels, seconds);
+  }
+
+  /** A realtime token that was refused with 403; a jump of this is a client or a script probing board ids. */
+  realtimeTokenRefused(reason: 'not_uuid' | 'no_role'): void {
+    this.#tokenRefusals.inc({ reason });
   }
 
   render(): Promise<string> {
