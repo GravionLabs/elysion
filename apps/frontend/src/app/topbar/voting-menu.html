@@ -4,6 +4,7 @@
     <span
       class="chip viewer-chip"
       title="A voting is open: collaborators vote by clicking elements"
+      i18n-title="@@topbar.voting.viewer-title"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="3" />
@@ -12,7 +13,7 @@
         <circle cx="5" cy="18" r="2" />
         <circle cx="19" cy="18" r="2" />
       </svg>
-      <span>Voting: {{ session()!.name }}</span>
+      <span i18n="@@topbar.voting.viewer-chip">Voting: {{ session()!.name }}</span>
     </span>
   } @else {
     <button
@@ -22,6 +23,7 @@
       [attr.aria-expanded]="open()"
       [class.running]="isOpen()"
       title="Dot voting"
+      i18n-title="@@topbar.voting.button-title"
       (click)="toggle()"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -33,29 +35,35 @@
       </svg>
       <span>
         @if (isOpen()) {
-          Voting · {{ left() }} left
+          <ng-container i18n="@@topbar.voting.button-open">Voting · {{ left() }} left</ng-container>
         } @else if (isClosed()) {
-          Results
+          <ng-container i18n="@@topbar.voting.button-results">Results</ng-container>
         } @else {
-          Voting
+          <ng-container i18n="@@topbar.voting.button">Voting</ng-container>
         }
       </span>
     </button>
   }
 
   @if (open()) {
-    <div class="menu" role="group" aria-label="Dot voting">
+    <div class="menu" role="group" aria-label="Dot voting" i18n-aria-label="@@topbar.voting.menu">
       @if (isOpen()) {
         <h3>{{ session()!.name }}</h3>
-        <p class="note" role="status">
+        <p class="note" role="status" i18n="@@topbar.voting.left">
           {{ left() }} of {{ session()!.votesPerPerson }} votes left. Click an element to vote,
           click one of your dots to take it back.
         </p>
-        <button type="button" class="primary end" (click)="end()">End voting</button>
+        <button type="button" class="primary end" (click)="end()" i18n="@@topbar.voting.end">
+          End voting
+        </button>
       } @else if (canControl()) {
         <form class="start" (submit)="$event.preventDefault(); start()">
-          <h3>{{ isClosed() ? 'Start another voting' : 'Start a voting' }}</h3>
-          <label for="voting-name">Name</label>
+          @if (isClosed()) {
+            <h3 i18n="@@topbar.voting.start-another">Start another voting</h3>
+          } @else {
+            <h3 i18n="@@topbar.voting.start-a">Start a voting</h3>
+          }
+          <label for="voting-name" i18n="@@topbar.voting.name">Name</label>
           <input
             id="voting-name"
             type="text"
@@ -64,7 +72,7 @@
             [value]="name()"
             (input)="updateName($event)"
           />
-          <span class="field-label">Votes per person</span>
+          <span class="field-label" i18n="@@topbar.voting.votes-per-person">Votes per person</span>
           <div class="presets">
             @for (preset of presets; track preset) {
               <button
@@ -82,6 +90,7 @@
               inputmode="numeric"
               class="votes-field"
               aria-label="Votes per person"
+              i18n-aria-label="@@topbar.voting.votes-per-person-aria"
               autocomplete="off"
               [value]="votes()"
               [attr.aria-invalid]="error() ? 'true' : null"
@@ -91,7 +100,7 @@
           @if (error(); as message) {
             <p class="error" role="alert">{{ message }}</p>
           }
-          <button type="submit" class="primary">Start</button>
+          <button type="submit" class="primary" i18n="@@topbar.voting.start">Start</button>
         </form>
       }
     </div>
@@ -115,12 +124,16 @@
         (pointerup)="dragEnd($event)"
         (pointercancel)="dragEnd($event)"
       >
-        <h3 id="voting-results-title">Results: {{ session()!.name }}</h3>
+        <h3 id="voting-results-title" i18n="@@topbar.voting.results-title">
+          Results: {{ session()!.name }}
+        </h3>
         <button
           type="button"
           class="drag-handle"
           aria-label="Move the dialog (arrow keys)"
+          i18n-aria-label="@@topbar.voting.move-aria"
           title="Drag the title to move the dialog"
+          i18n-title="@@topbar.voting.move-title"
           (keydown)="moveByKey($event)"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -133,6 +146,7 @@
           type="button"
           class="dialog-close"
           aria-label="Close the results"
+          i18n-aria-label="@@topbar.voting.close"
           (click)="closeResults()"
         >
           ×
@@ -141,7 +155,9 @@
 
       <div class="dialog-body">
         @if ((session()!.tally ?? []).length === 0) {
-          <p class="note">Nobody voted for anything that is still on the board.</p>
+          <p class="note" i18n="@@topbar.voting.nobody">
+            Nobody voted for anything that is still on the board.
+          </p>
         } @else {
           <ol class="results">
             @for (entry of session()!.tally; track entry.elementId) {
@@ -153,20 +169,31 @@
               </li>
             }
           </ol>
-          <p class="note">{{ total() }} {{ total() === 1 ? 'vote' : 'votes' }} in total.</p>
+          <p class="note" i18n="@@topbar.voting.total">
+            {total(), plural, =1 {1 vote in total.} other {{{ total() }} votes in total.}}
+          </p>
         }
 
         @if (canControl()) {
           @if (confirmingClear()) {
-            <p class="note" role="alert">
+            <p class="note" role="alert" i18n="@@topbar.voting.clear-confirm">
               Clear these results? The votes are removed for everybody.
             </p>
           }
           <div class="dialog-actions">
             <button type="button" class="danger clear" (click)="clear()">
-              {{ confirmingClear() ? 'Yes, clear the results' : 'Clear results' }}
+              @if (confirmingClear()) {
+                <ng-container i18n="@@topbar.voting.clear-yes">Yes, clear the results</ng-container>
+              } @else {
+                <ng-container i18n="@@topbar.voting.clear">Clear results</ng-container>
+              }
             </button>
-            <button type="button" class="secondary new-voting" (click)="newVoting()">
+            <button
+              type="button"
+              class="secondary new-voting"
+              i18n="@@topbar.voting.new"
+              (click)="newVoting()"
+            >
               New voting…
             </button>
           </div>

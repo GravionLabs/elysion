@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useRef, useSyncExternalStore } from 'react';
+import { useI18n } from './i18n';
 import {
   computeLayout,
   followViewport,
@@ -49,6 +50,7 @@ function draw(canvas: HTMLCanvasElement, snapshot: SceneSnapshot, layout: Minima
 
 /** An overview of the whole scene with the visible area marked, like ariadne's minimap. */
 export function Minimap({ store, onPan }: MinimapProps) {
+  const { t } = useI18n();
   const snapshot = useSyncExternalStore(store.subscribe, store.get);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // While dragging, the mapping is frozen: the layout includes the viewport, so it would otherwise
@@ -95,12 +97,12 @@ export function Minimap({ store, onPan }: MinimapProps) {
   };
 
   return (
-    <div className="elysion-minimap" role="group" aria-label="Canvas overview">
+    <div className="elysion-minimap" role="group" aria-label={t.minimap}>
       <canvas
         ref={canvasRef}
         width={MINIMAP_SIZE.width}
         height={MINIMAP_SIZE.height}
-        title="Overview: click or drag to move the view"
+        title={t.minimapTitle}
         onPointerDown={(event) => {
           frozenLayout.current = computeLayout(snapshot, MINIMAP_SIZE);
           event.currentTarget.setPointerCapture?.(event.pointerId);

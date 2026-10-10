@@ -31,3 +31,7 @@ Build from the repo root: `docker build -f apps/frontend/Dockerfile -t elysion-f
 ## Verifying changes
 
 `ng test --watch=false` must pass, then `pnpm --filter @elysion/frontend build` must succeed (use this, not `exec ng build`, so the canvas bundle actually gets copied in). For anything touching routing or the shell, also run `ng serve` and check the page in a browser — type-checking doesn't catch broken UI.
+
+## Localization (#738)
+
+English is the source, German the second language. Mark every visible string (`i18n` / `i18n-<attribute>` with a custom id like `@@topbar.export.button`, or `$localize` in TypeScript), run `pnpm --filter @elysion/frontend i18n:extract`, add the German text to `src/locale/messages.de.xlf`; `src/locale/locale.spec.ts` and the production build fail on a missing one. The build makes one copy per language (`dist/frontend/browser/en|de`), nginx picks it by the `elysion_lang` cookie, else `Accept-Language`. `LanguageService` (`src/app/shared/language.ts`) is the language of the running copy and the switch in the user menu; the canvas gets it as the `locale` attribute. See `docs/specs/frontend.md`, "Localization".

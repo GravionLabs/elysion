@@ -41,7 +41,12 @@ import { RouterLink } from '@angular/router';
     }
   `,
   template: `
-    <a class="brand" routerLink="/" aria-label="Elysion: all boards">
+    <a
+      class="brand"
+      routerLink="/"
+      aria-label="Elysion: all boards"
+      i18n-aria-label="@@app.brand.label"
+    >
       <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
         <defs>
           <linearGradient id="elysion-mark-gradient" x1="0" y1="0" x2="1" y2="1">

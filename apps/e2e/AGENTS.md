@@ -10,6 +10,7 @@ Playwright tests with two browsers on one board (user A and user B). They are **
 | `templates.spec.ts`     | the element count of each built-in template, adding one to a board, an own template (save, find, delete)                         |
 | `io.spec.ts`            | importing `fixtures/sample.excalidraw`; PNG, SVG, PDF and Excalidraw export as downloads; exporting the selection only           |
 | `drawing.spec.ts`       | rectangle, text, sticky note color, arrow, a connector from a connection point that follows its shape, undo and redo; B compares |
+| `language.spec.ts`      | German for `Accept-Language: de` ("Neues Board"), the user menu switch is remembered by cookie, English for other languages      |
 | `reconnect.spec.ts`     | the realtime service stopped and started (`compose` helper), drawing during the outage, a WS token of 5 seconds                  |
 
 ```sh

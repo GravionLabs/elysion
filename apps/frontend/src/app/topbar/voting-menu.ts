@@ -23,7 +23,7 @@ export interface VotingRequest {
 export const VOTE_PRESETS: readonly number[] = [3, 5, 10];
 
 const MAX_VOTES = 100;
-const DEFAULT_NAME = 'Voting';
+const DEFAULT_NAME = $localize`:@@topbar.voting.button:Voting`;
 
 /**
  * The Voting part of the top bar (ADR 0020): editors and owners start a dot voting (a name and the votes each person
@@ -193,7 +193,9 @@ export class VotingMenu {
   protected start(): void {
     const value = Number(this.votes().trim());
     if (!Number.isInteger(value) || value < 1 || value > MAX_VOTES) {
-      this.error.set(`Enter a whole number of votes between 1 and ${MAX_VOTES}.`);
+      this.error.set(
+        $localize`:@@topbar.voting.error:Enter a whole number of votes between 1 and ${MAX_VOTES}:max:.`,
+      );
       return;
     }
     this.open.set(false);

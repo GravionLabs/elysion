@@ -7,13 +7,27 @@
     (click)="$event.stopPropagation()"
   >
     <header class="dialog-header">
-      <h2 id="share-title">Share this {{ scope() }}</h2>
-      <button type="button" class="close" aria-label="Close" (click)="close()">×</button>
+      <h2 id="share-title">
+        @if (scope() === 'room') {
+          <ng-container i18n="@@share.title.room">Share this room</ng-container>
+        } @else {
+          <ng-container i18n="@@share.title.board">Share this board</ng-container>
+        }
+      </h2>
+      <button
+        type="button"
+        class="close"
+        aria-label="Close"
+        i18n-aria-label="@@share.close"
+        (click)="close()"
+      >
+        ×
+      </button>
     </header>
 
     <form class="invite" (submit)="$event.preventDefault(); add()">
       <label class="field">
-        <span class="field-label">Email</span>
+        <span class="field-label" i18n="@@share.email">Email</span>
         <input
           #emailField
           type="email"
@@ -21,37 +35,41 @@
           data-1p-ignore
           data-lpignore="true"
           placeholder="name@example.com"
+          i18n-placeholder="@@share.email.placeholder"
           [value]="email()"
           [disabled]="busy()"
           (input)="updateEmail($event)"
         />
       </label>
       <label class="field role-field">
-        <span class="field-label">Role</span>
+        <span class="field-label" i18n="@@share.role">Role</span>
         <select
           aria-label="Role of the new member"
+          i18n-aria-label="@@share.newRole.label"
           [disabled]="busy()"
           (change)="updateNewRole($event)"
         >
           @for (role of roles; track role) {
-            <option [value]="role" [selected]="role === newRole()">{{ role }}</option>
+            <option [value]="role" [selected]="role === newRole()">{{ roleLabel(role) }}</option>
           }
         </select>
       </label>
-      <button type="submit" class="primary" [disabled]="busy()">Add</button>
+      <button type="submit" class="primary" [disabled]="busy()" i18n="@@share.add">Add</button>
     </form>
 
     @if (error(); as message) {
       <p class="error" role="alert">{{ message }}</p>
     }
 
-    <section aria-label="Members">
+    <section aria-label="Members" i18n-aria-label="@@share.members.label">
       @if (loading()) {
-        <p class="note" role="status">Loading members…</p>
+        <p class="note" role="status" i18n="@@share.loading">Loading members…</p>
       } @else if (loadError(); as message) {
         <p class="error" role="alert">
           {{ message }}
-          <button type="button" class="link" (click)="load()">Try again</button>
+          <button type="button" class="link" (click)="load()" i18n="@@share.retry">
+            Try again
+          </button>
         </p>
       } @else {
         <ul class="members">
@@ -64,22 +82,24 @@
                 }
               </span>
               <select
-                [attr.aria-label]="'Role of ' + member.displayName"
+                [attr.aria-label]="roleOfLabel(member)"
                 [disabled]="busy()"
                 (change)="changeRole(member, $event)"
               >
                 @for (role of roles; track role) {
-                  <option [value]="role" [selected]="role === member.role">{{ role }}</option>
+                  <option [value]="role" [selected]="role === member.role">
+                    {{ roleLabel(role) }}
+                  </option>
                 }
               </select>
               <button
                 type="button"
                 class="remove"
-                [attr.aria-label]="'Remove ' + member.displayName"
+                [attr.aria-label]="removeLabel(member)"
                 [disabled]="busy()"
                 (click)="remove(member)"
               >
-                Remove
+                <ng-container i18n="@@share.remove">Remove</ng-container>
               </button>
             </li>
           }
@@ -88,12 +108,18 @@
     </section>
 
     <p class="hint">
-      Someone has to log in to Elysion once before they can be added.
+      <ng-container i18n="@@share.hint.login"
+        >Someone has to log in to Elysion once before they can be added.</ng-container
+      >
       @if (scope() === 'room') {
-        A member gets this role on every board in the room. Viewers can look at them but not change
-        them.
+        <ng-container i18n="@@share.hint.room"
+          >A member gets this role on every board in the room. Viewers can look at them but not
+          change them.</ng-container
+        >
       } @else {
-        Viewers can look at the board but not change it.
+        <ng-container i18n="@@share.hint.board"
+          >Viewers can look at the board but not change it.</ng-container
+        >
       }
     </p>
   </div>

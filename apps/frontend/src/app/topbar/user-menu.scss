@@ -105,3 +105,12 @@
     outline-offset: -2px;
   }
 }
+
+.menu-item[aria-checked='true'] {
+  font-weight: 600;
+
+  &::after {
+    content: '✓';
+    margin-left: 8px;
+  }
+}
