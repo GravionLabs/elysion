@@ -4,6 +4,7 @@ import type { TimerState } from './facilitation/timer';
 import type { StartOptions, VotingView } from './facilitation/voting';
 import type { ExportFormat, ExportOptions } from './board-io';
 import { parseTheme } from './useResolvedTheme';
+import { parseLocale, createI18n } from './i18n';
 import type { FileStore } from './yjs/files';
 
 export type { FileStore };
@@ -17,6 +18,7 @@ const OBSERVED_ATTRIBUTES = [
   'board-id',
   'yjs-server-url',
   'theme',
+  'locale',
   'user-name',
   'user-id',
   'user-color',
@@ -111,14 +113,14 @@ class ElysionCanvasElement extends HTMLElement {
   importFile(file: Blob): Promise<number> {
     return this.#controls
       ? this.#controls.importFile(file)
-      : Promise.reject(new Error('The canvas is not ready yet.'));
+      : Promise.reject(new Error(this.#notReady()));
   }
 
   /** Adds an .excalidraw file to the board with fresh ids, at the middle of the view, and selects it; one undo step. Resolves with the number of elements added. */
   insertFile(file: Blob): Promise<number> {
     return this.#controls
       ? this.#controls.insertFile(file)
-      : Promise.reject(new Error('The canvas is not ready yet.'));
+      : Promise.reject(new Error(this.#notReady()));
   }
 
   /** Starts a shared countdown of `durationMs` for everybody on the board; rejects on a read-only canvas or before it is up. */
@@ -167,9 +169,11 @@ class ElysionCanvasElement extends HTMLElement {
   }
 
   #timer(run: (controls: CanvasControls) => Promise<void>): Promise<void> {
-    return this.#controls
-      ? run(this.#controls)
-      : Promise.reject(new Error('The canvas is not ready yet.'));
+    return this.#controls ? run(this.#controls) : Promise.reject(new Error(this.#notReady()));
+  }
+
+  #notReady(): string {
+    return createI18n(parseLocale(this.getAttribute('locale'))).t.errorNotReady;
   }
 
   #emit(name: string, detail: unknown): void {
@@ -199,6 +203,7 @@ class ElysionCanvasElement extends HTMLElement {
         boardId={this.getAttribute('board-id') ?? undefined}
         yjsServerUrl={this.getAttribute('yjs-server-url') ?? undefined}
         theme={parseTheme(this.getAttribute('theme'))}
+        locale={parseLocale(this.getAttribute('locale'))}
       />,
     );
   }

@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { CanvasApp } from './CanvasApp';
+import { parseLocale } from './i18n';
 import { parseTheme } from './useResolvedTheme';
 
 const container = document.getElementById('root');
@@ -20,6 +21,7 @@ createRoot(container).render(
       boardId={params.get('board') ?? 'dev'}
       yjsServerUrl={params.get('yjs') ?? undefined}
       theme={parseTheme(params.get('theme'))}
+      locale={parseLocale(params.get('locale'))}
       tokenProvider={token ? async () => token : undefined}
     />
   </StrictMode>,

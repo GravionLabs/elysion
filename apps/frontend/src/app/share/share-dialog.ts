@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
+  DestroyRef,
   ElementRef,
   HostListener,
   effect,
@@ -32,7 +33,9 @@ export function describeError(
       return message;
     }
     if (error.status === 403) {
-      return `Only an owner of the ${scope} can do this.`;
+      return scope === 'room'
+        ? $localize`:@@share.error.ownerOnlyRoom:Only an owner of the room can do this.`
+        : $localize`:@@share.error.ownerOnlyBoard:Only an owner of the board can do this.`;
     }
   }
   return fallback;
@@ -72,6 +75,13 @@ export class ShareDialog {
   private readonly emailField = viewChild<ElementRef<HTMLInputElement>>('emailField');
 
   constructor() {
+    // The button that opened the dialog gets the focus back when it is gone (WCAG 2.4.3).
+    const opener = document.activeElement;
+    inject(DestroyRef).onDestroy(() => {
+      if (opener instanceof HTMLElement && opener.isConnected) {
+        opener.focus();
+      }
+    });
     effect(() => {
       this.boardId();
       untracked(() => this.load());
@@ -95,7 +105,13 @@ export class ShareDialog {
       },
       error: (error: unknown) => {
         this.loading.set(false);
-        this.loadError.set(describeError(error, 'The members could not be loaded.', this.scope()));
+        this.loadError.set(
+          describeError(
+            error,
+            $localize`:@@share.error.loadFailed:The members could not be loaded.`,
+            this.scope(),
+          ),
+        );
       },
     });
   }
@@ -112,12 +128,12 @@ export class ShareDialog {
   protected add(): void {
     const email = this.email().trim();
     if (!email) {
-      this.error.set('Enter the email of the person to add.');
+      this.error.set($localize`:@@share.error.emailRequired:Enter the email of the person to add.`);
       return;
     }
     this.#change(
       this.#api.add(this.boardId(), email, this.newRole(), this.scope()),
-      'The member could not be added.',
+      $localize`:@@share.error.addFailed:The member could not be added.`,
       (member) => {
         this.members.update((members) => [...members, member]);
         this.email.set('');
@@ -130,7 +146,7 @@ export class ShareDialog {
     const role = select.value as MemberRole;
     this.#change(
       this.#api.changeRole(this.boardId(), member.userId, role, this.scope()),
-      'The role could not be changed.',
+      $localize`:@@share.error.roleFailed:The role could not be changed.`,
       (changed) =>
         this.members.update((members) =>
           members.map((m) => (m.userId === changed.userId ? changed : m)),
@@ -143,7 +159,7 @@ export class ShareDialog {
   protected remove(member: Member): void {
     this.#change(
       this.#api.remove(this.boardId(), member.userId, this.scope()),
-      'The member could not be removed.',
+      $localize`:@@share.error.removeFailed:The member could not be removed.`,
       () => this.members.update((members) => members.filter((m) => m.userId !== member.userId)),
     );
   }
@@ -167,6 +183,28 @@ export class ShareDialog {
         undo?.();
       },
     });
+  }
+
+  /** The role as shown; the value stays the API's. */
+  protected roleLabel(role: MemberRole): string {
+    switch (role) {
+      case 'Owner':
+        return $localize`:@@share.role.owner:Owner`;
+      case 'Editor':
+        return $localize`:@@share.role.editor:Editor`;
+      case 'Viewer':
+        return $localize`:@@share.role.viewer:Viewer`;
+      default:
+        return role;
+    }
+  }
+
+  protected removeLabel(member: Member): string {
+    return $localize`:@@share.remove.label:Remove ${member.displayName}:name:`;
+  }
+
+  protected roleOfLabel(member: Member): string {
+    return $localize`:@@share.roleOf.label:Role of ${member.displayName}:name:`;
   }
 
   protected close(): void {

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useI18n } from './i18n';
 
 /** What the canvas menu lists. The menu only draws these; what an item does is up to whoever made it. */
 export type CanvasMenuItem =
@@ -62,6 +63,7 @@ interface CanvasMenuProps {
 export function CanvasMenu({ items, footer }: CanvasMenuProps) {
   const [open, setOpen] = useState(false);
   // The item whose confirmation is showing, if any.
+  const { t } = useI18n();
   const [asking, setAsking] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -132,11 +134,11 @@ export function CanvasMenu({ items, footer }: CanvasMenuProps) {
         ref={buttonRef}
         type="button"
         className={open ? 'elysion-icon-button active' : 'elysion-icon-button'}
-        aria-label="Canvas menu"
+        aria-label={t.canvasMenu}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        title="Canvas menu"
+        title={t.canvasMenu}
         data-testid="elysion-menu"
         onClick={() => (open ? close() : setOpen(true))}
       >
@@ -147,7 +149,7 @@ export function CanvasMenu({ items, footer }: CanvasMenuProps) {
           id={menuId}
           className="elysion-menu__list"
           role="menu"
-          aria-label="Canvas menu"
+          aria-label={t.canvasMenu}
           onKeyDown={onKeyDown}
         >
           {question?.confirm ? (

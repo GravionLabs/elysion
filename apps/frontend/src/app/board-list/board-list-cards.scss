@@ -40,7 +40,8 @@
   display: grid;
   height: 84px;
   place-items: center;
-  color: var(--tint, var(--c-text-subtle));
+  // The initials are decorative, but still readable (WCAG AA): the tint toward the text color.
+  color: color-mix(in srgb, var(--tint, var(--c-text-subtle)) 45%, var(--c-text));
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;

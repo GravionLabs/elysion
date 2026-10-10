@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { LanguageService } from '../shared/language';
 import { UserMenu } from './user-menu';
 
 describe('UserMenu', () => {
@@ -7,9 +8,13 @@ describe('UserMenu', () => {
   const button = () => el().querySelector('.user-button') as HTMLButtonElement;
   const menu = () => el().querySelector('[role="menu"]');
   let logouts: number;
+  const use = vi.fn();
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [UserMenu] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [UserMenu],
+      providers: [{ provide: LanguageService, useValue: { current: 'en', use } }],
+    }).compileComponents();
     fixture = TestBed.createComponent(UserMenu);
     fixture.componentRef.setInput('user', {
       id: 'kc-1',
@@ -94,5 +99,17 @@ describe('UserMenu', () => {
     await fixture.whenStable();
 
     expect(el().querySelector('.user-avatar')?.textContent?.trim()).toBe('?');
+  });
+
+  it('offers the languages, marks the one in use and switches to the other', async () => {
+    button().click();
+    await fixture.whenStable();
+
+    const items = [...el().querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')];
+    expect(items.map((item) => item.textContent?.trim())).toEqual(['English', 'Deutsch']);
+    expect(items.map((item) => item.getAttribute('aria-checked'))).toEqual(['true', 'false']);
+
+    items[1].click();
+    expect(use).toHaveBeenCalledWith('de');
   });
 });

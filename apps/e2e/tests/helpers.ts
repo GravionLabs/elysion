@@ -1,8 +1,9 @@
+import { AxeBuilder } from '@axe-core/playwright';
 import { execFile } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { type Browser, type Page, expect } from '@playwright/test';
+import { type Browser, type BrowserContextOptions, type Page, expect } from '@playwright/test';
 
 export const USER_A = process.env.E2E_USER_A ?? 'dev1';
 export const USER_B = process.env.E2E_USER_B ?? 'dev2';
@@ -11,8 +12,12 @@ export const USER_B = process.env.E2E_USER_B ?? 'dev2';
 export const emailOf = (user: string) => `${user}@elysion.local`;
 
 /** Logs a demo user in through Keycloak (the password is the username) in a browser context of its own. */
-export async function login(browser: Browser, user: string): Promise<Page> {
-  const context = await browser.newContext();
+export async function login(
+  browser: Browser,
+  user: string,
+  options?: BrowserContextOptions,
+): Promise<Page> {
+  const context = await browser.newContext(options);
   const page = await context.newPage();
   await page.goto('/');
   await page.fill('#username', user);
@@ -128,4 +133,35 @@ export async function waitForApi(): Promise<void> {
       { timeout: 60_000 },
     )
     .toBe(401);
+}
+
+/**
+ * The places Excalidraw owns and Elysion does not control: its canvases (a drawing has no text alternative) and the hidden
+ * inputs behind its tool buttons (they have no label of their own). The list is the allowlist of docs/specs/frontend.md, "Accessibility".
+ */
+export const AXE_ALLOWLIST = ['.excalidraw canvas', '.excalidraw input[aria-keyshortcuts]'];
+
+/** Fails when the page has a violation of the WCAG 2.1 A or AA rules outside the allowlist; `where` names the state in the message. */
+export async function expectAccessible(page: Page, where: string): Promise<void> {
+  // One `exclude` per entry: a list in one call would be read as a path through shadow roots.
+  const builder = AXE_ALLOWLIST.reduce(
+    (axe, selector) => axe.exclude(selector),
+    new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']),
+  );
+  const results = await builder.analyze();
+  const found = results.violations.map(
+    (violation) =>
+      `${violation.id} (${violation.impact}): ${violation.help}\n${violation.nodes
+        .slice(0, 4)
+        .map((node) => {
+          const data = node.any[0]?.data as
+            { fgColor?: string; bgColor?: string; contrastRatio?: number } | undefined;
+          const colors = data?.fgColor
+            ? ` (${data.fgColor} on ${data.bgColor}, ${data.contrastRatio})`
+            : '';
+          return `    ${node.target.join(' ')}${colors}`;
+        })
+        .join('\n')}`,
+  );
+  expect.soft(found, `accessibility violations: ${where}`).toEqual([]);
 }

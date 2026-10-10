@@ -5,16 +5,21 @@
   [attr.aria-expanded]="open()"
   [attr.aria-busy]="busy() !== null"
   title="Export the board"
+  i18n-title="@@topbar.export.button-title"
   (click)="toggle()"
 >
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M12 3v12m0 0-4-4m4 4 4-4M5 20h14" />
   </svg>
-  <span>{{ busyLabel() ?? 'Export' }}</span>
+  @if (busyLabel(); as label) {
+    <span>{{ label }}</span>
+  } @else {
+    <span i18n="@@topbar.export.button">Export</span>
+  }
 </button>
 
 @if (open()) {
-  <div class="menu" role="menu" aria-label="Export">
+  <div class="menu" role="menu" aria-label="Export" i18n-aria-label="@@topbar.export.menu">
     @for (item of formats; track item.format) {
       <button
         type="button"
@@ -29,11 +34,12 @@
     <label class="menu-option" [class.disabled]="!hasSelection()">
       <input
         type="checkbox"
+        role="menuitemcheckbox"
         [disabled]="!hasSelection()"
         [checked]="selectionOnly() && hasSelection()"
         (change)="setSelectionOnly($event)"
       />
-      Selection only
+      <span i18n="@@topbar.export.selection-only">Selection only</span>
     </label>
   </div>
 }

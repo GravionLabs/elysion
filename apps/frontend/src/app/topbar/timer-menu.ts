@@ -96,9 +96,21 @@ export class TimerMenu {
     const timer = this.timer();
     return timer !== null && timerEnded(timer, this.now());
   });
+  protected readonly muteLabel = computed(() =>
+    this.muted()
+      ? $localize`:@@topbar.timer.unmute-aria:Turn the end chime on`
+      : $localize`:@@topbar.timer.mute-aria:Mute the end chime`,
+  );
+  protected readonly muteTitle = computed(() =>
+    this.muted()
+      ? $localize`:@@topbar.timer.muted-title:The end chime is muted`
+      : $localize`:@@topbar.timer.mute-aria:Mute the end chime`,
+  );
   protected readonly startedByLabel = computed(() => {
     const by = this.timer()?.startedBy.name;
-    return by ? `Started by ${by}` : 'Timer';
+    return by
+      ? $localize`:@@topbar.timer.started-by:Started by ${by}:name:`
+      : $localize`:@@topbar.timer.button:Timer`;
   });
 
   /** Identifies the timer that has ended, so the end is handled once however often the clock ticks. */
@@ -160,7 +172,9 @@ export class TimerMenu {
   protected start(): void {
     const value = Number(this.minutes().trim().replace(',', '.'));
     if (!Number.isFinite(value) || value <= 0 || value > MAX_MINUTES) {
-      this.error.set(`Enter a number of minutes between 1 and ${MAX_MINUTES}.`);
+      this.error.set(
+        $localize`:@@topbar.timer.error:Enter a number of minutes between 1 and ${MAX_MINUTES}:max:.`,
+      );
       return;
     }
     this.open.set(false);

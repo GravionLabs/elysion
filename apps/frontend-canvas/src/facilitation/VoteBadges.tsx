@@ -1,4 +1,5 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { en, useI18n, type Messages } from '../i18n';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { connectableAt, toScene, toScreen, type View } from '../connection-points';
@@ -44,10 +45,8 @@ export function topRightCorner(element: ExcalidrawElement): ScenePoint {
 }
 
 /** How the person is told what is left: the hint under the votes. */
-export function hintText(left: number, total: number): string {
-  return left > 0
-    ? `Voting: ${left} of ${total} votes left (click an element to vote)`
-    : `Voting: no votes left (click one of your dots to take it back)`;
+export function hintText(left: number, total: number, t: Messages = en): string {
+  return left > 0 ? t.votesLeft(left, total) : t.votesNone;
 }
 
 /**
@@ -66,6 +65,7 @@ export function VoteBadges({
   onVote,
   onRetract,
 }: VoteBadgesProps) {
+  const { t } = useI18n();
   // Re-render whenever Excalidraw reports a change of the scene, the selection or the view.
   useSyncExternalStore(store.subscribe, store.get);
   // The listeners below are added once; they read the latest of these.
@@ -183,7 +183,7 @@ export function VoteBadges({
       </div>
       {open && !readOnly && (
         <div className="elysion-vote-hint" role="status">
-          {hintText(left, session.votesPerPerson)}
+          {hintText(left, session.votesPerPerson, t)}
         </div>
       )}
     </>

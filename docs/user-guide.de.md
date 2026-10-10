@@ -1,0 +1,37 @@
+# Benutzerhandbuch (Grundlagen)
+
+Kurzfassung des [englischen Benutzerhandbuchs](./user-guide.md) für die ersten Schritte. Das vollständige Handbuch bleibt englisch.
+
+## Sprache
+
+Elysion öffnet sich in der Sprache, die der Browser anfordert (Deutsch oder Englisch, sonst Englisch). Im Benutzermenü oben rechts
+(dein Name) wechselst du die Sprache; die Wahl wird im Browser gemerkt und gilt für alle Seiten. Die Adresse ändert sich dabei nicht.
+
+## Anmelden
+
+Öffne Elysion im Browser (in der Demo <http://localhost>). Du wirst zur Anmeldeseite des Identity-Providers (Keycloak) geleitet; die Demo hat
+die Benutzer `dev`, `dev1` und `dev2`, das Passwort ist der Benutzername. Wer zu einem Board oder Raum per E-Mail-Adresse eingeladen werden
+soll, muss sich vorher einmal angemeldet haben.
+
+## Boards und Räume
+
+Die Startseite listet **deine Boards**: die selbst erstellten und die mit dir geteilten.
+
+- **Neues Board** öffnet ein Formular mit dem Namen und **Starten mit**: ein leeres Board oder eine Vorlage (Brainstorming, Kanban,
+  Retrospektive und eigene).
+- Auf einer Karte **verschieben**, **duplizieren** und **löschen** die Symbole in der Ecke das Board (Löschen fragt vorher nach und lässt sich
+  nicht rückgängig machen).
+- **Räume** (die Liste links) sind gemeinsame Bereiche für die Boards eines Teams. Alle in einem Raum können seine Boards öffnen, mit ihrer
+  Rolle im Raum (Eigentümer, Bearbeiter oder Betrachter).
+
+## Das Board
+
+Zeichne mit der Werkzeugleiste unten: Formen, Pfeile, Text, Haftnotizen. Alle Personen auf dem Board sehen Änderungen sofort; ihre Cursor und
+Avatare erscheinen oben rechts. **Teilen** lädt Personen per E-Mail-Adresse ein, **Vorlagen**, **Exportieren** und **Importieren** bringen
+Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema.
+
+## Einen Workshop leiten
+
+- **Timer** startet einen Countdown für alle auf dem Board (Voreinstellungen oder eigene Minuten; pausieren, eine Minute verlängern, stoppen).
+- **Abstimmung** startet eine Punkte-Abstimmung: Jede Person verteilt ihre Punkte auf Elemente, die Moderation beendet die Abstimmung und
+  sieht die Ergebnisse.

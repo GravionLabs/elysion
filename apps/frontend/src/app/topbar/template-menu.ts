@@ -72,7 +72,9 @@ export class TemplateMenu {
       },
       error: () => {
         this.confirmingId.set(null);
-        this.deleteError.set(`The template “${template.name}” could not be deleted.`);
+        this.deleteError.set(
+          $localize`:@@topbar.templates.delete-error:The template “${template.name}:name:” could not be deleted.`,
+        );
       },
     });
   }
@@ -80,6 +82,10 @@ export class TemplateMenu {
   protected choose(template: TemplateInfo): void {
     this.open.set(false);
     this.templateChosen.emit(template);
+  }
+
+  protected deleteLabel(name: string): string {
+    return $localize`:@@topbar.templates.delete-aria:Delete the template ${name}:name:`;
   }
 
   @HostListener('document:click', ['$event'])

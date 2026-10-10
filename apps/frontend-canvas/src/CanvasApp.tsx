@@ -32,6 +32,7 @@ import { Minimap } from './Minimap';
 import { SceneStore } from './scene-store';
 import { scrollToCenter } from './minimap-geometry';
 import { ZOOM_STEP, zoomAbout } from './zoom';
+import { I18nProvider, excalidrawLangCode, createI18n, type Locale } from './i18n';
 import { Toolbar, type HistoryAction, type ToolbarTool, type ZoomAction } from './Toolbar';
 import { ELEMENT_DEFAULTS } from './element-style';
 import { applyGridDots } from './grid-dots';
@@ -119,6 +120,8 @@ export interface CanvasAppProps {
   yjsServerUrl?: string;
   /** `light` or `dark`; follows the system preference while unset. */
   theme?: CanvasTheme;
+  /** The language of the canvas' own texts and of Excalidraw's; English while unset. */
+  locale?: Locale;
   /** The Yjs connection changed; also called once with `connecting` when the canvas starts. */
   onStatusChange?: (status: YjsConnectionStatus) => void;
   /**
@@ -198,6 +201,7 @@ export function CanvasApp({
   boardId = 'default',
   yjsServerUrl,
   theme,
+  locale = 'en',
   onStatusChange,
   onThemeChange,
   onControls,
@@ -216,6 +220,10 @@ export function CanvasApp({
   userId,
   userColor,
 }: CanvasAppProps) {
+  const { t } = createI18n(locale);
+  // Read by the callbacks the canvas hands to the host once, which must speak the current language.
+  const tRef = useRef(t);
+  tRef.current = t;
   const resolvedTheme = useResolvedTheme(theme);
   // What is shown right now: a toggle inside Excalidraw changes it, and so does a new `theme`
   // attribute or system preference (which wins over an earlier toggle).
@@ -403,9 +411,9 @@ export function CanvasApp({
 
   /** Runs a change of the board's shared state (the timer, the voting); rejects when the canvas is read-only or not up, or when the change is invalid. */
   const timerCommand = (run: (doc: Y.Doc) => unknown): Promise<void> => {
-    if (readOnlyRef.current) return Promise.reject(new Error('This board is read-only.'));
+    if (readOnlyRef.current) return Promise.reject(new Error(tRef.current.errorReadOnly));
     const doc = docRef.current;
-    if (!doc) return Promise.reject(new Error('The canvas is not ready yet.'));
+    if (!doc) return Promise.reject(new Error(tRef.current.errorNotReady));
     try {
       run(doc);
       return Promise.resolve();
@@ -623,11 +631,11 @@ export function CanvasApp({
   };
 
   const menuItems: CanvasMenuItem[] = [
-    { type: 'heading', label: 'View' },
+    { type: 'heading', label: t.menuView },
     {
       type: 'check',
       id: 'grid-show',
-      label: 'Show grid',
+      label: t.menuShowGrid,
       checked: grid.show,
       disabled: readOnly,
       onSelect: () => setGridShown(!grid.show),
@@ -635,7 +643,7 @@ export function CanvasApp({
     {
       type: 'check',
       id: 'grid-snap',
-      label: 'Snap to grid',
+      label: t.menuSnapToGrid,
       checked: grid.snap,
       disabled: readOnly,
       onSelect: () => changeGrid({ snap: !grid.snap }),
@@ -643,27 +651,27 @@ export function CanvasApp({
     {
       type: 'check',
       id: 'snap-objects',
-      label: 'Snap to objects',
+      label: t.menuSnapToObjects,
       checked: grid.guides,
       disabled: readOnly,
       onSelect: () => changeGrid({ guides: !grid.guides }),
     },
     // The grid belongs to the board: a viewer sees it and does not change it.
-    { type: 'heading', label: readOnly ? 'Grid size (set by the editors)' : 'Grid size' },
+    { type: 'heading', label: readOnly ? t.menuGridSizeReadOnly : t.menuGridSize },
     ...GRID_SIZES.map((size) => ({
       type: 'radio' as const,
       id: `grid-size-${size}`,
-      label: `${size} px`,
+      label: t.menuGridSizeOption(size),
       checked: grid.size === size,
       disabled: readOnly,
       keepOpen: true,
       onSelect: () => setGridSize(size),
     })),
-    { type: 'heading', label: 'Canvas' },
+    { type: 'heading', label: t.menuCanvas },
     {
       type: 'item',
       id: 'help',
-      label: 'Help',
+      label: t.menuHelp,
       hint: '?',
       onSelect: () => pressKey({ key: '?', code: 'Slash', shiftKey: true }),
     },
@@ -673,12 +681,12 @@ export function CanvasApp({
           {
             type: 'item' as const,
             id: 'clear',
-            label: 'Clear canvas…',
+            label: t.menuClear,
             onSelect: clearBoard,
             confirm: {
-              message: 'Remove everything from this board, for everyone? You can undo it.',
-              accept: 'Clear everything',
-              decline: 'Keep it',
+              message: t.clearMessage,
+              accept: t.clearAccept,
+              decline: t.clearDecline,
             },
           },
         ]),
@@ -706,166 +714,169 @@ export function CanvasApp({
   addStickyRef.current = addSticky;
 
   return (
-    <div
-      ref={rootRef}
-      className="elysion-canvas"
-      data-theme={activeTheme}
-      data-grid={grid.show ? 'dots' : undefined}
-      style={{ position: 'absolute', inset: 0 }}
-    >
-      <Excalidraw
-        theme={activeTheme}
-        viewModeEnabled={readOnly}
-        // Excalidraw's grid mode is snapping (its lines are switched off, the dots are ours): set by the setting, never by the user's keys.
-        gridModeEnabled={grid.snap && !readOnly}
-        // Snap to the edges and centers of other elements, with guide lines: a board setting too (#755). Excalidraw reads this
-        // prop once, for its first state; after that the setting is put into its state (below), and kept there.
-        objectsSnapModeEnabled={grid.guides && !readOnly}
-        UIOptions={imagesEnabled ? UI_OPTIONS_WITH_IMAGES : UI_OPTIONS}
-        initialData={{
-          appState: {
-            ...ELEMENT_DEFAULTS,
-            // Transparent: the board's color and the dots are the background behind the canvas (styles/grid.css).
-            viewBackgroundColor: 'transparent',
-            gridSize: gridRef.current.size,
-          },
-        }}
-        excalidrawAPI={(api) => {
-          apiRef.current = api;
-          // The size the document gave before the canvas was there (the initial state has the default one).
-          if (gridRef.current.size !== DEFAULT_GRID.size) {
-            api.updateScene({
-              appState: { gridSize: gridRef.current.size },
-              captureUpdate: CaptureUpdateAction.NEVER,
-            });
-          }
-          bindingRef.current?.attach(api);
-          presenceRef.current?.refresh(); // the collaborators that were there before the canvas was
-          controlsCallback.current?.({
-            toggleLibrary: () => api.toggleSidebar({ name: LIBRARY_SIDEBAR, tab: LIBRARY_TAB }),
-            exportBoard: (format, options) => exportBoard(api, format, options),
-            importFile: (file) =>
-              readOnlyRef.current
-                ? Promise.reject(new Error('This board is read-only.'))
-                : importFile(api, file),
-            insertFile: (file) =>
-              readOnlyRef.current
-                ? Promise.reject(new Error('This board is read-only.'))
-                : insertFile(api, file),
-            startTimer: (durationMs) =>
-              timerCommand((doc) =>
-                startTimer(doc, durationMs, {
-                  id: userIdRef.current ?? identityNow.current.id,
-                  name: identityNow.current.name,
-                }),
-              ),
-            pauseTimer: () => timerCommand((doc) => pauseTimer(doc)),
-            resumeTimer: () => timerCommand((doc) => resumeTimer(doc)),
-            extendTimer: (ms) => timerCommand((doc) => extendTimer(doc, ms)),
-            stopTimer: () => timerCommand((doc) => stopTimer(doc)),
-            startVoting: (options) => timerCommand((doc) => startSession(doc, options, voter())),
-            endVoting: () =>
-              timerCommand((doc) => {
-                const open = readVoting(doc).openSessionId;
-                if (open) endSession(doc, open);
-              }),
-            // All the results: every closed voting goes, so an older one does not show up after the last was cleared.
-            clearVotingResults: () =>
-              timerCommand((doc) => {
-                for (const session of readVoting(doc).sessions) {
-                  if (session.status === 'closed') clearResults(doc, session.id);
-                }
-              }),
-            scrollToElement: (elementId) => {
-              const target = api.getSceneElements().find((element) => element.id === elementId);
-              if (!target) return Promise.reject(new Error('That element is not on the board.'));
-              api.scrollToContent(target, { fitToViewport: false, animate: true });
-              return Promise.resolve();
+    <I18nProvider locale={locale}>
+      <div
+        ref={rootRef}
+        className="elysion-canvas"
+        data-theme={activeTheme}
+        data-grid={grid.show ? 'dots' : undefined}
+        style={{ position: 'absolute', inset: 0 }}
+      >
+        <Excalidraw
+          theme={activeTheme}
+          langCode={excalidrawLangCode(locale)}
+          viewModeEnabled={readOnly}
+          // Excalidraw's grid mode is snapping (its lines are switched off, the dots are ours): set by the setting, never by the user's keys.
+          gridModeEnabled={grid.snap && !readOnly}
+          // Snap to the edges and centers of other elements, with guide lines: a board setting too (#755). Excalidraw reads this
+          // prop once, for its first state; after that the setting is put into its state (below), and kept there.
+          objectsSnapModeEnabled={grid.guides && !readOnly}
+          UIOptions={imagesEnabled ? UI_OPTIONS_WITH_IMAGES : UI_OPTIONS}
+          initialData={{
+            appState: {
+              ...ELEMENT_DEFAULTS,
+              // Transparent: the board's color and the dots are the background behind the canvas (styles/grid.css).
+              viewBackgroundColor: 'transparent',
+              gridSize: gridRef.current.size,
             },
-          });
-        }}
-        onPointerUpdate={(update) => presenceRef.current?.pointerMoved(update)}
-        onChange={(elements, appState, files) => {
-          bindingRef.current?.onLocalChange(elements, files);
-          presenceRef.current?.selectionChanged(appState.selectedElementIds);
-          setActiveTool(appState.activeTool.type);
-          if (appState.objectsSnapModeEnabled !== guidesOnRef.current) {
-            apiRef.current?.updateScene({
-              appState: { objectsSnapModeEnabled: guidesOnRef.current },
-              captureUpdate: CaptureUpdateAction.NEVER,
+          }}
+          excalidrawAPI={(api) => {
+            apiRef.current = api;
+            // The size the document gave before the canvas was there (the initial state has the default one).
+            if (gridRef.current.size !== DEFAULT_GRID.size) {
+              api.updateScene({
+                appState: { gridSize: gridRef.current.size },
+                captureUpdate: CaptureUpdateAction.NEVER,
+              });
+            }
+            bindingRef.current?.attach(api);
+            presenceRef.current?.refresh(); // the collaborators that were there before the canvas was
+            controlsCallback.current?.({
+              toggleLibrary: () => api.toggleSidebar({ name: LIBRARY_SIDEBAR, tab: LIBRARY_TAB }),
+              exportBoard: (format, options) => exportBoard(api, format, options),
+              importFile: (file) =>
+                readOnlyRef.current
+                  ? Promise.reject(new Error(tRef.current.errorReadOnly))
+                  : importFile(api, file),
+              insertFile: (file) =>
+                readOnlyRef.current
+                  ? Promise.reject(new Error(tRef.current.errorReadOnly))
+                  : insertFile(api, file),
+              startTimer: (durationMs) =>
+                timerCommand((doc) =>
+                  startTimer(doc, durationMs, {
+                    id: userIdRef.current ?? identityNow.current.id,
+                    name: identityNow.current.name,
+                  }),
+                ),
+              pauseTimer: () => timerCommand((doc) => pauseTimer(doc)),
+              resumeTimer: () => timerCommand((doc) => resumeTimer(doc)),
+              extendTimer: (ms) => timerCommand((doc) => extendTimer(doc, ms)),
+              stopTimer: () => timerCommand((doc) => stopTimer(doc)),
+              startVoting: (options) => timerCommand((doc) => startSession(doc, options, voter())),
+              endVoting: () =>
+                timerCommand((doc) => {
+                  const open = readVoting(doc).openSessionId;
+                  if (open) endSession(doc, open);
+                }),
+              // All the results: every closed voting goes, so an older one does not show up after the last was cleared.
+              clearVotingResults: () =>
+                timerCommand((doc) => {
+                  for (const session of readVoting(doc).sessions) {
+                    if (session.status === 'closed') clearResults(doc, session.id);
+                  }
+                }),
+              scrollToElement: (elementId) => {
+                const target = api.getSceneElements().find((element) => element.id === elementId);
+                if (!target) return Promise.reject(new Error(tRef.current.errorNotOnBoard));
+                api.scrollToContent(target, { fitToViewport: false, animate: true });
+                return Promise.resolve();
+              },
             });
-          }
-          if (rootRef.current) {
-            applyGridDots(rootRef.current, {
-              zoom: appState.zoom.value,
+          }}
+          onPointerUpdate={(update) => presenceRef.current?.pointerMoved(update)}
+          onChange={(elements, appState, files) => {
+            bindingRef.current?.onLocalChange(elements, files);
+            presenceRef.current?.selectionChanged(appState.selectedElementIds);
+            setActiveTool(appState.activeTool.type);
+            if (appState.objectsSnapModeEnabled !== guidesOnRef.current) {
+              apiRef.current?.updateScene({
+                appState: { objectsSnapModeEnabled: guidesOnRef.current },
+                captureUpdate: CaptureUpdateAction.NEVER,
+              });
+            }
+            if (rootRef.current) {
+              applyGridDots(rootRef.current, {
+                zoom: appState.zoom.value,
+                scrollX: appState.scrollX,
+                scrollY: appState.scrollY,
+                size: gridRef.current.size,
+              });
+            }
+            selectionOrder.current = trackSelection(
+              selectionOrder.current,
+              appState.selectedElementIds,
+            );
+            setCanConnect(connectableSelection(elements, appState.selectedElementIds) !== null);
+            setZoomPercent(Math.round(appState.zoom.value * 100));
+            const selected = Object.values(appState.selectedElementIds).filter(Boolean).length;
+            if (selected !== selectionCount.current) {
+              selectionCount.current = selected;
+              selectionCallback.current?.(selected);
+            }
+            const open = appState.openSidebar?.name === LIBRARY_SIDEBAR;
+            if (open !== libraryOpen.current) {
+              libraryOpen.current = open;
+              libraryCallback.current?.(open);
+            }
+            if (appState.theme !== lastReportedTheme.current) {
+              lastReportedTheme.current = appState.theme;
+              if (appState.theme !== activeTheme) {
+                setActiveTheme(appState.theme);
+                themeCallback.current?.(appState.theme);
+              }
+            }
+            sceneStoreRef.current.set({
+              elements: elements.filter((element) => !element.isDeleted),
               scrollX: appState.scrollX,
               scrollY: appState.scrollY,
-              size: gridRef.current.size,
+              zoom: appState.zoom.value,
+              width: appState.width,
+              height: appState.height,
             });
-          }
-          selectionOrder.current = trackSelection(
-            selectionOrder.current,
-            appState.selectedElementIds,
-          );
-          setCanConnect(connectableSelection(elements, appState.selectedElementIds) !== null);
-          setZoomPercent(Math.round(appState.zoom.value * 100));
-          const selected = Object.values(appState.selectedElementIds).filter(Boolean).length;
-          if (selected !== selectionCount.current) {
-            selectionCount.current = selected;
-            selectionCallback.current?.(selected);
-          }
-          const open = appState.openSidebar?.name === LIBRARY_SIDEBAR;
-          if (open !== libraryOpen.current) {
-            libraryOpen.current = open;
-            libraryCallback.current?.(open);
-          }
-          if (appState.theme !== lastReportedTheme.current) {
-            lastReportedTheme.current = appState.theme;
-            if (appState.theme !== activeTheme) {
-              setActiveTheme(appState.theme);
-              themeCallback.current?.(appState.theme);
-            }
-          }
-          sceneStoreRef.current.set({
-            elements: elements.filter((element) => !element.isDeleted),
-            scrollX: appState.scrollX,
-            scrollY: appState.scrollY,
-            zoom: appState.zoom.value,
-            width: appState.width,
-            height: appState.height,
-          });
-        }}
-      >
-        {/* Our own trigger replaces Excalidraw's floating Library button; the top bar opens the library. */}
-        <DefaultSidebar.Trigger style={{ display: 'none' }} aria-hidden="true" />
-      </Excalidraw>
-      <Minimap store={sceneStoreRef.current} onPan={panTo} />
-      {!readOnly && (
-        <ConnectionPoints apiRef={apiRef} rootRef={rootRef} store={sceneStoreRef.current} />
-      )}
-      <VoteBadges
-        apiRef={apiRef}
-        rootRef={rootRef}
-        store={sceneStoreRef.current}
-        voting={voting}
-        readOnly={readOnly}
-        onVote={voteFor}
-        onRetract={retractFor}
-      />
-      <Toolbar
-        activeTool={activeTool}
-        onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
-        onAddSticky={addSticky}
-        stickyColor={stickyColor}
-        theme={activeTheme}
-        onHistory={onHistory}
-        onConnect={canConnect && !readOnly ? connectSelection : undefined}
-        onZoom={onZoom}
-        zoomPercent={zoomPercent}
-        menuItems={menuItems}
-        readOnly={readOnly}
-        imagesEnabled={imagesEnabled}
-      />
-    </div>
+          }}
+        >
+          {/* Our own trigger replaces Excalidraw's floating Library button; the top bar opens the library. */}
+          <DefaultSidebar.Trigger style={{ display: 'none' }} aria-hidden="true" />
+        </Excalidraw>
+        <Minimap store={sceneStoreRef.current} onPan={panTo} />
+        {!readOnly && (
+          <ConnectionPoints apiRef={apiRef} rootRef={rootRef} store={sceneStoreRef.current} />
+        )}
+        <VoteBadges
+          apiRef={apiRef}
+          rootRef={rootRef}
+          store={sceneStoreRef.current}
+          voting={voting}
+          readOnly={readOnly}
+          onVote={voteFor}
+          onRetract={retractFor}
+        />
+        <Toolbar
+          activeTool={activeTool}
+          onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
+          onAddSticky={addSticky}
+          stickyColor={stickyColor}
+          theme={activeTheme}
+          onHistory={onHistory}
+          onConnect={canConnect && !readOnly ? connectSelection : undefined}
+          onZoom={onZoom}
+          zoomPercent={zoomPercent}
+          menuItems={menuItems}
+          readOnly={readOnly}
+          imagesEnabled={imagesEnabled}
+        />
+      </div>
+    </I18nProvider>
   );
 }

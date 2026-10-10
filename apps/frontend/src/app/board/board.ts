@@ -27,6 +27,7 @@ import { downloadBlob, exportFilename, type ExportFormat } from './download';
 import { ExportRequest } from '../topbar/export-menu';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
 import { SessionService } from '../auth/session.service';
+import { LanguageService } from '../shared/language';
 import { PresenceStore } from './presence-store';
 import type { TimerState, VotingSession } from './canvas-element';
 import { TEMPLATE_STATE_KEY, TemplateApi } from './template-api';
@@ -45,6 +46,8 @@ const MAX_TEMPLATE_NAME_LENGTH = 120;
 const MAX_TEMPLATE_DESCRIPTION_LENGTH = 500;
 
 export type CanvasStatus = 'loading' | 'ready' | 'error';
+
+const CANVAS_NOT_READY = $localize`:@@board.error.canvasNotReady:The canvas is not ready yet.`;
 
 const PENDING: BoardLookup | { status: 'pending' } = { status: 'pending' };
 
@@ -69,6 +72,7 @@ export class Board {
   readonly #pageTitle = inject(Title);
   readonly #templates = inject(TemplateApi);
   readonly #location = inject(Location);
+  protected readonly language = inject(LanguageService);
   protected readonly presence = inject(PresenceStore);
   protected readonly session = inject(SessionService);
 
@@ -209,7 +213,11 @@ export class Board {
     effect(() => {
       const name = this.boardName();
       this.#pageTitle.setTitle(
-        this.notFound() ? 'Board not found · Elysion' : name ? `${name} · Elysion` : 'Elysion',
+        this.notFound()
+          ? $localize`:@@board.pageTitle.notFound:Board not found · Elysion`
+          : name
+            ? $localize`:@@board.pageTitle.named:${name}:name: · Elysion`
+            : 'Elysion',
       );
     });
   }
@@ -234,11 +242,13 @@ export class Board {
       const template = await firstValueFrom(this.#templates.get(templateId));
       const canvas = this.canvas()?.nativeElement;
       if (!canvas?.importFile) {
-        throw new Error('The canvas is not ready yet.');
+        throw new Error(CANVAS_NOT_READY);
       }
       await canvas.importFile(new Blob([template.scene], { type: 'application/json' }));
     } catch {
-      this.notice.set('The template could not be applied. The board is blank.');
+      this.notice.set(
+        $localize`:@@board.error.templateNotApplied:The template could not be applied. The board is blank.`,
+      );
     }
   }
 
@@ -250,7 +260,7 @@ export class Board {
       next: (board) => this.#renamedTo.set(board.name),
       error: () => {
         this.#renamedTo.set(before);
-        this.notice.set('The board could not be renamed.');
+        this.notice.set($localize`:@@board.error.renameFailed:The board could not be renamed.`);
       },
     });
   }
@@ -266,7 +276,9 @@ export class Board {
       return (await firstValueFrom(this.#api.realtimeToken(this.boardId()))).token;
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 403) {
-        this.notice.set('You no longer have access to this board.');
+        this.notice.set(
+          $localize`:@@board.error.accessLost:You no longer have access to this board.`,
+        );
         return null;
       }
       throw error;
@@ -317,13 +329,17 @@ export class Board {
     const canvas = this.canvas()?.nativeElement;
     const call = canvas ? run(canvas) : undefined;
     if (!call) {
-      this.notice.set('The canvas is not ready yet.');
+      this.notice.set(CANVAS_NOT_READY);
       return;
     }
     try {
       await call;
     } catch (error) {
-      this.notice.set(error instanceof Error ? error.message : 'The timer could not be changed.');
+      this.notice.set(
+        error instanceof Error
+          ? error.message
+          : $localize`:@@board.error.timerFailed:The timer could not be changed.`,
+      );
     }
   }
 
@@ -343,7 +359,7 @@ export class Board {
   async exportBoard(request: ExportRequest): Promise<void> {
     const canvas = this.canvas()?.nativeElement;
     if (!canvas?.exportBoard) {
-      this.notice.set('The canvas is not ready yet.');
+      this.notice.set(CANVAS_NOT_READY);
       return;
     }
     this.exporting.set(request.format);
@@ -354,8 +370,8 @@ export class Board {
       if (!blob) {
         this.notice.set(
           request.selectionOnly
-            ? 'Nothing is selected.'
-            : 'The board is empty: there is nothing to export.',
+            ? $localize`:@@board.error.nothingSelected:Nothing is selected.`
+            : $localize`:@@board.error.exportEmpty:The board is empty: there is nothing to export.`,
         );
         return;
       }
@@ -365,7 +381,7 @@ export class Board {
       );
       this.notice.set(null);
     } catch {
-      this.notice.set('The export failed.');
+      this.notice.set($localize`:@@board.error.exportFailed:The export failed.`);
     } finally {
       this.exporting.set(null);
     }
@@ -386,16 +402,22 @@ export class Board {
     this.pendingImport.set(null);
     const canvas = this.canvas()?.nativeElement;
     if (!file || !canvas?.importFile) {
-      this.notice.set('The canvas is not ready yet.');
+      this.notice.set(CANVAS_NOT_READY);
       return;
     }
     try {
       const count = await canvas.importFile(file);
       this.notice.set(
-        `Imported ${count} ${count === 1 ? 'element' : 'elements'} from ${file.name}.`,
+        count === 1
+          ? $localize`:@@board.notice.imported.one:Imported 1 element from ${file.name}:file:.`
+          : $localize`:@@board.notice.imported.many:Imported ${count}:count: elements from ${file.name}:file:.`,
       );
     } catch (error) {
-      this.notice.set(error instanceof Error ? error.message : 'The import failed.');
+      this.notice.set(
+        error instanceof Error
+          ? error.message
+          : $localize`:@@board.error.importFailed:The import failed.`,
+      );
     }
   }
 
@@ -403,7 +425,7 @@ export class Board {
   async addTemplate(templateId: string): Promise<void> {
     const canvas = this.canvas()?.nativeElement;
     if (!canvas?.insertFile) {
-      this.notice.set('The canvas is not ready yet.');
+      this.notice.set(CANVAS_NOT_READY);
       return;
     }
     try {
@@ -412,9 +434,9 @@ export class Board {
       this.notice.set(null);
     } catch (error) {
       this.notice.set(
-        error instanceof Error && error.message !== 'The canvas is not ready yet.'
+        error instanceof Error && error.message !== CANVAS_NOT_READY
           ? error.message
-          : 'The template could not be added.',
+          : $localize`:@@board.error.templateAddFailed:The template could not be added.`,
       );
     }
   }
@@ -424,7 +446,9 @@ export class Board {
     this.notice.set(null);
     this.templateDraft.set({
       selectionOnly,
-      name: selectionOnly ? 'Selection' : (this.boardName() ?? 'Board'),
+      name: selectionOnly
+        ? $localize`:@@board.template.defaultSelectionName:Selection`
+        : (this.boardName() ?? $localize`:@@board.template.defaultBoardName:Board`),
       description: '',
       saving: false,
     });
@@ -451,13 +475,16 @@ export class Board {
     }
     const name = draft.name.trim();
     if (!name) {
-      this.templateDraft.set({ ...draft, error: 'Give the template a name.' });
+      this.templateDraft.set({
+        ...draft,
+        error: $localize`:@@board.template.nameRequired:Give the template a name.`,
+      });
       return;
     }
     const canvas = this.canvas()?.nativeElement;
     if (!canvas?.exportBoard) {
       this.templateDraft.set(null);
-      this.notice.set('The canvas is not ready yet.');
+      this.notice.set(CANVAS_NOT_READY);
       return;
     }
     this.templateDraft.set({ ...draft, saving: true, error: undefined });
@@ -466,8 +493,8 @@ export class Board {
       if (!blob) {
         this.notice.set(
           draft.selectionOnly
-            ? 'Nothing is selected.'
-            : 'The board is empty: there is nothing to save as a template.',
+            ? $localize`:@@board.error.nothingSelected:Nothing is selected.`
+            : $localize`:@@board.error.templateEmpty:The board is empty: there is nothing to save as a template.`,
         );
       } else {
         await firstValueFrom(
@@ -477,14 +504,20 @@ export class Board {
             scene: await blob.text(),
           }),
         );
-        this.notice.set(`Saved the template “${name}”.`);
+        this.notice.set(
+          $localize`:@@board.notice.templateSaved:Saved the template “${name}:name:”.`,
+        );
       }
       this.templateDraft.set(null);
     } catch {
       // The form stays open with what the user typed, so a retry is one click.
       this.templateDraft.update((current) =>
         current
-          ? { ...current, saving: false, error: 'The template could not be saved.' }
+          ? {
+              ...current,
+              saving: false,
+              error: $localize`:@@board.error.templateSaveFailed:The template could not be saved.`,
+            }
           : current,
       );
     }

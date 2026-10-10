@@ -57,7 +57,7 @@ export function boardTint(id: string): string {
   return `var(${PREVIEW_TINTS[hash % PREVIEW_TINTS.length]})`;
 }
 
-export const DEFAULT_NEW_BOARD_NAME = 'Untitled board';
+export const DEFAULT_NEW_BOARD_NAME = $localize`:@@boards.defaultName:Untitled board`;
 
 type ListState = 'loading' | 'ready' | 'error';
 type CreateState = 'closed' | 'editing' | 'saving';
@@ -103,6 +103,7 @@ export class BoardList {
   protected readonly boards = signal<BoardInfo[]>([]);
 
   protected readonly createState = signal<CreateState>('closed');
+  #createOpener: Element | null = null;
   protected readonly draftName = signal(DEFAULT_NEW_BOARD_NAME);
   protected readonly createError = signal<string | null>(null);
 
@@ -145,11 +146,16 @@ export class BoardList {
   protected readonly title = computed(() => {
     switch (this.view()) {
       case 'all':
-        return 'Boards';
+        return $localize`:@@boards.title.all:Boards`;
       case 'none':
-        return 'Not in a room';
+        return $localize`:@@boards.sidebar.none:Not in a room`;
       default:
-        return this.currentRoom()?.name ?? (this.roomMissing() ? 'Room not found' : 'Room');
+        return (
+          this.currentRoom()?.name ??
+          (this.roomMissing()
+            ? $localize`:@@boards.roomMissing.title:Room not found`
+            : $localize`:@@boards.title.room:Room`)
+        );
     }
   });
 
@@ -210,7 +216,7 @@ export class BoardList {
   private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
 
   constructor() {
-    this.#pageTitle.setTitle('Boards · Elysion');
+    this.#pageTitle.setTitle($localize`:@@boards.pageTitle:Boards · Elysion`);
     this.load();
     // The room's name is selected when it is being renamed.
     effect(() => {
@@ -272,6 +278,7 @@ export class BoardList {
     if (this.createState() !== 'closed') {
       return;
     }
+    this.#createOpener = document.activeElement;
     this.draftName.set(DEFAULT_NEW_BOARD_NAME);
     this.createError.set(null);
     this.selectedTemplateId.set(null);
@@ -292,6 +299,10 @@ export class BoardList {
   protected cancelCreate(): void {
     if (this.createState() !== 'saving') {
       this.createState.set('closed');
+      // The button that opened the dialog gets the focus back (WCAG 2.4.3).
+      if (this.#createOpener instanceof HTMLElement && this.#createOpener.isConnected) {
+        this.#createOpener.focus();
+      }
     }
   }
 
@@ -313,11 +324,13 @@ export class BoardList {
     }
     const name = this.draftName().trim();
     if (!name) {
-      this.createError.set('Give the board a name.');
+      this.createError.set($localize`:@@boards.error.nameRequired:Give the board a name.`);
       return;
     }
     if (name.length > MAX_BOARD_NAME_LENGTH) {
-      this.createError.set(`The name can have up to ${MAX_BOARD_NAME_LENGTH} characters.`);
+      this.createError.set(
+        $localize`:@@boards.error.nameLength:The name can have up to ${MAX_BOARD_NAME_LENGTH}:max: characters.`,
+      );
       return;
     }
 
@@ -335,8 +348,13 @@ export class BoardList {
           error: (error: unknown) => {
             this.createState.set('closed');
             this.roomError.set(
-              `The board “${board.name}” was created, but could not be put in the room “${room.name}”. ` +
-                describeError(error, 'Move it from its card.', 'room'),
+              $localize`:@@boards.error.created:The board “${board.name}:board:” was created, but could not be put in the room “${room.name}:room:”.` +
+                ' ' +
+                describeError(
+                  error,
+                  $localize`:@@boards.error.createdFallback:Move it from its card.`,
+                  'room',
+                ),
             );
             this.load();
           },
@@ -344,7 +362,9 @@ export class BoardList {
       },
       error: () => {
         this.createState.set('editing');
-        this.createError.set('The board could not be created. Try again.');
+        this.createError.set(
+          $localize`:@@boards.error.create:The board could not be created. Try again.`,
+        );
       },
     });
   }
@@ -372,7 +392,9 @@ export class BoardList {
       },
       error: () => {
         this.duplicatingId.set(null);
-        this.duplicateError.set(`The board “${board.name}” could not be duplicated. Try again.`);
+        this.duplicateError.set(
+          $localize`:@@boards.error.duplicate:The board “${board.name}:board:” could not be duplicated. Try again.`,
+        );
       },
     });
   }
@@ -402,7 +424,9 @@ export class BoardList {
       },
       error: () => {
         this.deleting.set(false);
-        this.deleteError.set('The board could not be deleted. Try again.');
+        this.deleteError.set(
+          $localize`:@@boards.error.delete:The board could not be deleted. Try again.`,
+        );
       },
     });
   }
@@ -451,7 +475,7 @@ export class BoardList {
     }
     const name = this.renameDraft().trim();
     if (!name) {
-      this.roomError.set('A room needs a name.');
+      this.roomError.set($localize`:@@boards.error.roomName:A room needs a name.`);
       return;
     }
     if (name === room.name) {
@@ -468,7 +492,13 @@ export class BoardList {
       },
       error: (error: unknown) => {
         this.renameSaving.set(false);
-        this.roomError.set(describeError(error, 'The room could not be renamed.', 'room'));
+        this.roomError.set(
+          describeError(
+            error,
+            $localize`:@@boards.error.rename:The room could not be renamed.`,
+            'room',
+          ),
+        );
       },
     });
   }
@@ -504,19 +534,48 @@ export class BoardList {
       error: (error: unknown) => {
         this.roomDeleting.set(false);
         this.roomDeleteError.set(
-          describeError(error, 'The room could not be deleted. Try again.', 'room'),
+          describeError(
+            error,
+            $localize`:@@boards.error.roomDelete:The room could not be deleted. Try again.`,
+            'room',
+          ),
         );
       },
     });
+  }
+
+  protected roomTitle(label: string): string {
+    return $localize`:@@boards.card.room.title:In the room ${label}:room:`;
+  }
+
+  protected moveLabel(board: BoardInfo): string {
+    return $localize`:@@boards.card.move.aria:Move the board ${board.name}:board: to a room`;
+  }
+
+  protected duplicateLabel(board: BoardInfo): string {
+    return $localize`:@@boards.card.duplicate.aria:Duplicate the board ${board.name}:board:`;
+  }
+
+  protected duplicateTitle(board: BoardInfo): string {
+    return this.duplicatingId() === board.id
+      ? $localize`:@@boards.card.duplicating:Duplicating…`
+      : $localize`:@@boards.card.duplicate.title:Duplicate this board`;
+  }
+
+  protected deleteLabel(board: BoardInfo): string {
+    return $localize`:@@boards.card.delete.aria:Delete the board ${board.name}:board:`;
   }
 
   /** The ways to move a board from here: into each room the user may write in, or out of its room. */
   protected moveOptions(board: BoardInfo): MoveOption[] {
     const options: MoveOption[] = this.rooms()
       .filter((room) => canWriteInRoom(room) && room.id !== board.roomId)
-      .map((room) => ({ roomId: room.id, label: `Move to ${room.name}` }));
+      .map((room) => ({
+        roomId: room.id,
+        label: $localize`:@@boards.move.to:Move to ${room.name}:room:`,
+      }));
     if (board.roomId !== null) {
-      options.push({ roomId: null, label: 'Remove from room' });
+      options.push({ roomId: null, label: $localize`:@@boards.move.remove:Remove from room` });
     }
     return options;
   }
@@ -554,8 +613,9 @@ export class BoardList {
         this.boards.update((boards) => boards.map((b) => (b.id === moved.id ? moved : b))),
       error: (error: unknown) =>
         this.roomError.set(
-          `The board “${board.name}” could not be moved. ` +
-            describeError(error, 'Try again.', 'room'),
+          $localize`:@@boards.error.move:The board “${board.name}:board:” could not be moved.` +
+            ' ' +
+            describeError(error, $localize`:@@boards.error.moveFallback:Try again.`, 'room'),
         ),
     });
   }

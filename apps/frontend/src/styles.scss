@@ -16,3 +16,18 @@ app-root {
   display: block;
   height: 100%;
 }
+
+/*
+ * Reduced motion (#739): a person who asked their system for less motion gets none from the shell or the canvas that is
+ * embedded in it: transitions and animations end at once (the timer is a number that changes, not an animation).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

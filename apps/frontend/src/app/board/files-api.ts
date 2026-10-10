@@ -17,15 +17,15 @@ export function uploadErrorMessage(error: unknown): string {
   switch (error instanceof HttpErrorResponse ? error.status : 0) {
     case 400:
     case 415:
-      return 'Only PNG, JPEG, GIF and WebP images can be added.';
+      return $localize`:@@board.upload.type:Only PNG, JPEG, GIF and WebP images can be added.`;
     case 403:
-      return 'You can only look at this board, not add images.';
+      return $localize`:@@board.upload.readOnly:You can only look at this board, not add images.`;
     case 409:
-      return 'This board holds as many images as it can. Delete some to add more.';
+      return $localize`:@@board.upload.full:This board holds as many images as it can. Delete some to add more.`;
     case 413:
-      return 'The image is too large.';
+      return $localize`:@@board.upload.tooLarge:The image is too large.`;
     default:
-      return 'The image could not be saved.';
+      return $localize`:@@board.upload.failed:The image could not be saved.`;
   }
 }
 
