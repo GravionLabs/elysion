@@ -3,6 +3,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 using Elysion.BusinessBackend.Api.Contracts;
+using Elysion.BusinessBackend.Api.Data;
+using Elysion.BusinessBackend.Api.Entities;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using Shouldly;
 
@@ -163,5 +167,39 @@ public class BoardDocumentsApiTests
 
         (await _client.GetAsync(Url(board.Id.ToString()))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await _client.GetAsync(Url("default"))).StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Test]
+    public async Task A_save_for_a_board_that_does_not_exist_is_404_and_stores_nothing()
+    {
+        var id = Guid.NewGuid().ToString();
+
+        var response = await PutAsync(id, [1], ifNoneMatchAny: true);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await _client.GetAsync(Url(id))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Test]
+    public async Task A_save_for_a_board_that_exists_works_and_after_the_board_is_deleted_it_is_404_again()
+    {
+        var now = new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
+        var owner = User.Create(Guid.CreateVersion7(), "owner", "owner", null, now);
+        var board = Board.Create(Guid.CreateVersion7(), "Retro", now, owner.Id);
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ElysionDbContext>();
+            db.AddRange(owner, board, BoardMembership.Create(board.Id, owner.Id, BoardRole.Owner, now));
+            await db.SaveChangesAsync();
+        }
+
+        (await PutAsync(board.Id.ToString(), [1], ifNoneMatchAny: true)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        using var user = _factory.CreateAuthenticatedClient("owner");
+        (await user.DeleteAsync($"/boards/{board.Id}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        (await _client.GetAsync(Url(board.Id.ToString()))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await PutAsync(board.Id.ToString(), [2], ifMatch: "\"1\"")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await PutAsync(board.Id.ToString(), [2], ifNoneMatchAny: true)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 }

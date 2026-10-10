@@ -54,6 +54,7 @@ public static class BoardDocumentEndpoints
         string boardId,
         HttpRequest request,
         IBoardDocumentRepository documents,
+        IBoardRepository boards,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -62,6 +63,13 @@ public static class BoardDocumentEndpoints
         if (request.ContentType?.StartsWith(OctetStream, StringComparison.OrdinalIgnoreCase) != true)
         {
             return TypedResults.StatusCode(StatusCodes.Status415UnsupportedMediaType);
+        }
+
+        // A document belongs to a board: a save for a board that was deleted (a room that still had it open) or never
+        // existed is a 404 and not a new row (#778). Ids that are no UUID (the demo room `default`) have no board record.
+        if (Guid.TryParse(boardId, out var id) && !await boards.ExistsAsync(id, cancellationToken))
+        {
+            return TypedResults.NotFound();
         }
 
         var ifMatch = request.Headers.IfMatch.ToString();
