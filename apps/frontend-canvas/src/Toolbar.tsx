@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import type { ToolType } from '@excalidraw/excalidraw/types';
+import { colorName, useI18n } from './i18n';
 import { CanvasMenu, type CanvasMenuItem } from './CanvasMenu';
 import { STICKY_COLORS, borderColor, paperColor, seenColor, type StickyColor } from './sticky-note';
 
@@ -20,10 +21,23 @@ export type ToolbarTool = Extract<
 
 interface ToolDefinition {
   tool: ToolbarTool;
-  label: string;
+  label: ToolLabelKey;
   shortcut: string;
   icon: ReactNode;
 }
+
+type ToolLabelKey =
+  | 'toolHand'
+  | 'toolSelection'
+  | 'toolRectangle'
+  | 'toolDiamond'
+  | 'toolEllipse'
+  | 'toolArrow'
+  | 'toolLine'
+  | 'toolFreedraw'
+  | 'toolText'
+  | 'toolImage'
+  | 'toolEraser';
 
 function Icon({ children }: { children: ReactNode }) {
   return (
@@ -47,7 +61,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
   [
     {
       tool: 'hand',
-      label: 'Hand (panning)',
+      label: 'toolHand',
       shortcut: 'H',
       icon: (
         <Icon>
@@ -57,7 +71,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
     },
     {
       tool: 'selection',
-      label: 'Selection',
+      label: 'toolSelection',
       shortcut: 'V',
       icon: (
         <Icon>
@@ -69,7 +83,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
   [
     {
       tool: 'rectangle',
-      label: 'Rectangle',
+      label: 'toolRectangle',
       shortcut: 'R',
       icon: (
         <Icon>
@@ -79,7 +93,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
     },
     {
       tool: 'diamond',
-      label: 'Diamond',
+      label: 'toolDiamond',
       shortcut: 'D',
       icon: (
         <Icon>
@@ -89,7 +103,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
     },
     {
       tool: 'ellipse',
-      label: 'Ellipse',
+      label: 'toolEllipse',
       shortcut: 'O',
       icon: (
         <Icon>
@@ -101,7 +115,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
   [
     {
       tool: 'arrow',
-      label: 'Connector',
+      label: 'toolArrow',
       shortcut: 'A',
       icon: (
         <Icon>
@@ -111,7 +125,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
     },
     {
       tool: 'line',
-      label: 'Line',
+      label: 'toolLine',
       shortcut: 'L',
       icon: (
         <Icon>
@@ -121,7 +135,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
     },
     {
       tool: 'freedraw',
-      label: 'Draw',
+      label: 'toolFreedraw',
       shortcut: 'P',
       icon: (
         <Icon>
@@ -133,7 +147,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
   [
     {
       tool: 'text',
-      label: 'Text',
+      label: 'toolText',
       shortcut: 'T',
       icon: (
         <Icon>
@@ -143,7 +157,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
     },
     {
       tool: 'image',
-      label: 'Insert image',
+      label: 'toolImage',
       shortcut: '9',
       icon: (
         <Icon>
@@ -157,7 +171,7 @@ const GROUPS: readonly (readonly ToolDefinition[])[] = [
   [
     {
       tool: 'eraser',
-      label: 'Eraser',
+      label: 'toolEraser',
       shortcut: 'E',
       icon: (
         <Icon>
@@ -276,16 +290,18 @@ export function Toolbar({
   imagesEnabled = false,
 }: ToolbarProps) {
   const [stickyOpen, setStickyOpen] = useState(false);
+  const { t, percent } = useI18n();
+  const ctrl = t.keyCtrl;
 
   return (
-    <div className="elysion-toolbar" role="toolbar" aria-label="Canvas tools">
+    <div className="elysion-toolbar" role="toolbar" aria-label={t.toolbar}>
       {!readOnly && onHistory && (
         <div className="elysion-toolbar__group elysion-toolbar__history">
           <button
             type="button"
             className="elysion-icon-button"
-            aria-label="Undo"
-            title="Undo (Ctrl+Z)"
+            aria-label={t.undo}
+            title={`${t.undo} (${ctrl}+Z)`}
             data-testid="elysion-undo"
             onClick={() => onHistory('undo')}
           >
@@ -294,8 +310,8 @@ export function Toolbar({
           <button
             type="button"
             className="elysion-icon-button"
-            aria-label="Redo"
-            title="Redo (Ctrl+Shift+Z)"
+            aria-label={t.redo}
+            title={`${t.redo} (${ctrl}+${t.keyShift}+Z)`}
             data-testid="elysion-redo"
             onClick={() => onHistory('redo')}
           >
@@ -308,8 +324,8 @@ export function Toolbar({
           <button
             type="button"
             className="elysion-icon-button"
-            aria-label="Connect"
-            title="Connect the two selected elements (C)"
+            aria-label={t.connect}
+            title={`${t.connectTitle} (C)`}
             data-testid="elysion-connect"
             onClick={onConnect}
           >
@@ -323,7 +339,8 @@ export function Toolbar({
           {(index > 0 || onHistory) && <div className="elysion-toolbar__divider" />}
           {group
             .filter(({ tool }) => imagesEnabled || tool !== 'image')
-            .map(({ tool, label, shortcut, icon }) => {
+            .map(({ tool, label: labelKey, shortcut, icon }) => {
+              const label = t[labelKey];
               const active = activeTool === tool;
               return (
                 <button
@@ -346,8 +363,8 @@ export function Toolbar({
               <button
                 type="button"
                 className="elysion-icon-button elysion-sticky__main"
-                aria-label="Sticky note"
-                title="Sticky note (N)"
+                aria-label={t.stickyNote}
+                title={`${t.stickyNote} (N)`}
                 data-testid="elysion-tool-sticky"
                 onClick={() => onAddSticky(stickyColor)}
               >
@@ -360,10 +377,10 @@ export function Toolbar({
                     ? 'elysion-icon-button elysion-sticky__arrow active'
                     : 'elysion-icon-button elysion-sticky__arrow'
                 }
-                aria-label="Sticky note color"
+                aria-label={t.stickyNoteColor}
                 aria-haspopup="menu"
                 aria-expanded={stickyOpen}
-                title="Sticky note color"
+                title={t.stickyNoteColor}
                 data-testid="elysion-sticky-color"
                 onClick={() => setStickyOpen((open) => !open)}
               >
@@ -377,7 +394,7 @@ export function Toolbar({
                 </svg>
               </button>
               {stickyOpen && (
-                <div className="elysion-sticky__colors" role="menu" aria-label="Sticky note color">
+                <div className="elysion-sticky__colors" role="menu" aria-label={t.stickyNoteColor}>
                   {STICKY_COLORS.map((color) => (
                     <button
                       key={color.name}
@@ -385,8 +402,8 @@ export function Toolbar({
                       role="menuitemradio"
                       aria-checked={color.name === stickyColor.name}
                       className="elysion-sticky__swatch"
-                      aria-label={`${color.name} sticky note`}
-                      title={`${color.name} sticky note`}
+                      aria-label={t.stickyNoteOf(colorName(t, color.name))}
+                      title={t.stickyNoteOf(colorName(t, color.name))}
                       onClick={() => {
                         onAddSticky(color);
                         setStickyOpen(false);
@@ -407,8 +424,8 @@ export function Toolbar({
           <button
             type="button"
             className="elysion-icon-button"
-            aria-label="Zoom out"
-            title="Zoom out (Ctrl+-)"
+            aria-label={t.zoomOut}
+            title={`${t.zoomOut} (${ctrl}+-)`}
             data-testid="elysion-zoom-out"
             onClick={() => onZoom('out')}
           >
@@ -417,18 +434,18 @@ export function Toolbar({
           <button
             type="button"
             className="elysion-zoom-level"
-            aria-label="Reset zoom to 100%"
-            title="Reset zoom (Ctrl+0)"
+            aria-label={t.zoomResetLabel}
+            title={`${t.zoomReset} (${ctrl}+0)`}
             data-testid="elysion-zoom-reset"
             onClick={() => onZoom('reset')}
           >
-            {zoomPercent ?? 100}%
+            {percent((zoomPercent ?? 100) / 100)}
           </button>
           <button
             type="button"
             className="elysion-icon-button"
-            aria-label="Zoom in"
-            title="Zoom in (Ctrl++)"
+            aria-label={t.zoomIn}
+            title={`${t.zoomIn} (${ctrl}++)`}
             data-testid="elysion-zoom-in"
             onClick={() => onZoom('in')}
           >
@@ -437,8 +454,8 @@ export function Toolbar({
           <button
             type="button"
             className="elysion-icon-button"
-            aria-label="Zoom to fit"
-            title="Zoom to fit (Shift+1)"
+            aria-label={t.zoomFit}
+            title={`${t.zoomFit} (${t.keyShift}+1)`}
             data-testid="elysion-zoom-fit"
             onClick={() => onZoom('fit')}
           >
