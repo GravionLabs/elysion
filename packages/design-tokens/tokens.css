@@ -5,6 +5,9 @@
  * Used by the Angular shell (on <html>, where `data-theme` is set by ThemeService) and by the canvas
  * bundle (on its own `.elysion-canvas` root, so the bundle also works in a host that does not load
  * this file and never leaks into the host page).
+ *
+ * Two light values are a little darker than ariadne's so that the text on them reaches the WCAG 2.1 AA contrast of 4.5:1
+ * (#739): `--c-primary` (white text on it, was #6366f1 at 4.47) and `--c-text-subtle` (on the page background, was #6b7086 at 4.49).
  */
 :root,
 .elysion-canvas {
@@ -19,11 +22,11 @@
   --c-border-muted: #b0b5c3;
 
   --c-text: #1a1c23;
-  --c-text-subtle: #6b7086;
+  --c-text-subtle: #656a7f;
 
-  --c-primary: #6366f1;
+  --c-primary: #5d60ee;
   --c-primary-hover: #4f46e5;
-  --c-primary-soft: rgba(99, 102, 241, 0.08);
+  --c-primary-soft: rgba(93, 96, 238, 0.08);
   --c-on-primary: #ffffff;
   --c-selection-overlay: rgba(255, 255, 255, 0.6);
   --c-focus: var(--c-primary);

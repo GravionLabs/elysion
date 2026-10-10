@@ -29,6 +29,7 @@
     <label class="menu-option" [class.disabled]="!hasSelection()">
       <input
         type="checkbox"
+        role="menuitemcheckbox"
         [disabled]="!hasSelection()"
         [checked]="selectionOnly() && hasSelection()"
         (change)="setSelectionOnly($event)"

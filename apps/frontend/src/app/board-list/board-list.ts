@@ -103,6 +103,7 @@ export class BoardList {
   protected readonly boards = signal<BoardInfo[]>([]);
 
   protected readonly createState = signal<CreateState>('closed');
+  #createOpener: Element | null = null;
   protected readonly draftName = signal(DEFAULT_NEW_BOARD_NAME);
   protected readonly createError = signal<string | null>(null);
 
@@ -272,6 +273,7 @@ export class BoardList {
     if (this.createState() !== 'closed') {
       return;
     }
+    this.#createOpener = document.activeElement;
     this.draftName.set(DEFAULT_NEW_BOARD_NAME);
     this.createError.set(null);
     this.selectedTemplateId.set(null);
@@ -292,6 +294,10 @@ export class BoardList {
   protected cancelCreate(): void {
     if (this.createState() !== 'saving') {
       this.createState.set('closed');
+      // The button that opened the dialog gets the focus back (WCAG 2.4.3).
+      if (this.#createOpener instanceof HTMLElement && this.#createOpener.isConnected) {
+        this.#createOpener.focus();
+      }
     }
   }
 

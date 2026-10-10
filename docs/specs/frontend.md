@@ -174,6 +174,17 @@ The React/Excalidraw canvas lives in its own workspace package, `apps/frontend-c
 
 This was chosen over Angular Elements (which wraps an _Angular_ component as a custom element) because the piece being embedded is a React tree; a plain custom element wrapping a React root needs no Angular-specific tooling and keeps the two frameworks' build pipelines fully independent.
 
+## Accessibility
+
+The shell and the canvas element's own controls meet **WCAG 2.1 level AA**, checked by `apps/e2e/tests/accessibility.spec.ts` (axe with the tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`) on the board list, a room, its members dialog, the new board dialog, the board page with the templates, export, timer and voting menus, the share dialog and the sticky note menu, and on the board page, the share dialog and the board list in the dark theme (#739).
+
+- **The allowlist** (`AXE_ALLOWLIST` in `apps/e2e/tests/helpers.ts`) is the part that Excalidraw owns: its `<canvas>` elements (a drawing has no text alternative) and the hidden inputs behind its own tool buttons (`.excalidraw input[aria-keyshortcuts]`, no label). Everything else is checked. Add to the list only with a reason here.
+- **Contrast:** text reaches 4.5:1 in both themes. `--c-primary` (white text on it) and `--c-text-subtle` in the light theme of the design tokens are a little darker than ariadne's for that; check a new color pair before it is used.
+- **Landmarks:** `header` (the top bar or the page header), `nav` (the rooms), `main` (the board list, and the board's canvas element as `role="main"` named "Board canvas"). Every control has an accessible name; the connection status is a `role="status"` region, the timer has `role="timer"`, the voting note is a status.
+- **Keyboard:** the menus open with Enter on their button and close with Escape, **and the focus goes back to the button that opened a dialog or a menu** (the share dialog does it when it is destroyed, the new board dialog when it closes; a new dialog does the same). A card is a link: Tab, then Enter. The focus ring comes from `--c-focus`.
+- **Reduced motion:** with `prefers-reduced-motion: reduce` transitions and animations of the shell and the canvas end at once (`styles.scss`).
+- **By hand, not automated:** a pass with a screen reader (NVDA or VoiceOver) is not part of the tests; it is done before a release that changes the page structure.
+
 ## Theming (ariadne design)
 
 The canvas UI follows the design of GravionLabs/ariadne:

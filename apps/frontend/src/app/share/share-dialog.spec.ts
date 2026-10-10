@@ -86,6 +86,24 @@ describe('ShareDialog', () => {
     expect(document.activeElement).toBe(el().querySelector('input[type="email"]'));
   });
 
+  it('gives the focus back to the button that opened it when it is gone', async () => {
+    await open();
+    fixture.destroy();
+    const opener = document.body.appendChild(document.createElement('button'));
+    opener.focus();
+
+    fixture = TestBed.createComponent(ShareDialog);
+    fixture.componentRef.setInput('boardId', board);
+    await settle();
+    await open();
+    expect(document.activeElement).not.toBe(opener);
+
+    fixture.destroy();
+
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
+  });
+
   it('shows why the members could not be loaded, and tries again', async () => {
     http.expectOne(url).flush({ message: 'Nope' }, { status: 500, statusText: 'Server Error' });
     await settle();
