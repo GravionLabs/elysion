@@ -1,0 +1,13 @@
+# The stack as the load test needs it (apps/load, docs/performance.md): two realtime replicas behind Traefik, and an edge that
+# does not rate limit the one client address the test runs from. Not for anything but a load test.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.load.yml up -d --build   (or `pnpm dev:load`)
+services:
+  realtime:
+    deploy:
+      replicas: 2
+
+  bff:
+    labels:
+      # 200 clients mint a WS token each, and again at every reconnect, all from one address.
+      - 'traefik.http.middlewares.rate-limit.ratelimit.average=100000'
+      - 'traefik.http.middlewares.rate-limit.ratelimit.burst=100000'

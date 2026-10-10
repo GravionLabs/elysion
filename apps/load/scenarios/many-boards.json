@@ -1,0 +1,10 @@
+{
+  "name": "many-boards",
+  "description": "200 clients on 20 boards for five minutes (10 per board).",
+  "clients": 200,
+  "boards": 20,
+  "durationMs": 300000,
+  "rampMs": 20000,
+  "writeEveryMs": 500,
+  "events": []
+}
