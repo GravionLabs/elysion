@@ -8,8 +8,8 @@ export const LANGUAGES: readonly { code: Language; name: string }[] = [
   { code: 'de', name: 'Deutsch' },
 ];
 
-/** The cookie nginx reads to choose the copy of the app to serve (`apps/frontend/nginx.conf`). */
-export const LANGUAGE_COOKIE = 'elysion-lang';
+/** The cookie nginx reads to choose the copy of the app to serve (`apps/frontend/nginx.conf`; underscores because nginx names a cookie variable `$cookie_<name>` literally). */
+export const LANGUAGE_COOKIE = 'elysion_lang';
 
 /**
  * The language of the running app (#738). The build has one copy per language and the URL is not localized, so the
