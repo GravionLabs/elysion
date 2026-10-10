@@ -25,6 +25,7 @@ import { ShareDialog } from '../share/share-dialog';
 import { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename, type ExportFormat } from './download';
 import { ExportRequest } from '../topbar/export-menu';
+import { toCanvasOptions } from '../topbar/export-settings';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
 import { SessionService } from '../auth/session.service';
 import { LanguageService } from '../shared/language';
@@ -372,9 +373,10 @@ export class Board {
     }
     this.exporting.set(request.format);
     try {
-      const blob = await canvas.exportBoard(request.format, {
-        selectionOnly: request.selectionOnly,
-      });
+      const blob = await canvas.exportBoard(
+        request.format,
+        toCanvasOptions(request.settings, request.selectionOnly),
+      );
       if (!blob) {
         this.notice.set(
           request.selectionOnly

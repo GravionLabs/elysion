@@ -28,7 +28,7 @@ Die Startseite listet **deine Boards**: die selbst erstellten und die mit dir ge
 
 Zeichne mit der Werkzeugleiste unten: Formen, Pfeile, Text, Haftnotizen, Bilder. **Bilder** (PNG, JPEG, GIF, WebP oder SVG bis 4 MB) kannst du über das Werkzeug wählen, einfügen oder auf das Board ziehen; mehrere Dateien auf einmal liegen nebeneinander an der Stelle, an der du sie fallen lässt, und sind höchstens halb so hoch wie dein Ausschnitt. Alle Personen auf dem Board sehen Änderungen sofort; ihre Cursor und
 Avatare erscheinen oben rechts. **Teilen** lädt Personen per E-Mail-Adresse ein, **Vorlagen**, **Exportieren** und **Importieren** bringen
-Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema.
+Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema. Beim **Exportieren** wählst du unter **Optionen** (der Browser merkt sie sich) bei einem **PDF**, ob ein Board mit Rahmen **eine Seite pro Rahmen** ergibt (mit dem Namen des Rahmens als Überschrift) oder das ganze Board auf einer Seite liegt, sowie Seitengröße (Größe des Inhalts, A4, Letter) und Ausrichtung; für alle Formate die Farben und den Hintergrund, bei **PNG** den Maßstab.
 
 ## Einen Workshop leiten
 

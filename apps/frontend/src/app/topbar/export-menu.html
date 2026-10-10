@@ -41,5 +41,66 @@
       />
       <span i18n="@@topbar.export.selection-only">Selection only</span>
     </label>
+    <fieldset class="menu-settings">
+      <legend i18n="@@topbar.export.options">Options</legend>
+      <label>
+        <span i18n="@@topbar.export.pdf-pages">PDF pages</span>
+        <select (change)="change('pdfPages', $any(pick($event)))">
+          @for (choice of pdfPagesChoices; track choice.value) {
+            <option [value]="choice.value" [selected]="settings().pdfPages === choice.value">
+              {{ choice.label }}
+            </option>
+          }
+        </select>
+      </label>
+      <label>
+        <span i18n="@@topbar.export.page-size">Page size</span>
+        <select (change)="change('pageFormat', $any(pick($event)))">
+          @for (choice of pageFormatChoices; track choice.value) {
+            <option [value]="choice.value" [selected]="settings().pageFormat === choice.value">
+              {{ choice.label }}
+            </option>
+          }
+        </select>
+      </label>
+      <label>
+        <span i18n="@@topbar.export.orientation">Orientation</span>
+        <select (change)="change('orientation', $any(pick($event)))">
+          @for (choice of orientationChoices; track choice.value) {
+            <option [value]="choice.value" [selected]="settings().orientation === choice.value">
+              {{ choice.label }}
+            </option>
+          }
+        </select>
+      </label>
+      <label>
+        <span i18n="@@topbar.export.colors">Colors</span>
+        <select (change)="change('colors', $any(pick($event)))">
+          @for (choice of colorChoices; track choice.value) {
+            <option [value]="choice.value" [selected]="settings().colors === choice.value">
+              {{ choice.label }}
+            </option>
+          }
+        </select>
+      </label>
+      <label>
+        <span i18n="@@topbar.export.scale">PNG scale</span>
+        <select (change)="change('scale', +pick($event) === 3 ? 3 : +pick($event) === 2 ? 2 : 1)">
+          @for (choice of scaleChoices; track choice.value) {
+            <option [value]="choice.value" [selected]="settings().scale === choice.value">
+              {{ choice.label }}
+            </option>
+          }
+        </select>
+      </label>
+      <label class="menu-check">
+        <input
+          type="checkbox"
+          [checked]="settings().background"
+          (change)="change('background', $any($event.target).checked)"
+        />
+        <span i18n="@@topbar.export.background">Background</span>
+      </label>
+    </fieldset>
   </div>
 }

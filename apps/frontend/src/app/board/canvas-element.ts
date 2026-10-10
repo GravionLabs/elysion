@@ -46,7 +46,18 @@ export type CanvasElement = HTMLElement & {
   /** Opens the library sidebar, or closes it when it is open. */
   toggleLibrary?(): void;
   /** The board (or the selection) as a file, or `null` when there is nothing to export. */
-  exportBoard?(format: ExportFormat, options?: { selectionOnly?: boolean }): Promise<Blob | null>;
+  exportBoard?(
+    format: ExportFormat,
+    options?: {
+      selectionOnly?: boolean;
+      background?: boolean;
+      theme?: 'current' | 'light' | 'dark';
+      scale?: 1 | 2 | 3;
+      pdfPages?: 'auto' | 'whole';
+      pageFormat?: 'fit' | 'a4' | 'letter';
+      orientation?: 'auto' | 'portrait' | 'landscape';
+    },
+  ): Promise<Blob | null>;
   /**
    * Asked by the canvas before every connection to the board server for the board-scoped WS token: it resolves with
    * the token, or `null` when no connection is wanted (the shell has shown why); a rejection is retried with a

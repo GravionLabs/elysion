@@ -9,6 +9,7 @@ import { ShareDialog } from '../share/share-dialog';
 import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
 import { SessionService } from '../auth/session.service';
 import { ThemeService } from '../theme/theme.service';
+import { DEFAULT_EXPORT_SETTINGS, toCanvasOptions } from '../topbar/export-settings';
 import { Board } from './board';
 import { CanvasElementLoader } from './canvas-element-loader';
 
@@ -180,9 +181,16 @@ describe('Board', () => {
       Object.assign(canvas(), { exportBoard });
       fixture.componentRef.setInput('boardId', 'team-retro');
 
-      await component.exportBoard({ format: 'svg', selectionOnly: false });
+      await component.exportBoard({
+        format: 'svg',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
 
-      expect(exportBoard).toHaveBeenCalledWith('svg', { selectionOnly: false });
+      expect(exportBoard).toHaveBeenCalledWith(
+        'svg',
+        toCanvasOptions(DEFAULT_EXPORT_SETTINGS, false),
+      );
       expect(downloads).toEqual([{ download: 'team-retro.svg' }]);
     });
 
@@ -191,9 +199,16 @@ describe('Board', () => {
       Object.assign(canvas(), { exportBoard });
       fixture.componentRef.setInput('boardId', 'team-retro');
 
-      await component.exportBoard({ format: 'png', selectionOnly: true });
+      await component.exportBoard({
+        format: 'png',
+        selectionOnly: true,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
 
-      expect(exportBoard).toHaveBeenCalledWith('png', { selectionOnly: true });
+      expect(exportBoard).toHaveBeenCalledWith(
+        'png',
+        toCanvasOptions(DEFAULT_EXPORT_SETTINGS, true),
+      );
       expect(downloads[0].download).toBe('team-retro-selection.png');
     });
 
@@ -204,12 +219,20 @@ describe('Board', () => {
       Object.assign(canvas(), { exportBoard });
       fixture.componentRef.setInput('boardId', 'team-retro');
 
-      await component.exportBoard({ format: 'pdf', selectionOnly: false });
-      await component.exportBoard({ format: 'pdf', selectionOnly: true });
+      await component.exportBoard({
+        format: 'pdf',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
+      await component.exportBoard({
+        format: 'pdf',
+        selectionOnly: true,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
 
       expect(exportBoard.mock.calls).toEqual([
-        ['pdf', { selectionOnly: false }],
-        ['pdf', { selectionOnly: true }],
+        ['pdf', toCanvasOptions(DEFAULT_EXPORT_SETTINGS, false)],
+        ['pdf', toCanvasOptions(DEFAULT_EXPORT_SETTINGS, true)],
       ]);
       expect(downloads.map((d) => d.download)).toEqual([
         'team-retro.pdf',
@@ -225,7 +248,11 @@ describe('Board', () => {
       const button = () =>
         fixture.nativeElement.querySelector('app-export-menu button') as HTMLButtonElement;
 
-      const done = component.exportBoard({ format: 'pdf', selectionOnly: false });
+      const done = component.exportBoard({
+        format: 'pdf',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
       expect(button().textContent).toContain('Preparing PDF…');
       expect(downloads).toEqual([]);
@@ -241,7 +268,11 @@ describe('Board', () => {
     it('says the export failed and stops showing "Preparing" when the PDF cannot be made', async () => {
       Object.assign(canvas(), { exportBoard: vi.fn().mockRejectedValue(new Error('boom')) });
 
-      await component.exportBoard({ format: 'pdf', selectionOnly: false });
+      await component.exportBoard({
+        format: 'pdf',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
 
       expect(banner()?.textContent).toContain('export failed');
@@ -253,7 +284,11 @@ describe('Board', () => {
     it('says so instead of downloading when there is nothing to export', async () => {
       Object.assign(canvas(), { exportBoard: vi.fn().mockResolvedValue(null) });
 
-      await component.exportBoard({ format: 'png', selectionOnly: false });
+      await component.exportBoard({
+        format: 'png',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
 
       expect(downloads).toEqual([]);
@@ -263,19 +298,31 @@ describe('Board', () => {
     it('says when nothing is selected for a selection export', async () => {
       Object.assign(canvas(), { exportBoard: vi.fn().mockResolvedValue(null) });
 
-      await component.exportBoard({ format: 'png', selectionOnly: true });
+      await component.exportBoard({
+        format: 'png',
+        selectionOnly: true,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
 
       expect(banner()?.textContent).toContain('Nothing is selected');
     });
 
     it('reports a failing export and one before the canvas is ready', async () => {
-      await component.exportBoard({ format: 'png', selectionOnly: false });
+      await component.exportBoard({
+        format: 'png',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
       expect(banner()?.textContent).toContain('not ready');
 
       Object.assign(canvas(), { exportBoard: vi.fn().mockRejectedValue(new Error('boom')) });
-      await component.exportBoard({ format: 'png', selectionOnly: false });
+      await component.exportBoard({
+        format: 'png',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
       expect(banner()?.textContent).toContain('export failed');
     });
