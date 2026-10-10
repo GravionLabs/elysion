@@ -40,6 +40,23 @@ function copyExcalidrawFonts(): Plugin {
   };
 }
 
+// What pdf.js loads at run time (#725), next to the bundle: its character maps and standard fonts for the PDFs that need them, the
+// decoders for JBIG2 and JPEG 2000 images and the color profiles. The worker itself is an asset of the build (an `?url` import).
+function copyPdfjsResources(): Plugin {
+  return {
+    name: 'copy-pdfjs-resources',
+    apply: 'build',
+    writeBundle() {
+      const root = fileURLToPath(new URL('node_modules/pdfjs-dist', import.meta.url));
+      for (const folder of ['cmaps', 'standard_fonts', 'wasm', 'iccs']) {
+        cpSync(`${root}/${folder}`, `${outDir}/pdfjs/${folder}`, { recursive: true });
+      }
+      // A module worker; named .js so that every web server sends a JavaScript type for it.
+      cpSync(`${root}/build/pdf.worker.min.mjs`, `${outDir}/pdfjs/pdf.worker.js`);
+    },
+  };
+}
+
 // Library build producing a dependency-free bundle that registers the
 // <elysion-canvas> custom element, including its own React runtime and CSS
 // so any host page (Angular or otherwise) can load it with one <script
@@ -54,6 +71,7 @@ export default defineConfig({
     excalidrawLocalAssets(),
     cssInjectedByJsPlugin(),
     copyExcalidrawFonts(),
+    copyPdfjsResources(),
     copyToFrontendWhenWatching(),
   ],
   // React/ReactDOM's CJS entry points branch on `process.env.NODE_ENV` to

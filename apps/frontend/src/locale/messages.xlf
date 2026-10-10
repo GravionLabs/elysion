@@ -1736,7 +1736,7 @@
         <note category="location">src/app/topbar/top-bar.html:73,74</note>
       </notes>
       <segment>
-        <source>Import an .excalidraw file into this board</source>
+        <source>Import an .excalidraw file or a PDF into this board</source>
       </segment>
     </unit>
     <unit id="topbar.import">

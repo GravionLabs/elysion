@@ -72,6 +72,8 @@ export type CanvasElement = HTMLElement & {
   fileStore?: BoardFileStore;
   /** Replaces the board with an .excalidraw file; resolves with the number of elements in it. */
   importFile?(file: Blob): Promise<number>;
+  /** Opens the PDF import (#725): a dialog with the pages, then a picture in a frame per chosen page; resolves with the number of pages put on the board (0: canceled). */
+  importPdf?(file: Blob): Promise<number>;
   /** Adds an .excalidraw file to the board around the view center, selected, as one undo step; resolves with the number of elements added. */
   insertFile?(file: Blob): Promise<number>;
   /**
