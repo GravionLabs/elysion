@@ -37,7 +37,7 @@ Known gaps, so nobody finds them by surprise (the [roadmap](docs/roadmap.md) say
 - **Backup is a service you start** (`docker compose --profile backup up -d backup`, [self-hosting](docs/self-hosting.md#back-up-and-restore)): nightly dumps of the databases and a copy of the images, on the same host unless you point it elsewhere, with no alert yet when one fails (#687).
 - **Cards show initials**, not thumbnails of the board.
 - **Dark theme:** Excalidraw darkens all colors on a dark canvas, so a sticky note is a darker shade than its pastel color in the light theme.
-- **Few browser end-to-end tests:** one suite (`apps/e2e`, Playwright, two browsers on one board: sharing, the timer, the dot voting, a viewer's limits) runs against the container stack in CI; rooms, templates, export and the canvas drawing tools are not covered.
+- **Browser tests cover the main paths, not every corner:** `apps/e2e` (Playwright, two browsers on one board, against the container stack in CI) covers sharing, the timer, the dot voting, a viewer's limits, images, rooms, templates, import and export, the drawing tools with connectors and undo, and losing and regaining the connection; there is no visual regression test and only Chromium is used.
 
 ## Architecture
 
