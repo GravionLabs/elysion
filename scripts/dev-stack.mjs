@@ -9,11 +9,14 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { withOtlpAccessLog } from './traefik-logs-config.mjs';
 
 const COMPOSE = ['compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.dev.yml'];
+const OBSERVABILITY = [...COMPOSE, '-f', 'docker-compose.observability.yml'];
 // `down` includes the profile, otherwise the viewer's container would outlive the stack it belongs to.
 const ACTIONS = {
   up: [...COMPOSE, 'up', '-d', '--build', '--remove-orphans'],
   logs: [...COMPOSE, '--profile', 'logs', 'up', '-d', '--build', '--remove-orphans'],
-  down: [...COMPOSE, '--profile', 'logs', 'down'],
+  // Prometheus, Alertmanager and Grafana (docker-compose.observability.yml, docs/operations.md).
+  observability: [...OBSERVABILITY, 'up', '-d', '--build', '--remove-orphans'],
+  down: [...OBSERVABILITY, '--profile', 'logs', 'down'],
 };
 
 const VIEWER_ENDPOINT = 'http://victorialogs:9428/insert/opentelemetry/v1/logs';
@@ -40,6 +43,11 @@ if (result.status === 0 && action !== 'down') {
   console.log(
     '\nElysion is up: http://localhost/ (Traefik dashboard: http://localhost:8080/dashboard/)',
   );
+  if (action === 'observability') {
+    console.log(
+      `Grafana: http://localhost:${process.env.GRAFANA_PORT ?? '3030'}  Prometheus: http://localhost:${process.env.PROMETHEUS_PORT ?? '9090'}  Alertmanager: http://localhost:${process.env.ALERTMANAGER_PORT ?? '9093'}`,
+    );
+  }
   if (action === 'logs') {
     const port = process.env.VICTORIALOGS_PORT ?? '9428';
     console.log(

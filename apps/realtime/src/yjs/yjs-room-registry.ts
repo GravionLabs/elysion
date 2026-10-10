@@ -9,6 +9,7 @@ import { DocumentRelay, type DocumentMessage } from '../document/document-relay.
 import { DocumentStore } from '../persistence/document-store.js';
 import { PresenceRelay } from '../presence/presence-relay.js';
 import type { BoardRole } from '@elysion/shared-types';
+import { SaveMetrics } from '../metrics/save-metrics.js';
 import { MESSAGE_SYNC } from './protocol.js';
 
 export interface PersistenceOptions {
@@ -105,6 +106,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     private readonly store: DocumentStore,
     private readonly relay: DocumentRelay,
     @Optional() @Inject(PERSISTENCE_OPTIONS) options?: Partial<PersistenceOptions>,
+    @Optional() private readonly metrics?: SaveMetrics,
   ) {
     this.options = { ...DEFAULT_PERSISTENCE_OPTIONS, ...options };
   }
@@ -423,12 +425,10 @@ export class YjsRoomRegistry implements OnModuleDestroy {
   private async writeToStore(room: YjsRoom, state: SaveState): Promise<void> {
     try {
       for (;;) {
-        const result = await this.store.save(
-          room.boardId,
-          Y.encodeStateAsUpdate(room.doc),
-          state.version,
-        );
+        const encoded = Y.encodeStateAsUpdate(room.doc);
+        const result = await this.store.save(room.boardId, encoded, state.version);
         if (result.saved) {
+          this.metrics?.saved(encoded.byteLength);
           state.version = result.version;
           state.failures = 0;
           return;
@@ -440,6 +440,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     } catch (error) {
       state.dirty = true;
       state.failures += 1;
+      this.metrics?.failed();
       const delay = Math.min(
         this.options.retryBaseMs * 2 ** (state.failures - 1),
         this.options.retryMaxMs,

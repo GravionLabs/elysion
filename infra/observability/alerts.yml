@@ -1,0 +1,89 @@
+# Alert rules (docs/operations.md says what each one means and what to do). Checked by `promtool check rules` and
+# tested by alerts.test.yml in CI. Thresholds are starting values: change them to what your load looks like.
+groups:
+  - name: elysion
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"traefik|bff|realtime|business-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: '{{ $labels.job }} cannot be scraped'
+          runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#servicedown
+
+      - alert: BffErrorRateHigh
+        expr: |
+          sum(rate(elysion_bff_http_requests_total{status_code=~"5.."}[5m]))
+            / sum(rate(elysion_bff_http_requests_total[5m])) > 0.02
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'More than 2 percent of the BFF requests fail with 5xx'
+          runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#bfferrorratehigh
+
+      - alert: BffLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(elysion_bff_http_request_duration_seconds_bucket[5m]))) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'The 95th percentile of the BFF request duration is over 1 s'
+          runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#bfflatencyhigh
+
+      - alert: RealtimeSaveFailing
+        expr: increase(elysion_realtime_document_save_failures_total[10m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: 'A board could not be saved: its changes exist in memory only'
+          runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#realtimesavefailing
+
+      - alert: RealtimeConnectionsHigh
+        expr: elysion_realtime_websocket_connections > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ $labels.instance }} holds more than 1000 WebSocket connections'
+          runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#realtimeconnectionshigh
+
+      - alert: AuthRefusalsHigh
+        expr: |
+          sum(rate(elysion_bff_http_requests_total{route="/api/auth/verify", status_code="401"}[5m]))
+            / sum(rate(elysion_bff_http_requests_total{route="/api/auth/verify"}[5m])) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'More than half of the requests the edge checks are refused with 401'
+          runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#authrefusalshigh
+
+      - alert: BackupTooOld
+        expr: time() - elysion_backup_last_success_timestamp_seconds > 36 * 3600
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'The last good backup is older than 36 hours'
+          runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#backuptooold
+
+      - alert: DatabaseErrors
+        expr: sum(increase(elysion_backend_db_commands_total{outcome="error"}[2m])) > 3
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'The business backend gets errors from Postgres'
+          runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#databaseerrors
+
+      - alert: CertificateExpiresSoon
+        expr: (traefik_tls_certs_not_after - time()) < 14 * 86400
+        labels:
+          severity: warning
+        annotations:
+          summary: 'A certificate Traefik serves expires in less than 14 days'
+          runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#certificateexpiressoon

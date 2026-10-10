@@ -126,6 +126,10 @@ Resource-based authorization over `BoardMembership` (`Authorization/`). Three na
 - **The last Owner** (the set of Owner memberships plus the creator) cannot be removed or demoted (`409`). With the creator protected this matters for a board without a creator, which nobody can reach through the API today; the rule is in `BoardMemberService` and tested there.
 - Changes take effect at once: the next request of a removed or demoted member is evaluated against the new role. A connection that is open keeps its token until the next reconnect (identity.md).
 
+## Metrics
+
+`GET /metrics` (prometheus-net, no token) is read on the compose network at `http://business-backend:8080/metrics`; nothing routes it at the edge, which forwards `/api` to the BFF only. It serves the process metrics, `http_request_duration_seconds` by method, status and route pattern (never the URL) and `elysion_backend_db_commands_total` by outcome, counted by an EF Core interceptor. The table of all services is in [the gateway spec](gateway.md#logs-and-metrics).
+
 ## Rooms
 
 Rooms group boards ([ADR 0019](../adr/0019-grouping-boards.md): shared spaces, as in Mural). `Room` (`Id`, `Name` 1 to 120 characters as for a board, `CreatedAt`, `OwnerId`) and `RoomMembership` (`RoomId`, `UserId`, `Role`, the same `Owner`, `Editor`, `Viewer` as a board's) are in `Entities/`, `Board.RoomId` is nullable, and `IRoomRepository` and `IRoomMembershipRepository` follow the board repositories. A board is in at most one room; boards made outside a room, and every board from before rooms, have `RoomId = null` and behave exactly as before.
