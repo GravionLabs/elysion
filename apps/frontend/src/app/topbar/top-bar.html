@@ -60,7 +60,7 @@
     <input
       #importInput
       type="file"
-      accept=".excalidraw,.json,application/json"
+      accept=".excalidraw,.json,.pdf,application/json,application/pdf"
       class="visually-hidden"
       tabindex="-1"
       aria-hidden="true"
@@ -70,7 +70,7 @@
       <button
         type="button"
         class="menu-button import-button"
-        title="Import an .excalidraw file into this board"
+        title="Import an .excalidraw file or a PDF into this board"
         i18n-title="@@topbar.import-title"
         (click)="importInput.click()"
       >

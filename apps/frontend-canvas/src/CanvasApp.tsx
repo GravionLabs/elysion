@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import {
   exportBoard,
   clearScene,
@@ -47,6 +47,7 @@ import './styles/grid.css';
 import './styles/toolbar.css';
 import './styles/connection-points.css';
 import './styles/voting.css';
+import './styles/pdf-import.css';
 import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
@@ -86,6 +87,8 @@ export interface CanvasControls {
   exportBoard(format: ExportFormat, options?: ExportOptions): Promise<Blob | null>;
   /** Replaces the board with the contents of an .excalidraw file; resolves with its element count. */
   importFile(file: Blob): Promise<number>;
+  /** Opens the PDF import (#725): a dialog with the pages, then a picture in a frame per chosen page; resolves with the number of pages put on the board (0 when canceled). */
+  importPdf(file: Blob): Promise<number>;
   /** Adds the contents of an .excalidraw file next to what is on the board, around the view center; resolves with the count added. */
   insertFile(file: Blob): Promise<number>;
   /**
@@ -195,6 +198,9 @@ function defaultYjsServerUrl(): string {
 
 // Excalidraw only offers its own light/dark toggle when it is not given a `theme`; we always pass one
 // (the host or the system decides), so the toggle has to be switched on explicitly.
+/** The PDF dialog and pdf.js with it are loaded when a PDF is chosen or dropped, not with the canvas (#725). */
+const PdfImportDialog = lazy(() => import('./pdf-import/PdfImportDialog'));
+
 const UI_OPTIONS = { canvasActions: { toggleTheme: true }, tools: { image: false } };
 const UI_OPTIONS_WITH_IMAGES = { canvasActions: { toggleTheme: true }, tools: { image: true } };
 
@@ -799,6 +805,11 @@ export function CanvasApp({
         data-grid={grid.show ? 'dots' : undefined}
         style={{ position: 'absolute', inset: 0 }}
       >
+        {pdfFile && excalidrawApi && (
+          <Suspense fallback={null}>
+            <PdfImportDialog file={pdfFile} api={excalidrawApi} onDone={finishPdf} />
+          </Suspense>
+        )}
         <Excalidraw
           theme={activeTheme}
           langCode={excalidrawLangCode(locale)}
@@ -837,6 +848,7 @@ export function CanvasApp({
                 readOnlyRef.current
                   ? Promise.reject(new Error(tRef.current.errorReadOnly))
                   : importFile(api, file),
+              importPdf: (file) => startPdfRef.current(file),
               insertFile: (file) =>
                 readOnlyRef.current
                   ? Promise.reject(new Error(tRef.current.errorReadOnly))
