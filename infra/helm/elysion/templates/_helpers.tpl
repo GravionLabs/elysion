@@ -106,13 +106,13 @@ spec:
           volumeMounts:
             - { name: tmp, mountPath: /tmp }
             {{- range .writable }}
-            - { name: {{ . | trimPrefix "/" | replace "/" "-" }}, mountPath: {{ . }} }
+            - { name: {{ . | trimPrefix "/" | replace "/" "-" | replace "." "-" }}, mountPath: {{ . }} }
             {{- end }}
       volumes:
         - name: tmp
           emptyDir: { sizeLimit: 64Mi }
         {{- range .writable }}
-        - name: {{ . | trimPrefix "/" | replace "/" "-" }}
+        - name: {{ . | trimPrefix "/" | replace "/" "-" | replace "." "-" }}
           emptyDir: { sizeLimit: 16Mi }
         {{- end }}
 ---

@@ -10,6 +10,10 @@ cd "$(dirname "$0")/../.."
 CLUSTER=elysion
 NAMESPACE=elysion
 KIND=${KIND:-kind}
+# The compose project's Postgres (`pnpm dev:infra` is project `elysion`).
+POSTGRES_CONTAINER=${POSTGRES_CONTAINER:-elysion-postgres-1}
+# More arguments for `helm upgrade --install`, for example `--set migrateJob.enabled=true` (CI uses it).
+HELM_ARGS=${HELM_ARGS:-}
 TAG=kind
 
 up() {
@@ -40,8 +44,8 @@ up() {
   echo "== external services (the host's Postgres, Keycloak and RustFS, a Valkey in the cluster)"
   # The kind nodes reach the host's published ports through the gateway of the docker network `kind`.
   HOST_IP=$(docker network inspect kind -f '{{range .IPAM.Config}}{{.Gateway}} {{end}}' | tr ' ' '\n' | grep -v ':' | head -1)
-  docker exec elysion-postgres-1 psql -U elysion -d postgres -tc "select 1 from pg_database where datname='elysion_kind'" | grep -q 1 \
-    || docker exec elysion-postgres-1 psql -U elysion -d postgres -c 'create database elysion_kind' >/dev/null
+  docker exec "$POSTGRES_CONTAINER" psql -U elysion -d postgres -tc "select 1 from pg_database where datname='elysion_kind'" | grep -q 1 \
+    || docker exec "$POSTGRES_CONTAINER" psql -U elysion -d postgres -c 'create database elysion_kind' >/dev/null
   kubectl create namespace elysion-external --dry-run=client -o yaml | kubectl apply -f - >/dev/null
   kubectl apply -f infra/kind/valkey.yaml >/dev/null
   kubectl -n elysion-external rollout status deployment/valkey --timeout=120s
@@ -63,6 +67,7 @@ up() {
     -f infra/helm/elysion/values-kind.yaml \
     --set "oidc.jwksUri=http://$HOST_IP:8081/realms/elysion/protocol/openid-connect/certs" \
     --set "objectStore.endpoint=http://$HOST_IP:${RUSTFS_S3_PORT:-9100}" \
+    ${HELM_ARGS} \
     --wait --timeout 5m
   # An image rebuilt under the same tag is only picked up by a restart.
   kubectl -n "$NAMESPACE" rollout restart deployment >/dev/null

@@ -339,11 +339,11 @@ spec:
               drop: [ALL]
           volumeMounts:
             - { name: tmp, mountPath: /tmp }
-            - { name: etc-nginx-conf.d, mountPath: /etc/nginx/conf.d }
+            - { name: etc-nginx-conf-d, mountPath: /etc/nginx/conf.d }
       volumes:
         - name: tmp
           emptyDir: { sizeLimit: 64Mi }
-        - name: etc-nginx-conf.d
+        - name: etc-nginx-conf-d
           emptyDir: { sizeLimit: 16Mi }
 ---
 # Source: elysion/templates/realtime.yaml

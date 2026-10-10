@@ -14,6 +14,8 @@ on:
       - .env.example
       - infra/traefik/**
       - infra/keycloak/**
+      - infra/helm/**
+      - infra/kind/**
       - scripts/demo-smoke.sh
       - pnpm-lock.yaml
       - package.json
@@ -70,3 +72,46 @@ jobs:
       - name: Logs of the services
         if: failure()
         run: docker compose logs --no-color --tail=80
+
+  # The Helm chart on a real (kind) cluster, with the images of this checkout: the production switches (migration job, two
+  # backend replicas, network policies) on, the smoke script of the demo against it, an upgrade, and a check that no pod runs
+  # as root. Postgres, Keycloak and the object store are the compose stack's, as in infra/kind/README.md. kind, helm and
+  # kubectl are on the runner's image.
+  kind:
+    name: The Helm chart on kind
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HELM_ARGS: --set migrateJob.enabled=true --set replicas.businessBackend=2 --set networkPolicy.enabled=true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # Keycloak listens on all interfaces: the cluster's pods fetch its keys through the host's address.
+      - name: Postgres, Keycloak and the object store
+        env:
+          KEYCLOAK_BIND: 0.0.0.0
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres keycloak-db keycloak rustfs
+          timeout 240 bash -c 'until curl -sf http://localhost:8081/realms/elysion >/dev/null; do sleep 3; done'
+      - name: The cluster, the images and the chart
+        run: bash infra/kind/deploy.sh up
+      - name: Check that it works
+        run: bash scripts/demo-smoke.sh
+      # A changed value is an upgrade: the hook job runs again (it finds nothing to migrate) and the pods roll.
+      - name: Upgrade
+        run: |
+          helm upgrade elysion infra/helm/elysion -n elysion --reuse-values --set replicas.bff=2 --wait --timeout 5m
+          bash scripts/demo-smoke.sh
+      - name: No pod runs as root
+        run: |
+          for pod in $(kubectl -n elysion get pods --field-selector=status.phase=Running -o name); do
+            uid="$(kubectl -n elysion exec "$pod" -- id -u)"
+            echo "$pod runs as uid $uid"
+            [ "$uid" != "0" ]
+          done
+      - name: State of the cluster
+        if: failure()
+        run: |
+          kubectl get pods -A
+          kubectl -n elysion describe pods | tail -150
+          kubectl -n elysion logs --all-containers --prefix --tail=60 -l app.kubernetes.io/instance=elysion || true
+          kubectl -n elysion get jobs
