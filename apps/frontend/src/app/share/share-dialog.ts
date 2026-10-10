@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
+  DestroyRef,
   ElementRef,
   HostListener,
   effect,
@@ -72,6 +73,13 @@ export class ShareDialog {
   private readonly emailField = viewChild<ElementRef<HTMLInputElement>>('emailField');
 
   constructor() {
+    // The button that opened the dialog gets the focus back when it is gone (WCAG 2.4.3).
+    const opener = document.activeElement;
+    inject(DestroyRef).onDestroy(() => {
+      if (opener instanceof HTMLElement && opener.isConnected) {
+        opener.focus();
+      }
+    });
     effect(() => {
       this.boardId();
       untracked(() => this.load());
