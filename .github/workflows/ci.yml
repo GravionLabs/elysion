@@ -275,3 +275,10 @@ jobs:
         with:
           version: ${{ needs.version.outputs.semver }}
           cliff-config: cliff.toml
+      # The realm an operator imports into their Keycloak (ADR 0028): derived from the development realm, no users, no direct grant.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - run: node scripts/build-realm.mjs realm-elysion.production.json
+      - run: gh release upload "v$SEMVER" realm-elysion.production.json --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SEMVER: ${{ needs.version.outputs.semver }}

@@ -50,7 +50,7 @@ clients and test user.
 | Second dev user    | `guest` / `guest`, email `guest@elysion.local`, role `board-user`: somebody to share a board with (#324)                                                                                                                               |
 
 All of these are development values in a committed file. Production gets its own realm configuration with
-other secrets, HTTPS (`sslRequired` is `none` here) and no password grant; that work is not part of this ADR.
+other secrets, HTTPS (`sslRequired` is `none` here) and no password grant; that work is not part of this ADR. [ADR 0028](0028-production-topology-tls-and-keycloak.md) decides it: `scripts/build-realm.mjs` derives the production realm from this file (no users, no direct grant, `sslRequired: external`, placeholders for the application's address and the BFF's secret) and every release carries it as `realm-elysion.production.json`.
 
 ## Checks
 
