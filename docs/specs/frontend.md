@@ -197,6 +197,32 @@ The app is available in English (the source language) and German ([#738](https:/
 - **Adding a text:** mark it, run `i18n:extract`, add the German text to `messages.de.xlf`, run `pnpm --filter @elysion/frontend test`.
 - The user guide stays English; [a German page](../user-guide.de.md) covers the basics.
 
+## Headers
+
+Every response of the frontend image (`apps/frontend/nginx.conf`) carries the headers `apps/frontend/security-headers.sh` writes at container start into `/etc/nginx/conf.d/security-headers.inc` (an `include` in the server and in each location that sets a header of its own, because a location's `add_header` drops the server's): `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`, `Cross-Origin-Opener-Policy: same-origin`, `Vary: Accept-Language, Cookie`, `Strict-Transport-Security` only when `HSTS_MAX_AGE` is set (seconds; set it only when TLS is on), and the Content-Security-Policy. Traefik adds the plain headers and HSTS to the API's answers too (`security-headers` middleware, first in the chain so that a 401 or 429 carries them; [gateway](gateway.md)).
+
+`CSP_MODE` is `enforce` (default, `Content-Security-Policy`), `report` (`Content-Security-Policy-Report-Only`: nothing is blocked, the browser reports to the BFF's `POST /api/csp-report`, which logs the directive and the blocked URI at warn) or `off`. The origin of the identity provider is taken from `OIDC_ISSUER_URL` (the variable of `auth-config.json`), or `KEYCLOAK_ORIGIN` when it differs.
+
+```
+default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;
+font-src 'self' data:; connect-src 'self' <idp> wss:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none';
+base-uri 'self'; form-action 'self' <idp>; report-uri /api/csp-report; report-to csp
+```
+
+What the policy keeps open, measured in report mode with the whole browser suite (a violation fails a browser test, `failOnCspViolation` in `apps/e2e/tests/helpers.ts`):
+
+- **`'unsafe-inline'` in `style-src`:** Angular injects component styles at run time, and the canvas bundle injects Excalidraw's CSS as a `<style>` element (`vite-plugin-css-injected-by-js`); Excalidraw also sets inline `style` attributes. A nonce would need the server to rewrite `index.html` per request. No script gets this.
+- **`'wasm-unsafe-eval'` in `script-src`:** Excalidraw compiles WebAssembly (font subsetting for the SVG and PDF export). It allows WebAssembly only, not `eval` or `new Function`; there is no `'unsafe-eval'` and no `'unsafe-inline'` for scripts.
+- **`data:` in `font-src` and `img-src`, `blob:` in `img-src` and `worker-src`:** Excalidraw turns a font file into a `data:` URL for the exports, draws images from `data:` and `blob:` URLs, and the export runs in a blob worker.
+- **`wss:` in `connect-src`:** the realtime connection of a page served over TLS; over plain HTTP `'self'` covers the `ws://` of the same host.
+- **`https://libraries.excalidraw.com` and `https://raw.githubusercontent.com` in `connect-src`:** the canvas fetches a library the user chose on the library site (see "The library"). Nothing else on those hosts is used; a closed network without them just cannot add libraries.
+
+Two things had to change for the policy to hold. Angular's critical-CSS inlining put an `onload` handler into `index.html` (an inline script): `inlineCritical` is off in `angular.json`. And Excalidraw loads its fonts from a CDN (`https://esm.sh/@excalidraw/excalidraw@…`) unless told otherwise, which the policy refuses and a closed network cannot reach: the element build ships the fonts next to the bundle (`dist-element/fonts`, `vite.element.config.ts`) and `vite-plugin-excalidraw-local-assets.ts` points the library's fallback at the folder the bundle was loaded from (it fails the build when the library's code changes, like the grid plugin).
+
+## The library
+
+Excalidraw's library (the shapes sidebar) is the user's own: `library-store.ts` keeps it in this browser's local storage (`elysion:library`, for every board, not in the board's document), the canvas loads it when it starts and saves it on every change (`onLibraryChange`). "Browse libraries" opens libraries.excalidraw.com in a new tab; **Add to Excalidraw** there opens Elysion again with `#addLibrary=<url>&token=<id>` (the new tab signs in silently and returns to the same board). The canvas reads that address, cleans it, fetches the library from the allowed hosts only (`isAllowedLibraryUrl`: https `libraries.excalidraw.com` or `raw.githubusercontent.com/excalidraw/excalidraw-libraries/`), asks to confirm (Excalidraw's own prompt, unless it is the tab that sent the user away) and merges it into the library. Excalidraw's `useHandleLibrary` is not used on purpose: it cleans the address with `history.replaceState(…, '#…')`, which a page with `<base href="/">` resolves against the root, so a reload would open the board list. Each try opens one more tab of the board: the same person then shows as several avatars until the tabs are closed (#770).
+
 ## Theming (ariadne design)
 
 The canvas UI follows the design of GravionLabs/ariadne:

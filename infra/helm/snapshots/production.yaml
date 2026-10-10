@@ -525,6 +525,10 @@ spec:
               value: https://id.example/realms/elysion
             - name: OIDC_CLIENT_ID
               value: elysion-frontend
+            - name: CSP_MODE
+              value: enforce
+            - name: HSTS_MAX_AGE
+              value: "0"
           # Readiness and liveness wait for the start-up probe: the business backend migrates the database at start.
           startupProbe:
             httpGet: { path: /, port: http }
@@ -703,9 +707,20 @@ spec:
   entryPoints:
     - web
   routes:
+    # Where the browser reports a Content-Security-Policy violation: no token, so no forwardAuth; the rate limit applies.
+    - kind: Rule
+      match: Host(`elysion.example`) && Path(`/api/csp-report`)
+      priority: 100
+      middlewares:
+        - name: elysion-security-headers
+        - name: elysion-rate-limit
+      services:
+        - name: elysion-bff
+          port: 3000
     - kind: Rule
       match: Host(`elysion.example`) && PathPrefix(`/api`)
       middlewares:
+        - name: elysion-security-headers
         - name: elysion-cors
         - name: elysion-rate-limit
         - name: elysion-bff-auth
@@ -716,6 +731,7 @@ spec:
     - kind: Rule
       match: Host(`elysion.example`) && PathPrefix(`/yjs`)
       middlewares:
+        - name: elysion-security-headers
         - name: elysion-cors
       services:
         - name: elysion-realtime
@@ -730,7 +746,7 @@ spec:
     secretName: elysion-tls
 ---
 # Source: elysion/templates/edge.yaml
-# Middlewares, in the order the routes use them (docs/specs/gateway.md): cors, rate-limit, bff-auth.
+# Middlewares, in the order the routes use them (docs/specs/gateway.md): security-headers first, so that an answer the later ones give (401, 429) carries the headers, then cors, rate-limit, bff-auth.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -783,6 +799,29 @@ spec:
     average: 50
     burst: 100
     period: 1s
+---
+# Source: elysion/templates/edge.yaml
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: elysion-security-headers
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  # The plain security headers on the API's answers (the frontend's nginx sets its own); HSTS only when hstsMaxAge is set.
+  headers:
+    contentTypeNosniff: true
+    frameDeny: true
+    referrerPolicy: no-referrer
+    permissionsPolicy: camera=(), microphone=(), geolocation=()
+    customResponseHeaders:
+      Cross-Origin-Opener-Policy: same-origin
+    stsSeconds: 0
+    stsIncludeSubdomains: true
+    forceSTSHeader: true
 ---
 # Source: elysion/templates/servicemonitor.yaml
 apiVersion: monitoring.coreos.com/v1

@@ -31,6 +31,7 @@ The [Demo](#demo) section has the details. How to use it is in the [user guide](
 Known gaps, so nobody finds them by surprise (the [roadmap](docs/roadmap.md) says what comes next):
 
 - **Not a production setup:** the demo and the development stack run Keycloak in development mode, wired to `localhost`, with development secrets. A real deployment needs TLS, a host name, a production Keycloak and its own secrets (see [self-hosting](docs/self-hosting.md)).
+- **Security:** [docs/security.md](docs/security.md) has the threat model, the review of the token flows, the internal API and the edge, and the known findings; to report a vulnerability use GitHub's private reporting, see [SECURITY.md](SECURITY.md).
 - **Voting is not secret from the server:** with the votes in the board's document (ADR 0020) the interface shows no names while a voting runs and only counts afterwards, but the document holds who voted for what, and viewers cannot vote.
 - **Timer clocks** of two clients may differ by a few seconds (the end is worked out on every client).
 - **Images are PNG, JPEG, GIF or WebP** up to 10 MiB, 200 per board (SVG is refused: it can carry script). They are kept in the object store (RustFS in the stack).

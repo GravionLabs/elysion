@@ -112,6 +112,70 @@ jobs:
             apps/bff/coverage
             apps/realtime/coverage
 
+  # --- Security scanning (docs/security.md) ---
+  # The four images, built as a pull request would publish them and scanned by Trivy: any CRITICAL vulnerability with a fix
+  # fails the check (allowlist: .trivyignore, one reason per entry); the HIGH ones are listed in the log. Runs next to the
+  # other checks, not before them. The base images and their packages change without a commit of ours, so a red scan on
+  # an untouched branch means: rebuild, or take the update (Renovate).
+  scan:
+    name: Scan ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [frontend, bff, realtime, business-backend]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ${{ matrix.image == 'business-backend' && 'apps/business-backend' || '.' }}
+          file: apps/${{ matrix.image }}/Dockerfile
+          load: true
+          tags: elysion-scan/${{ matrix.image }}:ci
+          cache-from: type=gha,scope=${{ matrix.image }}
+      - name: HIGH and CRITICAL, for the log
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: elysion-scan/${{ matrix.image }}:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          exit-code: '0'
+      - name: Fail on CRITICAL
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: elysion-scan/${{ matrix.image }}:ci
+          severity: CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          exit-code: '1'
+
+  # The dependencies, as the lock files and the project files name them: pnpm's advisories for what runs in production (the
+  # allowlist is `auditConfig` in pnpm-workspace.yaml) and NuGet's, direct and transitive.
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+      - run: pnpm audit --prod --audit-level high
+      # `dotnet list package --vulnerable` exits 0 whatever it finds: the output is the result.
+      - name: NuGet packages with known vulnerabilities
+        run: |
+          dotnet list apps/business-backend/Elysion.BusinessBackend.slnx package --vulnerable --include-transitive | tee nuget-audit.txt
+          if grep -q "has the following vulnerable packages" nuget-audit.txt; then
+            echo "::error::a NuGet package has a known vulnerability (see the list above)"
+            exit 1
+          fi
+
   # --- Release ---
   # Every merge to main that passes the checks is a (pre-)release (docs/adr/0021-versioning-and-releases.md): GitVersion
   # gives the version from the git history (GitVersion.yml), the four images are published to GHCR, and a GitHub
@@ -120,7 +184,7 @@ jobs:
 
   version:
     name: Version
-    needs: [verify, dotnet-coverage, e2e]
+    needs: [verify, dotnet-coverage, e2e, scan, audit]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
