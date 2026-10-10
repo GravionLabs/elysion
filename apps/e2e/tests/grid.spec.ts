@@ -138,12 +138,16 @@ test('a dragged rectangle aligns its center with another one by default, with a 
   const second = (await rectangles())[1]!;
   expect(Math.abs(second.x + second.width / 2 - target)).toBeGreaterThan(50); // far from the first one's center
 
-  // Drag it by its top edge so that its center ends 2 px from the first one's: the guide pulls it the rest of the way.
+  // Drag it by its top edge so that its center ends 2 px from the first one's: the guide pulls it the rest of the way. The
+  // export has scene coordinates; the mouse has the page's, so the canvas's own offset (the top bar) is added.
+  const canvas = (await page.locator('canvas.interactive').boundingBox())!;
   const dx = target + 2 - (second.x + second.width / 2);
-  await page.mouse.move(second.x + second.width / 2, second.y);
+  const startX = canvas.x + second.x + second.width / 2;
+  const startY = canvas.y + second.y;
+  await page.mouse.move(startX, startY);
   await page.mouse.down();
-  await page.mouse.move(second.x + second.width / 2 + dx / 2, second.y + 5, { steps: 4 });
-  await page.mouse.move(second.x + second.width / 2 + dx, second.y + 10, { steps: 4 });
+  await page.mouse.move(startX + dx / 2, startY + 5, { steps: 4 });
+  await page.mouse.move(startX + dx, startY + 10, { steps: 4 });
   await page.mouse.up();
 
   await expect
