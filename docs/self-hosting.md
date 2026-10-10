@@ -63,7 +63,7 @@ The demo is wired to `localhost` and uses development values. Before it faces an
 
 The Helm chart ([ADR 0018](adr/0018-kubernetes-packaging.md), `infra/helm/elysion`) is the way to run it on Kubernetes; its default image
 names are still the local ones (`elysion/frontend`, ...), so set `images.<service>.repository` and `tag` to the GHCR images above. It has
-been run on a local kind cluster only.
+been run on a local kind cluster only. For a real cluster the chart has non-root, read-only pods, a start-up probe, a migration job, disruption budgets, an autoscaler for the realtime service and network policies; [`values-production.example.yaml`](../infra/helm/elysion/values-production.example.yaml) turns them on, and the chart's [README](../infra/helm/elysion/README.md) explains each.
 
 ## Back up and restore
 

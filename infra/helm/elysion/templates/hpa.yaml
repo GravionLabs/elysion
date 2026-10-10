@@ -1,0 +1,35 @@
+{{- with .Values.autoscaling.realtime }}
+{{- if .enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "elysion.fullname" $ }}-realtime
+  labels:
+    {{- include "elysion.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: realtime
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "elysion.fullname" $ }}-realtime
+  minReplicas: {{ .minReplicas }}
+  maxReplicas: {{ .maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: {{ .cpuTarget }} }
+    {{- if gt (int .connectionsTarget) 0 }}
+    - type: Pods
+      pods:
+        metric: { name: elysion_realtime_websocket_connections }
+        target: { type: AverageValue, averageValue: {{ .connectionsTarget | quote }} }
+    {{- end }}
+  behavior:
+    # Fewer replicas disconnect their clients (they reconnect to another one): scale down slowly.
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+        - { type: Pods, value: 1, periodSeconds: 120 }
+{{- end }}
+{{- end }}

@@ -90,4 +90,8 @@ owner gave are not recorded here; the trade-offs above stand. What follows from 
   render a Secret from values for throwaway installs, off by default. `WS_TOKEN_SECRET` and `INTERNAL_API_SECRET`
   must differ.
 - Checks: `helm lint`, and `helm template ... | kubectl apply --dry-run=client -f -` (CI can run both).
+- **Hardening (#690):** every pod runs non-root with a read-only root file system, no capabilities and the `RuntimeDefault` seccomp profile, behind a start-up
+  probe; replicas are spread over nodes and have a PodDisruptionBudget; the realtime service has an optional HorizontalPodAutoscaler; an optional Helm hook job
+  migrates the database (`--migrate`) so that replicas do not race; optional ingress NetworkPolicies and a ServiceMonitor. `values-production.example.yaml`
+  turns them on and `infra/helm/snapshots/` holds the rendered chart as a test (`infra/helm/snapshot.sh`). Not done: egress policies, because the external services differ.
 - Release history and rollback come from Helm (`helm upgrade --install`, `helm rollback`).

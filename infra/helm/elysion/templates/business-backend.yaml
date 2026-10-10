@@ -1,5 +1,5 @@
 {{- $env := list
-  (dict "name" "Database__MigrateOnStartup" "value" (.Values.migrateOnStartup | toString))
+  (dict "name" "Database__MigrateOnStartup" "value" (and .Values.migrateOnStartup (not .Values.migrateJob.enabled) | toString))
   (dict "name" "OIDC_ISSUER_URL" "value" (required "oidc.issuerUrl is required" .Values.oidc.issuerUrl))
   (dict "name" "OIDC_AUDIENCE" "value" .Values.oidc.audience)
   (include "elysion.secretEnv" (dict "root" . "name" "ConnectionStrings__Elysion" "key" "POSTGRES_CONNECTION_STRING") | fromYaml)

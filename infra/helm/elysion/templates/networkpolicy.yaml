@@ -1,0 +1,32 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- /* Who may open a connection to each component. L4 only: /internal of the business backend is protected by its secret, not here. */ -}}
+{{- $monitoring := dict "namespaceSelector" (dict "matchLabels" (dict "kubernetes.io/metadata.name" .Values.networkPolicy.monitoringNamespace)) }}
+{{- $traefik := dict "namespaceSelector" (dict "matchLabels" (dict "kubernetes.io/metadata.name" .Values.networkPolicy.traefikNamespace)) }}
+{{- $policies := list
+  (dict "name" "frontend" "port" 8080 "from" (list $traefik))
+  (dict "name" "bff" "port" 3000 "from" (list $traefik $monitoring))
+  (dict "name" "realtime" "port" 3000 "from" (list $traefik $monitoring))
+  (dict "name" "business-backend" "port" 8080 "from" (list (include "elysion.peer" (dict "root" . "name" "bff") | fromYaml) (include "elysion.peer" (dict "root" . "name" "realtime") | fromYaml) $monitoring))
+-}}
+{{- range $policies }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "elysion.fullname" $ }}-{{ .name }}
+  labels:
+    {{- include "elysion.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ .name }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+      app.kubernetes.io/component: {{ .name }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        {{- toYaml .from | nindent 8 }}
+      ports:
+        - { protocol: TCP, port: {{ .port }} }
+{{- end }}
+{{- end }}

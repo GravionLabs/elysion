@@ -1,0 +1,532 @@
+---
+# Source: elysion/templates/bff.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: elysion-bff
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+    app.kubernetes.io/component: bff
+spec:
+  selector:
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/component: bff
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+# Source: elysion/templates/business-backend.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: elysion-business-backend
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+    app.kubernetes.io/component: business-backend
+spec:
+  selector:
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/component: business-backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+# Source: elysion/templates/frontend.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: elysion-frontend
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+    app.kubernetes.io/component: frontend
+spec:
+  selector:
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/component: frontend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+# Source: elysion/templates/realtime.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: elysion-realtime
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+    app.kubernetes.io/component: realtime
+spec:
+  selector:
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/component: realtime
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+# Source: elysion/templates/bff.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elysion-bff
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+    app.kubernetes.io/component: bff
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: elysion
+      app.kubernetes.io/component: bff
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: elysion
+        app.kubernetes.io/instance: elysion
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/chart: elysion-0.1.0
+        app.kubernetes.io/component: bff
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bff
+          image: "elysion/bff:kind"
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: BUSINESS_BACKEND_URL
+              value: http://elysion-business-backend:8080
+            - name: OIDC_ISSUER_URL
+              value: http://localhost:8081/realms/elysion
+            - name: OIDC_AUDIENCE
+              value: elysion-bff
+            - name: WS_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: WS_TOKEN_SECRET
+                  name: elysion-secrets
+          # Readiness and liveness wait for the start-up probe: the business backend migrates the database at start.
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 2
+            failureThreshold: 15
+          # Not routed until the service answers, and restarted when it stops answering.
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 96Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+---
+# Source: elysion/templates/business-backend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elysion-business-backend
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+    app.kubernetes.io/component: business-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: elysion
+      app.kubernetes.io/component: business-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: elysion
+        app.kubernetes.io/instance: elysion
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/chart: elysion-0.1.0
+        app.kubernetes.io/component: business-backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1654
+        runAsGroup: 1654
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: business-backend
+          image: "elysion/business-backend:kind"
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: Database__MigrateOnStartup
+              value: "true"
+            - name: OIDC_ISSUER_URL
+              value: http://localhost:8081/realms/elysion
+            - name: OIDC_AUDIENCE
+              value: elysion-bff
+            - name: ConnectionStrings__Elysion
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_CONNECTION_STRING
+                  name: elysion-secrets
+            - name: INTERNAL_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: INTERNAL_API_SECRET
+                  name: elysion-secrets
+            - name: S3_ENDPOINT
+              value: http://rustfs.invalid:9100
+            - name: S3_BUCKET
+              value: elysion-files-kind
+            - name: MAX_FILE_BYTES
+              value: "10485760"
+            - name: MAX_FILES_PER_BOARD
+              value: "200"
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: S3_ACCESS_KEY
+                  name: elysion-secrets
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: S3_SECRET_KEY
+                  name: elysion-secrets
+          # Readiness and liveness wait for the start-up probe: the business backend migrates the database at start.
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 2
+            failureThreshold: 90
+          # Not routed until the service answers, and restarted when it stops answering.
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 160Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+---
+# Source: elysion/templates/frontend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elysion-frontend
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: elysion
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: elysion
+        app.kubernetes.io/instance: elysion
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/chart: elysion-0.1.0
+        app.kubernetes.io/component: frontend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: frontend
+          image: "elysion/frontend:kind"
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: OIDC_ISSUER_URL
+              value: http://localhost:8081/realms/elysion
+            - name: OIDC_CLIENT_ID
+              value: elysion-frontend
+          # Readiness and liveness wait for the start-up probe: the business backend migrates the database at start.
+          startupProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 2
+            failureThreshold: 15
+          # Not routed until the service answers, and restarted when it stops answering.
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              cpu: 25m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: etc-nginx-conf.d, mountPath: /etc/nginx/conf.d }
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+        - name: etc-nginx-conf.d
+          emptyDir: { sizeLimit: 16Mi }
+---
+# Source: elysion/templates/realtime.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elysion-realtime
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+    app.kubernetes.io/component: realtime
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: elysion
+      app.kubernetes.io/component: realtime
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: elysion
+        app.kubernetes.io/instance: elysion
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/chart: elysion-0.1.0
+        app.kubernetes.io/component: realtime
+    spec:
+      # The realtime service saves every board with unsaved changes when it gets SIGTERM (ADR 0011): give it the time.
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: realtime
+          image: "elysion/realtime:kind"
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: BUSINESS_BACKEND_URL
+              value: http://elysion-business-backend:8080
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  key: REDIS_URL
+                  name: elysion-secrets
+            - name: WS_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: WS_TOKEN_SECRET
+                  name: elysion-secrets
+            - name: INTERNAL_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: INTERNAL_API_SECRET
+                  name: elysion-secrets
+          # Readiness and liveness wait for the start-up probe: the business backend migrates the database at start.
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 2
+            failureThreshold: 15
+          # Not routed until the service answers, and restarted when it stops answering.
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+---
+# Source: elysion/templates/edge.yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: elysion
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: PathPrefix(`/api`)
+      middlewares:
+        - name: elysion-cors
+        - name: elysion-rate-limit
+        - name: elysion-bff-auth
+      services:
+        - name: elysion-bff
+          port: 3000
+    # WebSocket: the token in the URL is checked by the realtime service itself, so no forwardAuth, no rate limit.
+    - kind: Rule
+      match: PathPrefix(`/yjs`)
+      middlewares:
+        - name: elysion-cors
+      services:
+        - name: elysion-realtime
+          port: 3000
+    - kind: Rule
+      match: PathPrefix(`/`)
+      priority: 1
+      services:
+        - name: elysion-frontend
+          port: 8080
+---
+# Source: elysion/templates/edge.yaml
+# Middlewares, in the order the routes use them (docs/specs/gateway.md): cors, rate-limit, bff-auth.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: elysion-bff-auth
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  # Every /api request is first sent to the BFF's verify endpoint: 2xx lets it through, anything else is the answer.
+  # The address carries the namespace: Traefik runs in its own.
+  forwardAuth:
+    address: http://elysion-bff.elysion.svc:3000/api/auth/verify
+    authResponseHeaders: [X-Auth-User-Id, X-Auth-User-Email]
+    trustForwardHeader: false
+---
+# Source: elysion/templates/edge.yaml
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: elysion-cors
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  headers:
+    accessControlAllowOriginList:
+      []
+    accessControlAllowMethods: [GET, POST, PATCH, PUT, DELETE, OPTIONS]
+    accessControlAllowHeaders: [Authorization, Content-Type]
+    accessControlExposeHeaders: [X-Request-Id]
+    accessControlMaxAge: 600
+    addVaryHeader: true
+---
+# Source: elysion/templates/edge.yaml
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: elysion-rate-limit
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  rateLimit:
+    average: 50
+    burst: 100
+    period: 1s
