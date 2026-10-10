@@ -15,7 +15,9 @@ import { REDIS_PUB_CLIENT, REDIS_SUB_CLIENT } from '../redis/redis.provider.js';
 export type DocumentMessage =
   | { readonly type: 'update'; readonly data: Uint8Array }
   | { readonly type: 'hello'; readonly data: Uint8Array }
-  | { readonly type: 'hello-ack'; readonly data: Uint8Array };
+  | { readonly type: 'hello-ack'; readonly data: Uint8Array }
+  /** The board's document was rebuilt (ADR 0026): an instance that holds an idle copy drops it; `data` is empty. */
+  | { readonly type: 'reset'; readonly data: Uint8Array };
 
 export interface DocumentSubscription {
   /** A message from another instance. */
@@ -26,7 +28,7 @@ export interface DocumentSubscription {
 
 // Valkey is shared with other projects (local-infra): everything Elysion writes is namespaced.
 const CHANNEL_PREFIX = 'elysion:doc:';
-const MESSAGE_TYPES: readonly string[] = ['update', 'hello', 'hello-ack'];
+const MESSAGE_TYPES: readonly string[] = ['update', 'hello', 'hello-ack', 'reset'];
 
 /**
  * Relays Yjs document updates between `realtime` instances through Valkey pub/sub, one channel per board

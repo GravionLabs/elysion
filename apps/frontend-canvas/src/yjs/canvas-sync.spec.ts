@@ -30,6 +30,7 @@ function createMockApi() {
   const api = {
     getSceneElementsIncludingDeleted: () => elements,
     getAppState: () => restoreAppState(null, null),
+    getFiles: () => ({}),
     updateScene,
   } as unknown as ExcalidrawImperativeAPI;
   return {
@@ -196,6 +197,42 @@ describe('canvas Yjs sync (two CanvasApp-style peers)', () => {
 
     peerA.destroy();
     peerB.destroy();
+  });
+
+  it('keeps what a tab changed while away when its document is replaced: its scene is written once the server state is in, newer changes of others win (ADR 0026)', async () => {
+    const id = crypto.randomUUID();
+    const url = `${server.url}?board=${id}`;
+    const [mine, theirs] = convertToExcalidrawElements([
+      { type: 'rectangle', x: 0, y: 0, width: 10, height: 10 },
+      { type: 'rectangle', x: 50, y: 0, width: 10, height: 10 },
+    ]);
+    // The rebuilt document: it holds `theirs` as somebody changed it later, not `mine`.
+    server
+      .docOf(id)
+      .getMap('elements')
+      .set(theirs.id, { ...theirs, x: 999, version: 9 });
+    // The replacement client: a new document, the old scene (what the tab still shows).
+    const { api, getElements, setElements } = createMockApi();
+    setElements([mine, { ...theirs, version: 2 }]);
+    let synced = false;
+    const client = new YjsWebsocketClient(url, undefined, {
+      WebSocketImpl,
+      onSynced: () => {
+        synced = true;
+        binding.pushScene();
+      },
+    });
+    const binding = new ExcalidrawYjsBinding(client.doc);
+    binding.attach(api);
+
+    await waitUntil(() => synced);
+    await waitUntil(() => server.docOf(id).getMap('elements').has(mine.id));
+
+    const stored = server.docOf(id).getMap<OrderedExcalidrawElement>('elements');
+    expect(stored.get(theirs.id)?.x).toBe(999); // not overwritten by the older copy in the scene
+    expect(getElements().find((element) => element.id === theirs.id)?.x).toBe(999);
+    binding.destroy();
+    client.destroy();
   });
 
   it('keeps peers on different boards independent', async () => {

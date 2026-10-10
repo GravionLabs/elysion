@@ -11,6 +11,7 @@ import { PresenceRelay } from '../presence/presence-relay.js';
 import { type BoardRole, WS_CLOSE_FORBIDDEN } from '@elysion/shared-types';
 import { SaveMetrics } from '../metrics/save-metrics.js';
 import { MESSAGE_SYNC } from './protocol.js';
+import { rebuildDocument } from './compaction.js';
 
 export interface PersistenceOptions {
   /** A room is saved this long after its last change... */
@@ -24,6 +25,12 @@ export interface PersistenceOptions {
   readonly evictAfterMs: number;
   /** A room without clients whose save failed this many times in a row is given up: its unsaved state is dropped and it is unloaded. */
   readonly maxFailuresWithoutClients: number;
+  /** A board whose stored state is larger than this is rebuilt when nobody has it open any more (ADR 0026); `0` switches compaction off. */
+  readonly compactAboveBytes: number;
+  /** The largest Yjs update a client may send (ADR 0026). */
+  readonly maxUpdateBytes: number;
+  /** The largest encoded state of a board; above it updates are refused (ADR 0026). */
+  readonly maxDocumentBytes: number;
 }
 
 export const PERSISTENCE_OPTIONS = Symbol('PERSISTENCE_OPTIONS');
@@ -35,14 +42,28 @@ const DEFAULT_PERSISTENCE_OPTIONS: PersistenceOptions = {
   retryMaxMs: 30_000,
   evictAfterMs: 30_000,
   maxFailuresWithoutClients: 30,
+  compactAboveBytes: 1024 * 1024,
+  maxUpdateBytes: 2 * 1024 * 1024,
+  maxDocumentBytes: 8 * 1024 * 1024,
 };
 
-/** The defaults, with the grace period before an empty room is unloaded overridable by `ROOM_EVICT_AFTER_MS`. */
+/** The defaults, with the settings of the environment: `ROOM_EVICT_AFTER_MS`, `COMPACT_THRESHOLD_BYTES` (0: no compaction), `MAX_UPDATE_BYTES` and `MAX_DOCUMENT_BYTES`. */
 export function persistenceOptionsFromEnv(): PersistenceOptions {
-  const evictAfterMs = Number(process.env.ROOM_EVICT_AFTER_MS);
+  const number = (name: string): number | undefined => {
+    const raw = process.env[name]?.trim();
+    const value = raw ? Number(raw) : Number.NaN;
+    return Number.isFinite(value) && value >= 0 ? value : undefined;
+  };
+  const evictAfterMs = number('ROOM_EVICT_AFTER_MS');
+  const compactAboveBytes = number('COMPACT_THRESHOLD_BYTES');
+  const maxUpdateBytes = number('MAX_UPDATE_BYTES');
+  const maxDocumentBytes = number('MAX_DOCUMENT_BYTES');
   return {
     ...DEFAULT_PERSISTENCE_OPTIONS,
-    ...(Number.isFinite(evictAfterMs) && process.env.ROOM_EVICT_AFTER_MS ? { evictAfterMs } : {}),
+    ...(evictAfterMs === undefined ? {} : { evictAfterMs }),
+    ...(compactAboveBytes === undefined ? {} : { compactAboveBytes }),
+    ...(maxUpdateBytes ? { maxUpdateBytes } : {}),
+    ...(maxDocumentBytes ? { maxDocumentBytes } : {}),
   };
 }
 
@@ -67,6 +88,8 @@ interface SaveState {
   evictionTimer: NodeJS.Timeout | null;
   /** Bumped whenever someone asks for the room, so an eviction that was already under way notices and stops. */
   usage: number;
+  /** A rebuild of the document that is under way: whoever asks for the room meanwhile waits for it, because the room is dropped when it succeeds. */
+  compaction?: Promise<void> | null;
   /** The connection whose change is waiting to be saved: the save is logged and sent to the backend as its request (ADR 0025). */
   connection?: ConnectionContext;
 }
@@ -80,6 +103,8 @@ export interface YjsRoom {
   readonly awarenessIdsBySocket: Map<WebSocket, Set<number>>;
   /** Who each connected socket is and what it may do, from its verified WS token. */
   readonly memberBySocket: Map<WebSocket, ConnectionMember>;
+  /** What the encoded state is, about: measured at load and at every save, and grown by the size of each update in between (for the limit on the document). */
+  sizeBytes: number;
 }
 
 /** The identity bound to a connection at the handshake. */
@@ -122,6 +147,11 @@ export class YjsRoomRegistry implements OnModuleDestroy {
   getOrLoad(boardId: string): Promise<YjsRoom> {
     const existing = this.rooms.get(boardId);
     if (existing) {
+      const compaction = this.saves.get(boardId)?.compaction;
+      if (compaction) {
+        // The room is dropped when the rebuild succeeds: ask again afterwards, and get the rebuilt document.
+        return compaction.then(() => this.getOrLoad(boardId));
+      }
       this.cancelEviction(boardId);
       return Promise.resolve(existing);
     }
@@ -201,7 +231,21 @@ export class YjsRoomRegistry implements OnModuleDestroy {
       return;
     }
 
+    state.compaction = this.compact(room, state).finally(() => {
+      state.compaction = null;
+    });
+    await state.compaction;
+    if (state.usage !== usage || room.clients.size > 0) {
+      return;
+    }
+    await this.teardown(room, state);
+    this.logger.log(`Unloaded idle board ${room.boardId}`);
+  }
+
+  /** Removes a room from memory: its timers, its document and its subscriptions. */
+  private async teardown(room: YjsRoom, state: SaveState): Promise<void> {
     if (state.timer) clearTimeout(state.timer);
+    if (state.evictionTimer) clearTimeout(state.evictionTimer);
     this.rooms.delete(room.boardId);
     this.saves.delete(room.boardId);
     room.awareness.destroy();
@@ -216,7 +260,52 @@ export class YjsRoomRegistry implements OnModuleDestroy {
       .catch((error: unknown) =>
         this.logger.warn(`Presence unsubscribe failed for board ${room.boardId}: ${String(error)}`),
       );
-    this.logger.log(`Unloaded idle board ${room.boardId}`);
+  }
+
+  /**
+   * Rebuilds a board's document from its live elements when it is large, nobody has it open, and the rebuild is at most half
+   * the size (ADR 0026). Called when an idle room is about to be unloaded, so the store gets the small document and the next
+   * load starts from it. Never while anybody is connected, on any instance: the presence entries in Valkey say who is.
+   * Best effort: whatever goes wrong, the room is unloaded as before and the board is as it was.
+   */
+  private async compact(room: YjsRoom, state: SaveState): Promise<void> {
+    const threshold = this.options.compactAboveBytes;
+    if (threshold <= 0 || state.dirty) {
+      return;
+    }
+    try {
+      const current = Y.encodeStateAsUpdate(room.doc);
+      if (current.byteLength <= threshold) {
+        return;
+      }
+      const rebuilt = rebuildDocument(room.doc);
+      if (rebuilt === null || rebuilt.byteLength * 2 > current.byteLength) {
+        return;
+      }
+      if ((await this.presence.snapshot(room.boardId)).length > 0) {
+        return; // somebody, on another instance, still has the board open
+      }
+      if (room.clients.size > 0) {
+        return;
+      }
+      const result = await this.store.save(room.boardId, rebuilt, state.version);
+      if (!result.saved) {
+        return; // another instance saved first; the next idle unload tries again
+      }
+      state.version = result.version;
+      this.metrics?.compacted();
+      this.metrics?.saved(rebuilt.byteLength);
+      this.logger.log(
+        `Rebuilt board ${room.boardId}: ${current.byteLength} bytes became ${rebuilt.byteLength}`,
+      );
+      await this.relay
+        .publish(room.boardId, { type: 'reset', data: new Uint8Array() })
+        .catch((error: unknown) =>
+          this.logger.warn(`Document reset failed for board ${room.boardId}: ${String(error)}`),
+        );
+    } catch (error) {
+      this.logger.warn(`Rebuilding board ${room.boardId} failed: ${String(error)}`);
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -243,6 +332,31 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     this.rooms.set(boardId, room);
     this.followRelay(room);
     return room;
+  }
+
+  /**
+   * Whether `bytes` more of update fit into the board (ADR 0026, `maxDocumentBytes`). The size of the room is an estimate
+   * (measured at load and at each save, plus the updates since), and only when the estimate says no is the state encoded
+   * to get the real number.
+   */
+  fits(room: YjsRoom, bytes: number): boolean {
+    if (room.sizeBytes + bytes <= this.options.maxDocumentBytes) {
+      return true;
+    }
+    room.sizeBytes = Y.encodeStateAsUpdate(room.doc).byteLength;
+    return room.sizeBytes + bytes <= this.options.maxDocumentBytes;
+  }
+
+  /** Records an update that was applied to the room, for {@link fits}. */
+  grew(room: YjsRoom, bytes: number): void {
+    room.sizeBytes += bytes;
+  }
+
+  get limits(): { maxUpdateBytes: number; maxDocumentBytes: number } {
+    return {
+      maxUpdateBytes: this.options.maxUpdateBytes,
+      maxDocumentBytes: this.options.maxDocumentBytes,
+    };
   }
 
   /**
@@ -285,6 +399,14 @@ export class YjsRoomRegistry implements OnModuleDestroy {
         case 'hello-ack':
           this.publishSafely(room, 'update', Y.encodeStateAsUpdate(room.doc, message.data));
           break;
+        case 'reset': {
+          // Another instance rebuilt the document: an idle copy here is out of date and must not be saved over it.
+          const state = this.saves.get(room.boardId);
+          if (state && room.clients.size === 0 && !state.dirty && !state.saving) {
+            void this.teardown(room, state);
+          }
+          break;
+        }
       }
     } catch (error) {
       this.logger.warn(
@@ -314,6 +436,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
       clients: new Set(),
       awarenessIdsBySocket: new Map(),
       memberBySocket: new Map(),
+      sizeBytes: storedState?.byteLength ?? 0,
     };
 
     doc.on('update', (update: Uint8Array, origin: unknown) => {
@@ -437,6 +560,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
         const result = await this.store.save(room.boardId, encoded, state.version);
         if (result.saved) {
           this.metrics?.saved(encoded.byteLength);
+          room.sizeBytes = encoded.byteLength;
           state.version = result.version;
           state.failures = 0;
           return;

@@ -202,4 +202,15 @@ public class BoardDocumentsApiTests
         (await PutAsync(board.Id.ToString(), [2], ifMatch: "\"1\"")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await PutAsync(board.Id.ToString(), [2], ifNoneMatchAny: true)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
+
+    [Test]
+    public async Task A_state_over_the_limit_is_413_and_not_stored()
+    {
+        var tooLarge = new byte[Elysion.BusinessBackend.Api.Endpoints.BoardDocumentEndpoints.MaxStateBytes + 1];
+
+        var response = await PutAsync("big", tooLarge, ifNoneMatchAny: true);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
+        (await _client.GetAsync(Url("big"))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
 }

@@ -579,6 +579,20 @@ describe('Board', () => {
     expect(component.status()).toBe('error');
   });
 
+  it('shows what the canvas wants the person to know in the banner, without moving to error status', () => {
+    const el: HTMLElement = fixture.nativeElement.querySelector('elysion-canvas');
+    el.dispatchEvent(new CustomEvent('ready'));
+    el.dispatchEvent(
+      new CustomEvent('notice', { detail: { message: 'This board is full: 20,000 elements.' } }),
+    );
+    fixture.detectChanges();
+
+    expect(component.status()).toBe('ready');
+    expect(fixture.nativeElement.querySelector('.board-banner')?.textContent).toContain(
+      'This board is full',
+    );
+  });
+
   it('moves to error status when the canvas script fails to load', async () => {
     loader.load = vi.fn().mockRejectedValue(new Error('network error'));
     const failingFixture = TestBed.createComponent(Board);

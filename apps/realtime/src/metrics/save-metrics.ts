@@ -28,6 +28,27 @@ export class SaveMetrics {
     registers: [this.registry],
   });
 
+  readonly #compactions = new Counter({
+    name: 'elysion_realtime_document_compactions_total',
+    help: 'Board documents rebuilt from their live elements when nobody had them open (ADR 0026).',
+    registers: [this.registry],
+  });
+
+  readonly #refused = new Counter({
+    name: 'elysion_realtime_document_updates_refused_total',
+    help: 'Client updates refused: over the size of one update or over the size of the document (ADR 0026).',
+    labelNames: ['reason'],
+    registers: [this.registry],
+  });
+
+  compacted(): void {
+    this.#compactions.inc();
+  }
+
+  refused(reason: 'update' | 'document'): void {
+    this.#refused.inc({ reason });
+  }
+
   saved(bytes: number): void {
     this.#saves.inc();
     this.#sizes.observe(bytes);

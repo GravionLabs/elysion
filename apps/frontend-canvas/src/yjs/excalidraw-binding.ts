@@ -13,7 +13,14 @@ import { type FileReference, type FileStore, blobToDataUrl, dataUrlToBlob } from
 const ELEMENTS_MAP_KEY = 'elements';
 const FILES_MAP_KEY = 'files';
 
+/** The most live elements a board holds (ADR 0026): about 7.5 MB of document. A product limit, not a security one. */
+export const MAX_ELEMENTS = 20_000;
+
 export interface BindingOptions {
+  /** The most live elements the board holds, read at every use; {@link MAX_ELEMENTS} when not given. */
+  maxElements?: () => number | undefined;
+  /** An element was not added because the board has {@link MAX_ELEMENTS} live elements; it was taken off the scene again. */
+  onLimit?: () => void;
   /** Where the bytes of images live; read at every use, so a store the host sets later is used. Without one, images stay local. */
   fileStore?: () => FileStore | undefined;
   /** A file could not be stored or loaded. */
@@ -45,6 +52,8 @@ export class ExcalidrawYjsBinding {
   /** Ids being uploaded or fetched right now, so that a burst of changes does not start the same transfer twice. */
   readonly #uploading = new Set<string>();
   readonly #fetching = new Set<string>();
+  /** Ids the limit refused: whatever the scene does with them later (their deletion) is not written either. */
+  readonly #refused = new Set<string>();
   #destroyed = false;
 
   constructor(doc: Y.Doc, options: BindingOptions = {}) {
@@ -76,9 +85,24 @@ export class ExcalidrawYjsBinding {
    */
   onLocalChange = (elements: readonly OrderedExcalidrawElement[], files?: BinaryFiles): void => {
     this.#uploadNewFiles(elements, files);
+    let live = 0;
+    for (const stored of this.#elements.values()) {
+      if (!stored.isDeleted) live += 1;
+    }
+    const refused: string[] = [];
     this.#doc.transact(() => {
       for (const element of elements) {
+        if (this.#refused.has(element.id)) continue;
         const existing = this.#elements.get(element.id);
+        if (!existing && !element.isDeleted) {
+          // A new element that would take the board over the limit is not written (ADR 0026).
+          if (live >= (this.#options.maxElements?.() ?? MAX_ELEMENTS)) {
+            this.#refused.add(element.id);
+            refused.push(element.id);
+            continue;
+          }
+          live += 1;
+        }
         if (!existing || existing.version < element.version) {
           // Excalidraw mutates its element objects in place; Y.Map.get()
           // returns the exact reference passed to .set(), so storing
@@ -91,7 +115,38 @@ export class ExcalidrawYjsBinding {
         }
       }
     });
+    if (refused.length > 0) {
+      this.#takeOffScene(refused);
+      this.#options.onLimit?.();
+    }
   };
+
+  /**
+   * Writes what the scene holds into the document, by the rule of {@link onLocalChange}: an element goes in when the
+   * document lacks it or has an older version. Used after the document was replaced (the board was rebuilt while this
+   * client was away, ADR 0026) and the server's state has arrived, so that what was changed meanwhile is kept and what
+   * others changed meanwhile is not overwritten.
+   */
+  pushScene(): void {
+    const api = this.#api;
+    if (api) {
+      this.onLocalChange(api.getSceneElementsIncludingDeleted(), api.getFiles());
+    }
+  }
+
+  #takeOffScene(ids: readonly string[]): void {
+    const api = this.#api;
+    if (!api) return;
+    const gone = new Set(ids);
+    const elements = api
+      .getSceneElementsIncludingDeleted()
+      .map((element) =>
+        gone.has(element.id) && !element.isDeleted
+          ? newElementWith(element, { isDeleted: true })
+          : element,
+      );
+    api.updateScene({ elements, captureUpdate: CaptureUpdateAction.NEVER });
+  }
 
   #handleRemoteChange = (): void => {
     const api = this.#api;

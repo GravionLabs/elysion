@@ -19,6 +19,7 @@ function room(boardId: string): YjsRoom {
     awareness: new awarenessProtocol.Awareness(doc),
     clients: new Set(),
     awarenessIdsBySocket: new Map(),
+    sizeBytes: 0,
     memberBySocket: new Map(),
   };
 }
@@ -212,7 +213,13 @@ describe('YjsGateway and read-only viewers', () => {
   async function join(role: 'owner' | 'editor' | 'viewer') {
     const joined = room('board-1');
     const gateway = new YjsGateway(
-      { getOrLoad: async () => joined, release: vi.fn() } as unknown as YjsRoomRegistry,
+      {
+        getOrLoad: async () => joined,
+        release: vi.fn(),
+        limits: { maxUpdateBytes: 2 * 1024 * 1024, maxDocumentBytes: 8 * 1024 * 1024 },
+        fits: () => true,
+        grew: () => undefined,
+      } as unknown as YjsRoomRegistry,
       presence,
       allowing('board-1', role),
     );
@@ -317,5 +324,130 @@ describe('YjsGateway and read-only viewers', () => {
     await send(client, write);
 
     expect(client.close).toHaveBeenCalledWith(4403, 'Viewers cannot change the board');
+  });
+});
+
+describe('YjsGateway limits and generations (ADR 0026)', () => {
+  const presence = {
+    subscribe: vi.fn().mockResolvedValue(undefined),
+    snapshot: vi.fn().mockResolvedValue([]),
+    publish: vi.fn().mockResolvedValue(undefined),
+  } as unknown as PresenceRelay;
+
+  const MAX_UPDATE = 1_000;
+  async function join(
+    options: { fits?: boolean; generation?: string | null; docGeneration?: string } = {},
+  ) {
+    const joined = room('board-1');
+    if (options.docGeneration !== undefined) {
+      joined.doc.getMap('meta').set('generation', options.docGeneration);
+    }
+    const release = vi.fn().mockResolvedValue(undefined);
+    const gateway = new YjsGateway(
+      {
+        getOrLoad: async () => joined,
+        release,
+        limits: { maxUpdateBytes: MAX_UPDATE, maxDocumentBytes: 8 * 1024 * 1024 },
+        fits: () => options.fits ?? true,
+        grew: vi.fn(),
+      } as unknown as YjsRoomRegistry,
+      presence,
+      allowing('board-1'),
+    );
+    const client = socket();
+    const generation =
+      options.generation === undefined || options.generation === null
+        ? ''
+        : `&generation=${encodeURIComponent(options.generation)}`;
+    gateway.handleConnection(client, {
+      url: `/yjs?board=board-1&token=t${generation}`,
+      headers: {},
+    } as IncomingMessage);
+    await flush();
+    (client.send as ReturnType<typeof vi.fn>).mockClear();
+    return { client, joined, release };
+  }
+
+  const updateMessage = (update: Uint8Array): Buffer => {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, 0);
+    syncProtocol.writeUpdate(encoder, update);
+    return Buffer.from(encoding.toUint8Array(encoder));
+  };
+  const updateOf = (key: string, padding = 0): Uint8Array => {
+    const source = new Y.Doc();
+    let update!: Uint8Array;
+    source.on('update', (u: Uint8Array) => (update = u));
+    source.getMap('elements').set(key, 'x'.repeat(padding));
+    return update;
+  };
+  const send = async (client: WebSocket, message: Buffer) => {
+    (client as unknown as EventEmitter).emit('message', message);
+    await flush();
+  };
+
+  it('closes a connection that sends an update over the size of one update, and does not apply it', async () => {
+    const { client, joined } = await join();
+
+    await send(client, updateMessage(updateOf('big', MAX_UPDATE * 2)));
+
+    expect(client.close).toHaveBeenCalledWith(1009, expect.any(String));
+    expect(joined.doc.getMap('elements').has('big')).toBe(false);
+  });
+
+  it('applies an update of the allowed size', async () => {
+    const { client, joined } = await join();
+
+    await send(client, updateMessage(updateOf('small', 100)));
+
+    expect(client.close).not.toHaveBeenCalled();
+    expect(joined.doc.getMap('elements').has('small')).toBe(true);
+  });
+
+  it('answers an update that does not fit the board with board-full and does not apply it', async () => {
+    const { client, joined } = await join({ fits: false });
+
+    await send(client, updateMessage(updateOf('rect')));
+
+    expect(client.close).not.toHaveBeenCalled();
+    expect(joined.doc.getMap('elements').has('rect')).toBe(false);
+    const sent = (client.send as ReturnType<typeof vi.fn>).mock.calls.map((call) => [
+      ...(call[0] as Uint8Array),
+    ]);
+    expect(sent).toContainEqual([4]); // MESSAGE_BOARD_FULL
+  });
+
+  it('lets a first connection in, with or without a generation on the document', async () => {
+    const plain = await join();
+    const withDoc = await join({ docGeneration: 'g1' });
+
+    expect(plain.client.close).not.toHaveBeenCalled();
+    expect(withDoc.client.close).not.toHaveBeenCalled();
+  });
+
+  it('lets a client in that holds the generation of the document', async () => {
+    const { client } = await join({ generation: 'g1', docGeneration: 'g1' });
+
+    expect(client.close).not.toHaveBeenCalled();
+  });
+
+  it('closes a client that holds another generation with 4409, and lets the empty room go', async () => {
+    const { client, joined, release } = await join({ generation: 'g1', docGeneration: 'g2' });
+
+    expect(client.close).toHaveBeenCalledWith(4409, expect.any(String));
+    expect(joined.clients.size).toBe(0);
+    expect(release).toHaveBeenCalledWith(joined);
+  });
+
+  it('closes a client whose copy had no generation once the document has one', async () => {
+    const { client } = await join({ generation: '', docGeneration: 'g2' });
+
+    expect(client.close).toHaveBeenCalledWith(4409, expect.any(String));
+  });
+
+  it('lets a client whose copy had none in while the document has none either', async () => {
+    const { client } = await join({ generation: '' });
+
+    expect(client.close).not.toHaveBeenCalled();
   });
 });

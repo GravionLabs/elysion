@@ -39,6 +39,17 @@ migrateJob:
   # The Secret (existingSecret) has to exist before the first install. When on, the replicas do not migrate at start-up.
   enabled: false
 
+# Limits of a board's document in the realtime service (ADR 0026, docs/specs/realtime.md "Limits"). The canvas limits a board to
+# 20,000 elements besides (the `max-elements` attribute of the element).
+limits:
+  # The largest Yjs update one client may send; above it the connection is closed (1009).
+  maxUpdateBytes: 2097152
+  # The largest encoded state of a board; above it updates are refused with a "board full" message. Keep it below the
+  # business backend's own limit of 32 MiB and the WebSocket's 16 MiB frame.
+  maxDocumentBytes: 8388608
+  # A board whose stored state is larger than this is rebuilt when nobody has it open (0: never).
+  compactThresholdBytes: 1048576
+
 # The realtime service scales on CPU and, with the Prometheus adapter, on its open WebSocket connections. Off: `replicas.realtime`.
 autoscaling:
   realtime:

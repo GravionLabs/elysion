@@ -299,6 +299,14 @@ export class Board {
     this.notice.set((event as CustomEvent<{ message: string }>).detail.message);
   }
 
+  /**
+   * Something the canvas wants the person to know that is not a failure of the board: it is full, a change was too
+   * large to send, a library was refused. The banner says it; the board stays as it is.
+   */
+  onCanvasNotice(event: Event): void {
+    this.notice.set((event as CustomEvent<{ message: string }>).detail.message);
+  }
+
   onCanvasReady(): void {
     this.status.set('ready');
   }

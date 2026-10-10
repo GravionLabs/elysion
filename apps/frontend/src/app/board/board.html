@@ -164,6 +164,7 @@
       [attr.user-color]="session.user()?.color"
       (ready)="onCanvasReady()"
       (error)="onCanvasError()"
+      (notice)="onCanvasNotice($event)"
       (fileerror)="onFileError($event)"
       (status)="onSyncStatus($event)"
       (themechange)="onCanvasThemeChange($event)"

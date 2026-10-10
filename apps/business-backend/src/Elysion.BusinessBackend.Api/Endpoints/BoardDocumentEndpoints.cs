@@ -82,9 +82,27 @@ public static class BoardDocumentEndpoints
                 statusCode: StatusCodes.Status428PreconditionRequired);
         }
 
+        if (request.ContentLength > MaxStateBytes)
+        {
+            return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
+        }
+
         using var buffer = new MemoryStream();
-        await request.Body.CopyToAsync(buffer, cancellationToken);
+        try
+        {
+            await request.Body.CopyToAsync(buffer, cancellationToken);
+        }
+        catch (BadHttpRequestException e) when (e.StatusCode == StatusCodes.Status413PayloadTooLarge)
+        {
+            // Over MaxStateBytes: a 413 the realtime service understands as "never", not a 500 it would retry for ever (#773).
+            return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
+        }
+
         var state = buffer.ToArray();
+        if (state.Length > MaxStateBytes)
+        {
+            return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
+        }
 
         var result = await documents.SaveAsync(boardId,
             state,

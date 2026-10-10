@@ -150,6 +150,8 @@ export interface CanvasAppProps {
   onVotingChange?: (view: VotingView | null) => void;
   /** The connection to the board server failed; the canvas keeps retrying, so this is news, not the end. */
   onError?: (error: Error) => void;
+  /** Something the person should be told that is not a failure of the board: the board is full, a change was too large, a library was refused. */
+  onNotice?: (message: string) => void;
   /**
    * Asked before every connection to the board server (the first and each reconnect) for the token that goes on the
    * URL; see `YjsWebsocketClientOptions.tokenProvider` for what it may return. Without one, no token is sent.
@@ -174,6 +176,8 @@ export interface CanvasAppProps {
    * itself when this is off ("Images are disabled"). The host switches it on together with the `fileStore`.
    */
   imagesEnabled?: boolean;
+  /** The most live elements the board holds (the `max-elements` attribute); 20,000 when not given (ADR 0026). */
+  maxElements?: number;
   /** The name shown next to this user's cursor on other screens; a generated guest name when unset. */
   userName?: string;
   /** Who this user is (the identity provider's id): what the timer remembers about who started it. A per-tab id when unset. */
@@ -214,11 +218,13 @@ export function CanvasApp({
   onTimerChange,
   onVotingChange,
   onError,
+  onNotice,
   tokenProvider,
   fileStore,
   onFileError,
   readOnly = false,
   imagesEnabled = false,
+  maxElements,
   userName,
   userId,
   userColor,
@@ -257,6 +263,8 @@ export function CanvasApp({
   const errorCallback = useRef(onError);
   presenceCallback.current = onPresenceChange;
   errorCallback.current = onError;
+  const noticeCallback = useRef(onNotice);
+  noticeCallback.current = onNotice;
   const tokenProviderRef = useRef(tokenProvider);
   tokenProviderRef.current = tokenProvider;
   const fileStoreRef = useRef(fileStore);
@@ -282,7 +290,7 @@ export function CanvasApp({
       const { pathname, search } = window.location;
       window.history.replaceState(window.history.state, '', `${pathname}${search}${request.rest}`);
       if (!isAllowedLibraryUrl(request.url)) {
-        errorCallback.current?.(new Error(tRef.current.libraryNotAllowed));
+        noticeCallback.current?.(tRef.current.libraryNotAllowed);
         return;
       }
       try {
@@ -297,7 +305,7 @@ export function CanvasApp({
           openLibraryMenu: true,
         });
       } catch {
-        if (!gone) errorCallback.current?.(new Error(tRef.current.libraryFailed));
+        if (!gone) noticeCallback.current?.(tRef.current.libraryFailed);
       }
     };
     void (async () => {
@@ -312,6 +320,11 @@ export function CanvasApp({
       window.removeEventListener('hashchange', onHashChange);
     };
   }, [excalidrawApi]);
+  // Counts the times the document was replaced: the server rebuilt the board while this tab was away (ADR 0026), so the
+  // tab throws its Y.Doc away and connects again with a new one (the effect below runs again), and the scene is kept.
+  const [epoch, setEpoch] = useState(0);
+  const maxElementsRef = useRef(maxElements);
+  maxElementsRef.current = maxElements;
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
   const presenceRef = useRef<PresenceSync | null>(null);
   const docRef = useRef<Y.Doc | null>(null);
@@ -377,6 +390,8 @@ export function CanvasApp({
     const binding = new ExcalidrawYjsBinding(doc, {
       fileStore: () => fileStoreRef.current,
       onError: (error) => fileErrorCallback.current?.(error),
+      maxElements: () => maxElementsRef.current,
+      onLimit: () => noticeCallback.current?.(tRef.current.boardFull),
     });
     bindingRef.current = binding;
     if (apiRef.current) {
@@ -385,7 +400,20 @@ export function CanvasApp({
 
     const url = new URL(yjsServerUrl ?? defaultYjsServerUrl());
     url.searchParams.set('board', boardId);
+    // After a replacement the scene still holds the board as this tab knew it: once the server's state is in, write what
+    // the scene has that the board lacks (the usual per-element rule decides, so nobody's newer change is overwritten).
+    const replaced = epoch > 0;
+    let pushed = false;
     const client = new YjsWebsocketClient(url.toString(), doc, {
+      onSynced: () => {
+        if (replaced && !pushed) {
+          pushed = true;
+          binding.pushScene();
+        }
+      },
+      onStaleCopy: () => setEpoch((value) => value + 1),
+      onBoardFull: () => noticeCallback.current?.(tRef.current.boardFullServer),
+      onUpdateTooLarge: () => noticeCallback.current?.(tRef.current.updateTooLarge),
       onStatusChange: (status) => {
         statusCallback.current?.(status);
         // The shell learns what the board's timer is once the connection is up, also when there is none.
@@ -435,7 +463,7 @@ export function CanvasApp({
       bindingRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [epoch]);
 
   // The host gave the user id after the canvas started: the votes are somebody else's now, or this person's own.
   const lastUserId = useRef(userId);
