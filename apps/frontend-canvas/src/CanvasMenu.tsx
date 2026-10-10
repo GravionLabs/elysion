@@ -30,6 +30,7 @@ export type CanvasMenuItem =
       onSelect: () => void;
       /** Stays open after choosing, so that a size can be tried out (check items always stay open). */
       keepOpen?: boolean;
+      disabled?: boolean;
     };
 
 const DOTS_ICON = (

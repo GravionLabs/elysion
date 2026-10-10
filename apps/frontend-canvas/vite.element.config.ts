@@ -2,6 +2,7 @@ import { cpSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { excalidrawNoGridLines } from './vite-plugin-excalidraw-no-grid';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 
 const outDir = fileURLToPath(new URL('dist-element', import.meta.url));
@@ -31,7 +32,12 @@ function copyToFrontendWhenWatching(): Plugin {
 // stay as separate lazy chunks instead of bloating the initial load — iife
 // can't code-split, which previously pulled all of that into one ~8MB file.
 export default defineConfig({
-  plugins: [react(), cssInjectedByJsPlugin(), copyToFrontendWhenWatching()],
+  plugins: [
+    react(),
+    excalidrawNoGridLines(),
+    cssInjectedByJsPlugin(),
+    copyToFrontendWhenWatching(),
+  ],
   // React/ReactDOM's CJS entry points branch on `process.env.NODE_ENV` to
   // pick their dev/production build; in app builds Vite's dep pre-bundling
   // replaces that for free, but this standalone build doesn't go through

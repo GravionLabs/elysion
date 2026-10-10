@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -304,8 +304,7 @@ describe('the canvas menu', () => {
 });
 
 describe('the grid', () => {
-  const GRID_KEYS_ALL = ['elysion.grid.show', 'elysion.grid.snap', 'elysion.grid.size'];
-  const forget = () => GRID_KEYS_ALL.forEach((key) => localStorage.removeItem(key));
+  const LEGACY_KEYS = ['elysion.grid.show', 'elysion.grid.snap', 'elysion.grid.size'];
 
   /** Draws a rectangle with the real tool between two points (jsdom has no layout: client = canvas coordinates). */
   const draw = (canvas: Element, from: [number, number], to: [number, number]) => {
@@ -339,7 +338,6 @@ describe('the grid', () => {
   }
 
   async function setup(props: { readOnly?: boolean } = {}) {
-    forget();
     const onControls = vi.fn();
     const { container } = render(
       <CanvasApp boardId="test-board" onControls={onControls} {...props} />,
@@ -352,17 +350,17 @@ describe('the grid', () => {
     };
   }
 
-  it('offers Show grid, Snap to grid and the sizes, starting with the grid hidden and 20 px', async () => {
+  it('offers Show grid, Snap to grid and the sizes, starting with the grid shown, snapping and 20 px (a board without settings)', async () => {
     await setup();
 
     open();
 
     expect(
       screen.getByRole('menuitemcheckbox', { name: 'Show grid' }).getAttribute('aria-checked'),
-    ).toBe('false');
+    ).toBe('true');
     expect(
       screen.getByRole('menuitemcheckbox', { name: 'Snap to grid' }).getAttribute('aria-checked'),
-    ).toBe('false');
+    ).toBe('true');
     expect(
       ['10 px', '20 px', '40 px'].map((name) =>
         screen.getByRole('menuitemradio', { name }).getAttribute('aria-checked'),
@@ -370,44 +368,59 @@ describe('the grid', () => {
     ).toEqual(['false', 'true', 'false']);
   });
 
-  it('shows the grid at the chosen size, remembers it, and a reload starts with it', async () => {
-    const { controls, canvas } = await setup();
+  it('shows the dots at the chosen size, keeps the settings in the document and forgets the browser ones', async () => {
+    LEGACY_KEYS.forEach((key) => localStorage.setItem(key, 'true'));
+    const { container, controls, canvas } = await setup();
     draw(canvas, [100, 100], [260, 200]); // an empty board exports as nothing
+    const root = container.querySelector('.elysion-canvas') as HTMLElement;
+    expect(root.getAttribute('data-grid')).toBe('dots');
+    expect(LEGACY_KEYS.map((key) => localStorage.getItem(key))).toEqual([null, null, null]);
 
     open();
-    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Show grid' }));
     fireEvent.click(screen.getByRole('menuitemradio', { name: '40 px' }));
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Show grid' }));
 
-    await waitFor(async () =>
-      expect((await exported(controls)).grid).toMatchObject({
-        gridModeEnabled: true,
-        gridSize: 40,
-      }),
-    );
-    expect(localStorage.getItem('elysion.grid.show')).toBe('true');
-    expect(localStorage.getItem('elysion.grid.size')).toBe('40');
-    // The menu stays open for a size (to try them), and a shown grid is always snapped to: the switch is on and disabled.
-    const snap = screen.getByRole('menuitemcheckbox', { name: 'Snap to grid' });
-    expect(snap.getAttribute('aria-checked')).toBe('true');
-    expect(snap.getAttribute('aria-disabled')).toBe('true');
-
-    cleanup();
-    const again = render(<CanvasApp boardId="test-board" onControls={vi.fn()} />);
-    await excalidrawReady(again.container);
-    open();
-    expect(
-      screen.getByRole('menuitemcheckbox', { name: 'Show grid' }).getAttribute('aria-checked'),
-    ).toBe('true');
-    expect(screen.getByRole('menuitemradio', { name: '40 px' }).getAttribute('aria-checked')).toBe(
-      'true',
-    );
+    await waitFor(async () => expect((await exported(controls)).grid.gridSize).toBe(40));
+    expect(root.getAttribute('data-grid')).toBeNull();
+    expect(root.style.getPropertyValue('--grid-spacing')).toBe('40px');
+    // Nothing is written to the browser any more: the settings are the board's.
+    expect(LEGACY_KEYS.map((key) => localStorage.getItem(key))).toEqual([null, null, null]);
   }, 20000);
 
-  it('snaps a new rectangle to the grid while Snap to grid is on, and not without it', async () => {
+  it("toggles the dots with Excalidraw's grid shortcut, Ctrl+', and leaves snapping alone", async () => {
+    const { container } = await setup();
+    const root = container.querySelector('.elysion-canvas') as HTMLElement;
+    const excalidraw = container.querySelector('.excalidraw') as HTMLElement;
+    expect(root.getAttribute('data-grid')).toBe('dots');
+
+    fireEvent.keyDown(excalidraw, { key: "'", ctrlKey: true });
+    expect(root.getAttribute('data-grid')).toBeNull();
+    fireEvent.keyDown(excalidraw, { key: "'", ctrlKey: true });
+    expect(root.getAttribute('data-grid')).toBe('dots');
+    open(); // snapping is its own setting: the shortcut left it on
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Snap to grid' }).getAttribute('aria-checked'),
+    ).toBe('true');
+  });
+
+  it('keeps the canvas itself transparent: the board color and the dots are the background behind it', async () => {
+    const { controls, canvas } = await setup();
+    draw(canvas, [100, 100], [260, 200]);
+
+    await waitFor(
+      async () =>
+        expect(
+          JSON.parse(await ((await controls.exportBoard('excalidraw')) as Blob).text()).appState
+            .viewBackgroundColor,
+        ).toBe('#f4f5f7'), // what leaves the canvas carries the board's color
+    );
+  });
+
+  it('snaps a new rectangle to the grid by default, and not once Snap to grid is off', async () => {
     const { controls, canvas } = await setup();
 
     draw(canvas, [103, 107], [258, 203]);
-    await waitFor(async () => expect((await exported(controls)).rectangle.x).toBe(103));
+    await waitFor(async () => expect((await exported(controls)).rectangle.x % 20).toBe(0));
 
     open();
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Snap to grid' }));
@@ -422,19 +435,58 @@ describe('the grid', () => {
         y: number;
       }[];
       const second = scene.filter((e) => e.type === 'rectangle')[1];
-      expect(second.x % 20).toBe(0);
-      expect(second.y % 20).toBe(0);
+      expect(second.x).toBe(413);
+      expect(second.y).toBe(337);
     });
   }, 20000);
 
-  it('gives a viewer Show grid and the sizes, but no Snap to grid', async () => {
+  it("keeps Excalidraw's object snapping in step with Snap to objects (on by default)", async () => {
+    // jsdom cannot show the guides (the browser test does); what is checked is the state Excalidraw snaps by (`window.h` is its
+    // debug handle in a test environment).
+    const state = () =>
+      (window as unknown as { h: { state: { objectsSnapModeEnabled: boolean } } }).h.state
+        .objectsSnapModeEnabled;
+    await setup();
+    expect(state()).toBe(true);
+    open();
+    expect(
+      screen
+        .getByRole('menuitemcheckbox', { name: 'Snap to objects' })
+        .getAttribute('aria-checked'),
+    ).toBe('true');
+
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Snap to objects' }));
+    await waitFor(() => expect(state()).toBe(false));
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Snap to objects' }));
+    await waitFor(() => expect(state()).toBe(true));
+  });
+
+  it('turns object snapping off on a viewer canvas', async () => {
+    const state = () =>
+      (window as unknown as { h: { state: { objectsSnapModeEnabled: boolean } } }).h.state
+        .objectsSnapModeEnabled;
+    await setup({ readOnly: true });
+
+    expect(state()).toBe(false);
+  });
+
+  it('shows a viewer the grid and its menu items, disabled: the grid is the editors', async () => {
     await setup({ readOnly: true });
 
     open();
 
-    expect(screen.getByRole('menuitemcheckbox', { name: 'Show grid' })).toBeTruthy();
-    expect(screen.queryByRole('menuitemcheckbox', { name: 'Snap to grid' })).toBeNull();
-    expect(screen.getByRole('menuitemradio', { name: '20 px' })).toBeTruthy();
+    for (const name of ['Show grid', 'Snap to grid', 'Snap to objects']) {
+      const item = screen.getByRole('menuitemcheckbox', { name });
+      expect(item.getAttribute('aria-disabled')).toBe('true');
+    }
+    expect(screen.getByRole('menuitemradio', { name: '20 px' }).getAttribute('aria-disabled')).toBe(
+      'true',
+    );
+    expect(screen.getByText('Grid size (set by the editors)')).toBeTruthy();
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Show grid' }));
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Show grid' }).getAttribute('aria-checked'),
+    ).toBe('true'); // a click changes nothing
   });
 });
 

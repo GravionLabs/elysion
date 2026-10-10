@@ -27,6 +27,10 @@ pnpm --filter @elysion/frontend-canvas test               # vitest
 - The custom element bundle bundles its own React/ReactDOM runtime so the Angular host doesn't need to provide one.
 - `yjs/` wires the scene to `apps/realtime`'s sync gateway — see `docs/specs/frontend.md`'s "Yjs client integration" section before touching it; the two bugs fixed there (initial-sync-to-late-joiner, in-place-mutation aliasing) are exactly the kind that pass unit tests against fresh/empty rooms but break in a real two-tab session, so verify any change against a real running `apps/realtime` and two browser tabs, not just `vitest`.
 
+## The grid
+
+The dot grid is CSS behind a **transparent** static canvas (`grid-dots.ts`, `styles/grid.css`), and Excalidraw's own line grid is switched off by `vite-plugin-excalidraw-no-grid.ts`; snapping is Excalidraw's grid mode, set from the setting. The settings (show, snap, size) are the board's, in the document's `meta.grid` (`board-settings.ts`), on by default. If an Excalidraw update fails the build with "the call renderGrid ... is gone", read "The grid" in `docs/specs/frontend.md` before touching the plugin.
+
 ## Look and feel
 
 The canvas follows ariadne's design: the tokens come from `packages/design-tokens` (shared with the Angular shell), `src/styles/` has the Excalidraw variable mapping and the toolbar, `Toolbar.tsx`, `element-style.ts`, `sticky-note.ts` — see "Theming", "Bottom toolbar" and "Canvas element style" in `docs/specs/frontend.md`. The dev entry accepts `?theme=light|dark` for checking both themes.
