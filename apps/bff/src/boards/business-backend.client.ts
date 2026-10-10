@@ -25,6 +25,9 @@ export interface Board {
   createdAt: string;
   /** The room the board is in, or null (ADR 0019). */
   roomId: string | null;
+  /** When the board's preview picture was stored, or null when it has none (#729); `hasThumbnail` says the same. */
+  thumbnailUpdatedAt?: string | null;
+  hasThumbnail?: boolean;
 }
 
 /** A room as the business backend's room API returns it: `role` is the caller's role in it. */
@@ -218,13 +221,30 @@ export class BusinessBackendClient {
    * Streams a file to the backend without holding it: the request body is piped, so the BFF's memory does not grow
    * with the file. `length` is the request's own `Content-Length`; the backend refuses a body over its limit.
    */
-  async putFile(
+  putFile(
     token: string,
     boardId: string,
     fileId: string,
     file: { contentType: string; length: number; body: Readable },
   ): Promise<void> {
-    const response = await this.fetchBackend(`/boards/${boardId}/files/${fileId}`, {
+    return this.putStream(token, `/boards/${boardId}/files/${fileId}`, file);
+  }
+
+  /** The preview picture of a board (#729), streamed like a file. */
+  putThumbnail(
+    token: string,
+    boardId: string,
+    file: { contentType: string; length: number; body: Readable },
+  ): Promise<void> {
+    return this.putStream(token, `/boards/${boardId}/thumbnail`, file);
+  }
+
+  private async putStream(
+    token: string,
+    path: string,
+    file: { contentType: string; length: number; body: Readable },
+  ): Promise<void> {
+    const response = await this.fetchBackend(path, {
       method: 'PUT',
       headers: {
         ...this.headers(token),
@@ -241,6 +261,29 @@ export class BusinessBackendClient {
     await response.body?.cancel();
   }
 
+  /**
+   * The preview picture of a board, or `'not-modified'` when the caller's copy (`ifNoneMatch`, the ETag it has) is the current
+   * one: the backend answers 304 without reading the picture.
+   */
+  async getThumbnail(
+    token: string,
+    boardId: string,
+    ifNoneMatch?: string,
+  ): Promise<BackendFile | 'not-modified'> {
+    const response = await this.fetchBackend(`/boards/${boardId}/thumbnail`, {
+      method: 'GET',
+      headers: {
+        ...this.headers(token),
+        ...(ifNoneMatch === undefined ? {} : { 'if-none-match': ifNoneMatch }),
+      },
+      signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
+    });
+    if (response.status === 304) {
+      return 'not-modified';
+    }
+    return this.fileOf(response);
+  }
+
   /** A file of a board; the body is a stream, to be piped to the caller and not read into memory. */
   async getFile(token: string, boardId: string, fileId: string): Promise<BackendFile> {
     const response = await this.fetchBackend(`/boards/${boardId}/files/${fileId}`, {
@@ -248,6 +291,10 @@ export class BusinessBackendClient {
       headers: this.headers(token),
       signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
     });
+    return this.fileOf(response);
+  }
+
+  private async fileOf(response: Response): Promise<BackendFile> {
     if (!response.ok) {
       await this.fail(response);
     }

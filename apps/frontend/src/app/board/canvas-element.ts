@@ -45,6 +45,8 @@ export interface TimerState {
 export type CanvasElement = HTMLElement & {
   /** Opens the library sidebar, or closes it when it is open. */
   toggleLibrary?(): void;
+  /** The board as the picture of its card (#729): a 480 by 300 PNG in the light theme, or `null` for an empty board. */
+  exportThumbnail?(): Promise<Blob | null>;
   /** The board (or the selection) as a file, or `null` when there is nothing to export. */
   exportBoard?(
     format: ExportFormat,

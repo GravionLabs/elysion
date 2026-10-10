@@ -2,6 +2,7 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   Component,
   ElementRef,
+  HostListener,
   computed,
   effect,
   inject,
@@ -21,6 +22,7 @@ import { RouterLink } from '@angular/router';
 import { AppBrand } from '../shared/app-brand';
 import { BoardApi, BoardLookup, BoardRole, isStoredBoardId } from './board-api';
 import { FilesApi } from './files-api';
+import { ThumbnailUploader } from './thumbnail-uploader';
 import { ShareDialog } from '../share/share-dialog';
 import { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename, type ExportFormat } from './download';
@@ -56,6 +58,9 @@ const PENDING: BoardLookup | { status: 'pending' } = { status: 'pending' };
 const ROLE_PENDING = 'pending';
 
 /** The board page: the top bar and the canvas element below it. */
+/** The longest the router waits for the picture of the card to be drawn when the board is left (#729). */
+const LEAVE_WAIT_MS = 1000;
+
 @Component({
   imports: [AppBrand, RouterLink, ShareDialog, TopBar],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -70,6 +75,7 @@ export class Board {
   readonly #themeService = inject(ThemeService);
   readonly #api = inject(BoardApi);
   readonly #files = inject(FilesApi);
+  readonly #thumbnails = inject(ThumbnailUploader);
   readonly #pageTitle = inject(Title);
   readonly #templates = inject(TemplateApi);
   readonly #location = inject(Location);
@@ -310,6 +316,50 @@ export class Board {
 
   onCanvasReady(): void {
     this.status.set('ready');
+    this.#canvasElement = this.canvas()?.nativeElement ?? null;
+  }
+
+  /** The canvas element, kept from the moment it was ready: when the page is torn down the query no longer finds it (#729). */
+  #canvasElement: CanvasElement | null = null;
+
+  /**
+   * The picture of the board's card (#729) is made when an editor leaves: the route changes (this component is destroyed) or the
+   * tab is hidden. A viewer never makes one, nor does a board that is not stored (the room `default`).
+   */
+  #saveThumbnail(): Promise<void> | null {
+    if (this.readOnly() || !isStoredBoardId(this.boardId()) || this.status() !== 'ready') {
+      return null;
+    }
+    return this.#thumbnails.start(this.boardId(), this.#canvasElement)?.rendered ?? null;
+  }
+
+  /**
+   * Called by the router before the board is left (`canDeactivate`): the picture is drawn now, while the canvas still exists
+   * (Angular takes the element out of the page before it destroys the component), and stored in the background. A canvas that
+   * does not answer within a second does not hold the person back.
+   */
+  prepareToLeave(waitMs = LEAVE_WAIT_MS): Promise<boolean> {
+    const rendered = this.#saveThumbnail();
+    if (rendered === null) {
+      return Promise.resolve(true);
+    }
+    return Promise.race([
+      rendered.then(() => true),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(true), waitMs)),
+    ]);
+  }
+
+  /** The tab closes with the board open: the route does not change, so the router does not ask. */
+  @HostListener('window:pagehide')
+  protected onPageHide(): void {
+    void this.#saveThumbnail();
+  }
+
+  @HostListener('document:visibilitychange')
+  protected onVisibilityChange(): void {
+    if (document.visibilityState === 'hidden') {
+      this.#saveThumbnail();
+    }
   }
 
   onCanvasError(): void {

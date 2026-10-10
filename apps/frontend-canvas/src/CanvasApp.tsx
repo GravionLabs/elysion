@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import {
   exportBoard,
+  exportThumbnail,
   clearScene,
   importFile,
   insertFile,
@@ -88,6 +89,8 @@ import {
 
 /** What the host can ask the canvas to do; the element exposes these as methods. */
 export interface CanvasControls {
+  /** The board as the picture of its card (#729): a 480 by 300 PNG in the light theme, or `null` when the board is empty. */
+  exportThumbnail(): Promise<Blob | null>;
   /** Opens Excalidraw's library sidebar, or closes it when it is open. */
   toggleLibrary(): void;
   /** The board (or the selection) as a file, or `null` when there is nothing to export. */
@@ -936,6 +939,7 @@ export function CanvasApp({
             controlsCallback.current?.({
               toggleLibrary: () => api.toggleSidebar({ name: LIBRARY_SIDEBAR, tab: LIBRARY_TAB }),
               exportBoard: (format, options) => exportBoard(api, format, options),
+              exportThumbnail: () => exportThumbnail(api),
               importFile: (file) =>
                 readOnlyRef.current
                   ? Promise.reject(new Error(tRef.current.errorReadOnly))

@@ -7,10 +7,13 @@ import {
   cloneForInsertion,
   elementsToExport,
   exportBoard,
+  exportThumbnail,
+  fitInto,
   importFile,
   insertFile,
   replaceScene,
 } from './board-io';
+import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from './board-io';
 import { createStickyNote, STICKY_COLORS } from './sticky-note';
 
 // convertToExcalidrawElements ignores a given `id` and makes up its own, so ids are set afterwards.
@@ -286,6 +289,25 @@ describe('exportBoard', () => {
     );
 
     expect(json.elements.map((e: ExcalidrawElement) => e.id)).toEqual(['a']);
+  });
+});
+
+describe('the thumbnail (#729)', () => {
+  it('has the size of the card picture', () => {
+    expect([THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT]).toEqual([480, 300]);
+  });
+
+  it('fits content as large as the box allows, centered, with its proportions', () => {
+    expect(fitInto({ width: 960, height: 300 })).toEqual({ x: 0, y: 75, width: 480, height: 150 });
+    expect(fitInto({ width: 300, height: 900 })).toEqual({ x: 190, y: 0, width: 100, height: 300 });
+  });
+
+  it('does not enlarge small content by more than twice', () => {
+    expect(fitInto({ width: 50, height: 50 })).toEqual({ x: 190, y: 100, width: 100, height: 100 });
+  });
+
+  it('is null for an empty board', async () => {
+    expect(await exportThumbnail(fakeApi([]).api)).toBeNull();
   });
 });
 

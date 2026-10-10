@@ -111,6 +111,7 @@ app.MapRoomMemberEndpoints();
 app.MapBoardDocumentEndpoints();
 app.MapBoardAccessEndpoints();
 app.MapBoardFileEndpoints();
+app.MapBoardThumbnailEndpoints();
 app.MapTemplateEndpoints();
 
 app.Run();

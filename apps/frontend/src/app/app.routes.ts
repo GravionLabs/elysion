@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router, Routes, UrlMatcher } from '@angular/router';
+import { CanActivateFn, CanDeactivateFn, Router, Routes, UrlMatcher } from '@angular/router';
+import type { Board } from './board/board';
 import { autoLoginPartialRoutesGuard } from 'angular-auth-oidc-client';
 
 /** A board id becomes a Yjs room name, so an empty or whitespace-only one is never usable. */
@@ -21,6 +22,12 @@ export const boardListMatcher: UrlMatcher = (segments) => {
   return null;
 };
 
+/**
+ * Leaving a board draws the picture of its card first (#729): by the time the component is destroyed its canvas has already been
+ * taken out of the page and cannot draw any more.
+ */
+export const boardLeaveGuard: CanDeactivateFn<Board> = (board) => board.prepareToLeave();
+
 // The route param is called `boardId` so `withComponentInputBinding()` hands it to `Board.boardId`.
 /**
  * The routes, behind a login guard. Everything needs a login: a user who is not signed in is sent to the identity
@@ -38,6 +45,7 @@ export function buildRoutes(loginGuard: CanActivateFn): Routes {
       path: 'board/:boardId',
       loadComponent: () => import('./board/board').then((m) => m.Board),
       canActivate: [boardIdGuard, loginGuard],
+      canDeactivate: [boardLeaveGuard],
     },
     { path: '**', redirectTo: '' },
   ];

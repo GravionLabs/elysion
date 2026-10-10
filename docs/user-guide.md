@@ -14,7 +14,7 @@ room by their e-mail address.
 
 ![The board overview](images/01-boards.png)
 
-The start page lists **your boards**: the ones you made and the ones shared with you. A card shows the board's initials, its name and the date
+The start page lists **your boards**: the ones you made and the ones shared with you. A card shows a small picture of the board (made when someone who can edit it last left it; the board's initials until then), its name and the date
 it was made; the room it is in is shown as a small label.
 
 - **New board** opens a form with the name and **Start from**: a blank board or a template (Brainstorming, Kanban, Retrospective, and your own,

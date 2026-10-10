@@ -46,4 +46,10 @@ public static class FileTypes
             c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '-' or '_');
 
     public static string Prefix(Guid boardId) => $"boards/{boardId}/";
+
+    /// <summary>
+    /// The key of a board's preview picture. Outside the board's prefix on purpose: the files of a board are counted by that prefix
+    /// (<c>MAX_FILES_PER_BOARD</c>) and copied by it, and the picture is neither an image of the board nor served as one.
+    /// </summary>
+    public static string ThumbnailKey(Guid boardId) => $"thumbnails/{boardId}.png";
 }

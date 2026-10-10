@@ -156,6 +156,20 @@ public static class BoardEndpoints
         var now = TruncateToMicroseconds(time.GetUtcNow());
         // The copy is the caller's own board, whoever owns the source.
         var copy = NewOwnedBoard(CopyName(source.Name), user, now);
+        if (source.ThumbnailUpdatedAt is not null)
+        {
+            // The copy looks like the source until somebody edits it: its card gets the same picture.
+            await using var picture = await files.GetAsync(FileTypes.ThumbnailKey(id), cancellationToken);
+            if (picture is not null)
+            {
+                await files.PutAsync(FileTypes.ThumbnailKey(copy.Id),
+                    picture.Content,
+                    picture.ContentType,
+                    cancellationToken);
+                copy.ThumbnailUpdatedAt = now;
+            }
+        }
+
         boards.Add(copy);
 
         var document = await documents.FindAsync(id.ToString(), cancellationToken);
@@ -215,6 +229,7 @@ public static class BoardEndpoints
         await unitOfWork.SaveChangesAsync(cancellationToken);
         // The files go with the board; they are only reachable through it.
         await files.DeletePrefixAsync(FileTypes.Prefix(id), cancellationToken);
+        await files.DeletePrefixAsync(FileTypes.ThumbnailKey(id), cancellationToken);
         return TypedResults.NoContent();
     }
 

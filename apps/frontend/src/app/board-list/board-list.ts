@@ -27,6 +27,7 @@ import {
   canWriteInRoom,
 } from '../board/room-api';
 import { describeError, ShareDialog } from '../share/share-dialog';
+import { BoardThumbnail } from './board-thumbnail';
 import { RoomSidebar, RoomsState } from './room-sidebar';
 
 /** The design tokens the preview placeholders are tinted with; a board always gets the same one. */
@@ -73,7 +74,7 @@ export interface MoveOption {
  * route decides the view through `roomId`: no value is all boards, `none` the boards in no room, else one room.
  */
 @Component({
-  imports: [AppBrand, DatePipe, RouterLink, RoomSidebar, ShareDialog, UserMenu],
+  imports: [AppBrand, BoardThumbnail, DatePipe, RouterLink, RoomSidebar, ShareDialog, UserMenu],
   selector: 'app-board-list',
   styleUrls: ['./board-list.scss', './board-list-create.scss', './board-list-cards.scss'],
   templateUrl: './board-list.html',
