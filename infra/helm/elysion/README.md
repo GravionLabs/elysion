@@ -55,7 +55,11 @@ compose stack's backup service (`infra/backup/backup.sh`, `pg_dump` of `elysion`
 
 ## Notes
 
-- The services' probes are `/health` (frontend: `/`). The business backend applies its migrations itself at start
+- **Pods are hardened** (#691): every container runs as a non-root numeric user (frontend 101, Node services 1000, business backend 1654) with a
+  read-only root file system (`/tmp` and, for nginx, `/etc/nginx/conf.d` are `emptyDir`), all capabilities dropped, no privilege escalation and the
+  `RuntimeDefault` seccomp profile. The images already run as that user, so a cluster that enforces the `restricted` Pod Security level accepts them. The
+  frontend listens on 8080 (nginx-unprivileged). The realtime pod has 60 s to stop: it saves the boards with unsaved changes on SIGTERM.
+- The services' probes are `/health` (frontend: `/`), each behind a start-up probe (the business backend may take up to 3 minutes: it migrates at start). The business backend applies its migrations itself at start
   (`migrateOnStartup`).
 - More than one realtime replica is fine: rooms are kept in step through Valkey, no sticky sessions needed.
 - `/metrics` of the BFF and realtime are on the services' ports inside the cluster and are not routed by the edge.

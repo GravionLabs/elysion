@@ -10,12 +10,12 @@ TLS termination, OIDC/JWT auth validation (provider: Keycloak, ADR 0014), CORS, 
 
 ## Routes
 
-| Path        | Target                        | Middlewares (in order)           | Notes                                                                                |
-| ----------- | ----------------------------- | -------------------------------- | ------------------------------------------------------------------------------------ |
-| `/api/*`    | BFF                           | `cors`, `rate-limit`, `bff-auth` | **authenticated at the edge**: `forwardAuth` to the BFF's `GET /api/auth/verify`     |
-| `/yjs`      | Realtime backend (WebSocket)  | `cors`                           | not forwardAuth'd: the WS token in the URL is checked by the realtime service itself |
-| `/internal` | none (business backend)       | none                             | internal only: not routed at the edge; the BFF calls `http://business-backend:8080`  |
-| `/`         | Frontend (nginx, Angular app) | none                             | lowest priority: every more specific route wins                                      |
+| Path        | Target                                   | Middlewares (in order)           | Notes                                                                                |
+| ----------- | ---------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------ |
+| `/api/*`    | BFF                                      | `cors`, `rate-limit`, `bff-auth` | **authenticated at the edge**: `forwardAuth` to the BFF's `GET /api/auth/verify`     |
+| `/yjs`      | Realtime backend (WebSocket)             | `cors`                           | not forwardAuth'd: the WS token in the URL is checked by the realtime service itself |
+| `/internal` | none (business backend)                  | none                             | internal only: not routed at the edge; the BFF calls `http://business-backend:8080`  |
+| `/`         | Frontend (nginx, Angular app, port 8080) | none                             | lowest priority: every more specific route wins                                      |
 
 The canvas builds its WebSocket URL from the page's host (`/yjs`), and `YjsGateway` listens on `path: '/yjs'`, so
 no path rewriting is needed. Traefik passes WebSocket upgrades through natively. Earlier drafts named the
