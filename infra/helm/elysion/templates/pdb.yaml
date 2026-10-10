@@ -1,0 +1,19 @@
+{{- /* A PodDisruptionBudget for every component that has more than one replica: draining a node never takes the last one. */ -}}
+{{- range $name, $image := dict "frontend" "frontend" "bff" "bff" "realtime" "realtime" "business-backend" "businessBackend" }}
+{{- if gt (int (include "elysion.minReplicas" (dict "root" $ "image" $image))) 1 }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "elysion.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "elysion.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+      app.kubernetes.io/component: {{ $name }}
+{{- end }}
+{{- end }}

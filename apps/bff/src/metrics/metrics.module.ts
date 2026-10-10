@@ -6,6 +6,7 @@ import { MetricsService } from './metrics.service.js';
 @Module({
   controllers: [MetricsController],
   providers: [MetricsService],
+  exports: [MetricsService],
 })
 export class MetricsModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

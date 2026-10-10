@@ -25,6 +25,7 @@
     "demo:check": "bash scripts/demo-smoke.sh",
     "test:browser": "pnpm --filter @elysion/e2e test:browser",
     "demo:down": "docker compose down",
+    "dev:observability": "node scripts/dev-stack.mjs observability",
     "dev:stack:down": "node scripts/dev-stack.mjs down",
     "make:icons": "node scripts/make-icons.mjs",
     "kind:up": "bash infra/kind/deploy.sh up",
@@ -32,11 +33,14 @@
     "prepare": "simple-git-hooks"
   },
   "devDependencies": {
+    "lib0": "^0.2.119",
     "lint-staged": "^17.6.0",
     "oxlint": "^1.86.0",
     "prettier": "^3.9.9",
     "sharp": "^0.35.5",
-    "simple-git-hooks": "^2.14.0"
+    "simple-git-hooks": "^2.14.0",
+    "ws": "^8.22.0",
+    "yjs": "^13.6.33"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm exec lint-staged"

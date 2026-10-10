@@ -23,6 +23,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
   applyHttpLimits(app);
+  app.enableShutdownHooks(); // finish the requests in flight when the container is stopped
   await app.listen(app.get(AppConfigService).get('PORT'));
 }
 

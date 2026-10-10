@@ -24,6 +24,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
   app.useWebSocketAdapter(new WsAdapter(app));
+  // SIGTERM (a container stop, a pod's deletion) runs onModuleDestroy: the registry saves every room that has unsaved changes.
+  app.enableShutdownHooks();
   await app.listen(process.env.PORT ?? 3000);
 }
 await bootstrap();

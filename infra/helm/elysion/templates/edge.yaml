@@ -76,7 +76,7 @@ spec:
       priority: 1
       services:
         - name: {{ $full }}-frontend
-          port: 80
+          port: 8080
   {{- if .Values.edge.tlsSecretName }}
   tls:
     secretName: {{ .Values.edge.tlsSecretName }}

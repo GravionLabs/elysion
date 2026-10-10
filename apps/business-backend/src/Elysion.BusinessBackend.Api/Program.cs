@@ -6,6 +6,7 @@ using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
 using Elysion.BusinessBackend.Api.Logging;
 using Elysion.BusinessBackend.Api.Members;
+using Elysion.BusinessBackend.Api.Observability;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -25,7 +26,8 @@ builder.Services.AddBoardAuthorization();
 builder.Services.AddElysionFileStorage();
 
 builder.Services.AddDbContext<ElysionDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Elysion")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Elysion"))
+        .AddInterceptors(new CommandCountInterceptor()));
 
 // Endpoints depend on these, not on the DbContext (ADR 0015). The unit of work is the same scoped context.
 builder.Services.AddScoped<IUnitOfWork>(services => services.GetRequiredService<ElysionDbContext>());
@@ -50,10 +52,18 @@ var app = builder.Build();
 
 // The containers of the dev stack start against an empty database: with Database:MigrateOnStartup the
 // app applies the migrations itself. Off by default; the tests use a provider without migrations.
-if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+// `--migrate` applies them and exits without serving: the Helm chart runs it once, as a job before an install or upgrade,
+// so that several replicas never migrate at the same time.
+var migrateOnly = args.Contains("--migrate");
+if (migrateOnly || app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
 {
     using var scope = app.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<ElysionDbContext>().Database.Migrate();
+}
+
+if (migrateOnly)
+{
+    return;
 }
 
 // Configure the HTTP request pipeline.
@@ -67,6 +77,9 @@ app.UseElysionRequestId();
 
 app.UseHttpsRedirection();
 
+// After routing is known (the route pattern is a label), before authentication so refused requests count too.
+app.UseElysionHttpMetrics();
+
 // Authentication has to run first: authorization only looks at the user it has established.
 app.UseAuthentication();
 app.UseMiddleware<UserIdLogMiddleware>();
@@ -74,6 +87,7 @@ app.UseMiddleware<UserProvisioningMiddleware>();
 app.UseAuthorization();
 
 app.MapHealthEndpoints();
+app.MapElysionMetrics();
 app.MapBoardEndpoints();
 app.MapBoardMemberEndpoints();
 app.MapRoomEndpoints();

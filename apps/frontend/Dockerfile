@@ -10,10 +10,11 @@ COPY packages/design-tokens packages/design-tokens
 RUN pnpm install --frozen-lockfile --filter @elysion/frontend... --filter @elysion/frontend-canvas...
 RUN pnpm --filter @elysion/frontend build
 
-FROM nginx:alpine AS runtime
+# The unprivileged variant: user nginx (uid 101), port 8080, pid and temp files in /tmp.
+FROM nginxinc/nginx-unprivileged:alpine AS runtime
 # Development defaults; the compose file / deployment sets the real values.
 ENV OIDC_ISSUER_URL=http://localhost:8081/realms/elysion \
     OIDC_CLIENT_ID=elysion-frontend
 COPY apps/frontend/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /workspace/apps/frontend/dist/frontend/browser /usr/share/nginx/html
-EXPOSE 80
+EXPOSE 8080
