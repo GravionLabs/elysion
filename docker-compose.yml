@@ -188,6 +188,10 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY:-elysion123}
       MAX_FILE_BYTES: ${MAX_FILE_BYTES:-10485760}
       MAX_FILES_PER_BOARD: ${MAX_FILES_PER_BOARD:-200}
+      # What one person may keep (docs/specs/business-backend.md, "Quotas"): a request over a quota is a 409.
+      MAX_TEMPLATES_PER_USER: ${MAX_TEMPLATES_PER_USER:-100}
+      MAX_TEMPLATE_CHARACTERS_PER_USER: ${MAX_TEMPLATE_CHARACTERS_PER_USER:-20000000}
+      MAX_BOARDS_PER_USER: ${MAX_BOARDS_PER_USER:-1000}
       # Access tokens come from Keycloak (docs/specs/identity.md). The issuer is the address the browser used;
       # the keys are fetched over the compose network.
       OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
