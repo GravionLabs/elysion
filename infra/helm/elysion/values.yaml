@@ -100,8 +100,12 @@ edge:
   rateLimit:
     average: 50
     burst: 100
-  # A Secret of type kubernetes.io/tls to terminate TLS at the entry point; empty: none.
+  # A Secret of type kubernetes.io/tls to terminate TLS at the entry point; empty: none. cert-manager (or your PKI) makes it; the
+  # chart never talks to an ACME server (ADR 0028). One wildcard certificate can serve the application and the identity host.
   tlsSecretName: ''
+  # Redirect plain HTTP to HTTPS: a second route on the `web` entry point with a permanent redirectScheme. Needs entryPoints without `web`
+  # (use [websecure]) and a tlsSecretName. Off, so that the kind setup keeps working over HTTP.
+  redirectToHttps: false
 
 # Response headers (docs/specs/frontend.md, "Headers").
 security:
