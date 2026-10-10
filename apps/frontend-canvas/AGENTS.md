@@ -29,7 +29,7 @@ pnpm --filter @elysion/frontend-canvas test               # vitest
 
 ## The grid
 
-The dot grid is CSS behind a **transparent** static canvas (`grid-dots.ts`, `styles/grid.css`), and Excalidraw's own line grid is switched off by `vite-plugin-excalidraw-no-grid.ts`; snapping is Excalidraw's grid mode, set from the setting. If an Excalidraw update fails the build with "the call renderGrid ... is gone", read "The grid" in `docs/specs/frontend.md` before touching the plugin.
+The dot grid is CSS behind a **transparent** static canvas (`grid-dots.ts`, `styles/grid.css`), and Excalidraw's own line grid is switched off by `vite-plugin-excalidraw-no-grid.ts`; snapping is Excalidraw's grid mode, set from the setting. The settings (show, snap, size) are the board's, in the document's `meta.grid` (`board-settings.ts`), on by default. If an Excalidraw update fails the build with "the call renderGrid ... is gone", read "The grid" in `docs/specs/frontend.md` before touching the plugin.
 
 ## Look and feel
 

@@ -41,6 +41,10 @@ Board documents survive a restart ([ADR 0011](../adr/0011-board-document-persist
 - Sizes: the state is about the size of the live elements' JSON (a typical board is a few hundred KB, a large one a few MB) and grows by about 1 KB per two seconds of dragging because of Yjs tombstones; see the ADR for the measurements.
 - A room that is open when its board is deleted can save its document again. Such orphans are not swept yet.
 
+## Board settings in the document
+
+The document's map `meta` holds settings of the board (not of a person), outside the Excalidraw binding: `grid` is `{ show, snap, size }` (#754; `size` is 10, 20 or 40; a board without it has `{ show: true, snap: true, size: 20 }`), `generation` is compaction's (ADR 0026). The realtime service does not read them: it stores and relays them like any other part of the document, and a copy of a board keeps them. Editors write them, a viewer's canvas never does; the canvas treats a value that is not valid as the default.
+
 ## Limits
 
 Proposed in [ADR 0026](../adr/0026-board-document-compaction-and-limits.md), implemented by #698: `MAX_UPDATE_BYTES` (2 MiB per Yjs update), `MAX_DOCUMENT_BYTES` (8 MiB encoded state, then updates are refused with a `board-full` message), compaction of a room that empties and is over 1 MiB (the document's `meta.generation` changes; a client that reconnects with an older one is closed with 4409 and reloads its document), and the canvas's limit of 20,000 elements. The measurements are made by `apps/realtime/scripts/measure-compaction.mjs`. Until #698 is done none of this is enforced.
