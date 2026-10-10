@@ -1,5 +1,7 @@
 {{- $env := list
   (dict "name" "OIDC_ISSUER_URL" "value" (required "oidc.issuerUrl is required" .Values.oidc.issuerUrl))
   (dict "name" "OIDC_CLIENT_ID" "value" .Values.oidc.clientId)
+  (dict "name" "CSP_MODE" "value" .Values.security.cspMode)
+  (dict "name" "HSTS_MAX_AGE" "value" (toString .Values.security.hstsMaxAge))
 -}}
 {{ include "elysion.component" (dict "root" . "name" "frontend" "image" "frontend" "port" 8080 "probe" "/" "env" $env "runAsUser" 101 "writable" (list "/etc/nginx/conf.d") "startupSeconds" 30) }}

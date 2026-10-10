@@ -16,5 +16,7 @@ FROM nginxinc/nginx-unprivileged:alpine AS runtime
 ENV OIDC_ISSUER_URL=http://localhost:8081/realms/elysion \
     OIDC_CLIENT_ID=elysion-frontend
 COPY apps/frontend/nginx.conf /etc/nginx/templates/default.conf.template
+# Runs before the templates are filled (the entrypoint runs /docker-entrypoint.d in order).
+COPY --chmod=755 apps/frontend/security-headers.sh /docker-entrypoint.d/10-security-headers.sh
 COPY --from=build /workspace/apps/frontend/dist/frontend/browser /usr/share/nginx/html
 EXPOSE 8080

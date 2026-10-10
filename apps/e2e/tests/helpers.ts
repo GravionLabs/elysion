@@ -11,6 +11,19 @@ export const USER_B = process.env.E2E_USER_B ?? 'dev2';
 /** The demo users' e-mail addresses follow their names (infra/keycloak/realm-elysion.json). */
 export const emailOf = (user: string) => `${user}@elysion.local`;
 
+/**
+ * Fails the running test when the browser reports a Content-Security-Policy violation in the console (an enforced
+ * policy says "Refused to ...", a report-only one "[Report Only] Refused to ..."). Armed for every page `login` makes.
+ */
+export function failOnCspViolation(page: Page): void {
+  page.on('console', (message) => {
+    const text = message.text();
+    if (/Refused to|\[Report Only\]|Content Security Policy/i.test(text)) {
+      expect.soft(text, 'a Content-Security-Policy violation').toBe('');
+    }
+  });
+}
+
 /** Logs a demo user in through Keycloak (the password is the username) in a browser context of its own. */
 export async function login(
   browser: Browser,
@@ -19,6 +32,7 @@ export async function login(
 ): Promise<Page> {
   const context = await browser.newContext(options);
   const page = await context.newPage();
+  failOnCspViolation(page);
   await page.goto('/');
   await page.fill('#username', user);
   await page.fill('#password', user);
