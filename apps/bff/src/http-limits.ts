@@ -18,5 +18,6 @@ export function isReadAsJson(req: { url?: string; headers: { 'content-type'?: st
 }
 
 export function applyHttpLimits(app: NestExpressApplication): void {
+  app.disable('x-powered-by'); // no `X-Powered-By: Express` banner (#781)
   app.useBodyParser('json', { limit: MAX_JSON_BODY, type: isReadAsJson });
 }

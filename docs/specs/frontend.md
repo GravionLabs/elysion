@@ -205,7 +205,7 @@ Every response of the frontend image (`apps/frontend/nginx.conf`) carries the he
 
 ```
 default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;
-font-src 'self' data:; connect-src 'self' <idp> wss:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none';
+font-src 'self' data:; connect-src 'self' <idp> https://libraries.excalidraw.com https://raw.githubusercontent.com; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none';
 base-uri 'self'; form-action 'self' <idp>; report-uri /api/csp-report; report-to csp
 ```
 
@@ -214,7 +214,7 @@ What the policy keeps open, measured in report mode with the whole browser suite
 - **`'unsafe-inline'` in `style-src`:** Angular injects component styles at run time, and the canvas bundle injects Excalidraw's CSS as a `<style>` element (`vite-plugin-css-injected-by-js`); Excalidraw also sets inline `style` attributes. A nonce would need the server to rewrite `index.html` per request. No script gets this.
 - **`'wasm-unsafe-eval'` in `script-src`:** Excalidraw compiles WebAssembly (font subsetting for the SVG and PDF export). It allows WebAssembly only, not `eval` or `new Function`; there is no `'unsafe-eval'` and no `'unsafe-inline'` for scripts.
 - **`data:` in `font-src` and `img-src`, `blob:` in `img-src` and `worker-src`:** Excalidraw turns a font file into a `data:` URL for the exports, draws images from `data:` and `blob:` URLs, and the export runs in a blob worker.
-- **`wss:` in `connect-src`:** the realtime connection of a page served over TLS; over plain HTTP `'self'` covers the `ws://` of the same host.
+- **No `wss:` in `connect-src` (#781):** the realtime connection is to the page's own host (`/yjs` behind the same edge), which `'self'` covers for `ws:` and `wss:` in current browsers; a `wss:` source would let a script that got in connect to any host. The shell never sets `yjs-server-url`, so a deployment with the realtime service on another host is not supported by the policy.
 - **`https://libraries.excalidraw.com` and `https://raw.githubusercontent.com` in `connect-src`:** the canvas fetches a library the user chose on the library site (see "The library"). Nothing else on those hosts is used; a closed network without them just cannot add libraries.
 
 Two things had to change for the policy to hold. Angular's critical-CSS inlining put an `onload` handler into `index.html` (an inline script): `inlineCritical` is off in `angular.json`. And Excalidraw loads its fonts from a CDN (`https://esm.sh/@excalidraw/excalidraw@…`) unless told otherwise, which the policy refuses and a closed network cannot reach: the element build ships the fonts next to the bundle (`dist-element/fonts`, `vite.element.config.ts`) and `vite-plugin-excalidraw-local-assets.ts` points the library's fallback at the folder the bundle was loaded from (it fails the build when the library's code changes, like the grid plugin).
