@@ -6,11 +6,19 @@ export interface AuthSettings {
   authority: string;
   /** The public client of the realm, `elysion-frontend`. */
   clientId: string;
+  /**
+   * Optional: the alias of the realm's identity provider (`microsoft`, ADR 0027). When set the login starts with
+   * `kc_idp_hint=<alias>`, so Keycloak forwards to the company's login at once. Empty or absent: Keycloak's own page.
+   */
+  idpHint?: string;
 }
+
+/** An alias as Keycloak allows it; anything else is not passed on (the value comes from a deployment setting, but it ends up in a URL). */
+const IDP_HINT = /^[A-Za-z0-9._-]{1,64}$/;
 
 /**
  * Served by whatever hosts the app, so one build runs everywhere (`OIDC_ISSUER_URL` and `OIDC_CLIENT_ID` in the
- * container, `public/auth-config.json` for `ng serve`).
+ * container, `AUTH_IDP_HINT` for the optional `idpHint`, `public/auth-config.json` for `ng serve`).
  */
 export const AUTH_SETTINGS_URL = '/auth-config.json';
 
@@ -40,5 +48,8 @@ export function buildOpenIdConfiguration(
     // Names the user from the ID token, so no extra call to the userinfo endpoint is needed.
     autoUserInfo: false,
     secureRoutes: SECURE_ROUTES,
+    ...(settings.idpHint && IDP_HINT.test(settings.idpHint)
+      ? { customParamsAuthRequest: { kc_idp_hint: settings.idpHint } }
+      : {}),
   };
 }

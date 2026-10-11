@@ -1,0 +1,79 @@
+<header class="page-header">
+  <app-brand />
+  <a class="back" routerLink="/" i18n="@@admin.back">All boards</a>
+  <span class="header-title" i18n="@@admin.title">Administration</span>
+  @if (session.user(); as user) {
+    <div class="page-actions">
+      <app-user-menu [user]="user" (logoutRequested)="session.logout()" />
+    </div>
+  }
+</header>
+
+<main class="page">
+  @switch (account.isAdministrator()) {
+    @case (true) {
+      <div class="layout">
+        <nav class="sidebar" aria-label="Administration" i18n-aria-label="@@admin.nav.label">
+          <ul class="entries">
+            <li>
+              <a
+                class="entry"
+                routerLink="/admin"
+                routerLinkActive="active"
+                ariaCurrentWhenActive="page"
+                [routerLinkActiveOptions]="{ exact: true }"
+                i18n="@@admin.nav.overview"
+                >Overview</a
+              >
+            </li>
+            <li>
+              <a
+                class="entry"
+                routerLink="/admin/users"
+                routerLinkActive="active"
+                ariaCurrentWhenActive="page"
+                i18n="@@admin.nav.users"
+                >Users</a
+              >
+            </li>
+            <li>
+              <a
+                class="entry"
+                routerLink="/admin/groups"
+                routerLinkActive="active"
+                ariaCurrentWhenActive="page"
+                i18n="@@admin.nav.groups"
+                >Groups</a
+              >
+            </li>
+            <li>
+              <a
+                class="entry"
+                routerLink="/admin/rooms"
+                routerLinkActive="active"
+                ariaCurrentWhenActive="page"
+                i18n="@@admin.nav.rooms"
+                >Rooms</a
+              >
+            </li>
+          </ul>
+        </nav>
+        <section class="content">
+          <router-outlet />
+        </section>
+      </div>
+    }
+    @case (false) {
+      <div class="denied">
+        <h1 i18n="@@admin.denied.title">You are not an administrator</h1>
+        <p i18n="@@admin.denied.message">
+          This area is for the administrators of this instance. Ask one of them if you need access.
+        </p>
+        <p><a routerLink="/" i18n="@@admin.denied.back">Back to your boards</a></p>
+      </div>
+    }
+    @default {
+      <p class="note" role="status" i18n="@@admin.checking">Checking your access…</p>
+    }
+  }
+</main>

@@ -56,6 +56,12 @@ export function buildRoutes(loginGuard: CanActivateFn): Routes {
       loadComponent: () => import('./invite/invite').then((m) => m.Invite),
       canActivate: [loginGuard],
     },
+    // The administration area (ADR 0027, #659): a lazy tree of its own; the frame tells a person who is not an administrator so.
+    {
+      path: 'admin',
+      loadChildren: () => import('./admin/admin.routes').then((m) => m.ADMIN_ROUTES),
+      canActivate: [loginGuard],
+    },
     { path: '**', redirectTo: '' },
   ];
 }

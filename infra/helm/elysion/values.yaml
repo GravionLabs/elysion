@@ -29,6 +29,8 @@ oidc:
   issuerUrl: ''
   audience: elysion-bff
   clientId: elysion-frontend
+  # Optional: the alias of the realm's identity provider ('microsoft'): the shell's login goes straight to the company's page.
+  idpHint: ''
   # Optional: where the services fetch the realm's keys when that differs from the issuer (e.g. a cluster-internal address).
   jwksUri: ''
 

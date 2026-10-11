@@ -169,6 +169,14 @@ was called on: the browser follows `ENTRA_AUTH_URL` on `localhost:8081`, Keycloa
 as `OIDC_JWKS_URI`). The compose file defaults all `ENTRA_*` to these values, so `pnpm dev:infra` and `pnpm dev:stack` show "Microsoft" on the login page. The
 stand-in cannot show Entra's own claim shapes (the overage pointer, `upn`, a missing `email`); those are checked once by hand against a real tenant.
 
+**The shell and the person's name** (#644). With `AUTH_IDP_HINT` (the frontend container; Helm `oidc.idpHint`; the `idpHint` of `/auth-config.json`) the shell
+adds `kc_idp_hint=<alias>` to the authorization request, and Keycloak forwards to that identity provider without showing its own page; empty means
+Keycloak's page with the "Microsoft" button. **One name everywhere:** the shell (`displayNameOf` in `session.service.ts`) and the business backend
+(`UserProvisioningService.DisplayNameOf`) use the same order: `preferred_username`, unless it looks like a brokered account (it contains `@` or is a GUID,
+which is what Entra makes of it), then `name`; else `name`, `preferred_username`, `email`, `sub`. **Logging out** ends the Keycloak session as before and does
+not log the person out of Entra ID (that would end their Office session); a second click on "Microsoft" does not ask for the password again. The identity
+provider a person used is not shown in the user menu: it would need a Keycloak mapper for `identity_provider` and is not worth it yet.
+
 ## Who does what
 
 | Service          | Validates                                    | Decides                                                          |

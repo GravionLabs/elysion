@@ -115,6 +115,17 @@ A **room** can also be shared with a **group** (for example a department from yo
 Change a role in the list, or **Remove** somebody. A person has to have logged in to Elysion once before they can be added. For a whole team
 use a room instead: its members have access to all its boards.
 
+## Administration
+
+People who administer the instance (they have the role `elysion-admin` at the identity provider) find **Administration** in the menu under their name. It shows names, numbers and roles, never what is on a board.
+
+- **Overview:** how many people, groups, rooms and boards there are, and which identity provider people sign in with.
+- **Users:** search by name or email; a name opens the rooms and boards the person has directly, with their roles.
+- **Groups:** a _local_ group is made and kept here (**New group**, **Rename**, add and remove members). A _linked_ group belongs to the identity provider: **Link** a local group to a group of the provider by its id and its members then follow the provider as each person signs in; **Unlink** makes it local again and keeps the members. **Delete** says how many rooms lose the role the group gave them.
+- **Rooms:** name, owner and numbers; no board names.
+
+Everybody else who types the address sees "You are not an administrator".
+
 ## Templates
 
 ![The templates menu](images/12-templates.png)
