@@ -154,6 +154,23 @@ describe('BusinessBackendClient', () => {
     expect(lastCall().init.method).toBe('DELETE');
   });
 
+  it('tells a deactivated account from any other 403 by the code of the backend (#668)', async () => {
+    fetchMock.mockResolvedValue(
+      respond(403, { title: 'Account deactivated', code: 'account-deactivated' }),
+    );
+    const deactivated = await client.listBoards(TOKEN).catch((e: unknown) => e);
+    fetchMock.mockResolvedValue(respond(403));
+    const plain = await client.listBoards(TOKEN).catch((e: unknown) => e);
+
+    expect(deactivated).toBeInstanceOf(ForbiddenException);
+    expect((deactivated as ForbiddenException).getResponse()).toMatchObject({
+      statusCode: 403,
+      code: 'account-deactivated',
+    });
+    expect(plain).toBeInstanceOf(ForbiddenException);
+    expect((plain as ForbiddenException).getResponse()).not.toHaveProperty('code');
+  });
+
   it('gets one board', async () => {
     fetchMock.mockResolvedValue(respond(200, board));
 

@@ -102,6 +102,50 @@ describe('Administration (e2e, against a fake business backend)', () => {
     expect(upstream.lastAdminRequest?.method).toBe('DELETE');
   });
 
+  it('deactivates, reactivates and hands over by fixed paths and checked ids (#668)', async () => {
+    const user = randomUUID();
+    const other = randomUUID();
+    upstream.adminAnswer = { status: 200, body: { id: user } };
+
+    await api().post(`/api/admin/users/${user}/deactivate`).expect(200);
+    expect(upstream.lastAdminRequest).toMatchObject({
+      method: 'POST',
+      path: `/admin/users/${user}/deactivate`,
+    });
+    await api().post(`/api/admin/users/${user}/reactivate`).expect(200);
+    expect(upstream.lastAdminRequest?.path).toBe(`/admin/users/${user}/reactivate`);
+
+    upstream.adminAnswer = { status: 200, body: { boards: 2, rooms: 1 } };
+    const response = await api()
+      .post('/api/admin/boards/transfer')
+      .send({ fromUserId: user, toUserId: other })
+      .expect(200);
+    expect(response.body).toEqual({ boards: 2, rooms: 1 });
+    expect(upstream.lastAdminRequest).toEqual({
+      method: 'POST',
+      path: '/admin/boards/transfer',
+      body: { fromUserId: user, toUserId: other },
+    });
+  });
+
+  it('refuses a hand-over without two ids and a person id that is no id, without asking the backend (#668)', async () => {
+    upstream.lastAdminRequest = null;
+
+    await api().post('/api/admin/boards/transfer').send({}).expect(400);
+    await api()
+      .post('/api/admin/boards/transfer')
+      .send({ fromUserId: 'x', toUserId: 'y' })
+      .expect(400);
+    await api()
+      .post('/api/admin/boards/transfer')
+      .send({ fromUserId: randomUUID(), toUserId: ['a'] })
+      .expect(400);
+    await api().post('/api/admin/users/not-an-id/deactivate').expect(404);
+    await api().post('/api/admin/users/not-an-id/reactivate').expect(404);
+
+    expect(upstream.lastAdminRequest).toBeNull();
+  });
+
   it('passes a JSON body on and keeps the status of the answer (201 for a made group)', async () => {
     upstream.adminAnswer = { status: 201, body: { id: 'g1', name: 'Marketing' } };
 
