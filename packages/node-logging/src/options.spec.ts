@@ -198,6 +198,12 @@ describe('the request line', () => {
     expect(Object.keys(request)).not.toContain('responseTime');
   });
 
+  it('keeps the secret in a path out of the log: an invitation link is logged as a route, or as unmatched', async () => {
+    const { lines } = await serve('/api/invitations/path-secret-marker/accept');
+
+    expect(JSON.stringify(lines)).not.toContain('path-secret-marker');
+  });
+
   it('keeps a well-formed incoming id and replaces a bad one', async () => {
     const kept = await serve('/api/boards', { 'X-Request-Id': 'bff-1234.abcd_EF' });
     expect(kept.response.headers.get(REQUEST_ID_HEADER)).toBe('bff-1234.abcd_EF');

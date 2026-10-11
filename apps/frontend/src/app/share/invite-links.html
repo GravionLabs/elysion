@@ -1,0 +1,103 @@
+<section class="invite-links" aria-labelledby="invite-links-title">
+  <h3 id="invite-links-title" i18n="@@invite.title">Invite with a link</h3>
+
+  <form class="make" (submit)="$event.preventDefault(); create()">
+    <label class="field">
+      <span class="field-label" i18n="@@invite.role">Role</span>
+      <select [disabled]="busy()" (change)="updateRole($event)">
+        <option value="Viewer" [selected]="role() === 'Viewer'" i18n="@@share.role.viewer">
+          Viewer
+        </option>
+        <option value="Editor" [selected]="role() === 'Editor'" i18n="@@share.role.editor">
+          Editor
+        </option>
+      </select>
+    </label>
+    <label class="field">
+      <span class="field-label" i18n="@@invite.expires">Valid for</span>
+      <select [disabled]="busy()" (change)="updateHours($event)">
+        @for (choice of expiryChoices; track choice) {
+          <option [value]="choice" [selected]="choice === hours()">{{ hoursLabel(choice) }}</option>
+        }
+      </select>
+    </label>
+    <label class="field uses-field">
+      <span class="field-label" i18n="@@invite.maxUses">Uses (optional)</span>
+      <input
+        type="number"
+        min="1"
+        max="1000"
+        inputmode="numeric"
+        autocomplete="off"
+        data-1p-ignore
+        data-lpignore="true"
+        [value]="maxUses()"
+        [disabled]="busy()"
+        (input)="updateMaxUses($event)"
+      />
+    </label>
+    <button type="submit" class="primary" [disabled]="busy()" i18n="@@invite.create">
+      Create link
+    </button>
+  </form>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  @if (created(); as made) {
+    <div class="created">
+      <label class="field grow">
+        <span class="field-label" i18n="@@invite.link">New link</span>
+        <input type="text" readonly [value]="made.url" (focus)="selectAll($event)" />
+      </label>
+      <button type="button" (click)="copy()" i18n="@@invite.copy">Copy</button>
+      <p class="note" role="status">
+        @switch (copyState()) {
+          @case ('copied') {
+            <ng-container i18n="@@invite.copied">Copied.</ng-container>
+          }
+          @case ('manual') {
+            <ng-container i18n="@@invite.copyManual"
+              >Copying did not work here: select the link and copy it.</ng-container
+            >
+          }
+          @default {
+            <ng-container i18n="@@invite.shownOnce"
+              >This link is shown only now. Anyone who has it can join.</ng-container
+            >
+          }
+        }
+      </p>
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="note" role="status" i18n="@@invite.loading">Loading links…</p>
+  } @else if (links().length === 0) {
+    <p class="note" i18n="@@invite.none">No active links.</p>
+  } @else {
+    <ul class="links" aria-label="Active links" i18n-aria-label="@@invite.list.label">
+      @for (link of links(); track link.id) {
+        <li class="link">
+          <span class="link-text">
+            <span class="link-role">{{ roleLabel(link.role) }}</span>
+            <span class="link-meta">{{ metaLabel(link) }}</span>
+          </span>
+          <button
+            type="button"
+            class="remove"
+            [attr.aria-label]="revokeLabel(link)"
+            [disabled]="busy()"
+            (click)="revoke(link)"
+          >
+            <ng-container i18n="@@invite.revoke">Revoke</ng-container>
+          </button>
+        </li>
+      }
+    </ul>
+    <p class="hint" i18n="@@invite.hint">
+      The address of a link cannot be shown again after it was made; revoke it and make a new one.
+    </p>
+  }
+</section>

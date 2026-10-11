@@ -39,6 +39,10 @@ accessLog:
     defaultMode: keep
     queryParameters:
       defaultMode: drop
+    names:
+      # An invitation link carries its secret in the path (`/invite/<token>`, `/api/invitations/<token>/accept`, #734), and Traefik
+      # cannot redact part of a path: the path is not logged at all. The router and the service name say what was called.
+      RequestPath: drop
     headers:
       defaultMode: drop
   # logs:otlp (`pnpm dev:logs` replaces this line with the export to the log viewer, scripts/traefik-logs-config.mjs)

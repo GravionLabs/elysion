@@ -7,6 +7,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  GoneException,
   Inject,
   Injectable,
   NotFoundException,
@@ -64,6 +65,36 @@ export interface StartVotingInput {
   name?: string;
   votesPerPerson?: number;
   named?: boolean;
+}
+
+/** An active invitation link as the list shows it (#734): never the token. */
+export interface Invitation {
+  id: string;
+  role: 'Editor' | 'Viewer';
+  expiresAt: string;
+  maxUses: number | null;
+  uses: number;
+  createdAt: string;
+}
+
+/** The answer to making a link: the one time the token is shown. */
+export interface CreatedInvitation extends Invitation {
+  token: string;
+  url: string | null;
+}
+
+/** What the caller sends to make a link; the limits (1 to 720 hours, 1 to 1000 uses) belong to the business backend, which answers 400. */
+export interface CreateInvitationInput {
+  role?: string;
+  expiresInHours?: number;
+  maxUses?: number;
+}
+
+/** What following a link did: the board or room and the role the person has there now. */
+export interface AcceptedInvitation {
+  kind: 'board' | 'room';
+  id: string;
+  role: 'Owner' | 'Editor' | 'Viewer';
 }
 
 /** A room as the business backend's room API returns it: `role` is the caller's role in it. */
@@ -204,6 +235,38 @@ export class BusinessBackendClient {
   /** Puts a board in a room, or takes it out of its room (`roomId: null`). */
   moveBoard(token: string, id: string, roomId: string | null): Promise<Board> {
     return this.request<Board>(token, 'PUT', `/boards/${id}/room`, { roomId });
+  }
+
+  /** The invitation links of a board (`scope` `boards`) or room (`rooms`) that still work. */
+  listInvitations(token: string, scope: 'boards' | 'rooms', id: string): Promise<Invitation[]> {
+    return this.request<Invitation[]>(token, 'GET', `/${scope}/${id}/invitations`);
+  }
+
+  createInvitation(
+    token: string,
+    scope: 'boards' | 'rooms',
+    id: string,
+    input: CreateInvitationInput,
+  ): Promise<CreatedInvitation> {
+    return this.request<CreatedInvitation>(token, 'POST', `/${scope}/${id}/invitations`, input);
+  }
+
+  revokeInvitation(
+    token: string,
+    scope: 'boards' | 'rooms',
+    id: string,
+    invitationId: string,
+  ): Promise<void> {
+    return this.request<void>(token, 'DELETE', `/${scope}/${id}/invitations/${invitationId}`);
+  }
+
+  /** Follows a link as the caller. The link's token is in the path and never in a log: the request line has the route pattern only. */
+  acceptInvitation(token: string, invitationToken: string): Promise<AcceptedInvitation> {
+    return this.request<AcceptedInvitation>(
+      token,
+      'POST',
+      `/invitations/${encodeURIComponent(invitationToken)}/accept`,
+    );
   }
 
   listRooms(token: string): Promise<Room[]> {
@@ -459,6 +522,10 @@ export class BusinessBackendClient {
     }
     if (response.status === 409) {
       throw new ConflictException(await problemDetail(response));
+    }
+    if (response.status === 410) {
+      // An invitation link that expired, was revoked or is used up (#734).
+      throw new GoneException(await problemDetail(response));
     }
     if (response.status === 413) {
       throw new PayloadTooLargeException(await problemDetail(response));

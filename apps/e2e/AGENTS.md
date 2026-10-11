@@ -6,6 +6,7 @@ Playwright tests with two browsers on one board (user A and user B). They are **
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `collaboration.spec.ts` | a board from a template, sharing, the shared timer, the dot voting (ending by itself when both have voted; a viewer votes too; a named voting shows the names), a viewer's limits |
 | `comments.spec.ts`      | a viewer comments (the one thing a viewer writes), the owner sees it at once, replies with a mention and resolves it, who may delete what, the comments survive a reload          |
+| `invitations.spec.ts`   | an invitation link: the owner makes one for a Viewer (shown once), the second person joins by it and is a viewer, the use is counted, revoking ends it                            |
 | `files.spec.ts`         | images: the bytes in the object store, the other person sees them, they survive a reload                                                                                          |
 | `rooms.spec.ts`         | a room, shared as editor, a board in it, moving it out, deleting the room (the boards stay)                                                                                       |
 | `templates.spec.ts`     | the element count of each built-in template, adding one to a board, an own template (save, find, delete)                                                                          |

@@ -4,6 +4,7 @@ import { BoardsController } from './boards.controller.js';
 import { FilesController } from './files.controller.js';
 import { ThumbnailController } from './thumbnail.controller.js';
 import { VotingController } from './voting.controller.js';
+import { InvitationsController } from './invitations.controller.js';
 import { TemplatesController } from './templates.controller.js';
 import { MembersController } from './members.controller.js';
 import { RoomMembersController } from './room-members.controller.js';
@@ -17,6 +18,7 @@ import { BUSINESS_BACKEND_URL, BusinessBackendClient } from './business-backend.
     FilesController,
     ThumbnailController,
     VotingController,
+    InvitationsController,
     MembersController,
     RoomsController,
     RoomMembersController,

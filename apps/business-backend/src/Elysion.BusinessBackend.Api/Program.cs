@@ -8,6 +8,7 @@ using Elysion.BusinessBackend.Api.Logging;
 using Elysion.BusinessBackend.Api.Members;
 using Elysion.BusinessBackend.Api.Observability;
 using Elysion.BusinessBackend.Api.Quotas;
+using Elysion.BusinessBackend.Api.Invitations;
 using Elysion.BusinessBackend.Api.Voting;
 
 using Microsoft.EntityFrameworkCore;
@@ -53,6 +54,8 @@ builder.Services.AddScoped<IBoardDocumentRepository, BoardDocumentRepository>();
 builder.Services.AddScoped<IBoardUserStateRepository, BoardUserStateRepository>();
 builder.Services.AddScoped<IVotingRepository, VotingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
+builder.Services.AddScoped<InvitationService>();
 builder.Services.AddScoped<IMembershipRepository, MembershipRepository>();
 builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IRoomMembershipRepository, RoomMembershipRepository>();
@@ -123,6 +126,7 @@ app.MapBoardFileEndpoints();
 app.MapBoardThumbnailEndpoints();
 app.MapBoardUserStateEndpoints();
 app.MapVotingEndpoints();
+app.MapInvitationEndpoints();
 app.MapTemplateEndpoints();
 
 app.Run();

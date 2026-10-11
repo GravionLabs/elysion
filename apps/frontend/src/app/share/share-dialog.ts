@@ -13,6 +13,7 @@ import {
   viewChild,
 } from '@angular/core';
 import type { Observable } from 'rxjs';
+import { InviteLinks } from './invite-links';
 import {
   MEMBER_ROLES,
   type Member,
@@ -47,6 +48,7 @@ export function describeError(
  * shown inline, next to what caused them.
  */
 @Component({
+  imports: [InviteLinks],
   selector: 'app-share-dialog',
   styleUrl: './share-dialog.scss',
   templateUrl: './share-dialog.html',

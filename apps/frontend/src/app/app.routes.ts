@@ -50,6 +50,12 @@ export function buildRoutes(loginGuard: CanActivateFn): Routes {
       canActivate: [boardIdGuard, loginGuard],
       canDeactivate: [boardLeaveGuard],
     },
+    // An invitation link (#734): the login guard first, so the link survives the round trip to the identity provider.
+    {
+      path: 'invite/:token',
+      loadComponent: () => import('./invite/invite').then((m) => m.Invite),
+      canActivate: [loginGuard],
+    },
     { path: '**', redirectTo: '' },
   ];
 }

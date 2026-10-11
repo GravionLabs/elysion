@@ -145,7 +145,11 @@ test('an image the board cannot keep is refused with a message, and nothing is a
 
 test('a viewer cannot drop an image', async () => {
   await a.getByRole('button', { name: /^Share/ }).click();
-  await a.getByRole('combobox').nth(2).selectOption('Viewer');
+  await a
+    .getByRole('region', { name: 'Members' })
+    .getByRole('combobox')
+    .nth(1)
+    .selectOption('Viewer');
   await a.keyboard.press('Escape');
   await openBoard(b, boardUrl);
 

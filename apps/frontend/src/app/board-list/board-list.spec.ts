@@ -131,7 +131,10 @@ describe('BoardList', () => {
     await fixture.whenStable();
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.match((r) => r.url.endsWith('/invitations')).forEach((r) => r.flush([]));
+    http.verify();
+  });
 
   /** Answers the two requests the page makes when it loads: the boards and the rooms. */
   const respondWith = async (boards: BoardInfo[], rooms: RoomInfo[] = []) => {
