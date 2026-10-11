@@ -1,0 +1,49 @@
+<section class="room-access" aria-labelledby="room-access-title">
+  <h3 id="room-access-title" i18n="@@share.access.title">Access through the room</h3>
+  @switch (state()) {
+    @case ('loading') {
+      <p class="note" role="status" i18n="@@share.access.loading">Loading the room…</p>
+    }
+    @case ('error') {
+      <p class="note error" role="alert">
+        <ng-container i18n="@@share.access.error">The room could not be loaded.</ng-container>
+        <button type="button" class="link" (click)="load()" i18n="@@share.retry">Try again</button>
+      </p>
+    }
+    @default {
+      <p class="note">
+        <ng-container i18n="@@share.access.intro"
+          >This board is in the room “{{ room()?.name ?? '…' }}”. Everyone who has a role in that
+          room can open it with that role:</ng-container
+        >
+      </p>
+      <ul class="access">
+        <li>
+          @if (people() !== null) {
+            <ng-container i18n="@@share.access.people"
+              >{people(), plural, =1 {1 person} other {{{ people() }} people}} in the
+              room</ng-container
+            >
+          } @else {
+            <ng-container i18n="@@share.access.people.unknown"
+              >The people of the room (only its owners can list them)</ng-container
+            >
+          }
+        </li>
+        <li>
+          @if (groups().length === 0) {
+            <ng-container i18n="@@share.access.groups.none">No groups</ng-container>
+          } @else {
+            <ng-container i18n="@@share.access.groups.label">Groups:</ng-container>
+            {{ groupList() }}
+          }
+        </li>
+      </ul>
+      @if (canManage()) {
+        <a class="link-button" [routerLink]="['/rooms', roomId()]" i18n="@@share.access.manage"
+          >Manage the room</a
+        >
+      }
+    }
+  }
+</section>

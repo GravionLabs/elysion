@@ -18,15 +18,29 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
     public DbSet<VotingSession> VotingSessions => Set<VotingSession>();
 
     public DbSet<Invitation> Invitations => Set<Invitation>();
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     public void DiscardChanges() => ChangeTracker.Clear();
     public DbSet<Vote> Votes => Set<Vote>();
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<GroupMembership> GroupMemberships => Set<GroupMembership>();
+    public DbSet<PendingGroupMembership> PendingGroupMemberships => Set<PendingGroupMembership>();
     public DbSet<RoomGroupMembership> RoomGroupMemberships => Set<RoomGroupMembership>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<AuditEntry>(entry =>
+        {
+            entry.Property(e => e.Action).HasMaxLength(AuditEntry.MaxActionLength);
+            entry.Property(e => e.SubjectType).HasMaxLength(AuditEntry.MaxSubjectTypeLength);
+            entry.Property(e => e.Details).HasMaxLength(AuditEntry.MaxDetailsLength);
+            entry.Property(e => e.RequestId).HasMaxLength(AuditEntry.MaxRequestIdLength);
+            // "What happened to this board" and "what did this person do", newest first; the date alone serves the filter and the cleanup.
+            entry.HasIndex(e => new { e.SubjectType, e.SubjectId, e.At });
+            entry.HasIndex(e => new { e.ActorUserId, e.At });
+            entry.HasIndex(e => e.At);
+        });
+
         modelBuilder.Entity<BoardDocument>(document =>
         {
             document.HasKey(d => d.BoardId);
@@ -127,6 +141,17 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
             membership.HasOne(m => m.User).WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
             // "Which groups is this user in?" starts from the user: it runs for every board list.
             membership.HasIndex(m => m.UserId);
+        });
+
+        modelBuilder.Entity<PendingGroupMembership>(pending =>
+        {
+            pending.Property(p => p.Email).HasMaxLength(User.MaxEmailLength);
+            pending.Property(p => p.DisplayName).HasMaxLength(User.MaxDisplayNameLength);
+            pending.Property(p => p.ObjectId).HasMaxLength(PendingGroupMembership.MaxObjectIdLength);
+            pending.HasOne(p => p.Group).WithMany().HasForeignKey(p => p.GroupId).OnDelete(DeleteBehavior.Cascade);
+            // One entry per person and group; the first sign-in looks the person up by their address.
+            pending.HasIndex(p => new { p.GroupId, p.Email }).IsUnique();
+            pending.HasIndex(p => p.Email);
         });
 
         modelBuilder.Entity<RoomGroupMembership>(membership =>

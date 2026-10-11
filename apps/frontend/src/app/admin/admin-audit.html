@@ -1,0 +1,108 @@
+<h1 i18n="@@admin.audit.title">Audit</h1>
+<p class="lead" i18n="@@admin.audit.lead">
+  Who gave or took away access, newest first. An entry holds ids, roles and counts, never what is on
+  a board.
+</p>
+
+<form class="tools" role="search" (submit)="$event.preventDefault(); apply()">
+  <label class="date-field">
+    <span class="subtle" i18n="@@admin.audit.from">From</span>
+    <input type="date" name="from" [value]="from()" (input)="updateFrom($event)" />
+  </label>
+  <label class="date-field">
+    <span class="subtle" i18n="@@admin.audit.to">To</span>
+    <input type="date" name="to" [value]="to()" (input)="updateTo($event)" />
+  </label>
+  <button type="submit" class="button" i18n="@@admin.audit.filter">Filter</button>
+</form>
+
+@if (chips().length > 0) {
+  <ul class="chips filters" aria-label="Active filters" i18n-aria-label="@@admin.audit.filters">
+    @for (chip of chips(); track chip.key) {
+      <li class="chip">
+        {{ chipText(chip) }}
+        <button
+          type="button"
+          class="link"
+          [attr.aria-label]="removeLabel(chip)"
+          (click)="removeChip(chip)"
+        >
+          ×
+        </button>
+      </li>
+    }
+  </ul>
+}
+
+@switch (list.state()) {
+  @case ('error') {
+    <p class="error" role="alert">
+      <ng-container i18n="@@admin.audit.error">The audit log could not be loaded.</ng-container>
+      <button type="button" class="link" (click)="list.load()" i18n="@@admin.retry">
+        Try again
+      </button>
+    </p>
+  }
+  @default {
+    @if (list.state() === 'loading') {
+      <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+    }
+    @if (list.state() === 'ready' && list.items().length === 0) {
+      <p class="note" i18n="@@admin.audit.empty">Nothing was recorded for this filter.</p>
+    } @else if (list.items().length > 0) {
+      <div class="table-wrap">
+        <table>
+          <caption class="visually-hidden" i18n="@@admin.audit.caption">
+            Audit log
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" i18n="@@admin.audit.when">When</th>
+              <th scope="col" i18n="@@admin.audit.what">What happened</th>
+              <th scope="col" i18n="@@admin.audit.subject">About</th>
+              <th scope="col" i18n="@@admin.audit.by">By</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of list.items(); track entry.id) {
+              <tr>
+                <td>
+                  <time [attr.datetime]="entry.at">{{ entry.at | date: 'medium' }}</time>
+                </td>
+                <td>{{ describe(entry) }}</td>
+                <td>
+                  @if (entry.subjectId) {
+                    <button
+                      type="button"
+                      class="link"
+                      (click)="filterBy('subject', entry.subjectId, entry.subjectName)"
+                    >
+                      {{ subjectLabel(entry) }}
+                    </button>
+                  }
+                </td>
+                <td>
+                  @if (entry.actor; as actor) {
+                    <button
+                      type="button"
+                      class="link"
+                      (click)="filterBy('actor', actor.id, actor.displayName)"
+                    >
+                      {{ actor.displayName }}
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-admin-pager
+        [page]="list.page()"
+        [pages]="list.pages()"
+        [total]="list.total()"
+        (go)="list.go($event)"
+      />
+    }
+  }
+}

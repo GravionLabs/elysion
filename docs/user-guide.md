@@ -96,7 +96,7 @@ In the dark theme Excalidraw darkens the whole canvas, so notes look darker than
 
 ![The share dialog](images/05-share.png)
 
-**Share** (for the owner) lists who has access. Type an **e-mail address**, choose a **role** and press **Add**:
+**Share** (for the owner) lists who has access. Start typing a **name or an e-mail address**: the people who have logged in to Elysion and match are listed (use the arrow keys and Enter, or click, to choose one). Choose a **role** and press **Add**. A full e-mail address that matches nobody can still be added if that person has logged in once:
 
 | Role       | Can                                                                                              |
 | ---------- | ------------------------------------------------------------------------------------------------ |
@@ -110,8 +110,32 @@ address is shown only once, right after it was made. Whoever opens it signs in, 
 keeps it) and lands on the board. The list shows each active link with its expiry and how often it was used; **Revoke** ends it at once.
 A room has the same section and gives access to all its boards.
 
+A **room** can also be shared with a **group** (for example a department from your company's sign-in): in the room's **Members** window, search the **Groups** section by name, choose a group, give it a role and press **Add**. Everybody in the group gets that role on every board in the room. The window of a board that is in a room tells you who else has access through the room.
+
+**History** (at the bottom of the window, for owners) shows the last 20 changes of the board or room: who gave whom which role, who took access
+away, which links were made, revoked or used. Open it to load it.
+
 Change a role in the list, or **Remove** somebody. A person has to have logged in to Elysion once before they can be added. For a whole team
 use a room instead: its members have access to all its boards.
+
+## Administration
+
+People who administer the instance (they have the role `elysion-admin` at the identity provider) find **Administration** in the menu under their name. It shows names, numbers and roles, never what is on a board.
+
+- **Overview:** how many people, groups, rooms and boards there are, and which identity provider people sign in with.
+- **Users:** search by name or email; a name opens the rooms and boards the person has directly, with their roles.
+- **Groups:** a _local_ group is made and kept here (**New group**, **Rename**, add and remove members). A _linked_ group belongs to the identity provider: **Link** a local group to a group of the provider by its id and its members then follow the provider as each person signs in; **Unlink** makes it local again and keeps the members. **Delete** says how many rooms lose the role the group gave them. If your operator switched on **Microsoft Graph** the page says when the groups were last read from the directory; a linked group then also shows the people **waiting for their first sign-in** (they join as soon as they sign in with that address).
+- **Rooms:** name, owner and numbers; no board names.
+- **Deactivate a person:** open them in **Users** and choose **Deactivate…**. They are refused everywhere from then on, are not offered when somebody is added,
+  and stay in the member lists as _deactivated_. Elysion cannot switch the account off at the identity provider: do that there as well, otherwise the person can
+  still sign in there. **Reactivate** brings everything back.
+- **Hand over:** for a deactivated person who owns boards or rooms, **Hand over** gives all of them to somebody else, who becomes their owner; the person who left
+  keeps nothing, and you get no role either.
+- **Audit:** who gave or took away access, newest first, with the person who did it. Click a board, room, group or person in a row to
+  filter by it, or choose a time span. An entry holds ids, roles and counts, never what is on a board. Entries are kept for a year
+  (`AUDIT_RETENTION_DAYS`).
+
+Everybody else who types the address sees "You are not an administrator".
 
 ## Templates
 

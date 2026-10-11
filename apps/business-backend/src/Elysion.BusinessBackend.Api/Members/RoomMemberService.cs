@@ -1,5 +1,6 @@
 using Ardalis.GuardClauses;
 
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
@@ -15,6 +16,7 @@ public sealed class RoomMemberService(
     IRoomRepository rooms,
     IRoomMembershipRepository memberships,
     IUserRepository users,
+    IAuditLog audit,
     IUnitOfWork unitOfWork,
     TimeProvider time)
 {
@@ -50,8 +52,29 @@ public sealed class RoomMemberService(
             return new(MemberOutcome.UnknownEmail);
         if (found.Count > 1)
             return new(MemberOutcome.AmbiguousEmail);
-        var user = found[0];
+        return await AddUserAsync(roomId, found[0], role, cancellationToken);
+    }
 
+    /// <summary>Adds the person the people search returned (<c>GET /users</c>), by id.</summary>
+    public async Task<MemberResult> AddByUserIdAsync(Guid roomId,
+        Guid userId,
+        BoardRole role,
+        CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(userId);
+        Guard.Against.EnumOutOfRange(role);
+        var user = await users.FindAsync(userId, cancellationToken);
+        // A deactivated person is not offered by the people search either: an id of one is as good as unknown (#668).
+        return user is null || user.IsDeactivated
+            ? new(MemberOutcome.UnknownUser)
+            : await AddUserAsync(roomId, user, role, cancellationToken);
+    }
+
+    private async Task<MemberResult> AddUserAsync(Guid roomId,
+        User user,
+        BoardRole role,
+        CancellationToken cancellationToken)
+    {
         var room = await rooms.FindAsync(roomId, cancellationToken);
         if (room?.OwnerId == user.Id
             || await memberships.FindForUpdateAsync(roomId, user.Id, cancellationToken) is not null)
@@ -60,6 +83,10 @@ public sealed class RoomMemberService(
         }
 
         memberships.Add(RoomMembership.Create(roomId, user.Id, role, time.GetUtcNow()));
+        audit.Record(AuditActions.MemberAdded,
+            AuditActions.Room,
+            roomId,
+            new { userId = user.Id, role = role.ToString() });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new(MemberOutcome.Done, View(user, role));
     }
@@ -75,7 +102,12 @@ public sealed class RoomMemberService(
             return blocked;
 
         var membership = (await memberships.FindForUpdateAsync(roomId, userId, cancellationToken))!;
+        var before = membership.Role;
         membership.Role = role;
+        audit.Record(AuditActions.MemberRoleChanged,
+            AuditActions.Room,
+            roomId,
+            new { userId, from = before.ToString(), to = role.ToString() });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         var user = (await users.FindAsync(userId, cancellationToken))!;
         return new(MemberOutcome.Done, View(user, role));
@@ -87,7 +119,12 @@ public sealed class RoomMemberService(
         if (blocked is not null)
             return blocked;
 
-        memberships.Remove((await memberships.FindForUpdateAsync(roomId, userId, cancellationToken))!);
+        var membership = (await memberships.FindForUpdateAsync(roomId, userId, cancellationToken))!;
+        memberships.Remove(membership);
+        audit.Record(AuditActions.MemberRemoved,
+            AuditActions.Room,
+            roomId,
+            new { userId, role = membership.Role.ToString() });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new(MemberOutcome.Done);
     }
@@ -121,5 +158,6 @@ public sealed class RoomMemberService(
         return null;
     }
 
-    private static MemberView View(User user, BoardRole role) => new(user.Id, user.DisplayName, user.Email, role);
+    private static MemberView View(User user, BoardRole role) =>
+        new(user.Id, user.DisplayName, user.Email, role, user.IsDeactivated);
 }

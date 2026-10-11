@@ -9,6 +9,7 @@ import { TemplatesController } from './templates.controller.js';
 import { MembersController } from './members.controller.js';
 import { RoomMembersController } from './room-members.controller.js';
 import { GroupsController } from './groups.controller.js';
+import { UsersController } from './users.controller.js';
 import { RoomGroupsController } from './room-groups.controller.js';
 import { RoomsController } from './rooms.controller.js';
 import { BUSINESS_BACKEND_URL, BusinessBackendClient } from './business-backend.client.js';
@@ -25,6 +26,7 @@ import { BUSINESS_BACKEND_URL, BusinessBackendClient } from './business-backend.
     RoomsController,
     RoomMembersController,
     GroupsController,
+    UsersController,
     RoomGroupsController,
     TemplatesController,
   ],

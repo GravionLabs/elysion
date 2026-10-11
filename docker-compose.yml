@@ -204,6 +204,14 @@ services:
       MAX_TEMPLATES_PER_USER: ${MAX_TEMPLATES_PER_USER:-100}
       MAX_TEMPLATE_CHARACTERS_PER_USER: ${MAX_TEMPLATE_CHARACTERS_PER_USER:-20000000}
       MAX_BOARDS_PER_USER: ${MAX_BOARDS_PER_USER:-1000}
+      # How long the audit log keeps its entries (docs/specs/business-backend.md, "Audit log").
+      AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-365}
+      # The optional second source of group members, Microsoft Graph (docs/self-hosting.md): the sync runs only when all three are set.
+      # The secret comes from the environment or .env, never from a committed file.
+      GRAPH_TENANT_ID: ${GRAPH_TENANT_ID:-}
+      GRAPH_CLIENT_ID: ${GRAPH_CLIENT_ID:-}
+      GRAPH_CLIENT_SECRET: ${GRAPH_CLIENT_SECRET:-}
+      GRAPH_SYNC_INTERVAL: ${GRAPH_SYNC_INTERVAL:-60}
       # Access tokens come from Keycloak (docs/specs/identity.md). The issuer is the address the browser used;
       # the keys are fetched over the compose network.
       OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
@@ -321,6 +329,8 @@ services:
       # Where the browser logs in (the address the browser uses, so localhost:8081) and as which client.
       OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
       OIDC_CLIENT_ID: elysion-frontend
+      # Optional: the alias of the realm's identity provider (`microsoft`): the login goes straight to the company's page.
+      AUTH_IDP_HINT: ${AUTH_IDP_HINT:-}
       # The Content-Security-Policy (docs/specs/frontend.md, "Headers"): off, report (the browser reports to the BFF, nothing
       # is blocked) or enforce; and Strict-Transport-Security in seconds, only when TLS is on (empty: none).
       CSP_MODE: ${CSP_MODE:-enforce}

@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { ShareDialog, describeError } from './share-dialog';
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -26,7 +27,7 @@ describe('ShareDialog', () => {
     fixture.detectChanges();
   };
   const type = async (value: string) => {
-    const input = el().querySelector('input[type="email"]') as HTMLInputElement;
+    const input = el().querySelector('app-typeahead input') as HTMLInputElement;
     input.value = value;
     input.dispatchEvent(new Event('input'));
     await settle();
@@ -53,6 +54,7 @@ describe('ShareDialog', () => {
 
   afterEach(() => {
     http.match((r) => r.url.endsWith('/invitations')).forEach((r) => r.flush([]));
+    http.match((r) => r.url === '/api/users').forEach((r) => r.flush([]));
     http.verify();
   });
 
@@ -60,18 +62,25 @@ describe('ShareDialog', () => {
   const answerLinks = () =>
     http.match((r) => r.url.endsWith('/invitations')).forEach((r) => r.flush([]));
 
-  const open = async (members = [ada, bea]) => {
+  const open = async (members: Array<typeof ada & { isDeactivated?: boolean }> = [ada, bea]) => {
     http.expectOne(url).flush(members);
     answerLinks();
     await settle();
   };
 
+  it('marks a person an administrator deactivated, who stays in the list (#668)', async () => {
+    await open([ada, { ...bea, isDeactivated: true }]);
+
+    expect(rows()[0].querySelector('.member-state')).toBeNull();
+    expect(rows()[1].querySelector('.member-state')?.textContent).toContain('deactivated');
+  });
+
   it('says it is loading until the members arrive, then lists them with name, email and role', async () => {
-    expect(el().querySelector('[role="status"]')?.textContent).toContain('Loading');
+    expect(el().querySelector('.note[role="status"]')?.textContent).toContain('Loading');
 
     await open();
 
-    expect(el().querySelector('[role="status"]')).toBeNull();
+    expect(el().querySelector('.note[role="status"]')).toBeNull();
     expect(rows().map((r) => r.querySelector('.member-name')?.textContent)).toEqual(['Ada', 'Bea']);
     expect(rows()[1].querySelector('.member-email')?.textContent).toBe('bea@example.com');
     expect(select('Role of Ada').value).toBe('Owner');
@@ -88,10 +97,10 @@ describe('ShareDialog', () => {
     );
   });
 
-  it('puts the cursor in the email field', async () => {
+  it('puts the cursor in the person field', async () => {
     await open();
 
-    expect(document.activeElement).toBe(el().querySelector('input[type="email"]'));
+    expect(document.activeElement).toBe(el().querySelector('app-typeahead input'));
   });
 
   it('gives the focus back to the button that opened it when it is gone', async () => {
@@ -143,7 +152,7 @@ describe('ShareDialog', () => {
         'Bea',
         'Cy',
       ]);
-      expect((el().querySelector('input[type="email"]') as HTMLInputElement).value).toBe('');
+      expect((el().querySelector('app-typeahead input') as HTMLInputElement).value).toBe('');
       expect(error()).toBeNull();
     });
 
@@ -174,7 +183,7 @@ describe('ShareDialog', () => {
 
       expect(error()).toBe('No user with this email has logged in to Elysion yet.');
       expect(rows().length).toBe(2);
-      expect((el().querySelector('input[type="email"]') as HTMLInputElement).value).toBe(
+      expect((el().querySelector('app-typeahead input') as HTMLInputElement).value).toBe(
         'nobody@example.com',
       ); // kept to correct it
     });
@@ -308,6 +317,214 @@ describe('describeError', () => {
   });
 });
 
+describe('ShareDialog finding people', () => {
+  let fixture: ComponentFixture<ShareDialog>;
+  let http: HttpTestingController;
+  const el = () => fixture.nativeElement as HTMLElement;
+  const field = () => el().querySelector('app-typeahead input') as HTMLInputElement;
+  const settle = async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const later = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
+  const type = async (text: string) => {
+    field().value = text;
+    field().dispatchEvent(new Event('input'));
+    await later();
+    await settle();
+  };
+  const submit = async () => {
+    (el().querySelector('form') as HTMLFormElement).dispatchEvent(
+      new Event('submit', { cancelable: true }),
+    );
+    await settle();
+  };
+  const cy = { id: 'u3', displayName: 'Cy Beispiel', email: 'cy@example.com' };
+
+  beforeEach(async () => {
+    TestBed.configureTestingModule({
+      imports: [ShareDialog],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    http = TestBed.inject(HttpTestingController);
+    fixture = TestBed.createComponent(ShareDialog);
+    fixture.componentRef.setInput('boardId', board);
+    await settle();
+    http.expectOne(url).flush([ada, bea]);
+    http.match((r) => r.url.endsWith('/invitations')).forEach((r) => r.flush([]));
+    await settle();
+  });
+
+  afterEach(() => {
+    http.match((r) => r.url.endsWith('/invitations')).forEach((r) => r.flush([]));
+    http.verify();
+  });
+
+  it('searches while the person types, shows name and email, and adds the one chosen by id', async () => {
+    await type('cy');
+    const search = http.expectOne((r) => r.url === '/api/users');
+    expect(search.request.params.get('query')).toBe('cy');
+    search.flush([cy, { id: 'u1', displayName: 'Ada', email: 'ada@example.com' }]);
+    await settle();
+
+    const options = [...el().querySelectorAll('[role="option"]')] as HTMLElement[];
+    // Ada is a member already: not offered.
+    expect(
+      options.map((o) => [...o.querySelectorAll('span')].map((x) => x.textContent).join(' ')),
+    ).toEqual(['Cy Beispiel cy@example.com']);
+    options[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+    await settle();
+    expect(field().value).toBe('Cy Beispiel');
+
+    await submit();
+    const request = http.expectOne(url);
+    expect(request.request.body).toEqual({ userId: 'u3', role: 'Editor' });
+    request.flush({
+      userId: 'u3',
+      displayName: 'Cy Beispiel',
+      email: 'cy@example.com',
+      role: 'Editor',
+    });
+    await settle();
+    expect(el().querySelectorAll('.member')).toHaveLength(3);
+    expect(field().value).toBe('');
+  });
+
+  it('says nobody was found, and a full email address still works', async () => {
+    await type('nobody@example.com');
+    http.expectOne((r) => r.url === '/api/users').flush([]);
+    await settle();
+    expect(el().querySelector('app-typeahead [role="status"]')?.textContent).toContain(
+      'A full email address still works',
+    );
+
+    await submit();
+
+    expect(http.expectOne(url).request.body).toEqual({
+      email: 'nobody@example.com',
+      role: 'Editor',
+    });
+  });
+
+  it('does not add a name that was not chosen from the list', async () => {
+    await type('Cy');
+    http.expectOne((r) => r.url === '/api/users').flush([cy]);
+    await settle();
+
+    await submit();
+
+    http.expectNone(url);
+    expect(el().querySelector('.error')?.textContent).toContain('Choose a person from the list');
+  });
+
+  it('takes the choice back when the person types again', async () => {
+    await type('cy');
+    http.expectOne((r) => r.url === '/api/users').flush([cy]);
+    await settle();
+    (el().querySelector('[role="option"]') as HTMLElement).dispatchEvent(
+      new MouseEvent('mousedown', { bubbles: true, cancelable: true }),
+    );
+    await settle();
+
+    await type('Cy Beispiel x');
+    http.expectOne((r) => r.url === '/api/users').flush([]);
+    await settle();
+    await submit();
+
+    http.expectNone(url);
+    expect(el().querySelector('.error')?.textContent).toContain('Choose a person from the list');
+  });
+
+  it('keeps the dialog open when Escape closes the list of people', async () => {
+    await type('cy');
+    http.expectOne((r) => r.url === '/api/users').flush([cy]);
+    await settle();
+    let closed = 0;
+    fixture.componentInstance.closed.subscribe(() => (closed += 1));
+
+    field().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+    expect(el().querySelector('[role="listbox"]')).toBeNull();
+    expect(closed).toBe(0);
+
+    field().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+    expect(closed).toBe(1);
+  });
+
+  it('carries on when the search fails: an email can still be added', async () => {
+    await type('cy@example.com');
+    http.expectOne((r) => r.url === '/api/users').flush(null, { status: 500, statusText: 'Error' });
+    await settle();
+
+    await submit();
+
+    expect(http.expectOne(url).request.body).toEqual({ email: 'cy@example.com', role: 'Editor' });
+  });
+
+  it('does not search for fewer than two characters', async () => {
+    await type('c');
+
+    http.expectNone((r) => r.url === '/api/users');
+  });
+});
+
+describe('ShareDialog for a board in a room', () => {
+  const room = '0197a8d2-1c3e-7a10-8000-0000000000b1';
+  let fixture: ComponentFixture<ShareDialog>;
+  let http: HttpTestingController;
+
+  const create = async (roomId: string | null) => {
+    TestBed.configureTestingModule({
+      imports: [ShareDialog],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+    });
+    http = TestBed.inject(HttpTestingController);
+    fixture = TestBed.createComponent(ShareDialog);
+    fixture.componentRef.setInput('boardId', board);
+    fixture.componentRef.setInput('roomId', roomId);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await Promise.resolve();
+  };
+
+  afterEach(() => {
+    http.match((r) => r.url.endsWith('/invitations')).forEach((r) => r.flush([]));
+    http.verify();
+  });
+
+  it('explains the access through the room, with no group controls', async () => {
+    await create(room);
+    http.expectOne(url).flush([ada]);
+    http
+      .expectOne('/api/rooms')
+      .flush([{ id: room, name: 'Sprint', createdAt: '2026-10-01T00:00:00Z', role: 'Editor' }]);
+    http
+      .expectOne(`/api/rooms/${room}/groups`)
+      .flush([{ groupId: 'g1', name: 'Design', role: 'Editor' }]);
+    http
+      .expectOne(`/api/rooms/${room}/members`)
+      .flush(null, { status: 403, statusText: 'Forbidden' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-room-access')?.textContent).toContain('Design (Editor)');
+    expect(el.querySelector('app-room-groups')).toBeNull();
+  });
+
+  it('says nothing about a room for a board that is in none', async () => {
+    await create(null);
+    http.expectOne(url).flush([ada]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-room-access')).toBeNull();
+    expect(el.querySelector('app-room-groups')).toBeNull();
+  });
+});
+
 describe('ShareDialog for a room', () => {
   const room = '0197a8d2-1c3e-7a10-8000-0000000000b1';
   const roomUrl = `/api/rooms/${room}/members`;
@@ -330,6 +547,7 @@ describe('ShareDialog for a room', () => {
 
   afterEach(() => {
     http.match((r) => r.url.endsWith('/invitations')).forEach((r) => r.flush([]));
+    http.match((r) => r.url.endsWith('/groups')).forEach((r) => r.flush([]));
     http.verify();
   });
 
@@ -348,7 +566,7 @@ describe('ShareDialog for a room', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const input = el().querySelector('input[type="email"]') as HTMLInputElement;
+    const input = el().querySelector('app-typeahead input') as HTMLInputElement;
     input.value = 'bea@example.com';
     input.dispatchEvent(new Event('input'));
     (el().querySelector('form') as HTMLFormElement).dispatchEvent(

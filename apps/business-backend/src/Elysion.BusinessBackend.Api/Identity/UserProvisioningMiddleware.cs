@@ -11,6 +11,9 @@ namespace Elysion.BusinessBackend.Api.Identity;
 /// </summary>
 public sealed class UserProvisioningMiddleware(RequestDelegate next)
 {
+    /// <summary>The <c>code</c> of the problem a deactivated person gets with their 403; the BFF passes it on and the shell shows a page for it.</summary>
+    public const string AccountDeactivatedCode = "account-deactivated";
+
     public async Task InvokeAsync(
         HttpContext context,
         UserProvisioningService provisioning,
@@ -25,6 +28,18 @@ public sealed class UserProvisioningMiddleware(RequestDelegate next)
             {
                 // A valid token without a usable `sub` is no identity: treat it as not authenticated.
                 await Results.Unauthorized().ExecuteAsync(context);
+                return;
+            }
+
+            if (user.IsDeactivated)
+            {
+                // Valid token, deactivated person (#668): nothing works, and the shell is told why with a code it can recognise.
+                await Results.Problem(
+                        "An administrator has deactivated this account. Ask them to reactivate it.",
+                        statusCode: StatusCodes.Status403Forbidden,
+                        title: "Account deactivated",
+                        extensions: new Dictionary<string, object?> { ["code"] = AccountDeactivatedCode })
+                    .ExecuteAsync(context);
                 return;
             }
 

@@ -235,6 +235,8 @@ spec:
               value: "20000000"
             - name: MAX_BOARDS_PER_USER
               value: "1000"
+            - name: AUDIT_RETENTION_DAYS
+              value: "365"
             - name: S3_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
@@ -320,6 +322,8 @@ spec:
               value: http://localhost:8081/realms/elysion
             - name: OIDC_CLIENT_ID
               value: elysion-frontend
+            - name: AUTH_IDP_HINT
+              value: ""
             - name: CSP_MODE
               value: enforce
             - name: HSTS_MAX_AGE

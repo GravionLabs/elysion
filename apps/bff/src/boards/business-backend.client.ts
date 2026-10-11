@@ -135,6 +135,13 @@ export interface Group {
 }
 
 /** A group's role in a room. */
+/** A person found by the people search: enough to recognise them and to add them as a member. */
+export interface DirectoryUser {
+  id: string;
+  displayName: string;
+  email: string | null;
+}
+
 export interface RoomGroup {
   groupId: string;
   name: string;
@@ -303,8 +310,13 @@ export class BusinessBackendClient {
     return this.request<BoardMember[]>(token, 'GET', `/rooms/${roomId}/members`);
   }
 
-  addRoomMember(token: string, roomId: string, email: string, role: string): Promise<BoardMember> {
-    return this.request<BoardMember>(token, 'POST', `/rooms/${roomId}/members`, { email, role });
+  addRoomMember(
+    token: string,
+    roomId: string,
+    who: { email?: string; userId?: string },
+    role: string,
+  ): Promise<BoardMember> {
+    return this.request<BoardMember>(token, 'POST', `/rooms/${roomId}/members`, { ...who, role });
   }
 
   changeRoomMemberRole(
@@ -372,8 +384,18 @@ export class BusinessBackendClient {
     return this.request<BoardMember[]>(token, 'GET', `/boards/${boardId}/members`);
   }
 
-  addMember(token: string, boardId: string, email: string, role: string): Promise<BoardMember> {
-    return this.request<BoardMember>(token, 'POST', `/boards/${boardId}/members`, { email, role });
+  addMember(
+    token: string,
+    boardId: string,
+    who: { email?: string; userId?: string },
+    role: string,
+  ): Promise<BoardMember> {
+    return this.request<BoardMember>(token, 'POST', `/boards/${boardId}/members`, { ...who, role });
+  }
+
+  /** People whose name or email contains the text (2 to 100 characters, at most 10 answers; the backend decides). */
+  searchUsers(token: string, query: string): Promise<DirectoryUser[]> {
+    return this.request<DirectoryUser[]>(token, 'GET', `/users?query=${encodeURIComponent(query)}`);
   }
 
   changeMemberRole(
@@ -525,6 +547,28 @@ export class BusinessBackendClient {
     return this.request<unknown>(token, 'GET', `/admin/users/${encodeURIComponent(id)}`);
   }
 
+  /** Deactivates a person (#668); the answer is their detail. */
+  adminDeactivateUser(token: string, id: string): Promise<unknown> {
+    return this.request<unknown>(
+      token,
+      'POST',
+      `/admin/users/${encodeURIComponent(id)}/deactivate`,
+    );
+  }
+
+  adminReactivateUser(token: string, id: string): Promise<unknown> {
+    return this.request<unknown>(
+      token,
+      'POST',
+      `/admin/users/${encodeURIComponent(id)}/reactivate`,
+    );
+  }
+
+  /** Hands what a deactivated person owned over to another person (#668); the answer says how many boards and rooms moved. */
+  adminTransferOwnership(token: string, fromUserId: string, toUserId: string): Promise<unknown> {
+    return this.request<unknown>(token, 'POST', '/admin/boards/transfer', { fromUserId, toUserId });
+  }
+
   adminListGroups(token: string, list: AdminList): Promise<unknown> {
     return this.request<unknown>(token, 'GET', `/admin/groups${adminQuery(list)}`);
   }
@@ -550,6 +594,18 @@ export class BusinessBackendClient {
     );
   }
 
+  adminListGroupPending(token: string, id: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(
+      token,
+      'GET',
+      `/admin/groups/${encodeURIComponent(id)}/pending${adminQuery(list)}`,
+    );
+  }
+
+  adminGraphStatus(token: string): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', '/admin/graph');
+  }
+
   async adminAddGroupMember(token: string, id: string, userId: string): Promise<void> {
     await this.request<void>(
       token,
@@ -568,6 +624,29 @@ export class BusinessBackendClient {
 
   adminListRooms(token: string, list: AdminList): Promise<unknown> {
     return this.request<unknown>(token, 'GET', `/admin/rooms${adminQuery(list)}`);
+  }
+
+  /** The audit log of the instance (#669): filters checked by the controller, the path fixed. */
+  adminListAudit(token: string, filter: AuditFilter): Promise<unknown> {
+    const params = new URLSearchParams();
+    if (filter.subject !== undefined) params.append('subject', filter.subject);
+    if (filter.actor !== undefined) params.append('actor', filter.actor);
+    if (filter.from !== undefined) params.append('from', filter.from);
+    if (filter.to !== undefined) params.append('to', filter.to);
+    if (filter.page !== undefined) params.append('page', String(filter.page));
+    if (filter.pageSize !== undefined) params.append('pageSize', String(filter.pageSize));
+    const text = params.toString();
+    return this.request<unknown>(token, 'GET', `/admin/audit${text === '' ? '' : `?${text}`}`);
+  }
+
+  /** The last entries of the audit log about a board, for its owners (#669). */
+  boardHistory(token: string, id: string): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/boards/${encodeURIComponent(id)}/history`);
+  }
+
+  /** The last entries of the audit log about a room, for its owners (#669). */
+  roomHistory(token: string, id: string): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/rooms/${encodeURIComponent(id)}/history`);
   }
 
   /** The headers of every call: the caller's token and the id of the request being handled, so the backend's lines carry it (ADR 0025). */
@@ -615,7 +694,16 @@ export class BusinessBackendClient {
       throw new UnauthorizedException();
     }
     if (response.status === 403) {
-      throw new ForbiddenException();
+      // A deactivated person's 403 says why (#668), so that the shell can show a page for it instead of an error.
+      const code = await problemCode(response);
+      throw code === ACCOUNT_DEACTIVATED
+        ? new ForbiddenException({
+            statusCode: 403,
+            error: 'Forbidden',
+            message: 'This account has been deactivated.',
+            code,
+          })
+        : new ForbiddenException();
     }
     if (response.status === 404) {
       // A board or room that is not visible has no body; the member and room APIs say why (an unknown email, not a member, no such room).
@@ -651,6 +739,18 @@ function toBoardRole(role: string): BoardRole {
 }
 
 /** The `detail` of an ASP.NET problem-details body, or `undefined` when there is none. */
+/** The code an account that was deactivated gets with its 403 (the business backend's `account-deactivated`). */
+export const ACCOUNT_DEACTIVATED = 'account-deactivated';
+
+async function problemCode(response: Response): Promise<string | undefined> {
+  try {
+    const problem = (await response.json()) as { code?: unknown };
+    return typeof problem.code === 'string' ? problem.code : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function problemDetail(response: Response): Promise<string | undefined> {
   try {
     const problem = (await response.json()) as { detail?: unknown };
@@ -677,6 +777,16 @@ async function validationMessage(response: Response): Promise<string> {
 /** What a list of the administration area is asked for: a search text and a page, all checked by the controller. */
 export interface AdminList {
   query?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/** What the audit log is asked for (#669): ids and dates that passed the controller's checks, and a page. */
+export interface AuditFilter {
+  subject?: string;
+  actor?: string;
+  from?: string;
+  to?: string;
   page?: number;
   pageSize?: number;
 }

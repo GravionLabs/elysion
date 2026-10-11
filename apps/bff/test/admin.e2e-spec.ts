@@ -35,6 +35,39 @@ describe('Administration (e2e, against a fake business backend)', () => {
 
   const api = () => request.agent(app.getHttpServer()).set('Authorization', authorization);
 
+  it('passes the filters of the audit log on, each checked, and the history of a board and a room (#669)', async () => {
+    const id = randomUUID();
+    upstream.adminAnswer = { status: 200, body: { items: [], total: 0, page: 1, pageSize: 25 } };
+
+    await api()
+      .get(
+        `/api/admin/audit?subject=${id}&actor=${id}&from=2026-10-01&to=2026-10-05T12:00:00Z&page=2&pageSize=10`,
+      )
+      .expect(200);
+
+    expect(upstream.lastAdminRequest?.path).toBe(
+      `/admin/audit?subject=${id}&actor=${id}&from=2026-10-01&to=2026-10-05T12%3A00%3A00Z&page=2&pageSize=10`,
+    );
+    for (const bad of [
+      'subject=not-an-id',
+      'actor=1',
+      'from=yesterday',
+      'to=2026-10-01;drop',
+      'page=-1',
+    ]) {
+      await api().get(`/api/admin/audit?${bad}`).expect(400);
+    }
+    await api().get('/api/admin/audit?subject=a&subject=b').expect(400);
+
+    upstream.adminAnswer = { status: 200, body: [] };
+    await api().get(`/api/boards/${id}/history`).expect(200);
+    expect(upstream.lastAdminRequest?.path).toBe(`/boards/${id}/history`);
+    await api().get(`/api/rooms/${id}/history`).expect(200);
+    expect(upstream.lastAdminRequest?.path).toBe(`/rooms/${id}/history`);
+    await api().get('/api/boards/not-an-id/history').expect(404);
+    await api().get('/api/rooms/not-an-id/history').expect(404);
+  });
+
   it('passes a read on with the caller’s token and the query, and returns what the backend says', async () => {
     upstream.adminAnswer = { status: 200, body: { items: [], total: 0, page: 2, pageSize: 10 } };
 
@@ -67,6 +100,65 @@ describe('Administration (e2e, against a fake business backend)', () => {
     });
     await api().delete(`/api/admin/groups/${group}/members/${user}`).expect(204);
     expect(upstream.lastAdminRequest?.method).toBe('DELETE');
+  });
+
+  it('reads the pending people of a group and the state of the Graph sync (#667)', async () => {
+    const group = randomUUID();
+    upstream.adminAnswer = { status: 200, body: { items: [], total: 0, page: 1, pageSize: 25 } };
+
+    await api().get(`/api/admin/groups/${group}/pending?page=2&pageSize=10`).expect(200);
+    expect(upstream.lastAdminRequest?.path).toBe(
+      `/admin/groups/${group}/pending?page=2&pageSize=10`,
+    );
+    await api().get('/api/admin/groups/not-an-id/pending').expect(404);
+
+    upstream.adminAnswer = { status: 200, body: { enabled: false } };
+    await api().get('/api/admin/graph').expect(200);
+    expect(upstream.lastAdminRequest?.path).toBe('/admin/graph');
+  });
+
+  it('deactivates, reactivates and hands over by fixed paths and checked ids (#668)', async () => {
+    const user = randomUUID();
+    const other = randomUUID();
+    upstream.adminAnswer = { status: 200, body: { id: user } };
+
+    await api().post(`/api/admin/users/${user}/deactivate`).expect(200);
+    expect(upstream.lastAdminRequest).toMatchObject({
+      method: 'POST',
+      path: `/admin/users/${user}/deactivate`,
+    });
+    await api().post(`/api/admin/users/${user}/reactivate`).expect(200);
+    expect(upstream.lastAdminRequest?.path).toBe(`/admin/users/${user}/reactivate`);
+
+    upstream.adminAnswer = { status: 200, body: { boards: 2, rooms: 1 } };
+    const response = await api()
+      .post('/api/admin/boards/transfer')
+      .send({ fromUserId: user, toUserId: other })
+      .expect(200);
+    expect(response.body).toEqual({ boards: 2, rooms: 1 });
+    expect(upstream.lastAdminRequest).toEqual({
+      method: 'POST',
+      path: '/admin/boards/transfer',
+      body: { fromUserId: user, toUserId: other },
+    });
+  });
+
+  it('refuses a hand-over without two ids and a person id that is no id, without asking the backend (#668)', async () => {
+    upstream.lastAdminRequest = null;
+
+    await api().post('/api/admin/boards/transfer').send({}).expect(400);
+    await api()
+      .post('/api/admin/boards/transfer')
+      .send({ fromUserId: 'x', toUserId: 'y' })
+      .expect(400);
+    await api()
+      .post('/api/admin/boards/transfer')
+      .send({ fromUserId: randomUUID(), toUserId: ['a'] })
+      .expect(400);
+    await api().post('/api/admin/users/not-an-id/deactivate').expect(404);
+    await api().post('/api/admin/users/not-an-id/reactivate').expect(404);
+
+    expect(upstream.lastAdminRequest).toBeNull();
   });
 
   it('passes a JSON body on and keeps the status of the answer (201 for a made group)', async () => {

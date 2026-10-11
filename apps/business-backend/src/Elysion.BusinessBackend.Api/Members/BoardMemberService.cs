@@ -1,13 +1,19 @@
 using Ardalis.GuardClauses;
 
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 
 namespace Elysion.BusinessBackend.Api.Members;
 
-/// <summary>A member of a board as the API shows them.</summary>
-public sealed record MemberView(Guid UserId, string DisplayName, string? Email, BoardRole Role);
+/// <summary>A member of a board as the API shows them; <c>IsDeactivated</c> marks a person an administrator deactivated (#668): they stay in the list.</summary>
+public sealed record MemberView(
+    Guid UserId,
+    string DisplayName,
+    string? Email,
+    BoardRole Role,
+    bool IsDeactivated = false);
 
 public enum MemberOutcome
 {
@@ -15,6 +21,9 @@ public enum MemberOutcome
 
     /// <summary>No user has this email: the person has to log in to Elysion once before they can be added.</summary>
     UnknownEmail,
+
+    /// <summary>No user has this id (a people search result that is gone, or a made-up id).</summary>
+    UnknownUser,
 
     /// <summary>More than one user has this email, so the invitation would be a guess.</summary>
     AmbiguousEmail,
@@ -50,6 +59,7 @@ public sealed class BoardMemberService(
     IBoardRepository boards,
     IMembershipRepository memberships,
     IUserRepository users,
+    IAuditLog audit,
     IUnitOfWork unitOfWork,
     TimeProvider time)
 {
@@ -85,8 +95,29 @@ public sealed class BoardMemberService(
             return new(MemberOutcome.UnknownEmail);
         if (found.Count > 1)
             return new(MemberOutcome.AmbiguousEmail);
-        var user = found[0];
+        return await AddUserAsync(boardId, found[0], role, cancellationToken);
+    }
 
+    /// <summary>Adds the person the people search returned (<c>GET /users</c>), by id.</summary>
+    public async Task<MemberResult> AddByUserIdAsync(Guid boardId,
+        Guid userId,
+        BoardRole role,
+        CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(userId);
+        Guard.Against.EnumOutOfRange(role);
+        var user = await users.FindAsync(userId, cancellationToken);
+        // A deactivated person is not offered by the people search either: an id of one is as good as unknown (#668).
+        return user is null || user.IsDeactivated
+            ? new(MemberOutcome.UnknownUser)
+            : await AddUserAsync(boardId, user, role, cancellationToken);
+    }
+
+    private async Task<MemberResult> AddUserAsync(Guid boardId,
+        User user,
+        BoardRole role,
+        CancellationToken cancellationToken)
+    {
         var board = await boards.FindAsync(boardId, cancellationToken);
         if (board?.OwnerId == user.Id
             || await memberships.FindForUpdateAsync(boardId, user.Id, cancellationToken) is not null)
@@ -95,6 +126,10 @@ public sealed class BoardMemberService(
         }
 
         memberships.Add(BoardMembership.Create(boardId, user.Id, role, time.GetUtcNow()));
+        audit.Record(AuditActions.MemberAdded,
+            AuditActions.Board,
+            boardId,
+            new { userId = user.Id, role = role.ToString() });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new(MemberOutcome.Done, View(user, role));
     }
@@ -110,7 +145,12 @@ public sealed class BoardMemberService(
             return blocked;
 
         var membership = (await memberships.FindForUpdateAsync(boardId, userId, cancellationToken))!;
+        var before = membership.Role;
         membership.Role = role;
+        audit.Record(AuditActions.MemberRoleChanged,
+            AuditActions.Board,
+            boardId,
+            new { userId, from = before.ToString(), to = role.ToString() });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         var user = (await users.FindAsync(userId, cancellationToken))!;
         return new(MemberOutcome.Done, View(user, role));
@@ -122,7 +162,12 @@ public sealed class BoardMemberService(
         if (blocked is not null)
             return blocked;
 
-        memberships.Remove((await memberships.FindForUpdateAsync(boardId, userId, cancellationToken))!);
+        var membership = (await memberships.FindForUpdateAsync(boardId, userId, cancellationToken))!;
+        memberships.Remove(membership);
+        audit.Record(AuditActions.MemberRemoved,
+            AuditActions.Board,
+            boardId,
+            new { userId, role = membership.Role.ToString() });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new(MemberOutcome.Done);
     }
@@ -156,5 +201,6 @@ public sealed class BoardMemberService(
         return null;
     }
 
-    private static MemberView View(User user, BoardRole role) => new(user.Id, user.DisplayName, user.Email, role);
+    private static MemberView View(User user, BoardRole role) =>
+        new(user.Id, user.DisplayName, user.Email, role, user.IsDeactivated);
 }

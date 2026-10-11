@@ -31,10 +31,12 @@ Die Startseite listet **deine Boards**: die selbst erstellten und die mit dir ge
 ## Das Board
 
 Zeichne mit der Werkzeugleiste unten: Formen, Pfeile, Text, Haftnotizen, Bilder. **Bilder** (PNG, JPEG, GIF, WebP oder SVG bis 4 MB) kannst du über das Werkzeug wählen, einfügen oder auf das Board ziehen; mehrere Dateien auf einmal liegen nebeneinander an der Stelle, an der du sie fallen lässt, und sind höchstens halb so hoch wie dein Ausschnitt. Alle Personen auf dem Board sehen Änderungen sofort; ihre Cursor und
-Avatare erscheinen oben rechts. **Teilen** lädt Personen per E-Mail-Adresse oder mit einem **Einladungslink** (Rolle, Gültigkeit von 1 Stunde bis 30 Tagen, optional eine Höchstzahl an Benutzungen; die Adresse wird nur beim Erstellen angezeigt, **Widerrufen** beendet den Link sofort) ein, **Vorlagen**, **Exportieren** und **Importieren** bringen
+Avatare erscheinen oben rechts. **Teilen** lädt Personen nach **Name oder E-Mail-Adresse** (die passenden Personen erscheinen in einer Liste) oder mit einem **Einladungslink** (Rolle, Gültigkeit von 1 Stunde bis 30 Tagen, optional eine Höchstzahl an Benutzungen; die Adresse wird nur beim Erstellen angezeigt, **Widerrufen** beendet den Link sofort) ein, **Vorlagen**, **Exportieren** und **Importieren** bringen
 Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema. Beim **Exportieren** wählst du unter **Optionen** (der Browser merkt sie sich) bei einem **PDF**, ob ein Board mit Rahmen **eine Seite pro Rahmen** ergibt (mit dem Namen des Rahmens als Überschrift) oder das ganze Board auf einer Seite liegt, sowie Seitengröße (Größe des Inhalts, A4, Letter) und Ausrichtung; **Raum exportieren** auf der Seite eines Raums macht aus allen Boards, die du lesen darfst, ein PDF (je Board eine Titelseite, dann seine Seiten); für alle Formate die Farben und den Hintergrund, bei **PNG** den Maßstab.
 Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema. Beim **Exportieren** wählst du unter **Optionen** (der Browser merkt sie sich) bei einem **PDF**, ob ein Board mit Rahmen **eine Seite pro Rahmen** ergibt (mit dem Namen des Rahmens als Überschrift) oder das ganze Board auf einer Seite liegt, sowie Seitengröße (Größe des Inhalts, A4, Letter) und Ausrichtung; für alle Formate die Farben und den Hintergrund, bei **PNG** den Maßstab.
 Inhalte hinein und heraus (ein **PDF** wird beim Importieren Seite für Seite als Bild in je einen Rahmen "Seite 1", "Seite 2" … gelegt; die Seiten wählst du vorher aus), **Hell/Dunkel** wechselt das Farbschema.
+
+Im Teilen-Fenster zeigt **Verlauf** (nur für Besitzer; er wird erst beim Öffnen geladen) die letzten 20 Änderungen des Boards oder Raums: wer wem welche Rolle gegeben oder genommen hat und welche Einladungslinks erstellt, widerrufen oder benutzt wurden.
 
 **Verbindung weg?** Arbeite einfach weiter: Die Statusanzeige oben sagt **Offline**, und nach einigen Sekunden weist eine Leiste darauf hin, dass deine
 Änderungen **auf diesem Gerät gesichert** und gesendet werden, sobald die Verbindung wieder da ist. Auch wenn du den Tab dazwischen schließt oder neu lädst,
@@ -56,6 +58,25 @@ Der Knopf **Kommentare** in der Werkzeugleiste (oder die Taste **C**, wenn nicht
 **Betrachter können kommentieren.** Die Kommentare gehören zum Board und werden mit ihm gespeichert; in PNG, SVG und `.excalidraw` erscheinen sie nicht, und **Strg+Z** macht sie nicht rückgängig.
 Für ein PDF wählst du im Exportmenü **Kommentare in einem PDF**: Sie kommen als Textseiten ans Ende, die offenen zuerst. Die Option ist standardmäßig aus.
 Wer eine Nachricht geschrieben hat, ist eine Regel der Oberfläche: Sie verhindert, dass man fremde Nachrichten löscht, wer aber an die Daten des Boards kommt, könnte auch als jemand anderes schreiben.
+
+## Administration
+
+Wer die Instanz administriert (die Rolle `elysion-admin` beim Identitätsanbieter), findet **Administration** im Menü unter dem eigenen Namen. Sie zeigt Namen, Zahlen und Rollen, nie, was auf einem Board steht.
+
+- **Übersicht:** wie viele Personen, Gruppen, Räume und Boards es gibt und über welchen Identitätsanbieter man sich anmeldet.
+- **Personen:** Suche nach Name oder E-Mail; ein Name öffnet die Räume und Boards, die die Person direkt hat, mit ihren Rollen.
+- **Gruppen:** Eine _lokale_ Gruppe wird hier angelegt und gepflegt (**Neue Gruppe**, **Umbenennen**, Mitglieder hinzufügen und entfernen). Eine _verknüpfte_ Gruppe gehört dem Identitätsanbieter: Mit **Verknüpfen** bindest du eine lokale Gruppe über ihre ID an eine Gruppe des Anbieters, ihre Mitglieder folgen dann dem Anbieter, sobald sich jemand anmeldet; **Lösen** macht sie wieder lokal und behält die Mitglieder. **Löschen** sagt, wie viele Räume die Rolle verlieren, die die Gruppe ihnen gegeben hat. Hat dein Betreiber **Microsoft Graph** eingeschaltet, zeigt die Seite, wann die Gruppen zuletzt aus dem Verzeichnis gelesen wurden; eine verknüpfte Gruppe zeigt dann auch die Leute, die **auf ihre erste Anmeldung warten** (sie werden Mitglieder, sobald sie sich mit dieser Adresse anmelden).
+- **Räume:** Name, Besitzer und Zahlen; keine Board-Namen.
+- **Eine Person deaktivieren:** Öffne sie unter **Personen** und wähle **Deaktivieren…**. Sie wird ab dann überall abgewiesen, beim Hinzufügen nicht mehr
+  angeboten und bleibt in den Mitgliederlisten als _deaktiviert_ stehen. Elysion kann das Konto beim Identitätsanbieter nicht abschalten: Tu das dort
+  ebenfalls, sonst kann sich die Person dort weiter anmelden. **Reaktivieren** bringt alles zurück.
+- **Übergeben:** Für eine deaktivierte Person, der Boards oder Räume gehören, gibt **Übergeben** alle an jemand anderen, der damit ihr Eigentümer wird; die
+  Person, die gegangen ist, behält nichts, und du bekommst auch keine Rolle.
+- **Audit:** wer Zugriff gegeben oder genommen hat, neueste zuerst, mit der Person, die es getan hat. Ein Klick auf ein Board, einen Raum, eine
+  Gruppe oder eine Person in einer Zeile filtert danach; dazu lässt sich ein Zeitraum wählen. Ein Eintrag enthält IDs, Rollen und Zahlen, nie den
+  Inhalt eines Boards. Einträge werden ein Jahr aufbewahrt (`AUDIT_RETENTION_DAYS`).
+
+Alle anderen sehen unter dieser Adresse „Du bist kein Administrator“.
 
 ## Einen Workshop leiten
 

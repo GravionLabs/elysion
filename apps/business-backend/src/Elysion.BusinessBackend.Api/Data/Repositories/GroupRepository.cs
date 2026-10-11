@@ -64,15 +64,22 @@ public sealed class GroupRepository(ElysionDbContext db) : IGroupRepository
     public async Task<bool> SetLinkedMembershipsAsync(Guid userId,
         IReadOnlyCollection<string> externalIds,
         DateTimeOffset now,
+        Action<int, int>? onChange,
         CancellationToken cancellationToken)
     {
         Guard.Against.Default(userId);
         Guard.Against.Null(externalIds);
         var wanted = externalIds.ToHashSet(StringComparer.Ordinal);
 
-        if (!await StageLinkedMembershipsAsync(userId, wanted, now, cancellationToken))
+        var staged = await StageLinkedMembershipsAsync(userId, wanted, now, cancellationToken);
+        if (!staged.Changed)
         {
             return false;
+        }
+
+        if (staged.Added > 0 || staged.Removed > 0)
+        {
+            onChange?.Invoke(staged.Added, staged.Removed);
         }
 
         try
@@ -83,8 +90,14 @@ public sealed class GroupRepository(ElysionDbContext db) : IGroupRepository
         {
             // Another request created the same group (or this membership) first: look again, once, with what is there now.
             db.ChangeTracker.Clear();
-            if (await StageLinkedMembershipsAsync(userId, wanted, now, cancellationToken))
+            staged = await StageLinkedMembershipsAsync(userId, wanted, now, cancellationToken);
+            if (staged.Changed)
             {
+                if (staged.Added > 0 || staged.Removed > 0)
+                {
+                    onChange?.Invoke(staged.Added, staged.Removed);
+                }
+
                 await db.SaveChangesAsync(cancellationToken);
             }
         }
@@ -93,7 +106,7 @@ public sealed class GroupRepository(ElysionDbContext db) : IGroupRepository
     }
 
     /// <summary>Stages the difference between the person's linked memberships and <paramref name="wanted"/>; false when there is none.</summary>
-    private async Task<bool> StageLinkedMembershipsAsync(Guid userId,
+    private async Task<(bool Changed, int Added, int Removed)> StageLinkedMembershipsAsync(Guid userId,
         HashSet<string> wanted,
         DateTimeOffset now,
         CancellationToken cancellationToken)
@@ -104,11 +117,21 @@ public sealed class GroupRepository(ElysionDbContext db) : IGroupRepository
             .Select(m => new { Membership = m, m.Group!.ExternalId })
             .ToListAsync(cancellationToken);
 
-        var changed = false;
+        var removed = 0;
         foreach (var gone in current.Where(c => c.ExternalId is null || !wanted.Contains(c.ExternalId)))
         {
             db.GroupMemberships.Remove(gone.Membership);
-            changed = true;
+            removed++;
+        }
+
+        // The token wins (ADR 0027): a membership it lists is the token's from now on, whoever made it; the Graph sync leaves it alone
+        // when the directory drops the person, until the token drops them too. Only a flag changes: nothing to audit.
+        var confirmed = 0;
+        foreach (var kept in current.Where(c =>
+                     c.ExternalId is not null && wanted.Contains(c.ExternalId) && c.Membership.FromGraph))
+        {
+            kept.Membership.FromGraph = false;
+            confirmed++;
         }
 
         var have = current.Where(c => c.ExternalId is not null)
@@ -117,7 +140,7 @@ public sealed class GroupRepository(ElysionDbContext db) : IGroupRepository
         var missing = wanted.Where(id => !have.Contains(id)).ToList();
         if (missing.Count == 0)
         {
-            return changed;
+            return (removed > 0 || confirmed > 0, 0, removed);
         }
 
         var known = await db.Groups
@@ -134,7 +157,7 @@ public sealed class GroupRepository(ElysionDbContext db) : IGroupRepository
             db.GroupMemberships.Add(GroupMembership.Create(group.Id, userId, now));
         }
 
-        return true;
+        return (true, missing.Count, removed);
     }
 
     public async Task<bool> AddMemberAsync(Guid groupId,

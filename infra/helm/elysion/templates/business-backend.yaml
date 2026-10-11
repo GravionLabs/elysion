@@ -12,8 +12,16 @@
   (dict "name" "MAX_TEMPLATES_PER_USER" "value" (.Values.quotas.maxTemplates | int64 | toString))
   (dict "name" "MAX_TEMPLATE_CHARACTERS_PER_USER" "value" (.Values.quotas.maxTemplateCharacters | int64 | toString))
   (dict "name" "MAX_BOARDS_PER_USER" "value" (.Values.quotas.maxBoards | int64 | toString))
+  (dict "name" "AUDIT_RETENTION_DAYS" "value" (.Values.audit.retentionDays | int64 | toString))
   (include "elysion.secretEnv" (dict "root" . "name" "S3_ACCESS_KEY") | fromYaml)
   (include "elysion.secretEnv" (dict "root" . "name" "S3_SECRET_KEY") | fromYaml)
 -}}
+{{- if .Values.graph.enabled }}
+{{- $env = concat $env (list
+  (dict "name" "GRAPH_TENANT_ID" "value" (required "graph.tenantId is required when graph.enabled" .Values.graph.tenantId))
+  (dict "name" "GRAPH_CLIENT_ID" "value" (required "graph.clientId is required when graph.enabled" .Values.graph.clientId))
+  (dict "name" "GRAPH_SYNC_INTERVAL" "value" (.Values.graph.syncInterval | int64 | toString))
+  (include "elysion.secretEnv" (dict "root" . "name" "GRAPH_CLIENT_SECRET") | fromYaml)) }}
+{{- end }}
 {{- if .Values.oidc.jwksUri }}{{ $env = append $env (dict "name" "OIDC_JWKS_URI" "value" .Values.oidc.jwksUri) }}{{ end }}
 {{ include "elysion.component" (dict "root" . "name" "business-backend" "image" "businessBackend" "port" 8080 "probe" "/health" "env" $env "runAsUser" 1654 "startupSeconds" 180) }}

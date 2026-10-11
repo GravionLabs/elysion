@@ -154,6 +154,23 @@ describe('BusinessBackendClient', () => {
     expect(lastCall().init.method).toBe('DELETE');
   });
 
+  it('tells a deactivated account from any other 403 by the code of the backend (#668)', async () => {
+    fetchMock.mockResolvedValue(
+      respond(403, { title: 'Account deactivated', code: 'account-deactivated' }),
+    );
+    const deactivated = await client.listBoards(TOKEN).catch((e: unknown) => e);
+    fetchMock.mockResolvedValue(respond(403));
+    const plain = await client.listBoards(TOKEN).catch((e: unknown) => e);
+
+    expect(deactivated).toBeInstanceOf(ForbiddenException);
+    expect((deactivated as ForbiddenException).getResponse()).toMatchObject({
+      statusCode: 403,
+      code: 'account-deactivated',
+    });
+    expect(plain).toBeInstanceOf(ForbiddenException);
+    expect((plain as ForbiddenException).getResponse()).not.toHaveProperty('code');
+  });
+
   it('gets one board', async () => {
     fetchMock.mockResolvedValue(respond(200, board));
 
@@ -315,11 +332,15 @@ describe('BusinessBackendClient', () => {
       expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/members`);
 
       fetchMock.mockResolvedValueOnce(respond(201, member));
-      await client.addMember(TOKEN, board.id, 'ada@example.com', 'Editor');
+      await client.addMember(TOKEN, board.id, { email: 'ada@example.com' }, 'Editor');
       expect(lastCall().init.method).toBe('POST');
       expect(lastCall().init.body).toBe(
         JSON.stringify({ email: 'ada@example.com', role: 'Editor' }),
       );
+
+      fetchMock.mockResolvedValueOnce(respond(201, member));
+      await client.addMember(TOKEN, board.id, { userId: 'u9' }, 'Viewer');
+      expect(lastCall().init.body).toBe(JSON.stringify({ userId: 'u9', role: 'Viewer' }));
 
       fetchMock.mockResolvedValueOnce(respond(200, member));
       await client.changeMemberRole(TOKEN, board.id, 'u1', 'Viewer');
@@ -340,7 +361,7 @@ describe('BusinessBackendClient', () => {
         respond(404, { detail: 'No user with this email has logged in yet.' }),
       );
       const notFound = await client
-        .addMember(TOKEN, board.id, 'x@y.z', 'Viewer')
+        .addMember(TOKEN, board.id, { email: 'x@y.z' }, 'Viewer')
         .catch((e: unknown) => e);
       expect(notFound).toBeInstanceOf(NotFoundException);
       expect((notFound as NotFoundException).message).toBe(
@@ -401,12 +422,24 @@ describe('BusinessBackendClient', () => {
       expect(lastCall().init.body).toBe(JSON.stringify({ roomId: null }));
     });
 
+    it('searches people with the query encoded, on the users route', async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(200, [{ id: 'u1', displayName: 'Ada', email: null }]),
+      );
+
+      await expect(client.searchUsers(TOKEN, 'ada & co')).resolves.toEqual([
+        { id: 'u1', displayName: 'Ada', email: null },
+      ]);
+      expect(lastCall().url).toBe('http://backend.test:5174/users?query=ada%20%26%20co');
+      expect(lastCall().init.method).toBe('GET');
+    });
+
     it('talks to the room member routes', async () => {
       fetchMock.mockImplementation(async () => respond(200, []));
       await client.listRoomMembers(TOKEN, ROOM);
       expect(lastCall().url).toBe(`http://backend.test:5174/rooms/${ROOM}/members`);
 
-      await client.addRoomMember(TOKEN, ROOM, 'a@b.c', 'Editor');
+      await client.addRoomMember(TOKEN, ROOM, { email: 'a@b.c' }, 'Editor');
       expect(lastCall().init.body).toBe(JSON.stringify({ email: 'a@b.c', role: 'Editor' }));
 
       await client.changeRoomMemberRole(TOKEN, ROOM, 'u1', 'Viewer');

@@ -42,6 +42,8 @@ public class UserProvisioningTests
         string groupsClaim = "groups") =>
         new(users,
             new GroupRepository(db),
+            new GroupSyncRepository(db),
+            TestAudit.For(db),
             db,
             cache ?? new MemoryCache(new MemoryCacheOptions()),
             Options.Create(new OidcOptions { GroupsClaim = groupsClaim }),
@@ -124,6 +126,8 @@ public class UserProvisioningTests
         time.GetUtcNow().Returns(at);
         var service = new UserProvisioningService(new UserRepository(db),
             new GroupRepository(db),
+            new GroupSyncRepository(db),
+            TestAudit.For(db),
             unitOfWork,
             new MemoryCache(new MemoryCacheOptions()),
             Options.Create(new OidcOptions()),
@@ -143,6 +147,19 @@ public class UserProvisioningTests
 
         (await AllUsersAsync()).Single().DisplayName.ShouldBe(expected);
     }
+
+    [TestCase("ada", "Ada Lovelace", "ada@example.com", "kc-1", "ada")]
+    [TestCase("ada@contoso.com", "Ada Lovelace", null, "kc-1", "Ada Lovelace")]
+    [TestCase("6f9619ff-8b86-d011-b42d-00c04fc964ff", "Ada Lovelace", null, "kc-1", "Ada Lovelace")]
+    [TestCase("ada@contoso.com", null, "ada@example.com", "kc-1", "ada@contoso.com")]
+    [TestCase(null, null, "ada@example.com", "kc-1", "ada@example.com")]
+    [TestCase(null, null, null, "kc-1", "kc-1")]
+    public void The_display_name_prefers_a_name_over_a_brokered_username(string? username,
+        string? name,
+        string? email,
+        string subject,
+        string expected) =>
+        UserProvisioningService.DisplayNameOf(username, name, email, subject).ShouldBe(expected);
 
     [Test]
     public async Task Preferred_username_wins_over_name()
@@ -203,11 +220,17 @@ public class UserProvisioningTests
         public Task<User?> FindBySubjectAsync(string subject, CancellationToken cancellationToken) =>
             inner.FindBySubjectAsync(subject, cancellationToken);
 
+        public Task<User?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken) =>
+            inner.FindForUpdateAsync(id, cancellationToken);
+
         public Task<User?> FindAsync(Guid id, CancellationToken cancellationToken) =>
             inner.FindAsync(id, cancellationToken);
 
         public Task<IReadOnlyList<User>> FindByEmailAsync(string email, CancellationToken cancellationToken) =>
             inner.FindByEmailAsync(email, cancellationToken);
+
+        public Task<IReadOnlyList<User>> SearchAsync(string text, int max, CancellationToken cancellationToken) =>
+            inner.SearchAsync(text, max, cancellationToken);
 
         public Task<User> GetOrAddAsync(User user, CancellationToken cancellationToken) =>
             inner.GetOrAddAsync(user, cancellationToken);

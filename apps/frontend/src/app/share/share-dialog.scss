@@ -172,6 +172,16 @@ select {
   white-space: nowrap;
 }
 
+.member-state {
+  align-self: flex-start;
+  padding: 0 6px;
+  color: var(--c-text);
+  background: var(--c-surface-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+}
+
 .member-email {
   overflow: hidden;
   color: var(--c-text-subtle);

@@ -1,6 +1,1735 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xliff version="2.0" xmlns="urn:oasis:names:tc:xliff:document:2.0" srcLang="en">
   <file id="ngi18n" original="ng.template">
+    <unit id="admin.audit.title">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:1,2</note>
+      </notes>
+      <segment>
+        <source>Audit</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:3,7</note>
+      </notes>
+      <segment>
+        <source> Who gave or took away access, newest first. An entry holds ids, roles and counts, never what is on a board.
+</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.from">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:9,10</note>
+      </notes>
+      <segment>
+        <source>From</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.to">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:13,14</note>
+      </notes>
+      <segment>
+        <source>To</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.filter">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:16,19</note>
+      </notes>
+      <segment>
+        <source>Filter</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.filters">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:20</note>
+      </notes>
+      <segment>
+        <source>Active filters</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.error">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:40,41</note>
+      </notes>
+      <segment>
+        <source>The audit log could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="admin.retry">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:42,44</note>
+        <note category="location">src/app/admin/admin-groups.html:104,106</note>
+        <note category="location">src/app/admin/admin-groups.html:342,343</note>
+        <note category="location">src/app/admin/admin-groups.html:403,404</note>
+        <note category="location">src/app/admin/admin-overview.html:10,12</note>
+        <note category="location">src/app/admin/admin-rooms.html:29,31</note>
+        <note category="location">src/app/admin/admin-users.html:29,31</note>
+      </notes>
+      <segment>
+        <source> Try again </source>
+      </segment>
+    </unit>
+    <unit id="admin.loading">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:48,50</note>
+        <note category="location">src/app/admin/admin-groups.html:110,112</note>
+        <note category="location">src/app/admin/admin-groups.html:285,287</note>
+        <note category="location">src/app/admin/admin-groups.html:348,349</note>
+        <note category="location">src/app/admin/admin-groups.html:396,397</note>
+        <note category="location">src/app/admin/admin-overview.html:35,38</note>
+        <note category="location">src/app/admin/admin-rooms.html:35,37</note>
+        <note category="location">src/app/admin/admin-users.html:35,37</note>
+        <note category="location">src/app/admin/admin-users.html:175,177</note>
+        <note category="location">src/app/admin/admin-users.html:243,245</note>
+      </notes>
+      <segment>
+        <source>Loading…</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:51,52</note>
+      </notes>
+      <segment>
+        <source>Nothing was recorded for this filter.</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.caption">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:56,58</note>
+      </notes>
+      <segment>
+        <source> Audit log </source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.when">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:60,61</note>
+      </notes>
+      <segment>
+        <source>When</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.what">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:61,62</note>
+      </notes>
+      <segment>
+        <source>What happened</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.subject">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:62,63</note>
+      </notes>
+      <segment>
+        <source>About</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.by">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:64,65</note>
+      </notes>
+      <segment>
+        <source>By</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:40</note>
+      </notes>
+      <segment>
+        <source>Audit · Administration · Elysion</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.chip.subject">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:84</note>
+      </notes>
+      <segment>
+        <source>About: <ph id="0" equiv="name" disp="chip.label"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.chip.actor">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:85</note>
+      </notes>
+      <segment>
+        <source>By: <ph id="0" equiv="name" disp="chip.label"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.chip.remove">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:89</note>
+      </notes>
+      <segment>
+        <source>Remove the filter <ph id="0" equiv="filter" disp="this.chipText(chip)"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.kind.board">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:95</note>
+      </notes>
+      <segment>
+        <source>Board</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.kind.room">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:97</note>
+      </notes>
+      <segment>
+        <source>Room</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.kind.group">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:99</note>
+      </notes>
+      <segment>
+        <source>Group</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.kind.user">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:100</note>
+      </notes>
+      <segment>
+        <source>Person</source>
+      </segment>
+    </unit>
+    <unit id="admin.audit.gone">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:101</note>
+      </notes>
+      <segment>
+        <source>(gone)</source>
+      </segment>
+    </unit>
+    <unit id="admin.dialog.close">
+      <notes>
+        <note category="location">src/app/admin/admin-dialog.ts:40</note>
+      </notes>
+      <segment>
+        <source>Close</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:3,4</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:5,8</note>
+      </notes>
+      <segment>
+        <source> A <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">local</pc> group is made and kept here. A <pc id="1" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">linked</pc> group belongs to the identity provider: its members follow the provider as each person signs in. </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.new">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:10,14</note>
+      </notes>
+      <segment>
+        <source> New group </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.new.name">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:17,19</note>
+      </notes>
+      <segment>
+        <source>Name of the new group</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.create">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:33,36</note>
+      </notes>
+      <segment>
+        <source> Create </source>
+      </segment>
+    </unit>
+    <unit id="admin.cancel">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:42,44</note>
+        <note category="location">src/app/admin/admin-groups.html:166,167</note>
+        <note category="location">src/app/admin/admin-groups.html:467,468</note>
+        <note category="location">src/app/admin/admin-groups.html:502,503</note>
+        <note category="location">src/app/admin/admin-groups.html:537,538</note>
+        <note category="location">src/app/admin/admin-users.html:271,272</note>
+        <note category="location">src/app/admin/admin-users.html:303,304</note>
+      </notes>
+      <segment>
+        <source> Cancel </source>
+      </segment>
+    </unit>
+    <unit id="admin.graph.on">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:54,56</note>
+      </notes>
+      <segment>
+        <source>Microsoft Graph reads the linked groups every <ph id="0" equiv="INTERPOLATION" disp="{{ status.intervalMinutes }}"/> minutes.</source>
+      </segment>
+    </unit>
+    <unit id="admin.graph.last">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:59,60</note>
+      </notes>
+      <segment>
+        <source> Last read: <ph id="0" equiv="INTERPOLATION" disp="{{ status.lastSyncAt | date: &apos;medium&apos; }}"/>.</source>
+      </segment>
+    </unit>
+    <unit id="admin.graph.never">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:62,64</note>
+      </notes>
+      <segment>
+        <source> Not read yet.</source>
+      </segment>
+    </unit>
+    <unit id="admin.graph.off">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:66,68</note>
+      </notes>
+      <segment>
+        <source>Microsoft Graph is not switched on: the members of a linked group are the people who have signed in with it.</source>
+      </segment>
+    </unit>
+    <unit id="admin.graph.pending">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:72,73</note>
+      </notes>
+      <segment>
+        <source> Waiting for their first sign-in: <ph id="0" equiv="INTERPOLATION" disp="{{ status.pendingMembers }}"/>.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.search.placeholder">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:85,86</note>
+      </notes>
+      <segment>
+        <source>Name of a group</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.search">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:87,88</note>
+      </notes>
+      <segment>
+        <source>Search groups</source>
+      </segment>
+    </unit>
+    <unit id="admin.search">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:92,95</note>
+        <note category="location">src/app/admin/admin-groups.html:281,282</note>
+        <note category="location">src/app/admin/admin-rooms.html:21,24</note>
+        <note category="location">src/app/admin/admin-users.html:21,24</note>
+        <note category="location">src/app/admin/admin-users.html:171,172</note>
+      </notes>
+      <segment>
+        <source>Search</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:102,103</note>
+      </notes>
+      <segment>
+        <source>The groups could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:113,114</note>
+      </notes>
+      <segment>
+        <source>No group matches.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.caption">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:118,120</note>
+      </notes>
+      <segment>
+        <source> Groups </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.name">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:122,123</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.source">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:123,124</note>
+      </notes>
+      <segment>
+        <source>Source</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.externalId">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:124,125</note>
+      </notes>
+      <segment>
+        <source>External id</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.members">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:125,126</note>
+      </notes>
+      <segment>
+        <source>Members</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.rooms">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:126,127</note>
+      </notes>
+      <segment>
+        <source>Rooms</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.actions">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:127,129</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.rename.field">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:143,144</note>
+      </notes>
+      <segment>
+        <source>New name</source>
+      </segment>
+    </unit>
+    <unit id="admin.save">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:157,158</note>
+      </notes>
+      <segment>
+        <source> Save </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.waiting">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:186,187</note>
+      </notes>
+      <segment>
+        <source>+<ph id="0" equiv="INTERPOLATION" disp="{{ group.pendingCount }}"/> waiting</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.rename">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:200,201</note>
+      </notes>
+      <segment>
+        <source> Rename </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:210,211</note>
+      </notes>
+      <segment>
+        <source> Link </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:220,221</note>
+      </notes>
+      <segment>
+        <source> Unlink </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:230,231</note>
+      </notes>
+      <segment>
+        <source> Delete </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.add.placeholder">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:274,275</note>
+      </notes>
+      <segment>
+        <source>Name or email of the person to add</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.add.search">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:276,277</note>
+      </notes>
+      <segment>
+        <source>Find a person to add</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.add.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:289,291</note>
+      </notes>
+      <segment>
+        <source> The search failed. Try again. </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.add.none">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:294,296</note>
+      </notes>
+      <segment>
+        <source>Nobody matches.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.add">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:313,314</note>
+      </notes>
+      <segment>
+        <source> Add </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.linkedNote">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:323,325</note>
+      </notes>
+      <segment>
+        <source> The identity provider owns the members of this group: they follow its claim as each person signs in and cannot be changed here. </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.lastSync">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:330,332</note>
+      </notes>
+      <segment>
+        <source> Last read from the directory: <ph id="0" equiv="INTERPOLATION" disp="{{ group.lastSyncAt | date: &apos;medium&apos; }}"/> </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.members.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:334,335</note>
+      </notes>
+      <segment>
+        <source>Members</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.members.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:339,341</note>
+      </notes>
+      <segment>
+        <source>The members could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.members.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:350,352</note>
+      </notes>
+      <segment>
+        <source>Nobody is in this group yet.</source>
+      </segment>
+    </unit>
+    <unit id="admin.deactivated">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:358,360</note>
+        <note category="location">src/app/admin/admin-users.html:67,69</note>
+      </notes>
+      <segment>
+        <source>deactivated</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.remove">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:373,374</note>
+      </notes>
+      <segment>
+        <source> Remove </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.pending.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:390,391</note>
+      </notes>
+      <segment>
+        <source>Waiting for their first sign-in</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.pending.note">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:392,395</note>
+      </notes>
+      <segment>
+        <source> The directory lists these people in the group. They become members when they sign in with this address. </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.pending.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:400,402</note>
+      </notes>
+      <segment>
+        <source>The list could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:431,432</note>
+      </notes>
+      <segment>
+        <source>Link to a group of the identity provider</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.warning">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:436,438</note>
+      </notes>
+      <segment>
+        <source> From now on the provider owns the members of “<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>”: they are replaced by the provider&apos;s claim as each person signs in. People who are in the group now stay until then. </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.id">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:442,444</note>
+      </notes>
+      <segment>
+        <source>Id of the group at the identity provider</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.confirm">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:475,477</note>
+      </notes>
+      <segment>
+        <source> Link </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:483,484</note>
+      </notes>
+      <segment>
+        <source>Unlink the group</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink.message">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:488,490</note>
+      </notes>
+      <segment>
+        <source> “<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>” becomes a local group and keeps its members (<ph id="1" equiv="INTERPOLATION_1" disp="{{ group.memberCount }}"/>). The identity provider no longer replaces them. </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink.confirm">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:511,513</note>
+      </notes>
+      <segment>
+        <source> Unlink </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:518,519</note>
+      </notes>
+      <segment>
+        <source>Delete the group</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete.message">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:523,526</note>
+      </notes>
+      <segment>
+        <source> Delete “<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>”? Its memberships go with it (<ph id="1" equiv="INTERPOLATION_1" disp="{{ group.memberCount }}"/>), and the rooms that gave it a role lose that role (<ph id="2" equiv="INTERPOLATION_2" disp="{{ group.roomCount }}"/>). This cannot be undone. </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete.confirm">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:546,548</note>
+      </notes>
+      <segment>
+        <source> Delete </source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:83</note>
+      </notes>
+      <segment>
+        <source>Groups · Administration · Elysion</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.source.local">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:121</note>
+      </notes>
+      <segment>
+        <source>Local</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.source.provider">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:122</note>
+      </notes>
+      <segment>
+        <source>Identity provider</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.nameRule">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:145</note>
+        <note category="location">src/app/admin/admin-groups.ts:191</note>
+      </notes>
+      <segment>
+        <source>A group needs a name of 1 to <ph id="0" equiv="max" disp="MAX_GROUP_NAME_LENGTH"/> characters.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.createError">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:161</note>
+      </notes>
+      <segment>
+        <source>The group could not be made.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.renameError">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:207</note>
+      </notes>
+      <segment>
+        <source>The group could not be renamed.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.rule">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:251</note>
+      </notes>
+      <segment>
+        <source>Enter the id of the group at the identity provider (up to <ph id="0" equiv="max" disp="MAX_EXTERNAL_ID_LENGTH"/> characters).</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:258</note>
+      </notes>
+      <segment>
+        <source>The group could not be linked.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:268</note>
+      </notes>
+      <segment>
+        <source>The group could not be unlinked.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:308</note>
+      </notes>
+      <segment>
+        <source>The group could not be deleted.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.addError">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:354</note>
+      </notes>
+      <segment>
+        <source>The person could not be added.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.removeError">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:377</note>
+      </notes>
+      <segment>
+        <source>The person could not be removed.</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.rename.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:386</note>
+      </notes>
+      <segment>
+        <source>Rename the group <ph id="0" equiv="name" disp="group.name"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:390</note>
+      </notes>
+      <segment>
+        <source>Link the group <ph id="0" equiv="name" disp="group.name"/> to a group of the identity provider</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:394</note>
+      </notes>
+      <segment>
+        <source>Unlink the group <ph id="0" equiv="name" disp="group.name"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:398</note>
+      </notes>
+      <segment>
+        <source>Delete the group <ph id="0" equiv="name" disp="group.name"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.open">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:402</note>
+      </notes>
+      <segment>
+        <source>Show the members of <ph id="0" equiv="name" disp="group.name"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.removeMember.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:406</note>
+      </notes>
+      <segment>
+        <source>Remove <ph id="0" equiv="name" disp="member.displayName"/> from the group</source>
+      </segment>
+    </unit>
+    <unit id="admin.groups.addMember.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:410</note>
+      </notes>
+      <segment>
+        <source>Add <ph id="0" equiv="name" disp="user.displayName"/> to the group</source>
+      </segment>
+    </unit>
+    <unit id="admin.back">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:3,4</note>
+      </notes>
+      <segment>
+        <source>All boards</source>
+      </segment>
+    </unit>
+    <unit id="admin.title">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:4,5</note>
+      </notes>
+      <segment>
+        <source>Administration</source>
+      </segment>
+    </unit>
+    <unit id="admin.nav.label">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:16</note>
+      </notes>
+      <segment>
+        <source>Administration</source>
+      </segment>
+    </unit>
+    <unit id="admin.nav.overview">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:26,28</note>
+      </notes>
+      <segment>
+        <source>Overview</source>
+      </segment>
+    </unit>
+    <unit id="admin.nav.users">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:37,38</note>
+      </notes>
+      <segment>
+        <source>Users</source>
+      </segment>
+    </unit>
+    <unit id="admin.nav.groups">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:46,48</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+      </segment>
+    </unit>
+    <unit id="admin.nav.rooms">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:57,58</note>
+      </notes>
+      <segment>
+        <source>Rooms</source>
+      </segment>
+    </unit>
+    <unit id="admin.nav.audit">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:67,68</note>
+      </notes>
+      <segment>
+        <source>Audit</source>
+      </segment>
+    </unit>
+    <unit id="admin.denied.title">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:78,79</note>
+      </notes>
+      <segment>
+        <source>You are not an administrator</source>
+      </segment>
+    </unit>
+    <unit id="admin.denied.message">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:80,82</note>
+      </notes>
+      <segment>
+        <source> This area is for the administrators of this instance. Ask one of them if you need access. </source>
+      </segment>
+    </unit>
+    <unit id="admin.denied.back">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:82,85</note>
+      </notes>
+      <segment>
+        <source>Back to your boards</source>
+      </segment>
+    </unit>
+    <unit id="admin.checking">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:86,90</note>
+      </notes>
+      <segment>
+        <source>Checking your access…</source>
+      </segment>
+    </unit>
+    <unit id="admin.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.ts:25</note>
+      </notes>
+      <segment>
+        <source>Administration · Elysion</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.title">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:1,2</note>
+      </notes>
+      <segment>
+        <source>Overview</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:3,7</note>
+      </notes>
+      <segment>
+        <source> What this instance holds. The administration shows names, numbers and roles, never what is on a board.
+</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.numbers">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:13</note>
+      </notes>
+      <segment>
+        <source>Numbers</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.users">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:16,17</note>
+      </notes>
+      <segment>
+        <source>People</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.seen">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:18,20</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ numbers.usersSeenLast30Days }}"/> seen in the last 30 days</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.groups">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:23,25</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.rooms">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:27,29</note>
+      </notes>
+      <segment>
+        <source>Rooms</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.boards">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:31,35</note>
+      </notes>
+      <segment>
+        <source>Boards</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.provider">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:38,40</note>
+      </notes>
+      <segment>
+        <source>Sign-in</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.authority">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:41,42</note>
+      </notes>
+      <segment>
+        <source>Identity provider (issuer)</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.hint">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:43,45</note>
+      </notes>
+      <segment>
+        <source>Provider the shell goes to directly</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.noHint">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:49,53</note>
+      </notes>
+      <segment>
+        <source>None: people see the login page of the realm</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.noProvider">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:55,57</note>
+      </notes>
+      <segment>
+        <source>The sign-in settings could not be read.</source>
+      </segment>
+    </unit>
+    <unit id="admin.overview.error">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.ts:55</note>
+      </notes>
+      <segment>
+        <source>The numbers could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="admin.pager.label">
+      <notes>
+        <note category="location">src/app/admin/admin-pager.ts:8</note>
+      </notes>
+      <segment>
+        <source>Pages</source>
+      </segment>
+    </unit>
+    <unit id="admin.pager.previous">
+      <notes>
+        <note category="location">src/app/admin/admin-pager.ts:16,18</note>
+      </notes>
+      <segment>
+        <source> Previous </source>
+      </segment>
+    </unit>
+    <unit id="admin.pager.position">
+      <notes>
+        <note category="location">src/app/admin/admin-pager.ts:19,21</note>
+      </notes>
+      <segment>
+        <source> Page <ph id="0" equiv="INTERPOLATION" disp="{{ page() }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ pages() }}"/>, <ph id="2" equiv="INTERPOLATION_2" disp="{{ total() }}"/> in all </source>
+      </segment>
+    </unit>
+    <unit id="admin.pager.next">
+      <notes>
+        <note category="location">src/app/admin/admin-pager.ts:28,30</note>
+      </notes>
+      <segment>
+        <source> Next </source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.title">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:1,2</note>
+      </notes>
+      <segment>
+        <source>Rooms</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:3,7</note>
+      </notes>
+      <segment>
+        <source> The rooms of this instance with their owners and numbers. Boards and what is on them are not shown.
+</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.search.placeholder">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:14,15</note>
+      </notes>
+      <segment>
+        <source>Name of a room</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.search">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:16,17</note>
+      </notes>
+      <segment>
+        <source>Search rooms</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.error">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:27,28</note>
+      </notes>
+      <segment>
+        <source>The rooms could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:38,39</note>
+      </notes>
+      <segment>
+        <source>No room matches.</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.caption">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:43,45</note>
+      </notes>
+      <segment>
+        <source> Rooms </source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.name">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:47,48</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.owner">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:48,49</note>
+      </notes>
+      <segment>
+        <source>Owner</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.members">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:49,50</note>
+      </notes>
+      <segment>
+        <source>Members</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.groups">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:50,51</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.boards">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:51,52</note>
+      </notes>
+      <segment>
+        <source>Boards</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.created">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:52,53</note>
+      </notes>
+      <segment>
+        <source>Created</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.actions">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:53,55</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.share">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:74,75</note>
+      </notes>
+      <segment>
+        <source> Share </source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.ts:32</note>
+      </notes>
+      <segment>
+        <source>Rooms · Administration · Elysion</source>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.share.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.ts:52</note>
+      </notes>
+      <segment>
+        <source>Share the room <ph id="0" equiv="name" disp="room.name"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.users.title">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:1,2</note>
+      </notes>
+      <segment>
+        <source>Users</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:3,7</note>
+      </notes>
+      <segment>
+        <source> Everybody who has signed in at least once. The groups come from the identity provider or from the administrators.
+</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.search.placeholder">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:14,15</note>
+        <note category="location">src/app/admin/admin-users.html:164,165</note>
+      </notes>
+      <segment>
+        <source>Name or email</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.search">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:16,17</note>
+      </notes>
+      <segment>
+        <source>Search users</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.error">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:27,28</note>
+      </notes>
+      <segment>
+        <source>The users could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:38,39</note>
+        <note category="location">src/app/admin/admin-users.html:184,186</note>
+      </notes>
+      <segment>
+        <source>No user matches.</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.caption">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:43,45</note>
+      </notes>
+      <segment>
+        <source> Users </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.name">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:47,48</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.email">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:48,49</note>
+      </notes>
+      <segment>
+        <source>Email</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.groups">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:49,50</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.lastSeen">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:50,51</note>
+      </notes>
+      <segment>
+        <source>Last seen</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.created">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:51,53</note>
+      </notes>
+      <segment>
+        <source>Created</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.never">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:84,86</note>
+      </notes>
+      <segment>
+        <source>never</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.handover.done">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:116,118</note>
+      </notes>
+      <segment>
+        <source> Handed over: boards <ph id="0" equiv="INTERPOLATION" disp="{{ moved.boards }}"/>, rooms <ph id="1" equiv="INTERPOLATION_1" disp="{{ moved.rooms }}"/>. </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.status">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:120,121</note>
+      </notes>
+      <segment>
+        <source>Status</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.deactivated.since">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:123,125</note>
+      </notes>
+      <segment>
+        <source> Deactivated on <ph id="0" equiv="INTERPOLATION" disp="{{ person.deactivatedAt | date: &apos;medium&apos; }}"/>. Every request of this person is refused. </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.reactivate">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:133,135</note>
+      </notes>
+      <segment>
+        <source> Reactivate </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.active">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:136,138</note>
+      </notes>
+      <segment>
+        <source>This person can use Elysion.</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.deactivate">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:145,147</note>
+      </notes>
+      <segment>
+        <source> Deactivate… </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.handover.title">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:151,152</note>
+      </notes>
+      <segment>
+        <source>Hand over</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.handover.note">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:153,155</note>
+      </notes>
+      <segment>
+        <source> Owned by this person: boards <ph id="0" equiv="INTERPOLATION" disp="{{ owned().boards }}"/>, rooms <ph id="1" equiv="INTERPOLATION_1" disp="{{ owned().rooms }}"/>. Give their ownership to somebody else: the new owner gets the Owner role, this person keeps nothing. </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.handover.find">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:166,167</note>
+      </notes>
+      <segment>
+        <source>Find the person who takes over</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.handover.findError">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:179,181</note>
+      </notes>
+      <segment>
+        <source> The search did not work. </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.handover.button">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:203,204</note>
+      </notes>
+      <segment>
+        <source> Hand over </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.note">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:214,216</note>
+      </notes>
+      <segment>
+        <source> The roles this person has directly. Roles through a group or a room are not listed. </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.rooms">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:216,217</note>
+      </notes>
+      <segment>
+        <source>Rooms</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.noRooms">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:218,220</note>
+      </notes>
+      <segment>
+        <source>No room.</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.boards">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:229,230</note>
+      </notes>
+      <segment>
+        <source>Boards</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.noBoards">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:231,233</note>
+      </notes>
+      <segment>
+        <source>No board.</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.deactivate.title">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:252,253</note>
+      </notes>
+      <segment>
+        <source>Deactivate this person</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.deactivate.message">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:257,260</note>
+      </notes>
+      <segment>
+        <source> Deactivate “<ph id="0" equiv="INTERPOLATION" disp="{{ person.displayName }}"/>”? They are refused everywhere from now on and are not offered when somebody is added; they stay in the member lists as deactivated, and what they own stays where it is until you hand it over. Disable the account at the identity provider as well: Elysion cannot do that, and it is what keeps the person from signing in there. </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.deactivate.confirm">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:280,282</note>
+      </notes>
+      <segment>
+        <source> Deactivate </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.handover.dialog">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:286,287</note>
+      </notes>
+      <segment>
+        <source>Hand over the ownership</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.handover.message">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:291,294</note>
+      </notes>
+      <segment>
+        <source> Make “<ph id="0" equiv="INTERPOLATION" disp="{{ to.displayName }}"/>” the owner of what “<ph id="1" equiv="INTERPOLATION_1" disp="{{ person.displayName }}"/>” owns (boards <ph id="2" equiv="INTERPOLATION_2" disp="{{ owned().boards }}"/>, rooms <ph id="3" equiv="INTERPOLATION_3" disp="{{ owned().rooms }}"/>)? “<ph id="4" equiv="INTERPOLATION_1" disp="{{ person.displayName }}"/>” keeps no role on it. You get no role either: you only hand it over. </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.handover.confirm">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:312,314</note>
+      </notes>
+      <segment>
+        <source> Hand over </source>
+      </segment>
+    </unit>
+    <unit id="admin.users.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-users.ts:53</note>
+      </notes>
+      <segment>
+        <source>Users · Administration · Elysion</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.error">
+      <notes>
+        <note category="location">src/app/admin/admin-users.ts:75</note>
+      </notes>
+      <segment>
+        <source>The details could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.deactivate.error">
+      <notes>
+        <note category="location">src/app/admin/admin-users.ts:113</note>
+      </notes>
+      <segment>
+        <source>The person could not be deactivated.</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.reactivate.error">
+      <notes>
+        <note category="location">src/app/admin/admin-users.ts:122</note>
+      </notes>
+      <segment>
+        <source>The person could not be reactivated.</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.handover.error">
+      <notes>
+        <note category="location">src/app/admin/admin-users.ts:199</note>
+      </notes>
+      <segment>
+        <source>The hand-over did not work.</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.deactivate.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-users.ts:207</note>
+      </notes>
+      <segment>
+        <source>Deactivate <ph id="0" equiv="name" disp="person.displayName"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.users.handover.to">
+      <notes>
+        <note category="location">src/app/admin/admin-users.ts:211</note>
+      </notes>
+      <segment>
+        <source>Hand over to <ph id="0" equiv="name" disp="user.displayName"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.users.open">
+      <notes>
+        <note category="location">src/app/admin/admin-users.ts:215</note>
+      </notes>
+      <segment>
+        <source>Show the rooms and boards of <ph id="0" equiv="name" disp="user.displayName"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.error.forbidden">
+      <notes>
+        <note category="location">src/app/admin/paged-list.ts:21</note>
+      </notes>
+      <segment>
+        <source>Only an administrator can do this.</source>
+      </segment>
+    </unit>
+    <unit id="audit.somebody">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:32</note>
+      </notes>
+      <segment>
+        <source>Somebody</source>
+      </segment>
+    </unit>
+    <unit id="audit.aPerson">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:33</note>
+      </notes>
+      <segment>
+        <source>a person</source>
+      </segment>
+    </unit>
+    <unit id="audit.member.added">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:37</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> gave <ph id="1" equiv="target" disp="target"/> the role <ph id="2" equiv="role" disp="role"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.member.changed">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:39</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> changed the role of <ph id="1" equiv="target" disp="target"/> from <ph id="2" equiv="from" disp="text(entry, &apos;from&apos;)"/> to <ph id="3" equiv="to" disp="text(entry, &apos;to&apos;)"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.member.removed">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:41</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> removed <ph id="1" equiv="target" disp="target"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.room.groupSet">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:43</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> gave the group <ph id="1" equiv="group" disp="text(entry, &apos;groupName&apos;)"/> the role <ph id="2" equiv="role" disp="role"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.room.groupRemoved">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:45</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> took a group out of the room</source>
+      </segment>
+    </unit>
+    <unit id="audit.group.created">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:47</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> created the group <ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.group.renamed">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:49</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> renamed the group from <ph id="1" equiv="from" disp="text(entry, &apos;from&apos;)"/> to <ph id="2" equiv="to" disp="text(entry, &apos;to&apos;)"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.group.linked">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:51</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> linked the group to the identity provider</source>
+      </segment>
+    </unit>
+    <unit id="audit.group.unlinked">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:53</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> unlinked the group from the identity provider</source>
+      </segment>
+    </unit>
+    <unit id="audit.group.deleted">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:55</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> deleted the group <ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.group.memberAdded">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:57</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> added <ph id="1" equiv="target" disp="target"/> to the group</source>
+      </segment>
+    </unit>
+    <unit id="audit.group.memberRemoved">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:59</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> took <ph id="1" equiv="target" disp="target"/> out of the group</source>
+      </segment>
+    </unit>
+    <unit id="audit.groups.synced">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:61</note>
+      </notes>
+      <segment>
+        <source>The groups of <ph id="0" equiv="actor" disp="actor"/> from the identity provider changed: <ph id="1" equiv="added" disp="text(entry, &apos;added&apos;)"/> added, <ph id="2" equiv="removed" disp="text(entry, &apos;removed&apos;)"/> removed</source>
+      </segment>
+    </unit>
+    <unit id="audit.user.deactivated">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:63</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> deactivated <ph id="1" equiv="person" disp="entry.subjectName ?? target"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.user.reactivated">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:65</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> reactivated <ph id="1" equiv="person" disp="entry.subjectName ?? target"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.owner.transferred">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:67</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> handed the ownership over to <ph id="1" equiv="target" disp="target"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.invitation.created">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:69</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> made an invitation link for the role <ph id="1" equiv="role" disp="role"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.invitation.revoked">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:71</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> revoked an invitation link</source>
+      </segment>
+    </unit>
+    <unit id="audit.invitation.accepted">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:73</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> joined with an invitation link as <ph id="1" equiv="role" disp="role"/></source>
+      </segment>
+    </unit>
     <unit id="boards.new.aria">
       <notes>
         <note category="location">src/app/board-list/board-list.html:9,10</note>
@@ -1091,7 +2820,7 @@
     </unit>
     <unit id="board.pageTitle.notFound">
       <notes>
-        <note category="location">src/app/board/board.ts:267</note>
+        <note category="location">src/app/board/board.ts:273</note>
       </notes>
       <segment>
         <source>Board not found · Elysion</source>
@@ -1099,7 +2828,7 @@
     </unit>
     <unit id="board.pageTitle.named">
       <notes>
-        <note category="location">src/app/board/board.ts:269</note>
+        <note category="location">src/app/board/board.ts:275</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> · Elysion</source>
@@ -1107,7 +2836,7 @@
     </unit>
     <unit id="board.error.templateNotApplied">
       <notes>
-        <note category="location">src/app/board/board.ts:300</note>
+        <note category="location">src/app/board/board.ts:306</note>
       </notes>
       <segment>
         <source>The template could not be applied. The board is blank.</source>
@@ -1115,7 +2844,7 @@
     </unit>
     <unit id="board.error.renameFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:313</note>
+        <note category="location">src/app/board/board.ts:319</note>
       </notes>
       <segment>
         <source>The board could not be renamed.</source>
@@ -1123,7 +2852,7 @@
     </unit>
     <unit id="board.error.accessLost">
       <notes>
-        <note category="location">src/app/board/board.ts:330</note>
+        <note category="location">src/app/board/board.ts:336</note>
       </notes>
       <segment>
         <source>You no longer have access to this board.</source>
@@ -1131,7 +2860,7 @@
     </unit>
     <unit id="board.error.timerFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:489</note>
+        <note category="location">src/app/board/board.ts:495</note>
       </notes>
       <segment>
         <source>The timer could not be changed.</source>
@@ -1139,8 +2868,8 @@
     </unit>
     <unit id="board.error.nothingSelected">
       <notes>
-        <note category="location">src/app/board/board.ts:522</note>
-        <note category="location">src/app/board/board.ts:669</note>
+        <note category="location">src/app/board/board.ts:528</note>
+        <note category="location">src/app/board/board.ts:675</note>
       </notes>
       <segment>
         <source>Nothing is selected.</source>
@@ -1148,7 +2877,7 @@
     </unit>
     <unit id="board.error.exportEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:523</note>
+        <note category="location">src/app/board/board.ts:529</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to export.</source>
@@ -1156,7 +2885,7 @@
     </unit>
     <unit id="board.error.exportFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:533</note>
+        <note category="location">src/app/board/board.ts:539</note>
       </notes>
       <segment>
         <source>The export failed.</source>
@@ -1164,8 +2893,8 @@
     </unit>
     <unit id="board.error.importFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:564</note>
-        <note category="location">src/app/board/board.ts:592</note>
+        <note category="location">src/app/board/board.ts:570</note>
+        <note category="location">src/app/board/board.ts:598</note>
       </notes>
       <segment>
         <source>The import failed.</source>
@@ -1173,7 +2902,7 @@
     </unit>
     <unit id="board.notice.imported.one">
       <notes>
-        <note category="location">src/app/board/board.ts:585</note>
+        <note category="location">src/app/board/board.ts:591</note>
       </notes>
       <segment>
         <source>Imported 1 element from <ph id="0" equiv="file" disp="file.name"/>.</source>
@@ -1181,7 +2910,7 @@
     </unit>
     <unit id="board.notice.imported.many">
       <notes>
-        <note category="location">src/app/board/board.ts:586</note>
+        <note category="location">src/app/board/board.ts:592</note>
       </notes>
       <segment>
         <source>Imported <ph id="0" equiv="count" disp="count"/> elements from <ph id="1" equiv="file" disp="file.name"/>.</source>
@@ -1189,7 +2918,7 @@
     </unit>
     <unit id="board.error.templateAddFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:612</note>
+        <note category="location">src/app/board/board.ts:618</note>
       </notes>
       <segment>
         <source>The template could not be added.</source>
@@ -1197,7 +2926,7 @@
     </unit>
     <unit id="board.template.defaultSelectionName">
       <notes>
-        <note category="location">src/app/board/board.ts:623</note>
+        <note category="location">src/app/board/board.ts:629</note>
       </notes>
       <segment>
         <source>Selection</source>
@@ -1205,7 +2934,7 @@
     </unit>
     <unit id="board.template.defaultBoardName">
       <notes>
-        <note category="location">src/app/board/board.ts:624</note>
+        <note category="location">src/app/board/board.ts:630</note>
       </notes>
       <segment>
         <source>Board</source>
@@ -1213,7 +2942,7 @@
     </unit>
     <unit id="board.template.nameRequired">
       <notes>
-        <note category="location">src/app/board/board.ts:653</note>
+        <note category="location">src/app/board/board.ts:659</note>
       </notes>
       <segment>
         <source>Give the template a name.</source>
@@ -1221,7 +2950,7 @@
     </unit>
     <unit id="board.error.templateEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:670</note>
+        <note category="location">src/app/board/board.ts:676</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to save as a template.</source>
@@ -1229,7 +2958,7 @@
     </unit>
     <unit id="board.notice.templateSaved">
       <notes>
-        <note category="location">src/app/board/board.ts:681</note>
+        <note category="location">src/app/board/board.ts:687</note>
       </notes>
       <segment>
         <source>Saved the template “<ph id="0" equiv="name" disp="name"/>”.</source>
@@ -1237,7 +2966,7 @@
     </unit>
     <unit id="board.error.templateSaveFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:692</note>
+        <note category="location">src/app/board/board.ts:698</note>
       </notes>
       <segment>
         <source>The template could not be saved.</source>
@@ -1379,6 +3108,46 @@
         <source>The voting could not be changed.</source>
       </segment>
     </unit>
+    <unit id="deactivated.title">
+      <notes>
+        <note category="location">src/app/deactivated/deactivated.html:3,4</note>
+      </notes>
+      <segment>
+        <source>This account has been deactivated</source>
+      </segment>
+    </unit>
+    <unit id="deactivated.message">
+      <notes>
+        <note category="location">src/app/deactivated/deactivated.html:5,9</note>
+      </notes>
+      <segment>
+        <source> An administrator has deactivated your account, so Elysion refuses every request. If you think this is a mistake, ask the administrators of your organization to reactivate it. </source>
+      </segment>
+    </unit>
+    <unit id="deactivated.logout">
+      <notes>
+        <note category="location">src/app/deactivated/deactivated.html:10,13</note>
+      </notes>
+      <segment>
+        <source> Log out </source>
+      </segment>
+    </unit>
+    <unit id="deactivated.checking">
+      <notes>
+        <note category="location">src/app/deactivated/deactivated.html:14,17</note>
+      </notes>
+      <segment>
+        <source>Checking your account…</source>
+      </segment>
+    </unit>
+    <unit id="deactivated.pageTitle">
+      <notes>
+        <note category="location">src/app/deactivated/deactivated.ts:25</note>
+      </notes>
+      <segment>
+        <source>Account deactivated · Elysion</source>
+      </segment>
+    </unit>
     <unit id="invite.joining">
       <notes>
         <note category="location">src/app/invite/invite.html:4,6</note>
@@ -1451,6 +3220,65 @@
         <source>Joining · Elysion</source>
       </segment>
     </unit>
+    <unit id="share.error.ownerOnlyRoom">
+      <notes>
+        <note category="location">src/app/share/error-message.ts:17</note>
+      </notes>
+      <segment>
+        <source>Only an owner of the room can do this.</source>
+      </segment>
+    </unit>
+    <unit id="share.error.ownerOnlyBoard">
+      <notes>
+        <note category="location">src/app/share/error-message.ts:18</note>
+      </notes>
+      <segment>
+        <source>Only an owner of the board can do this.</source>
+      </segment>
+    </unit>
+    <unit id="share.history.title">
+      <notes>
+        <note category="location">src/app/share/history.html:10,11</note>
+      </notes>
+      <segment>
+        <source>History</source>
+      </segment>
+    </unit>
+    <unit id="share.history.loading">
+      <notes>
+        <note category="location">src/app/share/history.html:17,19</note>
+      </notes>
+      <segment>
+        <source>Loading the history…</source>
+      </segment>
+    </unit>
+    <unit id="share.history.error">
+      <notes>
+        <note category="location">src/app/share/history.html:21,22</note>
+      </notes>
+      <segment>
+        <source>The history could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="share.retry">
+      <notes>
+        <note category="location">src/app/share/history.html:23,24</note>
+        <note category="location">src/app/share/room-access.html:10,12</note>
+        <note category="location">src/app/share/room-groups.html:47,49</note>
+        <note category="location">src/app/share/share-dialog.html:71,72</note>
+      </notes>
+      <segment>
+        <source> Try again </source>
+      </segment>
+    </unit>
+    <unit id="share.history.empty">
+      <notes>
+        <note category="location">src/app/share/history.html:29,31</note>
+      </notes>
+      <segment>
+        <source>Nothing was recorded yet.</source>
+      </segment>
+    </unit>
     <unit id="invite.title">
       <notes>
         <note category="location">src/app/share/invite-links.html:2,4</note>
@@ -1471,7 +3299,8 @@
       <notes>
         <note category="location">src/app/share/invite-links.html:9,11</note>
         <note category="location">src/app/share/invite-links.ts:172</note>
-        <note category="location">src/app/share/share-dialog.ts:198</note>
+        <note category="location">src/app/share/room-groups.ts:198</note>
+        <note category="location">src/app/share/share-dialog.ts:249</note>
       </notes>
       <segment>
         <source> Viewer </source>
@@ -1481,7 +3310,8 @@
       <notes>
         <note category="location">src/app/share/invite-links.html:12,14</note>
         <note category="location">src/app/share/invite-links.ts:171</note>
-        <note category="location">src/app/share/share-dialog.ts:196</note>
+        <note category="location">src/app/share/room-groups.ts:196</note>
+        <note category="location">src/app/share/share-dialog.ts:247</note>
       </notes>
       <segment>
         <source> Editor </source>
@@ -1679,6 +3509,282 @@
         <source>Revoke the link for <ph id="0" equiv="role" disp="this.roleLabel(link.role)"/> that expires <ph id="1" equiv="expires" disp="this.expiresOn(link)"/></source>
       </segment>
     </unit>
+    <unit id="share.access.title">
+      <notes>
+        <note category="location">src/app/share/room-access.html:2,4</note>
+      </notes>
+      <segment>
+        <source>Access through the room</source>
+      </segment>
+    </unit>
+    <unit id="share.access.loading">
+      <notes>
+        <note category="location">src/app/share/room-access.html:5,8</note>
+      </notes>
+      <segment>
+        <source>Loading the room…</source>
+      </segment>
+    </unit>
+    <unit id="share.access.error">
+      <notes>
+        <note category="location">src/app/share/room-access.html:9,10</note>
+      </notes>
+      <segment>
+        <source>The room could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="share.access.intro">
+      <notes>
+        <note category="location">src/app/share/room-access.html:16,17</note>
+      </notes>
+      <segment>
+        <source>This board is in the room “<ph id="0" equiv="INTERPOLATION" disp="{{ room()?.name ?? &apos;…&apos; }}"/>”. Everyone who has a role in that room can open it with that role:</source>
+      </segment>
+    </unit>
+    <unit id="2548204464334795778">
+      <notes>
+        <note category="location">src/app/share/room-access.html:24,25</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 person} other {<ph id="0" equiv="INTERPOLATION"/> people}}</source>
+      </segment>
+    </unit>
+    <unit id="share.access.people">
+      <notes>
+        <note category="location">src/app/share/room-access.html:24,25</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="ICU" disp="{people(), plural, =1 {1 person} other {{{ people() }} people}}" subFlows="7747169762350532375"/> in the room</source>
+      </segment>
+    </unit>
+    <unit id="share.access.people.unknown">
+      <notes>
+        <note category="location">src/app/share/room-access.html:29,32</note>
+      </notes>
+      <segment>
+        <source>The people of the room (only its owners can list them)</source>
+      </segment>
+    </unit>
+    <unit id="share.access.groups.none">
+      <notes>
+        <note category="location">src/app/share/room-access.html:35,37</note>
+      </notes>
+      <segment>
+        <source>No groups</source>
+      </segment>
+    </unit>
+    <unit id="share.access.groups.label">
+      <notes>
+        <note category="location">src/app/share/room-access.html:37,38</note>
+      </notes>
+      <segment>
+        <source>Groups:</source>
+      </segment>
+    </unit>
+    <unit id="share.access.manage">
+      <notes>
+        <note category="location">src/app/share/room-access.html:44,49</note>
+      </notes>
+      <segment>
+        <source>Manage the room</source>
+      </segment>
+    </unit>
+    <unit id="share.access.group.owner">
+      <notes>
+        <note category="location">src/app/share/room-access.ts:68</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="group.name"/> (Owner)</source>
+      </segment>
+    </unit>
+    <unit id="share.access.group.editor">
+      <notes>
+        <note category="location">src/app/share/room-access.ts:70</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="group.name"/> (Editor)</source>
+      </segment>
+    </unit>
+    <unit id="share.access.group.viewer">
+      <notes>
+        <note category="location">src/app/share/room-access.ts:72</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="group.name"/> (Viewer)</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.title">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:2,5</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.field">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:8</note>
+      </notes>
+      <segment>
+        <source>Group</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.placeholder">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:9,10</note>
+      </notes>
+      <segment>
+        <source>Name of a group</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.empty">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:11,12</note>
+      </notes>
+      <segment>
+        <source>No group found.</source>
+      </segment>
+    </unit>
+    <unit id="share.role">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:22,24</note>
+        <note category="location">src/app/share/share-dialog.html:45,47</note>
+      </notes>
+      <segment>
+        <source>Role</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.newRole.label">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:24,25</note>
+      </notes>
+      <segment>
+        <source>Role of the new group</source>
+      </segment>
+    </unit>
+    <unit id="share.add">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:34,36</note>
+        <note category="location">src/app/share/share-dialog.html:57,60</note>
+      </notes>
+      <segment>
+        <source>Add</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.loading">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:43,44</note>
+      </notes>
+      <segment>
+        <source>Loading groups…</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.none">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:50,52</note>
+      </notes>
+      <segment>
+        <source>No group has a role in this room yet.</source>
+      </segment>
+    </unit>
+    <unit id="share.remove">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:77,78</note>
+        <note category="location">src/app/share/share-dialog.html:105,106</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.source.provider">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:11</note>
+      </notes>
+      <segment>
+        <source>from Microsoft Entra ID</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.source.local">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:12</note>
+      </notes>
+      <segment>
+        <source>local</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.load">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:74</note>
+      </notes>
+      <segment>
+        <source>The groups could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.search">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:110</note>
+      </notes>
+      <segment>
+        <source>The groups could not be searched.</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.pick">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:132</note>
+      </notes>
+      <segment>
+        <source>Search for a group and choose one from the list.</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.add">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:138</note>
+      </notes>
+      <segment>
+        <source>The group could not be added.</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.role">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:152</note>
+      </notes>
+      <segment>
+        <source>The role could not be changed.</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.remove">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:164</note>
+      </notes>
+      <segment>
+        <source>The group could not be removed.</source>
+      </segment>
+    </unit>
+    <unit id="share.role.owner">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:194</note>
+        <note category="location">src/app/share/share-dialog.ts:245</note>
+      </notes>
+      <segment>
+        <source>Owner</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.roleOf.label">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:203</note>
+      </notes>
+      <segment>
+        <source>Role of the group <ph id="0" equiv="name" disp="group.name"/></source>
+      </segment>
+    </unit>
+    <unit id="share.groups.remove.label">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:207</note>
+      </notes>
+      <segment>
+        <source>Remove the group <ph id="0" equiv="name" disp="group.name"/></source>
+      </segment>
+    </unit>
     <unit id="share.title.room">
       <notes>
         <note category="location">src/app/share/share-dialog.html:12,13</note>
@@ -1703,28 +3809,28 @@
         <source>Close</source>
       </segment>
     </unit>
-    <unit id="share.email">
+    <unit id="share.person">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:30,32</note>
+        <note category="location">src/app/share/share-dialog.html:31</note>
       </notes>
       <segment>
-        <source>Email</source>
+        <source>Person</source>
       </segment>
     </unit>
-    <unit id="share.email.placeholder">
+    <unit id="share.person.placeholder">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:37,38</note>
+        <note category="location">src/app/share/share-dialog.html:32,33</note>
       </notes>
       <segment>
-        <source>name@example.com</source>
+        <source>Name or name@example.com</source>
       </segment>
     </unit>
-    <unit id="share.role">
+    <unit id="share.person.empty">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:45,47</note>
+        <note category="location">src/app/share/share-dialog.html:34,35</note>
       </notes>
       <segment>
-        <source>Role</source>
+        <source>Nobody found. A full email address still works.</source>
       </segment>
     </unit>
     <unit id="share.newRole.label">
@@ -1733,14 +3839,6 @@
       </notes>
       <segment>
         <source>Role of the new member</source>
-      </segment>
-    </unit>
-    <unit id="share.add">
-      <notes>
-        <note category="location">src/app/share/share-dialog.html:57,60</note>
-      </notes>
-      <segment>
-        <source>Add</source>
       </segment>
     </unit>
     <unit id="share.members.label">
@@ -1759,25 +3857,17 @@
         <source>Loading members…</source>
       </segment>
     </unit>
-    <unit id="share.retry">
+    <unit id="share.member.deactivated">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:71,72</note>
+        <note category="location">src/app/share/share-dialog.html:81,83</note>
       </notes>
       <segment>
-        <source> Try again </source>
-      </segment>
-    </unit>
-    <unit id="share.remove">
-      <notes>
-        <note category="location">src/app/share/share-dialog.html:102,103</note>
-      </notes>
-      <segment>
-        <source>Remove</source>
+        <source>deactivated</source>
       </segment>
     </unit>
     <unit id="share.hint.login">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:114,116</note>
+        <note category="location">src/app/share/share-dialog.html:125,127</note>
       </notes>
       <segment>
         <source>Someone has to log in to Elysion once before they can be added.</source>
@@ -1785,7 +3875,7 @@
     </unit>
     <unit id="share.hint.room">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:118,120</note>
+        <note category="location">src/app/share/share-dialog.html:129,131</note>
       </notes>
       <segment>
         <source>A member gets this role on every board in the room. Viewers can look at them but not change them.</source>
@@ -1793,47 +3883,39 @@
     </unit>
     <unit id="share.hint.board">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:123,125</note>
+        <note category="location">src/app/share/share-dialog.html:134,136</note>
       </notes>
       <segment>
         <source>Viewers can look at the board but not change it.</source>
       </segment>
     </unit>
-    <unit id="share.error.ownerOnlyRoom">
-      <notes>
-        <note category="location">src/app/share/share-dialog.ts:38</note>
-      </notes>
-      <segment>
-        <source>Only an owner of the room can do this.</source>
-      </segment>
-    </unit>
-    <unit id="share.error.ownerOnlyBoard">
-      <notes>
-        <note category="location">src/app/share/share-dialog.ts:39</note>
-      </notes>
-      <segment>
-        <source>Only an owner of the board can do this.</source>
-      </segment>
-    </unit>
     <unit id="share.error.loadFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:113</note>
+        <note category="location">src/app/share/share-dialog.ts:116</note>
       </notes>
       <segment>
         <source>The members could not be loaded.</source>
       </segment>
     </unit>
-    <unit id="share.error.emailRequired">
+    <unit id="share.error.personRequired">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:133</note>
+        <note category="location">src/app/share/share-dialog.ts:176</note>
       </notes>
       <segment>
-        <source>Enter the email of the person to add.</source>
+        <source>Search for a person by name or email, or enter an email address.</source>
+      </segment>
+    </unit>
+    <unit id="share.error.pickPerson">
+      <notes>
+        <note category="location">src/app/share/share-dialog.ts:181</note>
+      </notes>
+      <segment>
+        <source>Choose a person from the list, or enter a full email address.</source>
       </segment>
     </unit>
     <unit id="share.error.addFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:138</note>
+        <note category="location">src/app/share/share-dialog.ts:187</note>
       </notes>
       <segment>
         <source>The member could not be added.</source>
@@ -1841,7 +3923,7 @@
     </unit>
     <unit id="share.error.roleFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:151</note>
+        <note category="location">src/app/share/share-dialog.ts:202</note>
       </notes>
       <segment>
         <source>The role could not be changed.</source>
@@ -1849,23 +3931,15 @@
     </unit>
     <unit id="share.error.removeFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:164</note>
+        <note category="location">src/app/share/share-dialog.ts:215</note>
       </notes>
       <segment>
         <source>The member could not be removed.</source>
       </segment>
     </unit>
-    <unit id="share.role.owner">
-      <notes>
-        <note category="location">src/app/share/share-dialog.ts:194</note>
-      </notes>
-      <segment>
-        <source>Owner</source>
-      </segment>
-    </unit>
     <unit id="share.remove.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:205</note>
+        <note category="location">src/app/share/share-dialog.ts:256</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="name" disp="member.displayName"/></source>
@@ -1873,10 +3947,34 @@
     </unit>
     <unit id="share.roleOf.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:209</note>
+        <note category="location">src/app/share/share-dialog.ts:260</note>
       </notes>
       <segment>
         <source>Role of <ph id="0" equiv="name" disp="member.displayName"/></source>
+      </segment>
+    </unit>
+    <unit id="typeahead.searching">
+      <notes>
+        <note category="location">src/app/share/typeahead.ts:70</note>
+      </notes>
+      <segment>
+        <source>Searching…</source>
+      </segment>
+    </unit>
+    <unit id="typeahead.results.one">
+      <notes>
+        <note category="location">src/app/share/typeahead.ts:174</note>
+      </notes>
+      <segment>
+        <source>1 match. Use the arrow keys to choose.</source>
+      </segment>
+    </unit>
+    <unit id="typeahead.results.many">
+      <notes>
+        <note category="location">src/app/share/typeahead.ts:175</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="count"/> matches. Use the arrow keys to choose.</source>
       </segment>
     </unit>
     <unit id="app.brand.label">
@@ -2593,9 +4691,17 @@
         <source>Account</source>
       </segment>
     </unit>
+    <unit id="topbar.user.admin">
+      <notes>
+        <note category="location">src/app/topbar/user-menu.html:43,46</note>
+      </notes>
+      <segment>
+        <source> Administration </source>
+      </segment>
+    </unit>
     <unit id="topbar.user.logout">
       <notes>
-        <note category="location">src/app/topbar/user-menu.html:42,46</note>
+        <note category="location">src/app/topbar/user-menu.html:53,57</note>
       </notes>
       <segment>
         <source> Log out </source>
@@ -2603,7 +4709,7 @@
     </unit>
     <unit id="topbar.user.signed-in">
       <notes>
-        <note category="location">src/app/topbar/user-menu.ts:41</note>
+        <note category="location">src/app/topbar/user-menu.ts:46</note>
       </notes>
       <segment>
         <source>Signed in as <ph id="0" equiv="name" disp="this.user().name"/></source>

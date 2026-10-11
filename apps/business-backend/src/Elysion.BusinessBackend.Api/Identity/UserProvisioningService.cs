@@ -2,6 +2,7 @@ using System.Security.Claims;
 
 using Ardalis.GuardClauses;
 
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
@@ -20,13 +21,16 @@ namespace Elysion.BusinessBackend.Api.Identity;
 /// <list type="bullet">
 /// <item><c>sub</c> → <see cref="User.Subject"/>. Required: a token without it is not a person we can name.</item>
 /// <item><c>email</c> → <see cref="User.Email"/>. Optional.</item>
-/// <item><c>preferred_username</c>, else <c>name</c>, else <c>email</c>, else <c>sub</c> → <see cref="User.DisplayName"/>:
-/// a display name is never blank, whichever optional claims the realm leaves out.</item>
+/// <item><see cref="User.DisplayName"/> by <see cref="DisplayNameOf"/>: <c>preferred_username</c> unless it looks like a
+/// brokered account (an address or a GUID), else <c>name</c>, else <c>preferred_username</c>, <c>email</c>, <c>sub</c>:
+/// a display name is never blank, whichever optional claims the realm leaves out. The shell uses the same order.</item>
 /// </list>
 /// </remarks>
 public sealed class UserProvisioningService(
     IUserRepository users,
     IGroupRepository groups,
+    IGroupSyncRepository groupSync,
+    IAuditLog audit,
     IUnitOfWork unitOfWork,
     IMemoryCache cache,
     IOptions<OidcOptions> oidc,
@@ -54,7 +58,10 @@ public sealed class UserProvisioningService(
         }
 
         var email = Claim(principal, EmailClaim);
-        var displayName = Claim(principal, PreferredUsernameClaim) ?? Claim(principal, NameClaim) ?? email ?? subject;
+        var displayName = DisplayNameOf(Claim(principal, PreferredUsernameClaim),
+            Claim(principal, NameClaim),
+            email,
+            subject);
         displayName = Truncate(displayName, User.MaxDisplayNameLength);
         email = email is null ? null : Truncate(email, User.MaxEmailLength);
 
@@ -75,14 +82,35 @@ public sealed class UserProvisioningService(
             {
                 await UpdateAsync(user, email, displayName, cancellationToken);
             }
+            else if (email is not null)
+            {
+                // The directory may have listed the person in linked groups before they ever came (the Graph sync, #667).
+                await groupSync.AdoptPendingAsync(user.Id, email, time.GetUtcNow(), cancellationToken);
+            }
         }
         else
         {
             await UpdateAsync(user, email, displayName, cancellationToken);
         }
 
-        await SyncGroupsAsync(user, principal, cancellationToken);
+        if (!user.IsDeactivated)
+        {
+            await SyncGroupsAsync(user, principal, cancellationToken);
+        }
+
         return user;
+    }
+
+    /// <summary>
+    /// The name shown for a person: the username, unless it looks like a brokered account (it contains <c>@</c> or is a
+    /// GUID, which is what Entra ID makes of it), then the name; else the name, the username, the email, the subject.
+    /// The same order as <c>displayNameOf</c> in the shell, written down in docs/specs/identity.md.
+    /// </summary>
+    public static string DisplayNameOf(string? preferredUsername, string? name, string? email, string subject)
+    {
+        var brokered = preferredUsername is not null
+                       && (preferredUsername.Contains('@') || Guid.TryParse(preferredUsername, out _));
+        return (brokered ? null : preferredUsername) ?? name ?? preferredUsername ?? email ?? subject;
     }
 
     private async Task UpdateAsync(User user, string? email, string displayName, CancellationToken cancellationToken)
@@ -132,7 +160,17 @@ public sealed class UserProvisioningService(
             return;
         }
 
-        await groups.SetLinkedMembershipsAsync(user.Id, values, time.GetUtcNow(), cancellationToken);
+        // One entry per changed set ("groups from the identity provider: +2 -1"), written in the same commit; the person is the actor
+        // (the request has no current user yet while it is being provisioned).
+        await groups.SetLinkedMembershipsAsync(user.Id,
+            values,
+            time.GetUtcNow(),
+            (added, removed) => audit.Record(AuditActions.GroupsSynced,
+                AuditActions.User,
+                user.Id,
+                new { added, removed },
+                user.Id),
+            cancellationToken);
         cache.Set(key, hash, GroupClaimMemory);
     }
 

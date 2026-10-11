@@ -124,10 +124,16 @@ With option 1 and brokering the facts are these, and they are less comfortable t
   for the enterprise realm and to document the number.
 - **A person disabled or deleted in Entra** cannot sign in again, but the Keycloak user remains (a shadow of the Entra account) and its session lives
   until the same limit. Entra's own conditional access and sign-in policies are not re-evaluated in between.
-- **Elysion's own "deactivated" state** (#666/#668) is **not needed for the first version**: the maximum window above is the same for "left the group"
-  and "was disabled", and shortening it is a setting. It becomes necessary when a company wants a person cut off **now** (an administrator action that
-  also revokes the Keycloak sessions through its admin API) or wants the directory to decide (Graph, #667). Both are in #666, already `needs-refinement`.
+- **Elysion's own "deactivated" state** was **not needed for the first version** of the sign-in, and #668 added it afterwards: an administrator switches a
+  person off in Elysion (every request is refused, the person disappears from the pickers, an open socket ends at the next membership check) and hands their
+  boards and rooms over. It does **not** touch Keycloak (Elysion has no admin credentials for it), so the account has to be disabled at the identity provider
+  as well; a cut-off that also revokes the Keycloak sessions through its admin API, and a directory that decides (Graph, #667), stay later additions.
 - **Data of a person who left** stays where it is: their boards, their name on elements. Ownership is handed over by an administrator (#668).
+- **Graph as a second source (#667, built):** an optional job reads the linked groups' members from Microsoft Graph. It does not change the answer above: the token
+  stays the source of truth. A membership the sync made is marked, and the token's compare removes it when the claim lacks the group, exactly like any other
+  (the token is "fresher" only in the sense that it is the last word of the identity provider the person was seen with; Keycloak's claims are as of the last brokered
+  login, so the sync restores such a membership at its next run until the person signs in again, at most 8 hours). A membership the claim lists becomes the token's, and the
+  sync no longer removes it. The sync's own work is therefore limited to what the token cannot do: showing a group's members and naming it before the people have come.
 
 ## Decision (proposed)
 

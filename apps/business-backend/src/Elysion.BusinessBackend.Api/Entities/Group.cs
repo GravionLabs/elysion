@@ -21,6 +21,16 @@ public class Group
     public GroupSource Source { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 
+    /// <summary>
+    /// Whether the name was taken from the identity provider's directory (Microsoft Graph, #667) rather than given by an administrator: the sync
+    /// may then follow a rename in the directory. A group that is still named after its external id counts as unnamed and is named by the
+    /// sync as well; an administrator's rename clears the flag for good.
+    /// </summary>
+    public bool NameFromProvider { get; set; }
+
+    /// <summary>When the Graph sync last read this group completely, or null when it never did (the sync is off or the group failed).</summary>
+    public DateTimeOffset? GraphSyncedAt { get; set; }
+
     public List<GroupMembership> Memberships { get; set; } = [];
 
     /// <summary>A local group with a valid name.</summary>
@@ -67,6 +77,29 @@ public class Group
         Guard.Against.InvalidInput(name, nameof(name), candidate => TryNormalizeName(candidate, out _));
         _ = TryNormalizeName(name, out var normalized);
         Name = normalized;
+        NameFromProvider = false;
+    }
+
+    /// <summary>
+    /// The name the directory gives the group (#667), unless an administrator named it: a group the sync named stays under its
+    /// control, one that was renamed by hand does not. Returns whether the name changed.
+    /// </summary>
+    public bool NameFromDirectory(string? directoryName)
+    {
+        if (!TryNormalizeName(directoryName, out var normalized) || normalized.Length > MaxNameLength)
+        {
+            return false;
+        }
+
+        var unnamed = ExternalId is not null && string.Equals(Name, ExternalId, StringComparison.Ordinal);
+        if ((!NameFromProvider && !unnamed) || Name == normalized)
+        {
+            return false;
+        }
+
+        Name = normalized;
+        NameFromProvider = true;
+        return true;
     }
 
     /// <summary>
@@ -81,6 +114,7 @@ public class Group
             candidate => !string.IsNullOrWhiteSpace(candidate) && candidate.Trim().Length <= MaxExternalIdLength);
         ExternalId = externalId.Trim();
         Source = GroupSource.IdentityProvider;
+        GraphSyncedAt = null;
     }
 
     /// <summary>Takes the group away from the identity provider: it is local again and keeps the members it has.</summary>
@@ -88,6 +122,8 @@ public class Group
     {
         ExternalId = null;
         Source = GroupSource.Local;
+        NameFromProvider = false;
+        GraphSyncedAt = null;
     }
 
     /// <summary>The rule for a group name, the room's: trimmed, 1 to <see cref="MaxNameLength"/> characters.</summary>

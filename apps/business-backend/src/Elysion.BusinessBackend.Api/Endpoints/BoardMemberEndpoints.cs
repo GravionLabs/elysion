@@ -46,14 +46,18 @@ public static class BoardMemberEndpoints
         CancellationToken cancellationToken)
     {
         var errors = new Dictionary<string, string[]>();
-        if (string.IsNullOrWhiteSpace(request?.Email))
-            errors["email"] = ["An email is needed."];
+        var hasEmail = !string.IsNullOrWhiteSpace(request?.Email);
+        var hasUserId = request?.UserId is { } wanted && wanted != Guid.Empty;
+        if (request?.UserId == Guid.Empty || hasEmail == hasUserId)
+            errors["email"] = ["Give either an email or a userId."];
         if (!TryParseRole(request?.Role, out var role))
             errors["role"] = [RoleMessage];
         if (errors.Count > 0)
             return TypedResults.ValidationProblem(errors);
 
-        var result = await members.AddAsync(id, request!.Email!, role, cancellationToken);
+        var result = hasUserId
+            ? await members.AddByUserIdAsync(id, request!.UserId!.Value, role, cancellationToken)
+            : await members.AddAsync(id, request!.Email!, role, cancellationToken);
         return result.Succeeded
             ? TypedResults.Created($"/boards/{id}/members/{result.Member!.UserId}", ToDto(result.Member))
             : Refusal(result);
@@ -104,6 +108,7 @@ public static class BoardMemberEndpoints
     {
         MemberOutcome.UnknownEmail => Problem(StatusCodes.Status404NotFound,
             "No user with this email has logged in to Elysion yet. They have to log in once before they can be added."),
+        MemberOutcome.UnknownUser => Problem(StatusCodes.Status404NotFound, "There is no such user."),
         MemberOutcome.NotAMember => Problem(StatusCodes.Status404NotFound,
             $"This user is not a member of the {noun}."),
         MemberOutcome.AmbiguousEmail => Problem(StatusCodes.Status409Conflict, "More than one user has this email."),
@@ -120,5 +125,5 @@ public static class BoardMemberEndpoints
         TypedResults.Problem(detail, statusCode: status);
 
     internal static MemberDto ToDto(MemberView member) =>
-        new(member.UserId, member.DisplayName, member.Email, member.Role.ToString());
+        new(member.UserId, member.DisplayName, member.Email, member.Role.ToString(), member.IsDeactivated);
 }

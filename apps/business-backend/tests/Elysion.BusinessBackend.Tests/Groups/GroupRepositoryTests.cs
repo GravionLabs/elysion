@@ -38,7 +38,7 @@ public class GroupRepositoryTests
     private async Task<bool> SetAsync(Guid userId, params string[] ids)
     {
         await using var db = _database.NewContext();
-        return await new GroupRepository(db).SetLinkedMembershipsAsync(userId, ids, Now, Ct);
+        return await new GroupRepository(db).SetLinkedMembershipsAsync(userId, ids, Now, null, Ct);
     }
 
     [Test]

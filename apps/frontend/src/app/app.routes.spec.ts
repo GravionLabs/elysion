@@ -10,6 +10,8 @@ import { Board } from './board/board';
 import { CanvasElementLoader } from './board/canvas-element-loader';
 import { BoardList } from './board-list/board-list';
 import { Invite } from './invite/invite';
+import { Deactivated } from './deactivated/deactivated';
+import { AdminLayout } from './admin/admin-layout';
 import { HttpTestingController } from '@angular/common/http/testing';
 
 describe('routes', () => {
@@ -48,6 +50,13 @@ describe('routes', () => {
     expect(board.boardId()).toBe('q3 plan/v2');
   });
 
+  it('opens the page of a deactivated account (#668)', async () => {
+    const page = await harness.navigateByUrl('/deactivated', Deactivated);
+
+    expect(page).toBeInstanceOf(Deactivated);
+    TestBed.inject(HttpTestingController).expectOne('/api/rooms').flush([]);
+  });
+
   it('opens an invitation link with the token as an input', async () => {
     const invite = await harness.navigateByUrl('/invite/abc-_123', Invite);
 
@@ -55,6 +64,52 @@ describe('routes', () => {
     TestBed.inject(HttpTestingController)
       .expectOne('/api/invitations/abc-_123/accept')
       .flush({ kind: 'board', id: 'b1', role: 'Viewer' });
+  });
+
+  it('opens the administration: the frame asks who the person is, then the overview is in it', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    await harness.navigateByUrl('/admin', AdminLayout);
+
+    http.expectOne('/api/auth/me').flush({ id: 'u', isAdministrator: true });
+    await harness.fixture.whenStable();
+    http
+      .expectOne('/api/admin/stats')
+      .flush({ users: 1, usersSeenLast30Days: 1, groups: 0, rooms: 0, boards: 0 });
+    http.expectOne('/auth-config.json').flush({});
+
+    expect(harness.routeNativeElement?.querySelector('app-admin-overview')).toBeTruthy();
+  });
+
+  it('opens a page of the administration inside the frame', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    await harness.navigateByUrl('/admin/users', AdminLayout);
+
+    http.expectOne('/api/auth/me').flush({ id: 'u', isAdministrator: true });
+    await harness.fixture.whenStable();
+    http
+      .expectOne((r) => r.url === '/api/admin/users')
+      .flush({ items: [], total: 0, page: 1, pageSize: 25 });
+
+    expect(harness.routeNativeElement?.querySelector('app-admin-users')).toBeTruthy();
+  });
+
+  it('shows no page of the administration to somebody who is not an administrator', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    await harness.navigateByUrl('/admin/groups', AdminLayout);
+
+    http.expectOne('/api/auth/me').flush({ id: 'u', isAdministrator: false });
+    await harness.fixture.whenStable();
+
+    expect(harness.routeNativeElement?.querySelector('app-admin-groups')).toBeNull();
+    expect(harness.routeNativeElement?.textContent).toContain('You are not an administrator');
+  });
+
+  it('sends an unknown address under /admin to the overview', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    await harness.navigateByUrl('/admin/nothing-here', AdminLayout);
+
+    expect(router.url).toBe('/admin');
+    http.expectOne('/api/auth/me');
   });
 
   it('opens the board list at /', async () => {
@@ -119,7 +174,7 @@ describe('routes', () => {
       const pages = (list: ReturnType<typeof buildRoutes>) =>
         list.filter((route) => route.component || route.loadComponent);
 
-      expect(pages(routes).length).toBe(3);
+      expect(pages(routes).length).toBe(4);
       // Each page is a chunk of its own (#710), not part of the first load.
       expect(pages(routes).every((route) => route.loadComponent && !route.component)).toBe(true);
       for (const route of pages(routes)) {

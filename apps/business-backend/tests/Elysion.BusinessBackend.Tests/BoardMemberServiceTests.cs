@@ -42,6 +42,7 @@ public class BoardMemberServiceTests
         var service = new BoardMemberService(new BoardRepository(db),
             new MembershipRepository(db),
             new UserRepository(db),
+            TestAudit.For(db, _ada.Id),
             db,
             TimeProvider.System);
         return await action(service);

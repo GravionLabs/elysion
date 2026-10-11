@@ -1,0 +1,552 @@
+<div class="heading-row">
+  <div>
+    <h1 i18n="@@admin.groups.title">Groups</h1>
+    <p class="lead" i18n="@@admin.groups.lead">
+      A <strong>local</strong> group is made and kept here. A <strong>linked</strong> group belongs
+      to the identity provider: its members follow the provider as each person signs in.
+    </p>
+  </div>
+  <button type="button" class="button primary" (click)="startCreate()" i18n="@@admin.groups.new">
+    New group
+  </button>
+</div>
+
+@if (creating()) {
+  <form class="new-group" (submit)="$event.preventDefault(); create()">
+    <label class="field">
+      <span class="field-label" i18n="@@admin.groups.new.name">Name of the new group</span>
+      <input
+        #newField
+        type="text"
+        name="newName"
+        autocomplete="off"
+        data-1p-ignore
+        data-lpignore="true"
+        [attr.maxlength]="maxName"
+        [value]="newName()"
+        [disabled]="busy()"
+        (input)="updateNewName($event)"
+        (keydown.escape)="cancelCreate()"
+      />
+    </label>
+    <button type="submit" class="button primary" [disabled]="busy()" i18n="@@admin.groups.create">
+      Create
+    </button>
+    <button
+      type="button"
+      class="button"
+      [disabled]="busy()"
+      (click)="cancelCreate()"
+      i18n="@@admin.cancel"
+    >
+      Cancel
+    </button>
+  </form>
+  @if (createError(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+}
+
+@if (graph(); as status) {
+  <p class="note graph-status" role="status">
+    @if (status.enabled) {
+      <ng-container i18n="@@admin.graph.on"
+        >Microsoft Graph reads the linked groups every
+        {{ status.intervalMinutes }} minutes.</ng-container
+      >
+      @if (status.lastSyncAt) {
+        <ng-container i18n="@@admin.graph.last">
+          Last read: {{ status.lastSyncAt | date: 'medium' }}.</ng-container
+        >
+      } @else {
+        <ng-container i18n="@@admin.graph.never"> Not read yet.</ng-container>
+      }
+    } @else {
+      <ng-container i18n="@@admin.graph.off"
+        >Microsoft Graph is not switched on: the members of a linked group are the people who have
+        signed in with it.</ng-container
+      >
+    }
+    @if (status.pendingMembers > 0) {
+      <ng-container i18n="@@admin.graph.pending">
+        Waiting for their first sign-in: {{ status.pendingMembers }}.</ng-container
+      >
+    }
+  </p>
+}
+
+<form class="tools" role="search" (submit)="$event.preventDefault(); submitSearch()">
+  <input
+    type="search"
+    name="search"
+    autocomplete="off"
+    data-1p-ignore
+    data-lpignore="true"
+    placeholder="Name of a group"
+    i18n-placeholder="@@admin.groups.search.placeholder"
+    aria-label="Search groups"
+    i18n-aria-label="@@admin.groups.search"
+    [value]="search()"
+    (input)="updateSearch($event)"
+  />
+  <button type="submit" class="button" i18n="@@admin.search">Search</button>
+</form>
+
+@if (error(); as message) {
+  <p class="error" role="alert">{{ message }}</p>
+}
+
+@switch (list.state()) {
+  @case ('error') {
+    <p class="error" role="alert">
+      <ng-container i18n="@@admin.groups.error">The groups could not be loaded.</ng-container>
+      <button type="button" class="link" (click)="list.load()" i18n="@@admin.retry">
+        Try again
+      </button>
+    </p>
+  }
+  @default {
+    @if (list.state() === 'loading') {
+      <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+    }
+    @if (list.state() === 'ready' && list.items().length === 0) {
+      <p class="note" i18n="@@admin.groups.empty">No group matches.</p>
+    } @else if (list.items().length > 0) {
+      <div class="table-wrap">
+        <table>
+          <caption class="visually-hidden" i18n="@@admin.groups.caption">
+            Groups
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" i18n="@@admin.groups.name">Name</th>
+              <th scope="col" i18n="@@admin.groups.source">Source</th>
+              <th scope="col" i18n="@@admin.groups.externalId">External id</th>
+              <th scope="col" class="number" i18n="@@admin.groups.members">Members</th>
+              <th scope="col" class="number" i18n="@@admin.groups.rooms">Rooms</th>
+              <th scope="col" class="actions" i18n="@@admin.groups.actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (group of list.items(); track group.id) {
+              <tr>
+                <th scope="row">
+                  @if (renamingId() === group.id) {
+                    <form class="rename-form" (submit)="$event.preventDefault(); saveRename(group)">
+                      <input
+                        #renameField
+                        type="text"
+                        name="rename"
+                        autocomplete="off"
+                        data-1p-ignore
+                        data-lpignore="true"
+                        aria-label="New name"
+                        i18n-aria-label="@@admin.groups.rename.field"
+                        [attr.maxlength]="maxName"
+                        [value]="renameDraft()"
+                        [disabled]="busy()"
+                        (input)="updateRenameDraft($event)"
+                        (keydown.escape)="cancelRename()"
+                      />
+                      <button
+                        type="submit"
+                        class="button small primary"
+                        [disabled]="busy()"
+                        i18n="@@admin.save"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        class="button small"
+                        [disabled]="busy()"
+                        (click)="cancelRename()"
+                        i18n="@@admin.cancel"
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  } @else {
+                    <button
+                      type="button"
+                      class="link"
+                      [attr.aria-label]="openLabel(group)"
+                      (click)="openDialog('detail', group)"
+                    >
+                      {{ group.name }}
+                    </button>
+                  }
+                </th>
+                <td>{{ sourceLabel(group) }}</td>
+                <td class="external-id">{{ group.externalId ?? '' }}</td>
+                <td class="number">
+                  {{ group.memberCount }}
+                  @if (group.pendingCount) {
+                    <span class="subtle" i18n="@@admin.groups.waiting"
+                      >+{{ group.pendingCount }} waiting</span
+                    >
+                  }
+                </td>
+                <td class="number">{{ group.roomCount }}</td>
+                <td class="actions">
+                  <span class="row-actions">
+                    <button
+                      type="button"
+                      class="button small"
+                      [attr.aria-label]="renameLabel(group)"
+                      (click)="startRename(group)"
+                      i18n="@@admin.groups.rename"
+                    >
+                      Rename
+                    </button>
+                    @if (group.source === 'Local') {
+                      <button
+                        type="button"
+                        class="button small"
+                        [attr.aria-label]="linkLabel(group)"
+                        (click)="openDialog('link', group)"
+                        i18n="@@admin.groups.link"
+                      >
+                        Link
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="button small"
+                        [attr.aria-label]="unlinkLabel(group)"
+                        (click)="openDialog('unlink', group)"
+                        i18n="@@admin.groups.unlink"
+                      >
+                        Unlink
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      class="button small danger"
+                      [attr.aria-label]="deleteLabel(group)"
+                      (click)="openDialog('delete', group)"
+                      i18n="@@admin.groups.delete"
+                    >
+                      Delete
+                    </button>
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-admin-pager
+        [page]="list.page()"
+        [pages]="list.pages()"
+        [total]="list.total()"
+        (go)="list.go($event)"
+      />
+    }
+  }
+}
+
+@if (target(); as group) {
+  @switch (action()) {
+    @case ('detail') {
+      <app-admin-dialog [heading]="group.name" (closed)="closeDialog()">
+        <p class="note">
+          {{ sourceLabel(group) }}
+          @if (group.externalId) {
+            · <span class="external-id">{{ group.externalId }}</span>
+          }
+        </p>
+        @if (dialogError(); as message) {
+          <p class="error" role="alert">{{ message }}</p>
+        }
+        @if (group.source === 'Local') {
+          <form
+            class="add-member"
+            role="search"
+            (submit)="$event.preventDefault(); findCandidates()"
+          >
+            <input
+              type="search"
+              name="candidate"
+              autocomplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              placeholder="Name or email of the person to add"
+              i18n-placeholder="@@admin.groups.add.placeholder"
+              aria-label="Find a person to add"
+              i18n-aria-label="@@admin.groups.add.search"
+              [value]="candidateQuery()"
+              (input)="updateCandidateQuery($event)"
+            />
+            <button type="submit" class="button" i18n="@@admin.search">Search</button>
+          </form>
+          @switch (candidateState()) {
+            @case ('loading') {
+              <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+            }
+            @case ('error') {
+              <p class="error" role="alert" i18n="@@admin.groups.add.error">
+                The search failed. Try again.
+              </p>
+            }
+            @case ('done') {
+              @if (candidates().length === 0) {
+                <p class="note" i18n="@@admin.groups.add.none">Nobody matches.</p>
+              } @else {
+                <ul class="stack">
+                  @for (user of candidates(); track user.id) {
+                    <li class="line">
+                      <span>
+                        {{ user.displayName }}
+                        @if (user.email) {
+                          <span class="subtle">{{ user.email }}</span>
+                        }
+                      </span>
+                      <button
+                        type="button"
+                        class="button small"
+                        [disabled]="busy()"
+                        [attr.aria-label]="addLabel(user)"
+                        (click)="addMember(user)"
+                        i18n="@@admin.groups.add"
+                      >
+                        Add
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          }
+        } @else {
+          <p class="warning" i18n="@@admin.groups.linkedNote">
+            The identity provider owns the members of this group: they follow its claim as each
+            person signs in and cannot be changed here.
+          </p>
+        }
+
+        @if (group.source !== 'Local' && group.lastSyncAt) {
+          <p class="note" i18n="@@admin.groups.lastSync">
+            Last read from the directory: {{ group.lastSyncAt | date: 'medium' }}
+          </p>
+        }
+
+        <h3 i18n="@@admin.groups.members.title">Members</h3>
+        @switch (members.state()) {
+          @case ('error') {
+            <p class="error" role="alert">
+              <ng-container i18n="@@admin.groups.members.error"
+                >The members could not be loaded.</ng-container
+              >
+              <button type="button" class="link" (click)="members.load()" i18n="@@admin.retry">
+                Try again
+              </button>
+            </p>
+          }
+          @default {
+            @if (members.state() === 'loading') {
+              <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+            } @else if (members.items().length === 0) {
+              <p class="note" i18n="@@admin.groups.members.empty">Nobody is in this group yet.</p>
+            } @else {
+              <ul class="stack">
+                @for (member of members.items(); track member.id) {
+                  <li class="line">
+                    <span>
+                      {{ member.displayName }}
+                      @if (member.deactivatedAt) {
+                        <span class="chip" i18n="@@admin.deactivated">deactivated</span>
+                      }
+                      @if (member.email) {
+                        <span class="subtle">{{ member.email }}</span>
+                      }
+                    </span>
+                    @if (group.source === 'Local') {
+                      <button
+                        type="button"
+                        class="button small"
+                        [disabled]="busy()"
+                        [attr.aria-label]="removeLabel(member)"
+                        (click)="removeMember(member)"
+                        i18n="@@admin.groups.remove"
+                      >
+                        Remove
+                      </button>
+                    }
+                  </li>
+                }
+              </ul>
+              <app-admin-pager
+                [page]="members.page()"
+                [pages]="members.pages()"
+                [total]="members.total()"
+                (go)="members.go($event)"
+              />
+            }
+          }
+        }
+
+        @if (group.pendingCount) {
+          <h3 i18n="@@admin.groups.pending.title">Waiting for their first sign-in</h3>
+          <p class="note" i18n="@@admin.groups.pending.note">
+            The directory lists these people in the group. They become members when they sign in
+            with this address.
+          </p>
+          @if (pending.state() === 'loading') {
+            <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+          } @else if (pending.state() === 'error') {
+            <p class="error" role="alert">
+              <ng-container i18n="@@admin.groups.pending.error"
+                >The list could not be loaded.</ng-container
+              >
+              <button type="button" class="link" (click)="pending.load()" i18n="@@admin.retry">
+                Try again
+              </button>
+            </p>
+          } @else {
+            <ul class="stack">
+              @for (person of pending.items(); track person.email) {
+                <li class="line">
+                  <span>
+                    {{ person.displayName ?? person.email }}
+                    @if (person.displayName) {
+                      <span class="subtle">{{ person.email }}</span>
+                    }
+                  </span>
+                </li>
+              }
+            </ul>
+            <app-admin-pager
+              [page]="pending.page()"
+              [pages]="pending.pages()"
+              [total]="pending.total()"
+              (go)="pending.go($event)"
+            />
+          }
+        }
+      </app-admin-dialog>
+    }
+    @case ('link') {
+      <app-admin-dialog
+        heading="Link to a group of the identity provider"
+        i18n-heading="@@admin.groups.link.title"
+        (closed)="closeDialog()"
+      >
+        <p class="warning" i18n="@@admin.groups.link.warning">
+          From now on the provider owns the members of “{{ group.name }}”: they are replaced by the
+          provider's claim as each person signs in. People who are in the group now stay until then.
+        </p>
+        <form (submit)="$event.preventDefault(); link()">
+          <label class="field">
+            <span class="field-label" i18n="@@admin.groups.link.id"
+              >Id of the group at the identity provider</span
+            >
+            <input
+              type="text"
+              name="externalId"
+              autocomplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              [attr.maxlength]="maxExternalId"
+              [value]="externalIdDraft()"
+              [disabled]="busy()"
+              (input)="updateExternalId($event)"
+            />
+          </label>
+          @if (dialogError(); as message) {
+            <p class="error" role="alert">{{ message }}</p>
+          }
+          <div class="dialog-actions">
+            <button
+              type="button"
+              class="button"
+              [disabled]="busy()"
+              (click)="closeDialog()"
+              i18n="@@admin.cancel"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="button primary"
+              [disabled]="busy()"
+              i18n="@@admin.groups.link.confirm"
+            >
+              Link
+            </button>
+          </div>
+        </form>
+      </app-admin-dialog>
+    }
+    @case ('unlink') {
+      <app-admin-dialog
+        heading="Unlink the group"
+        i18n-heading="@@admin.groups.unlink.title"
+        (closed)="closeDialog()"
+      >
+        <p i18n="@@admin.groups.unlink.message">
+          “{{ group.name }}” becomes a local group and keeps its members ({{ group.memberCount }}).
+          The identity provider no longer replaces them.
+        </p>
+        @if (dialogError(); as message) {
+          <p class="error" role="alert">{{ message }}</p>
+        }
+        <div class="dialog-actions">
+          <button
+            type="button"
+            class="button"
+            [disabled]="busy()"
+            (click)="closeDialog()"
+            i18n="@@admin.cancel"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="button primary"
+            [disabled]="busy()"
+            (click)="unlink()"
+            i18n="@@admin.groups.unlink.confirm"
+          >
+            Unlink
+          </button>
+        </div>
+      </app-admin-dialog>
+    }
+    @case ('delete') {
+      <app-admin-dialog
+        heading="Delete the group"
+        i18n-heading="@@admin.groups.delete.title"
+        (closed)="closeDialog()"
+      >
+        <p i18n="@@admin.groups.delete.message">
+          Delete “{{ group.name }}”? Its memberships go with it ({{ group.memberCount }}), and the
+          rooms that gave it a role lose that role ({{ group.roomCount }}). This cannot be undone.
+        </p>
+        @if (dialogError(); as message) {
+          <p class="error" role="alert">{{ message }}</p>
+        }
+        <div class="dialog-actions">
+          <button
+            type="button"
+            class="button"
+            [disabled]="busy()"
+            (click)="closeDialog()"
+            i18n="@@admin.cancel"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="button danger"
+            [disabled]="busy()"
+            (click)="remove()"
+            i18n="@@admin.groups.delete.confirm"
+          >
+            Delete
+          </button>
+        </div>
+      </app-admin-dialog>
+    }
+  }
+}

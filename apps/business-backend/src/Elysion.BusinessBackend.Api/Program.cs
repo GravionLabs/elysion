@@ -1,9 +1,11 @@
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Endpoints;
 using Elysion.BusinessBackend.Api.Endpoints.Admin;
 using Elysion.BusinessBackend.Api.Files;
+using Elysion.BusinessBackend.Api.Graph;
 using Elysion.BusinessBackend.Api.Identity;
 using Elysion.BusinessBackend.Api.Logging;
 using Elysion.BusinessBackend.Api.Members;
@@ -56,7 +58,22 @@ builder.Services.AddScoped<IBoardUserStateRepository, BoardUserStateRepository>(
 builder.Services.AddScoped<IVotingRepository, VotingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGroupRepository, GroupRepository>();
+builder.Services.AddScoped<IGroupSyncRepository, GroupSyncRepository>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+builder.Services.AddScoped<IOwnershipRepository, OwnershipRepository>();
+builder.Services.AddScoped<UserLifecycleService>();
+
+// Who changed who may see what (#669): entries are staged on the request's unit of work, and the oldest are removed every night.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditLog, AuditLog>();
+builder.Services.AddScoped<IAuditRepository, AuditRepository>();
+builder.Services.AddOptions<AuditOptions>()
+    .Configure<IConfiguration>((options, configuration) =>
+        options.RetentionDays = configuration.GetValue(AuditOptions.RetentionDaysSetting,
+            AuditOptions.DefaultRetentionDays))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddHostedService<AuditRetentionService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
 builder.Services.AddScoped<InvitationService>();
@@ -79,6 +96,25 @@ builder.Services.AddOptions<RealtimeOptions>()
     .Configure<IConfiguration>((options, configuration) =>
         options.Url = configuration[RealtimeOptions.UrlSetting] ?? "");
 builder.Services.AddHttpClient<IVotingNotifier, HttpVotingNotifier>();
+
+// The optional second source of group members: Microsoft Graph reads the linked groups (#667). Off unless tenant, client and secret are set.
+builder.Services.AddOptions<GraphOptions>()
+    .Configure<IConfiguration>((options, configuration) =>
+    {
+        options.TenantId = configuration[GraphOptions.TenantIdSetting] ?? "";
+        options.ClientId = configuration[GraphOptions.ClientIdSetting] ?? "";
+        options.ClientSecret = configuration[GraphOptions.ClientSecretSetting] ?? "";
+        options.Authority = configuration[GraphOptions.AuthoritySetting] is { Length: > 0 } authority
+            ? authority
+            : GraphOptions.DefaultAuthority;
+        options.BaseUrl = configuration[GraphOptions.BaseUrlSetting] is { Length: > 0 } baseUrl
+            ? baseUrl
+            : GraphOptions.DefaultBaseUrl;
+        options.Interval = GraphOptions.ParseInterval(configuration[GraphOptions.SyncIntervalSetting]);
+    });
+builder.Services.AddHttpClient<IGraphClient, HttpGraphClient>(client => client.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddScoped<GraphGroupSync>();
+builder.Services.AddHostedService<GraphSyncService>();
 
 var app = builder.Build();
 
@@ -126,7 +162,9 @@ app.MapRoomEndpoints();
 app.MapRoomMemberEndpoints();
 app.MapRoomGroupEndpoints();
 app.MapGroupEndpoints();
+app.MapUserEndpoints();
 app.MapAdminEndpoints();
+app.MapHistoryEndpoints();
 app.MapBoardDocumentEndpoints();
 app.MapBoardAccessEndpoints();
 app.MapBoardFileEndpoints();

@@ -17,6 +17,7 @@ import { AccessToken } from '../auth/access-token.decorator.js';
 import {
   type AdminGroupPatch,
   type AdminList,
+  type AuditFilter,
   BusinessBackendClient,
 } from '../boards/business-backend.client.js';
 
@@ -52,6 +53,37 @@ function listFrom(query: unknown, page: unknown, pageSize: unknown): AdminList {
     ...(query === undefined ? {} : { query }),
     ...(p === undefined ? {} : { page: p }),
     ...(size === undefined ? {} : { pageSize: size }),
+  };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A date or a date and time (`2026-10-05`, `2026-10-05T12:00:00Z`, with a zone or an offset), or a 400. */
+const DATE = /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,7})?)?(?:Z|[+-]\d{2}:\d{2})?)?$/i;
+
+/** The filters of the audit log, each checked: ids are UUIDs, dates look like dates, the page numbers are whole. */
+function auditFilterFrom(query: Record<string, unknown>): AuditFilter {
+  const text = (name: string, pattern: RegExp, what: string): string | undefined => {
+    const value = query[name];
+    if (value === undefined) return undefined;
+    if (typeof value !== 'string' || !pattern.test(value)) {
+      throw new BadRequestException(`${name} must be ${what}.`);
+    }
+    return value;
+  };
+  const subject = text('subject', UUID, 'an id');
+  const actor = text('actor', UUID, 'an id');
+  const from = text('from', DATE, 'a date');
+  const to = text('to', DATE, 'a date');
+  const page = whole('page', query['page'], MAX_PAGE);
+  const pageSize = whole('pageSize', query['pageSize'], MAX_PAGE_SIZE);
+  return {
+    ...(subject === undefined ? {} : { subject }),
+    ...(actor === undefined ? {} : { actor }),
+    ...(from === undefined ? {} : { from }),
+    ...(to === undefined ? {} : { to }),
+    ...(page === undefined ? {} : { page }),
+    ...(pageSize === undefined ? {} : { pageSize }),
   };
 }
 
@@ -108,6 +140,34 @@ export class AdminController {
     return this.backend.adminGetUser(token, id);
   }
 
+  @Post('users/:id/deactivate')
+  @HttpCode(HttpStatus.OK)
+  deactivate(@AccessToken() token: string, @Param('id', uuid) id: string): Promise<unknown> {
+    return this.backend.adminDeactivateUser(token, id);
+  }
+
+  @Post('users/:id/reactivate')
+  @HttpCode(HttpStatus.OK)
+  reactivate(@AccessToken() token: string, @Param('id', uuid) id: string): Promise<unknown> {
+    return this.backend.adminReactivateUser(token, id);
+  }
+
+  /** `{ fromUserId, toUserId }`, both ids: the backend decides whether the hand-over is allowed. */
+  @Post('boards/transfer')
+  @HttpCode(HttpStatus.OK)
+  transfer(@AccessToken() token: string, @Body() body: unknown): Promise<unknown> {
+    const { fromUserId, toUserId } = (body ?? {}) as Record<string, unknown>;
+    if (
+      typeof fromUserId !== 'string' ||
+      typeof toUserId !== 'string' ||
+      !UUID.test(fromUserId) ||
+      !UUID.test(toUserId)
+    ) {
+      throw new BadRequestException('Send fromUserId and toUserId, both ids.');
+    }
+    return this.backend.adminTransferOwnership(token, fromUserId, toUserId);
+  }
+
   @Get('groups')
   groups(
     @AccessToken() token: string,
@@ -152,6 +212,23 @@ export class AdminController {
     return this.backend.adminListGroupMembers(token, id, listFrom(undefined, page, pageSize));
   }
 
+  /** The people the directory lists in the group who have not signed in yet (#667): address and name, paged. */
+  @Get('groups/:id/pending')
+  pending(
+    @AccessToken() token: string,
+    @Param('id', uuid) id: string,
+    @Query('page') page?: unknown,
+    @Query('pageSize') pageSize?: unknown,
+  ): Promise<unknown> {
+    return this.backend.adminListGroupPending(token, id, listFrom(undefined, page, pageSize));
+  }
+
+  /** Whether the Graph sync is on, when it last ran and how many people wait for their first sign-in (#667). */
+  @Get('graph')
+  graph(@AccessToken() token: string): Promise<unknown> {
+    return this.backend.adminGraphStatus(token);
+  }
+
   @Put('groups/:id/members/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async addMember(
@@ -170,6 +247,11 @@ export class AdminController {
     @Param('userId', uuid) userId: string,
   ): Promise<void> {
     await this.backend.adminRemoveGroupMember(token, id, userId);
+  }
+
+  @Get('audit')
+  audit(@AccessToken() token: string, @Query() query: Record<string, unknown>): Promise<unknown> {
+    return this.backend.adminListAudit(token, auditFilterFrom(query));
   }
 
   @Get('rooms')

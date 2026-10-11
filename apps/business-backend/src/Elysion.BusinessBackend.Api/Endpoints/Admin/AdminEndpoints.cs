@@ -1,13 +1,18 @@
 using System.Text.Json;
 
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
+using Elysion.BusinessBackend.Api.Graph;
+using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Members;
 
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Elysion.BusinessBackend.Api.Endpoints.Admin;
 
@@ -34,6 +39,13 @@ public static class AdminEndpoints
         admin.MapGet("/users", ListUsers).WithName("AdminListUsers");
         admin.MapGet("/users/{id:guid}", GetUser).WithName("AdminGetUser");
 
+        admin.MapPost("/users/{id:guid}/deactivate", DeactivateUser).WithName("AdminDeactivateUser");
+        admin.MapPost("/users/{id:guid}/reactivate", ReactivateUser).WithName("AdminReactivateUser");
+        admin.MapPost("/boards/transfer", TransferOwnership)
+            .WithName("AdminTransferOwnership")
+            .Accepts<AdminTransferRequest>("application/json")
+            .RequireJsonContentType();
+
         admin.MapGet("/groups", ListGroups).WithName("AdminListGroups");
         admin.MapPost("/groups", CreateGroup)
             .WithName("AdminCreateGroup")
@@ -45,11 +57,15 @@ public static class AdminEndpoints
             .RequireJsonContentType();
         admin.MapDelete("/groups/{id:guid}", DeleteGroup).WithName("AdminDeleteGroup");
         admin.MapGet("/groups/{id:guid}/members", ListGroupMembers).WithName("AdminListGroupMembers");
+        admin.MapGet("/groups/{id:guid}/pending", ListGroupPending).WithName("AdminListGroupPending");
+        admin.MapGet("/graph", GraphStatus).WithName("AdminGraphStatus");
         admin.MapPut("/groups/{id:guid}/members/{userId:guid}", AddGroupMember).WithName("AdminAddGroupMember");
         admin.MapDelete("/groups/{id:guid}/members/{userId:guid}", RemoveGroupMember)
             .WithName("AdminRemoveGroupMember");
 
         admin.MapGet("/rooms", ListRooms).WithName("AdminListRooms");
+
+        admin.MapGet("/audit", ListAudit).WithName("AdminListAudit");
         return routes;
     }
 
@@ -84,6 +100,70 @@ public static class AdminEndpoints
         return user is null ? NotFound("There is no such person.") : TypedResults.Ok(user);
     }
 
+    /// <summary>
+    /// Deactivates a person (#668): every request of theirs is refused from now on. 409 for the caller themselves. The identity
+    /// provider is not told, so the account has to be disabled there too. Answers the person's detail.
+    /// </summary>
+    private static async Task<IResult> DeactivateUser(Guid id,
+        UserLifecycleService lifecycle,
+        IAdminRepository admin,
+        ICurrentUser caller,
+        CancellationToken cancellationToken)
+    {
+        var result = await lifecycle.DeactivateAsync(id, caller.Id, cancellationToken);
+        return await LifecycleAnswerAsync(result, id, admin, cancellationToken);
+    }
+
+    private static async Task<IResult> ReactivateUser(Guid id,
+        UserLifecycleService lifecycle,
+        IAdminRepository admin,
+        CancellationToken cancellationToken)
+    {
+        var result = await lifecycle.ReactivateAsync(id, cancellationToken);
+        return await LifecycleAnswerAsync(result, id, admin, cancellationToken);
+    }
+
+    private static async Task<IResult> LifecycleAnswerAsync(LifecycleResult result,
+        Guid id,
+        IAdminRepository admin,
+        CancellationToken cancellationToken) =>
+        result.Outcome switch
+        {
+            LifecycleOutcome.Done => TypedResults.Ok(await admin.GetUserAsync(id, cancellationToken)),
+            LifecycleOutcome.Self => TypedResults.Problem(
+                "You cannot deactivate yourself: nobody would be left to undo it.",
+                statusCode: StatusCodes.Status409Conflict),
+            _ => NotFound("There is no such person."),
+        };
+
+    /// <summary>
+    /// Hands the boards and rooms a deactivated person owned over to another person (#668): the new owner gets the Owner role, the
+    /// previous owner keeps nothing. The administrator who does it gets no role. 409 while the giver is still active, or when the
+    /// receiver is deactivated or the same person.
+    /// </summary>
+    private static async Task<IResult> TransferOwnership(AdminTransferRequest? request,
+        UserLifecycleService lifecycle,
+        CancellationToken cancellationToken)
+    {
+        if (request is null || request.FromUserId == Guid.Empty || request.ToUserId == Guid.Empty)
+        {
+            return Invalid("body", "Send fromUserId and toUserId.");
+        }
+
+        var result = await lifecycle.TransferAsync(request.FromUserId, request.ToUserId, cancellationToken);
+        return result.Outcome switch
+        {
+            LifecycleOutcome.Done => TypedResults.Ok(new AdminTransferResultDto(result.Boards, result.Rooms)),
+            LifecycleOutcome.GiverStillActive => TypedResults.Problem(
+                "Deactivate the person first: a hand-over is for somebody who has left.",
+                statusCode: StatusCodes.Status409Conflict),
+            LifecycleOutcome.InvalidReceiver => TypedResults.Problem(
+                "The person who takes over has to be somebody else, and active.",
+                statusCode: StatusCodes.Status409Conflict),
+            _ => NotFound("There is no such person."),
+        };
+    }
+
     private static async Task<Ok<PagedResult<AdminGroupDto>>> ListGroups(string? query,
         int? page,
         int? pageSize,
@@ -97,6 +177,7 @@ public static class AdminEndpoints
     private static async Task<IResult> CreateGroup(AdminGroupCreateRequest? request,
         IGroupRepository groups,
         IAdminRepository admin,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -108,6 +189,7 @@ public static class AdminEndpoints
 
         var group = Group.Create(Guid.CreateVersion7(), name, time.GetUtcNow());
         groups.Add(group);
+        audit.Record(AuditActions.GroupCreated, AuditActions.Group, group.Id, new { name });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         var created = await admin.GetGroupAsync(group.Id, cancellationToken);
         return TypedResults.Created($"/admin/groups/{group.Id}", created);
@@ -120,7 +202,9 @@ public static class AdminEndpoints
     private static async Task<IResult> PatchGroup(Guid id,
         JsonElement body,
         IGroupRepository groups,
+        IGroupSyncRepository groupSync,
         IAdminRepository admin,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -173,6 +257,11 @@ public static class AdminEndpoints
 
         if (name is not null)
         {
+            if (name != group.Name)
+            {
+                audit.Record(AuditActions.GroupRenamed, AuditActions.Group, id, new { from = group.Name, to = name });
+            }
+
             group.Rename(name);
         }
 
@@ -180,10 +269,21 @@ public static class AdminEndpoints
         {
             if (externalId is null)
             {
+                if (group.Source != GroupSource.Local)
+                {
+                    audit.Record(AuditActions.GroupUnlinked, AuditActions.Group, id);
+                }
+
                 group.Unlink();
+                await groupSync.ClearPendingAsync(id, cancellationToken);
             }
             else
             {
+                if (group.ExternalId != externalId)
+                {
+                    audit.Record(AuditActions.GroupLinked, AuditActions.Group, id, new { externalId });
+                }
+
                 group.Link(externalId);
             }
         }
@@ -204,6 +304,7 @@ public static class AdminEndpoints
 
     private static async Task<IResult> DeleteGroup(Guid id,
         IGroupRepository groups,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -215,9 +316,35 @@ public static class AdminEndpoints
 
         // Its memberships and its roles on rooms go with it (cascade).
         groups.Remove(group);
+        audit.Record(AuditActions.GroupDeleted, AuditActions.Group, id, new { name = group.Name });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return TypedResults.NoContent();
     }
+
+    /// <summary>The people the directory lists in the group who have not signed in yet (#667): name and address, for the administrator.</summary>
+    private static async Task<IResult> ListGroupPending(Guid id,
+        int? page,
+        int? pageSize,
+        IGroupRepository groups,
+        IAdminRepository admin,
+        CancellationToken cancellationToken)
+    {
+        if (await groups.FindAsync(id, cancellationToken) is null)
+        {
+            return NotFound("There is no such group.");
+        }
+
+        var (p, size) = Paging(page, pageSize);
+        return TypedResults.Ok(await admin.ListGroupPendingAsync(id, p, size, cancellationToken));
+    }
+
+    /// <summary>Whether the Graph sync is switched on, when it last read a group and how many people wait for their first sign-in.</summary>
+    private static async Task<Ok<AdminGraphStatusDto>> GraphStatus(IAdminRepository admin,
+        IOptions<GraphOptions> options,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await admin.GetGraphStatusAsync(options.Value.Enabled,
+            options.Value.Interval,
+            cancellationToken));
 
     private static async Task<IResult> ListGroupMembers(Guid id,
         int? page,
@@ -239,11 +366,12 @@ public static class AdminEndpoints
         Guid userId,
         IGroupRepository groups,
         IUserRepository users,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var refusal = await CheckMemberEditAsync(id, userId, groups, users, cancellationToken);
+        var refusal = await CheckMemberEditAsync(id, userId, true, groups, users, cancellationToken);
         if (refusal is not null)
         {
             return refusal;
@@ -251,6 +379,7 @@ public static class AdminEndpoints
 
         if (await groups.AddMemberAsync(id, userId, time.GetUtcNow(), cancellationToken))
         {
+            audit.Record(AuditActions.GroupMemberAdded, AuditActions.Group, id, new { userId });
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -261,10 +390,11 @@ public static class AdminEndpoints
         Guid userId,
         IGroupRepository groups,
         IUserRepository users,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        var refusal = await CheckMemberEditAsync(id, userId, groups, users, cancellationToken);
+        var refusal = await CheckMemberEditAsync(id, userId, false, groups, users, cancellationToken);
         if (refusal is not null)
         {
             return refusal;
@@ -272,6 +402,7 @@ public static class AdminEndpoints
 
         if (await groups.RemoveMemberAsync(id, userId, cancellationToken))
         {
+            audit.Record(AuditActions.GroupMemberRemoved, AuditActions.Group, id, new { userId });
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -281,6 +412,7 @@ public static class AdminEndpoints
     /// <summary>404 for an unknown group or person, 409 for a linked group (the provider owns its members); null when the edit is fine.</summary>
     private static async Task<IResult?> CheckMemberEditAsync(Guid groupId,
         Guid userId,
+        bool adding,
         IGroupRepository groups,
         IUserRepository users,
         CancellationToken cancellationToken)
@@ -298,7 +430,15 @@ public static class AdminEndpoints
                 statusCode: StatusCodes.Status409Conflict);
         }
 
-        return await users.FindAsync(userId, cancellationToken) is null ? NotFound("There is no such person.") : null;
+        var user = await users.FindAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return NotFound("There is no such person.");
+        }
+
+        return user.IsDeactivated && adding
+            ? TypedResults.Problem("This person is deactivated.", statusCode: StatusCodes.Status409Conflict)
+            : null;
     }
 
     private static async Task<Ok<PagedResult<AdminRoomDto>>> ListRooms(string? query,
@@ -309,6 +449,23 @@ public static class AdminEndpoints
     {
         var (p, size) = Paging(page, pageSize);
         return TypedResults.Ok(await admin.ListRoomsAsync(Query(query), p, size, cancellationToken));
+    }
+
+    /// <summary>
+    /// The audit log of the instance (#669), newest first: <c>subject</c> (what it is about), <c>actor</c> (who did it), <c>from</c>
+    /// (inclusive) and <c>to</c> (exclusive) as dates or date-times. Only ids, roles and counts are in an entry, never content.
+    /// </summary>
+    private static async Task<Ok<PagedResult<AuditEntryDto>>> ListAudit(Guid? subject,
+        Guid? actor,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        int? page,
+        int? pageSize,
+        IAuditRepository audit,
+        CancellationToken cancellationToken)
+    {
+        var (p, size) = Paging(page, pageSize);
+        return TypedResults.Ok(await audit.QueryAsync(subject, actor, from, to, p, size, cancellationToken));
     }
 
     private static ProblemHttpResult NotFound(string detail) =>

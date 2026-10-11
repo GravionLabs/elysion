@@ -14,7 +14,8 @@ RUN pnpm --filter @elysion/frontend build
 FROM nginxinc/nginx-unprivileged:alpine AS runtime
 # Development defaults; the compose file / deployment sets the real values.
 ENV OIDC_ISSUER_URL=http://localhost:8081/realms/elysion \
-    OIDC_CLIENT_ID=elysion-frontend
+    OIDC_CLIENT_ID=elysion-frontend \
+    AUTH_IDP_HINT=
 COPY apps/frontend/nginx.conf /etc/nginx/templates/default.conf.template
 # Runs before the templates are filled (the entrypoint runs /docker-entrypoint.d in order).
 COPY --chmod=755 apps/frontend/security-headers.sh /docker-entrypoint.d/10-security-headers.sh

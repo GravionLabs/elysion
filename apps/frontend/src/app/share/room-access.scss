@@ -1,0 +1,47 @@
+.room-access {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-border);
+
+  h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+.note {
+  margin: 0;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.error {
+  color: var(--c-danger);
+}
+
+.access {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.link {
+  margin-left: 8px;
+  color: inherit;
+  background: none;
+  border: 0;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button {
+  align-self: flex-start;
+  color: var(--c-text);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: underline;
+}

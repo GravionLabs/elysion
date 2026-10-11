@@ -30,6 +30,9 @@ interface FakeMember {
  */
 export class FakeBusinessBackend {
   readonly boards = new Map<string, FakeBoard>();
+  /** The people the search route serves (`GET /users?query=`, #663), and the last query it saw. */
+  users: Array<{ id: string; displayName: string; email: string | null }> = [];
+  lastUserSearch: string | null = null;
   /** The groups the group routes serve (#647), and the caller's own (`GET /me/groups`). */
   readonly groups = new Map<string, { id: string; name: string; source: string }>();
   readonly myGroups = new Set<string>();
@@ -165,7 +168,10 @@ export class FakeBusinessBackend {
       const template = this.templates.find((t) => t.id === id);
       return template ? send(200, template) : send(404);
     }
-    if (/^\/admin(?:[/?]|$)/.test(req.url ?? '')) {
+    if (
+      /^\/admin(?:[/?]|$)/.test(req.url ?? '') ||
+      /^\/(?:boards|rooms)\/[^/]+\/history$/.test(req.url ?? '')
+    ) {
       const chunks: Buffer[] = [];
       for await (const chunk of req) chunks.push(chunk as Buffer);
       const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString()) : undefined;
@@ -180,6 +186,17 @@ export class FakeBusinessBackend {
     const roomRoute = /^\/rooms(?:\/([^/]+?)(?:\/members(?:\/([^/]+))?)?)?$/.exec(req.url ?? '');
     const moveRoute = /^\/boards\/([^/]+)\/room$/.exec(req.url ?? '');
     if (roomRoute || moveRoute) return this.#handleRoom(req, res, roomRoute, moveRoute);
+    if ((req.url ?? '').startsWith('/users?')) {
+      const query = (new URL(req.url!, 'http://x').searchParams.get('query') ?? '').toLowerCase();
+      this.lastUserSearch = query;
+      if (query.length < 2) return send(400, { title: 'Bad query' });
+      return send(
+        200,
+        this.users.filter(
+          (u) => u.displayName.toLowerCase().includes(query) || (u.email ?? '').includes(query),
+        ),
+      );
+    }
     const memberRoute = /^\/boards\/([^/]+)\/members(?:\/([^/]+))?$/.exec(req.url ?? '');
     if (memberRoute) {
       const chunks: Buffer[] = [];
@@ -197,10 +214,11 @@ export class FakeBusinessBackend {
       const userId = memberRoute[2];
       if (req.method === 'GET' && !userId) return send(200, list);
       if (req.method === 'POST' && !userId) {
+        const person = body.userId ? this.users.find((u) => u.id === body.userId) : undefined;
         const member = {
-          userId: randomUUID(),
-          displayName: body.email,
-          email: body.email,
+          userId: person?.id ?? randomUUID(),
+          displayName: person?.displayName ?? body.email,
+          email: person?.email ?? body.email,
           role: body.role,
         };
         list.push(member);

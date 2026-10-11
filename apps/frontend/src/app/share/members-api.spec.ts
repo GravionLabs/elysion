@@ -38,7 +38,7 @@ describe('MembersApi', () => {
   });
 
   it('adds a member by email and role', async () => {
-    const result = firstValueFrom(api.add(board, 'ada@example.com', 'Editor'));
+    const result = firstValueFrom(api.add(board, { email: 'ada@example.com' }, 'Editor'));
 
     const request = http.expectOne(`/api/boards/${board}/members`);
     expect(request.request.method).toBe('POST');
@@ -75,8 +75,20 @@ describe('MembersApi', () => {
     http.expectOne('/api/boards/a%20b%2Fc/members').flush([]);
   });
 
+  it('adds a member by the user id the people search returned', async () => {
+    const result = firstValueFrom(api.add(board, { userId: 'u9' }, 'Viewer'));
+
+    const request = http.expectOne(`/api/boards/${board}/members`);
+    expect(request.request.body).toEqual({ userId: 'u9', role: 'Viewer' });
+    request.flush(member);
+
+    expect(await result).toEqual(member);
+  });
+
   it('does not hide a refusal: the dialog shows the message of the API', async () => {
-    const result = firstValueFrom(api.add(board, 'x@y.z', 'Viewer')).catch((e: unknown) => e);
+    const result = firstValueFrom(api.add(board, { email: 'x@y.z' }, 'Viewer')).catch(
+      (e: unknown) => e,
+    );
 
     http
       .expectOne(`/api/boards/${board}/members`)
@@ -96,7 +108,7 @@ describe('MembersApi', () => {
       http.expectOne(`/api/rooms/${room}/members`).flush([member]);
       expect(await list).toEqual([member]);
 
-      const add = firstValueFrom(api.add(room, 'ada@example.com', 'Viewer', 'room'));
+      const add = firstValueFrom(api.add(room, { email: 'ada@example.com' }, 'Viewer', 'room'));
       const added = http.expectOne(`/api/rooms/${room}/members`);
       expect(added.request.method).toBe('POST');
       expect(added.request.body).toEqual({ email: 'ada@example.com', role: 'Viewer' });

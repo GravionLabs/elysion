@@ -1,3 +1,4 @@
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Data;
@@ -44,11 +45,20 @@ public static class InvitationEndpoints
                 (Guid id,
                         CreateInvitationRequest? request,
                         IInvitationRepository invitations,
+                        IAuditLog audit,
                         IUnitOfWork unitOfWork,
                         ICurrentUser user,
                         TimeProvider time,
                         CancellationToken ct) =>
-                    Create(isBoard ? id : null, isBoard ? null : id, request, invitations, unitOfWork, user, time, ct))
+                    Create(isBoard ? id : null,
+                        isBoard ? null : id,
+                        request,
+                        invitations,
+                        audit,
+                        unitOfWork,
+                        user,
+                        time,
+                        ct))
             .WithName($"Create{noun}Invitation")
             .Accepts<CreateInvitationRequest>("application/json")
             .RequireJsonContentType();
@@ -56,10 +66,18 @@ public static class InvitationEndpoints
                 (Guid id,
                         Guid invitationId,
                         IInvitationRepository invitations,
+                        IAuditLog audit,
                         IUnitOfWork unitOfWork,
                         TimeProvider time,
                         CancellationToken ct) =>
-                    Revoke(isBoard ? id : null, isBoard ? null : id, invitationId, invitations, unitOfWork, time, ct))
+                    Revoke(isBoard ? id : null,
+                        isBoard ? null : id,
+                        invitationId,
+                        invitations,
+                        audit,
+                        unitOfWork,
+                        time,
+                        ct))
             .WithName($"Revoke{noun}Invitation");
     }
 
@@ -77,6 +95,7 @@ public static class InvitationEndpoints
         Guid? roomId,
         CreateInvitationRequest? request,
         IInvitationRepository invitations,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         ICurrentUser user,
         TimeProvider time,
@@ -137,6 +156,10 @@ public static class InvitationEndpoints
             CreatedAt = now,
         };
         invitations.Add(invitation);
+        audit.Record(AuditActions.InvitationCreated,
+            boardId is not null ? AuditActions.Board : AuditActions.Room,
+            boardId ?? roomId,
+            new { invitationId = invitation.Id, role = role.ToString(), invitation.ExpiresAt, invitation.MaxUses });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         var path = boardId is not null ? $"/boards/{boardId}/invitations" : $"/rooms/{roomId}/invitations";
         return TypedResults.Created($"{path}/{invitation.Id}",
@@ -154,6 +177,7 @@ public static class InvitationEndpoints
         Guid? roomId,
         Guid invitationId,
         IInvitationRepository invitations,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -167,6 +191,10 @@ public static class InvitationEndpoints
         if (invitation.RevokedAt is null)
         {
             invitation.RevokedAt = time.GetUtcNow();
+            audit.Record(AuditActions.InvitationRevoked,
+                boardId is not null ? AuditActions.Board : AuditActions.Room,
+                boardId ?? roomId,
+                new { invitationId });
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

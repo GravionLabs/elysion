@@ -285,4 +285,57 @@ public class BoardMembersApiTests
         (await owner.PostAsync(Url(otherBoard.Id), Json(new { email = "invitee@example.com", role = "Viewer" })))
             .StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
+
+    [Test]
+    public async Task A_member_can_be_added_by_the_user_id_the_search_returned()
+    {
+        using var client = As("owner");
+
+        var response = await client.PostAsync(Url(), Json(new { userId = _users["invitee"].Id, role = "Viewer" }));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await response.Content.ReadFromJsonAsync<MemberDto>())
+            .ShouldBe(new MemberDto(_users["invitee"].Id, "invitee", "invitee@example.com", "Viewer"));
+        (await client.GetFromJsonAsync<MemberDto[]>(Url()))!.Select(m => m.UserId)
+            .ShouldContain(_users["invitee"].Id);
+    }
+
+    [Test]
+    public async Task Adding_by_the_user_id_of_nobody_is_a_404_with_a_message()
+    {
+        using var client = As("owner");
+
+        var response = await client.PostAsync(Url(), Json(new { userId = Guid.NewGuid(), role = "Viewer" }));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await ProblemDetailAsync(response)).ShouldContain("no such user");
+    }
+
+    [Test]
+    public async Task Adding_by_the_user_id_of_a_member_is_a_conflict()
+    {
+        using var client = As("owner");
+
+        var response = await client.PostAsync(Url(), Json(new { userId = _users["viewer"].Id, role = "Editor" }));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    [TestCase("both")]
+    [TestCase("neither")]
+    [TestCase("empty id")]
+    public async Task Exactly_one_of_email_and_user_id_is_needed(string shape)
+    {
+        using var client = As("owner");
+        object body = shape switch
+        {
+            "both" => new { email = "invitee@example.com", userId = _users["invitee"].Id, role = "Viewer" },
+            "neither" => new { role = "Viewer" },
+            _ => new { userId = Guid.Empty, role = "Viewer" },
+        };
+
+        var response = await client.PostAsync(Url(), Json(body));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
 }

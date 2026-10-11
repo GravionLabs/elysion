@@ -55,7 +55,7 @@ test('a board made from a template can be shared with a second person', async ()
   await a.mouse.click(1255, 300);
 
   await a.getByRole('button', { name: /^Share/ }).click();
-  await a.getByPlaceholder('name@example.com').fill(emailOf(USER_B));
+  await a.getByRole('combobox', { name: 'Person' }).fill(emailOf(USER_B));
   await a.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(a.getByText(emailOf(USER_B))).toBeVisible();
   await a.keyboard.press('Escape');
@@ -86,6 +86,8 @@ test('a timer started by one person counts down for the other', async () => {
 test('a dot voting ends by itself when both people have voted, and shows the same result to both', async () => {
   await a.getByRole('button', { name: /^Voting/ }).click();
   await a.getByRole('button', { name: '3', exact: true }).click();
+  // The preset is shown in the field before the number is typed over it (otherwise the typed digit is added to it).
+  await expect(a.getByRole('textbox', { name: 'Votes per person' })).toHaveValue('3');
   await a.getByRole('textbox', { name: 'Votes per person' }).fill('1');
   await expect(a.getByRole('textbox', { name: 'Votes per person' })).toHaveValue('1');
   await a.getByRole('button', { name: 'Start', exact: true }).click();
@@ -126,6 +128,8 @@ test('a viewer votes too, and a named voting shows who voted for what', async ()
   const results = (page: Page) => page.getByRole('dialog', { name: /^Results/ });
   if (!(await results(a).isVisible())) await a.getByRole('button', { name: /^Results/ }).click();
   await a.getByRole('button', { name: /New voting/ }).click();
+  // The preset is shown in the field before the number is typed over it (otherwise the typed digit is added to it).
+  await expect(a.getByRole('textbox', { name: 'Votes per person' })).toHaveValue(/^\d+$/);
   await a.getByRole('textbox', { name: 'Votes per person' }).fill('1');
   await expect(a.getByRole('textbox', { name: 'Votes per person' })).toHaveValue('1');
   await a.getByLabel(/Show who voted for what/).check();
