@@ -68,6 +68,17 @@ describe('AdminDialog', () => {
     fixture.nativeElement.remove();
   });
 
+  it('closes with Escape also when the focus has fallen to the page', async () => {
+    const fixture = await setup();
+    (document.activeElement as HTMLElement).blur();
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await fixture.whenStable();
+
+    expect(el(fixture).querySelector('[role="dialog"]')).toBeNull();
+    fixture.nativeElement.remove();
+  });
+
   it('keeps Tab inside: from the last control to the first and back', async () => {
     const fixture = await setup();
     const close = el(fixture).querySelector('.close') as HTMLElement;

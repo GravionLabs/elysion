@@ -78,7 +78,7 @@ test('a new board shows the dots, and the canvas itself stays transparent', asyn
   await expect(page.getByText('Connected', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: /^Share/ }).click();
-  await page.getByPlaceholder('name@example.com').fill(emailOf(USER_B));
+  await page.getByRole('combobox', { name: 'Person' }).fill(emailOf(USER_B));
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(page.getByText(emailOf(USER_B))).toBeVisible();
   await page.keyboard.press('Escape');

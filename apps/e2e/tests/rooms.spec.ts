@@ -65,9 +65,9 @@ test('a room is made, shared with a second person and holds a board', async () =
   roomPath = new URL(a.url()).pathname;
 
   await a.getByRole('button', { name: 'Members' }).click();
-  await a.getByPlaceholder('name@example.com').fill(emailOf(USER_B));
+  await a.getByRole('combobox', { name: 'Person' }).fill(emailOf(USER_B));
   await a.getByLabel('Role of the new member').selectOption('Editor');
-  await a.getByRole('button', { name: 'Add', exact: true }).click();
+  await a.getByRole('button', { name: 'Add', exact: true }).first().click();
   await expect(a.getByRole('dialog').getByText(emailOf(USER_B))).toBeVisible();
   await a.getByRole('button', { name: 'Close' }).click();
 

@@ -76,10 +76,14 @@ export class AdminDialog {
     return this.#host.nativeElement.querySelector('.dialog');
   }
 
-  @HostListener('keydown.escape', ['$event'])
-  protected onEscape(event: Event): void {
-    event.stopPropagation();
-    this.closed.emit();
+  // On the document, not on the dialog: when the button that had the focus is removed (a person was added, a vote was removed)
+  // the focus falls to the page, and Escape would no longer reach the dialog. Only the topmost dialog closes.
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    const dialogs = document.querySelectorAll('app-admin-dialog');
+    if (dialogs[dialogs.length - 1] === this.#host.nativeElement) {
+      this.closed.emit();
+    }
   }
 
   // `keydown.tab` would not match Shift+Tab, so all keys come here.
