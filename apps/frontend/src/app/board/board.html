@@ -161,6 +161,8 @@
       [tokenProvider]="wsTokenProvider"
       [fileStore]="fileStore"
       [votingApi]="votingApi"
+      [mentionDirectory]="mentionDirectory"
+      [attr.can-moderate]="canShare() ? '' : null"
       [attr.images-enabled]="imagesEnabled() ? '' : null"
       [attr.readonly]="readOnly() ? '' : null"
       [attr.user-name]="session.user()?.name"

@@ -55,6 +55,7 @@ import './styles/grid.css';
 import './styles/toolbar.css';
 import './styles/connection-points.css';
 import './styles/voting.css';
+import './styles/comments.css';
 import './styles/pdf-import.css';
 import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
@@ -85,6 +86,25 @@ import {
   type VotingView,
   NO_VOTING,
 } from './facilitation/voting';
+import { elementLabel } from './facilitation/voting';
+import {
+  type CommentAnchor,
+  type CommentThread,
+  addReply,
+  addThread,
+  countThreads,
+  deleteMessage,
+  ensureComments,
+  knownNames,
+  type MentionNames,
+  observeComments,
+  readThreads,
+  setResolved,
+} from './comments/comments';
+import { CommentLayer } from './comments/CommentLayer';
+import { CommentPanel } from './comments/CommentPanel';
+import { buildAppendix } from './comments/appendix';
+import type { Person } from './comments/mentions';
 
 /** What the host can ask the canvas to do; the element exposes these as methods. */
 export interface CanvasControls {
@@ -167,6 +187,8 @@ export interface CanvasAppProps {
    * result once it is closed), or `null`. Also called after the connection was made, so a late joiner gets it.
    */
   onVotingChange?: (view: VotingView | null) => void;
+  /** The comments changed (#733): how many threads the board has and how many of them are still open. */
+  onCommentsChange?: (summary: { total: number; unresolved: number }) => void;
   /** The connection to the board server failed; the canvas keeps retrying, so this is news, not the end. */
   onError?: (error: Error) => void;
   /** Something the person should be told that is not a failure of the board: the board is full, a change was too large, a library was refused. */
@@ -186,6 +208,13 @@ export interface CanvasAppProps {
    * record. Without one the voting does nothing and `startVoting` rejects.
    */
   votingApi?: VotingApi;
+  /**
+   * The people `@` offers in a comment (#733): `{id, name}` with the identity provider's id, which is what a mention stores.
+   * Asked each time the comments open. Without one only the authors of earlier comments are offered.
+   */
+  mentionDirectory?: () => Promise<readonly Person[]>;
+  /** The board's owner: may delete any comment. Everybody else deletes their own (a rule of the interface, not of the server). */
+  canModerate?: boolean;
   /** An image could not be stored (the element is taken off the board again) or loaded; `message` says why. */
   onFileError?: (error: Error) => void;
   /** The server's state of the board has arrived (after every connect): what the scene shows is what the board holds. */
@@ -244,11 +273,14 @@ export function CanvasApp({
   onPresenceChange,
   onTimerChange,
   onVotingChange,
+  onCommentsChange,
   onError,
   onNotice,
   tokenProvider,
   fileStore,
   votingApi,
+  mentionDirectory,
+  canModerate = false,
   onFileError,
   onSynced: onSyncedProp,
   readOnly = false,
@@ -289,6 +321,10 @@ export function CanvasApp({
   timerCallback.current = onTimerChange;
   const votingCallback = useRef(onVotingChange);
   votingCallback.current = onVotingChange;
+  const commentsCallback = useRef(onCommentsChange);
+  commentsCallback.current = onCommentsChange;
+  const mentionDirectoryRef = useRef(mentionDirectory);
+  mentionDirectoryRef.current = mentionDirectory;
   const errorCallback = useRef(onError);
   presenceCallback.current = onPresenceChange;
   errorCallback.current = onError;
@@ -371,6 +407,16 @@ export function CanvasApp({
   votingRef.current = voting;
   const userIdRef = useRef(userId);
   userIdRef.current = userId;
+  // Comments (#733): the threads of the document, whether the panel is open, whether the next click places a comment, where a
+  // new comment is being written, and the thread a marker was clicked for.
+  const [threads, setThreads] = useState<CommentThread[]>([]);
+  const threadsRef = useRef(threads);
+  threadsRef.current = threads;
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [placing, setPlacing] = useState(false);
+  const [pendingAnchor, setPendingAnchor] = useState<CommentAnchor | null>(null);
+  const [activeThread, setActiveThread] = useState<string | null>(null);
+  const [directory, setDirectory] = useState<readonly Person[]>([]);
   // Who this tab is, made once: a re-render must not make a new collaborator.
   const identityRef = useRef(createSessionIdentity());
   const identity = withHostIdentity(identityRef.current, userName, userColor);
@@ -494,6 +540,11 @@ export function CanvasApp({
     const stopGrid = observeGrid(doc, setGrid);
     const timerSync = observeTimer(doc, (state) => timerCallback.current?.(state));
     timerSyncRef.current = timerSync;
+    setThreads(readThreads(doc));
+    const commentsSync = observeComments(doc, (next) => {
+      setThreads(next);
+      commentsCallback.current?.(countThreads(next));
+    });
     // The voting lives on the server (ADR 0029): this follows it for the person, through the host's `votingApi`.
     const votingSync = new VotingController({
       api: () => votingApiRef.current,
@@ -528,6 +579,11 @@ export function CanvasApp({
         syncedCallback.current?.();
         // The voting is the server's: ask for it (a late joiner, a reconnect). The old document key goes.
         void votingSync.refresh();
+        // The map of the comments is made by those who may write, as soon as they are connected: a viewer's first comment
+        // may then only add a thread to it (the realtime service refuses a viewer's creation of the map when two race).
+        if (!readOnlyRef.current) ensureComments(doc);
+        setThreads(readThreads(doc));
+        commentsCallback.current?.(countThreads(readThreads(doc)));
         if (!readOnlyRef.current) {
           const open = dropLegacyVoting(doc);
           if (open) noticeCallback.current?.(tRef.current.legacyVotingClosed(open.name, open.top));
@@ -581,6 +637,7 @@ export function CanvasApp({
     return () => {
       stopGrid();
       timerSync.destroy();
+      commentsSync.destroy();
       timerSyncRef.current = null;
       sceneUnsubscribe();
       votingSync.destroy();
@@ -644,6 +701,99 @@ export function CanvasApp({
       return Promise.reject(new Error(tRef.current.errorNotReady));
     return run(controller);
   };
+
+  /** Who writes a comment: the host's user id (what a mention and the delete rule go by), else the tab's own. */
+  const commentAuthor = () => ({
+    id: userIdRef.current ?? identityNow.current.id,
+    name: identityNow.current.name,
+  });
+
+  /** What a thread hangs on, in words; `null` when its element is gone. */
+  const describeAnchor = (anchor: CommentAnchor): string | null => {
+    if (!('elementId' in anchor)) return tRef.current.commentOnPoint;
+    const all = apiRef.current?.getSceneElements() ?? [];
+    const element = all.find((candidate) => candidate.id === anchor.elementId);
+    return element ? elementLabel(element, all) : null;
+  };
+
+  const commentDoc = (): Y.Doc => {
+    const doc = docRef.current;
+    if (!doc) throw new Error(tRef.current.errorNotReady);
+    return doc;
+  };
+  const startComment = (text: string, names: MentionNames) => {
+    const anchor = pendingAnchor;
+    if (!anchor) throw new Error(tRef.current.errorNotReady);
+    const id = addThread(commentDoc(), anchor, text, commentAuthor(), Date.now(), names);
+    setPendingAnchor(null);
+    setActiveThread(id);
+  };
+  const replyToThread = (threadId: string, text: string, names: MentionNames) =>
+    addReply(commentDoc(), threadId, text, commentAuthor(), Date.now(), names);
+  const resolveThread = (threadId: string, resolved: boolean) =>
+    setResolved(commentDoc(), threadId, resolved, commentAuthor());
+  const deleteComment = (threadId: string, messageId: string) =>
+    void deleteMessage(commentDoc(), threadId, messageId);
+
+  /** Opens the comments with the tool armed, or closes them. */
+  const toggleComments = () => {
+    if (commentsOpen) {
+      setCommentsOpen(false);
+      setPlacing(false);
+      setPendingAnchor(null);
+      return;
+    }
+    openComments(null);
+  };
+  const openComments = (threadId: string | null) => {
+    setCommentsOpen(true);
+    setActiveThread(threadId);
+    setPlacing(threadId === null);
+    setPendingAnchor(null);
+    // The people to offer for `@`, asked for each time the panel opens (members change).
+    void Promise.resolve(mentionDirectoryRef.current?.())
+      .then((people) => setDirectory(people ?? []))
+      .catch(() => setDirectory([]));
+  };
+  const describeAnchorRef = useRef(describeAnchor);
+  describeAnchorRef.current = describeAnchor;
+  const toggleCommentsRef = useRef(toggleComments);
+  toggleCommentsRef.current = toggleComments;
+  const placeComment = (anchor: CommentAnchor) => {
+    setPendingAnchor(anchor);
+    setPlacing(false);
+    setActiveThread(null);
+  };
+  /** Pans the view to what a thread hangs on. */
+  const showThread = (threadId: string) => {
+    const thread = threadsRef.current.find((candidate) => candidate.id === threadId);
+    const api = apiRef.current;
+    if (!thread || !api) return;
+    setActiveThread(threadId);
+    if ('elementId' in thread.anchor) {
+      const id = thread.anchor.elementId;
+      const target = api.getSceneElements().find((element) => element.id === id);
+      if (target) api.scrollToContent(target, { fitToViewport: false, animate: true });
+    } else {
+      panTo(thread.anchor);
+    }
+  };
+  // Escape leaves the tool.
+  useEffect(() => {
+    if (!placing) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPlacing(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [placing]);
+  const commentNames = knownNames(threads, directory);
+  // The host's list first; an author or a name kept with a mention who is not on it by name is added (a person has one id
+  // in the host's list and another as an author, and should be offered once).
+  const commentPeople: Person[] = [...directory];
+  for (const [id, name] of commentNames) {
+    if (!commentPeople.some((person) => person.name === name)) commentPeople.push({ id, name });
+  }
 
   const panTo = (center: { x: number; y: number }) => {
     const snapshot = sceneStoreRef.current.get();
@@ -751,8 +901,17 @@ export function CanvasApp({
         return;
       }
       if (apiRef.current?.getAppState().editingTextElement) return;
-      if (key === 'c') connectSelectionRef.current();
-      else if (!readOnlyRef.current) addStickyRef.current(stickyColorRef.current);
+      if (key === 'c') {
+        // C connects two selected elements; with nothing to connect it opens the comments (#733).
+        const api = apiRef.current;
+        const connectable =
+          !readOnlyRef.current &&
+          api &&
+          connectableSelection(api.getSceneElements(), api.getAppState().selectedElementIds) !==
+            null;
+        if (connectable) connectSelectionRef.current();
+        else toggleCommentsRef.current();
+      } else if (!readOnlyRef.current) addStickyRef.current(stickyColorRef.current);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -925,6 +1084,7 @@ export function CanvasApp({
         onDropCapture={onDropCapture}
         data-theme={activeTheme}
         data-grid={grid.show ? 'dots' : undefined}
+        data-comment-mode={placing ? '' : undefined}
         style={{ position: 'absolute', inset: 0 }}
       >
         {pdfFile && excalidrawApi && (
@@ -967,7 +1127,21 @@ export function CanvasApp({
               whenSettled: (timeoutMs) =>
                 bindingRef.current?.whenSettled(timeoutMs) ?? Promise.resolve(),
               toggleLibrary: () => api.toggleSidebar({ name: LIBRARY_SIDEBAR, tab: LIBRARY_TAB }),
-              exportBoard: (format, options) => exportBoard(api, format, options),
+              exportBoard: (format, options) =>
+                exportBoard(
+                  api,
+                  format,
+                  options,
+                  options?.comments
+                    ? buildAppendix(
+                        threadsRef.current,
+                        knownNames(threadsRef.current, []),
+                        tRef.current,
+                        locale,
+                        describeAnchorRef.current,
+                      )
+                    : null,
+                ),
               exportThumbnail: () => exportThumbnail(api),
               importFile: (file) =>
                 readOnlyRef.current
@@ -1069,6 +1243,41 @@ export function CanvasApp({
           onVote={voteFor}
           onRetract={retractFor}
         />
+        <CommentLayer
+          apiRef={apiRef}
+          rootRef={rootRef}
+          store={sceneStoreRef.current}
+          threads={threads}
+          placing={placing}
+          activeId={commentsOpen ? activeThread : null}
+          onPlace={placeComment}
+          onOpen={(threadId) => openComments(threadId)}
+        />
+        {commentsOpen && (
+          <CommentPanel
+            threads={threads}
+            me={commentAuthor()}
+            moderate={canModerate}
+            pending={pendingAnchor}
+            activeId={activeThread}
+            directory={commentPeople}
+            names={commentNames}
+            describeAnchor={describeAnchor}
+            placing={placing}
+            onStart={startComment}
+            onReply={replyToThread}
+            onResolve={resolveThread}
+            onDelete={deleteComment}
+            onNew={() => {
+              setPendingAnchor(null);
+              setActiveThread(null);
+              setPlacing(true);
+            }}
+            onCancelNew={() => setPendingAnchor(null)}
+            onShow={showThread}
+            onClose={toggleComments}
+          />
+        )}
         <Toolbar
           activeTool={activeTool}
           onSelect={(tool: ToolbarTool) => apiRef.current?.setActiveTool({ type: tool })}
@@ -1077,6 +1286,8 @@ export function CanvasApp({
           theme={activeTheme}
           onHistory={onHistory}
           onConnect={canConnect && !readOnly ? connectSelection : undefined}
+          onComments={toggleComments}
+          commentsOpen={commentsOpen}
           onZoom={onZoom}
           zoomPercent={zoomPercent}
           menuItems={menuItems}

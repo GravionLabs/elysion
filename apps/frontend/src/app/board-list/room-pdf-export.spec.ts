@@ -13,6 +13,7 @@ const behaviour = new Map<
   { sync: boolean; pages: number | null; exportDelayMs?: number }
 >();
 const opened: string[] = [];
+const exportOptions: unknown[] = [];
 
 async function pdfOf(pages: number): Promise<Blob> {
   const document = await PDFDocument.create();
@@ -32,7 +33,8 @@ class StubCanvas extends HTMLElement {
   whenSettled() {
     return Promise.resolve();
   }
-  async exportBoard(): Promise<Blob | null> {
+  async exportBoard(_format?: string, options?: unknown): Promise<Blob | null> {
+    exportOptions.push(options);
     const entry = behaviour.get(this.getAttribute('board-id') ?? '');
     if (entry?.exportDelayMs)
       await new Promise((resolve) => setTimeout(resolve, entry.exportDelayMs));
@@ -56,6 +58,7 @@ describe('RoomPdfExporter', () => {
   beforeEach(() => {
     behaviour.clear();
     opened.length = 0;
+    exportOptions.length = 0;
     TestBed.configureTestingModule({
       providers: [
         { provide: BoardApi, useValue: { realtimeToken: vi.fn() } },
@@ -91,6 +94,18 @@ describe('RoomPdfExporter', () => {
     const document = await PDFDocument.load(await pdf!.arrayBuffer());
     expect(document.getPageCount()).toBe(1 + 2 + 1 + 3);
     expect(opened).toEqual(['a', 'b']); // one after the other
+  });
+
+  it('does not append the comments of each board, even when the export menu asks for them (#733)', async () => {
+    behaviour.set('a', { sync: true, pages: 1 });
+    const { pdf } = await exporter.export(
+      [{ id: 'a', name: 'Retro' }],
+      { ...DEFAULT_EXPORT_SETTINGS, comments: true },
+      { signal: new AbortController().signal, onProgress: () => undefined, texts, timings: fast },
+    );
+
+    expect(pdf).not.toBeNull();
+    expect(exportOptions).toEqual([expect.objectContaining({ comments: false })]);
   });
 
   it('gives an empty board a title page and nothing behind it', async () => {

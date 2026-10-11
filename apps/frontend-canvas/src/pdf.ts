@@ -99,6 +99,19 @@ export function placePage(
   };
 }
 
+/** The comments of the board as text pages after the board's pages (#733). */
+export interface PdfAppendix {
+  title: string;
+  sections: {
+    heading: string;
+    threads: {
+      where: string;
+      resolvedBy?: string;
+      messages: { author: string; date: string; text: string }[];
+    }[];
+  }[];
+}
+
 export interface PdfPage {
   svg: SVGSVGElement;
   /** A line above the content, the name of a frame. */
@@ -114,7 +127,11 @@ export async function svgToPdf(svg: SVGSVGElement): Promise<Blob> {
  * A PDF with one page per entry: the content of each SVG (text in Helvetica), laid out by {@link placePage}, with its title
  * as a line above when it has one. The first page decides how the document starts; every page has its own size.
  */
-export async function svgsToPdf(pages: readonly PdfPage[], layout: PdfLayout = {}): Promise<Blob> {
+export async function svgsToPdf(
+  pages: readonly PdfPage[],
+  layout: PdfLayout = {},
+  appendix?: PdfAppendix | null,
+): Promise<Blob> {
   const [{ jsPDF }, { svg2pdf }] = await Promise.all([import('jspdf'), import('svg2pdf.js')]);
   let document: InstanceType<typeof jsPDF> | null = null;
   for (const { svg, title } of pages) {
@@ -154,5 +171,47 @@ export async function svgsToPdf(pages: readonly PdfPage[], layout: PdfLayout = {
     });
   }
   if (document === null) throw new Error('A PDF needs at least one page.');
+  if (appendix) writeAppendix(document, appendix);
   return new Blob([document.output('arraybuffer')], { type: 'application/pdf' });
+}
+
+type PdfDocument = InstanceType<(typeof import('jspdf'))['jsPDF']>;
+
+/**
+ * Writes the appendix on A4 pages in Helvetica: the title, a heading per section, and per thread the place it hangs on and its
+ * messages. A line is wrapped to the page, and a new page starts when the next lines do not fit.
+ */
+export function writeAppendix(document: PdfDocument, appendix: PdfAppendix): void {
+  const page = PAGE_FORMATS.a4;
+  const width = page.width - 2 * MARGIN;
+  let y = 0;
+  const newPage = () => {
+    document.addPage([page.width, page.height], 'portrait');
+    y = MARGIN;
+  };
+  const line = (text: string, size: number, bold = false, indent = 0, after = 4) => {
+    document.setFont('helvetica', bold ? 'bold' : 'normal');
+    document.setFontSize(size);
+    for (const part of document.splitTextToSize(text, width - indent) as string[]) {
+      if (y + size * 1.3 > page.height - MARGIN) newPage();
+      document.text(part, MARGIN + indent, y + size);
+      y += size * 1.3;
+    }
+    y += after;
+  };
+  newPage();
+  document.outline.add(null, appendix.title, { pageNumber: document.getNumberOfPages() });
+  line(appendix.title, 18, true, 0, 10);
+  for (const section of appendix.sections) {
+    line(section.heading, 14, true, 0, 6);
+    for (const thread of section.threads) {
+      line(thread.where, 11, true, 0, 2);
+      for (const message of thread.messages) {
+        line(`${message.author}, ${message.date}`, 10, true, 12, 0);
+        line(message.text, 11, false, 12, 4);
+      }
+      if (thread.resolvedBy) line(thread.resolvedBy, 10, false, 12, 2);
+      y += 8;
+    }
+  }
 }

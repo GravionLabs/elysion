@@ -176,6 +176,21 @@ part of the board, so somebody who joins later or reloads sees the time that is 
 While a voting is open you only see **your own** votes, never anybody else's, and the server keeps the others' votes from you. The results show
 counts, and names only when the voting was started as named. **Viewers vote too**; only owners and editors start, end and clear a voting.
 
+## Comments
+
+The **Comments** button in the toolbar (or the key **C**, when two elements are not selected to be connected) opens the comments on the right.
+
+1. Click an **element** or an empty spot of the board: the comment is attached to it. A comment on an element follows the element when it moves; a comment on a spot stays where it is.
+2. Write the comment (up to 2,000 characters) and press **Comment**. Ctrl+Enter sends too. Type **@** to mention someone: the list offers the members of the board
+   (the owner of the board sees all of them; everybody else is offered the people who commented before). A mention is shown as the person's name. Nobody is notified yet.
+3. A small marker with the number of messages sits on the element. Click it to open the thread, **reply**, and **Resolve** it when it is settled (**Reopen** brings it back).
+   Open threads are listed first, resolved ones after them.
+4. **Delete** removes one of your own messages; the owner of the board can delete any. A thread goes with its last message.
+
+**Viewers can comment** (it is the one thing they can do on a board). The comments belong to the board and are saved with it; they do not appear in a PNG, an SVG or an `.excalidraw` export, and **Ctrl+Z** does not undo them.
+To put them in a PDF, choose **Comments in a PDF** in the Export menu: they are added as text pages at the end, the open threads first. The option is off by default.
+Note that who wrote a message is a rule of the interface: it keeps people from deleting each other's messages, but anybody with access to the board's data could write as someone else.
+
 ## Tips
 
 - **Zoom to fit** (the last zoom button) when you are lost; the map at the bottom left shows where you are.

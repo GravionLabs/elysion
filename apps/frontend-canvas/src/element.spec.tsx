@@ -129,6 +129,40 @@ describe('elysion-canvas custom element', () => {
     document.body.removeChild(el);
   });
 
+  it('has a mentionDirectory property, also when it was set early, and observes can-moderate (#733)', () => {
+    const directory = vi.fn(async () => [{ id: 'u1', name: 'Ann' }]);
+    const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
+      mentionDirectory?: typeof directory;
+    };
+    Object.defineProperty(el, 'mentionDirectory', {
+      value: directory,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+
+    document.body.appendChild(el);
+
+    expect(Object.getOwnPropertyDescriptor(el, 'mentionDirectory')).toBeUndefined();
+    expect(el.mentionDirectory).toBe(directory);
+    expect(ELEMENT_OBSERVES).toContain('can-moderate');
+    document.body.removeChild(el);
+  });
+
+  it('has a comments button that opens the panel inside the element (#733)', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME);
+    el.setAttribute('board-id', `comments-${crypto.randomUUID()}`);
+    document.body.appendChild(el);
+    await waitFor(() =>
+      expect(el.querySelector('[data-testid="elysion-tool-comments"]')).toBeTruthy(),
+    );
+
+    (el.querySelector('[data-testid="elysion-tool-comments"]') as HTMLElement).click();
+
+    await waitFor(() => expect(el.querySelector('aside.elysion-comments')).toBeTruthy());
+    document.body.removeChild(el);
+  });
+
   it('offers no image tool until the images-enabled attribute is set', async () => {
     const el = document.createElement(ELEMENT_TAG_NAME);
     document.body.appendChild(el);

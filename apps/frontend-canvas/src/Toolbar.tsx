@@ -198,6 +198,10 @@ export interface ToolbarProps {
   onHistory?: (action: HistoryAction) => void;
   /** Connects the two selected elements; the button is only shown when this is given. */
   onConnect?: () => void;
+  /** Opens or closes the comments (#733); the button is only shown when this is given, and a viewer has it too. */
+  onComments?: () => void;
+  /** The comments panel is open: the button is pressed. */
+  commentsOpen?: boolean;
   /** Zoom out, in, back to 100% and fit to content; shown together with `zoomPercent`. */
   onZoom?: (action: ZoomAction) => void;
   /** The current zoom in percent, shown on the reset button. */
@@ -266,6 +270,12 @@ function StickyIcon({ color, theme }: { color: StickyColor; theme: 'light' | 'da
   );
 }
 
+const COMMENT_ICON = (
+  <Icon>
+    <path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-5 4v-4H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />
+  </Icon>
+);
+
 const CONNECT_ICON = (
   <Icon>
     <circle cx="5" cy="12" r="2" />
@@ -283,6 +293,8 @@ export function Toolbar({
   theme = 'light',
   onHistory,
   onConnect,
+  onComments,
+  commentsOpen = false,
   onZoom,
   zoomPercent,
   menuItems,
@@ -418,9 +430,25 @@ export function Toolbar({
           )}
         </div>
       ))}
+      {onComments && (
+        <div className="elysion-toolbar__group">
+          <div className="elysion-toolbar__divider" />
+          <button
+            type="button"
+            className={commentsOpen ? 'elysion-icon-button active' : 'elysion-icon-button'}
+            aria-label={t.toolComments}
+            aria-pressed={commentsOpen}
+            title={`${t.toolCommentsTitle} (C)`}
+            data-testid="elysion-tool-comments"
+            onClick={onComments}
+          >
+            {COMMENT_ICON}
+          </button>
+        </div>
+      )}
       {onZoom && (
         <div className="elysion-toolbar__group">
-          {!readOnly && <div className="elysion-toolbar__divider" />}
+          {(!readOnly || onComments) && <div className="elysion-toolbar__divider" />}
           <button
             type="button"
             className="elysion-icon-button"

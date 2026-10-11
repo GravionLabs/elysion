@@ -36,6 +36,21 @@ Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema. Beim **Expor
 Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema. Beim **Exportieren** wählst du unter **Optionen** (der Browser merkt sie sich) bei einem **PDF**, ob ein Board mit Rahmen **eine Seite pro Rahmen** ergibt (mit dem Namen des Rahmens als Überschrift) oder das ganze Board auf einer Seite liegt, sowie Seitengröße (Größe des Inhalts, A4, Letter) und Ausrichtung; für alle Formate die Farben und den Hintergrund, bei **PNG** den Maßstab.
 Inhalte hinein und heraus (ein **PDF** wird beim Importieren Seite für Seite als Bild in je einen Rahmen "Seite 1", "Seite 2" … gelegt; die Seiten wählst du vorher aus), **Hell/Dunkel** wechselt das Farbschema.
 
+## Kommentare
+
+Der Knopf **Kommentare** in der Werkzeugleiste (oder die Taste **C**, wenn nicht zwei Elemente zum Verbinden ausgewählt sind) öffnet die Kommentare rechts.
+
+1. Klicke ein **Element** oder eine leere Stelle des Boards: Der Kommentar hängt daran. Ein Kommentar an einem Element wandert mit; ein Kommentar an einer Stelle bleibt dort.
+2. Schreibe den Kommentar (bis zu 2.000 Zeichen) und drücke **Kommentieren**; Strg+Enter sendet ebenfalls. Mit **@** erwähnst du jemanden: Die Liste bietet die Mitglieder des Boards an
+   (die Eigentümerin sieht alle; alle anderen sehen die, die schon kommentiert haben). Eine Erwähnung erscheint als Name. Benachrichtigt wird noch niemand.
+3. Eine kleine Markierung mit der Zahl der Nachrichten sitzt am Element. Ein Klick öffnet den Thread, dort kannst du **antworten** und ihn **erledigen**
+   (**Wieder öffnen** holt ihn zurück). Offene Threads stehen zuerst, erledigte danach.
+4. **Löschen** entfernt eine eigene Nachricht; die Eigentümerin des Boards kann jede löschen. Mit der letzten Nachricht verschwindet der Thread.
+
+**Betrachter können kommentieren.** Die Kommentare gehören zum Board und werden mit ihm gespeichert; in PNG, SVG und `.excalidraw` erscheinen sie nicht, und **Strg+Z** macht sie nicht rückgängig.
+Für ein PDF wählst du im Exportmenü **Kommentare in einem PDF**: Sie kommen als Textseiten ans Ende, die offenen zuerst. Die Option ist standardmäßig aus.
+Wer eine Nachricht geschrieben hat, ist eine Regel der Oberfläche: Sie verhindert, dass man fremde Nachrichten löscht, wer aber an die Daten des Boards kommt, könnte auch als jemand anderes schreiben.
+
 ## Einen Workshop leiten
 
 - **Timer** startet einen Countdown für alle auf dem Board (Voreinstellungen oder eigene Minuten; pausieren, eine Minute verlängern, stoppen).

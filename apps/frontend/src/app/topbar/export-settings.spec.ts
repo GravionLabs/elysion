@@ -41,6 +41,15 @@ describe('parseSettings', () => {
     });
   });
 
+  it('has the comments off unless they were switched on (#733)', () => {
+    expect(DEFAULT_EXPORT_SETTINGS.comments).toBe(false);
+    expect(parseSettings({ comments: true }).comments).toBe(true);
+    expect(parseSettings({ comments: 'yes' }).comments).toBe(false);
+    expect(toCanvasOptions({ ...DEFAULT_EXPORT_SETTINGS, comments: true }, false).comments).toBe(
+      true,
+    );
+  });
+
   it('accepts a background that is switched off', () => {
     expect(parseSettings({ background: false }).background).toBe(false);
   });
@@ -89,6 +98,7 @@ describe('toCanvasOptions', () => {
       pdfPages: 'auto',
       pageFormat: 'fit',
       orientation: 'auto',
+      comments: false,
     });
   });
 });

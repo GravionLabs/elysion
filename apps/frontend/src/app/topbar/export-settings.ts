@@ -15,6 +15,8 @@ export interface ExportSettings {
   colors: ExportColors;
   background: boolean;
   scale: PngScale;
+  /** Add the board's comments to a PDF as text pages (#733). */
+  comments: boolean;
 }
 
 export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
@@ -24,6 +26,7 @@ export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   colors: 'current',
   background: true,
   scale: 1,
+  comments: false,
 };
 
 const STORAGE_KEY = 'elysion.export-settings';
@@ -58,6 +61,10 @@ export function parseSettings(value: unknown): ExportSettings {
       typeof stored['background'] === 'boolean'
         ? stored['background']
         : DEFAULT_EXPORT_SETTINGS.background,
+    comments:
+      typeof stored['comments'] === 'boolean'
+        ? stored['comments']
+        : DEFAULT_EXPORT_SETTINGS.comments,
   };
 }
 
@@ -90,5 +97,6 @@ export function toCanvasOptions(settings: ExportSettings, selectionOnly: boolean
     pdfPages: settings.pdfPages,
     pageFormat: settings.pageFormat,
     orientation: settings.orientation,
+    comments: settings.comments,
   };
 }

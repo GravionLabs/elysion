@@ -7,7 +7,12 @@ import { parseTheme } from './useResolvedTheme';
 import { parseLocale, createI18n } from './i18n';
 import type { FileStore } from './yjs/files';
 
-export type { FileStore, VotingApi };
+import type { Person } from './comments/mentions';
+
+export type { FileStore, VotingApi, Person };
+
+/** The people `@` offers in a comment: asked each time the comments open. */
+export type MentionDirectory = () => Promise<readonly Person[]>;
 
 /** What the host gives the canvas to get a WS token. */
 export type TokenProvider = () => Promise<string | null>;
@@ -25,6 +30,7 @@ const OBSERVED_ATTRIBUTES = [
   'readonly',
   'images-enabled',
   'max-elements',
+  'can-moderate',
 ] as const;
 
 class ElysionCanvasElement extends HTMLElement {
@@ -37,6 +43,7 @@ class ElysionCanvasElement extends HTMLElement {
   #tokenProvider: TokenProvider | undefined;
   #fileStore: FileStore | undefined;
   #votingApi: VotingApi | undefined;
+  #mentionDirectory: MentionDirectory | undefined;
 
   /**
    * Asked before every connection to the board server for the board-scoped WS token (docs/specs/identity.md): it
@@ -82,6 +89,19 @@ class ElysionCanvasElement extends HTMLElement {
     this.#render();
   }
 
+  /**
+   * The people `@` offers in a comment (#733): `{id, name}` with the identity provider's id, which is what a mention stores.
+   * A property, like `fileStore`, because it is a function. Without one only the authors of earlier comments are offered.
+   */
+  get mentionDirectory(): MentionDirectory | undefined {
+    return this.#mentionDirectory;
+  }
+
+  set mentionDirectory(directory: MentionDirectory | undefined) {
+    this.#mentionDirectory = directory;
+    this.#render();
+  }
+
   connectedCallback(): void {
     // A host may set properties on the element before it is upgraded (the script loads lazily, so on the first visit
     // the element can exist before this class does). That leaves an own property that hides the accessor above, and
@@ -89,12 +109,15 @@ class ElysionCanvasElement extends HTMLElement {
     this.#adoptEarlyProperty('tokenProvider');
     this.#adoptEarlyProperty('fileStore');
     this.#adoptEarlyProperty('votingApi');
+    this.#adoptEarlyProperty('mentionDirectory');
     this.#root = createRoot(this);
     this.#render();
     this.dispatchEvent(new CustomEvent('ready', { bubbles: true, composed: true }));
   }
 
-  #adoptEarlyProperty(name: 'tokenProvider' | 'fileStore' | 'votingApi'): void {
+  #adoptEarlyProperty(
+    name: 'tokenProvider' | 'fileStore' | 'votingApi' | 'mentionDirectory',
+  ): void {
     if (Object.prototype.hasOwnProperty.call(this, name)) {
       const value = (this as unknown as Record<string, unknown>)[name];
       delete (this as unknown as Record<string, unknown>)[name];
@@ -102,8 +125,10 @@ class ElysionCanvasElement extends HTMLElement {
         this.tokenProvider = value as TokenProvider | undefined;
       } else if (name === 'fileStore') {
         this.fileStore = value as FileStore | undefined;
-      } else {
+      } else if (name === 'votingApi') {
         this.votingApi = value as VotingApi | undefined;
+      } else {
+        this.mentionDirectory = value as MentionDirectory | undefined;
       }
     }
   }
@@ -237,6 +262,7 @@ class ElysionCanvasElement extends HTMLElement {
         onPresenceChange={(users) => this.#emit('presence', { users })}
         onTimerChange={(state: TimerState | null) => this.#emit('timer', { state })}
         onVotingChange={(session: VotingView | null) => this.#emit('voting', { session })}
+        onCommentsChange={(summary) => this.#emit('comments', summary)}
         onError={(error) => this.#emit('error', { message: error.message })}
         onNotice={(message) => this.#emit('notice', { message })}
         onFileError={(error) => this.#emit('fileerror', { message: error.message })}
@@ -244,6 +270,8 @@ class ElysionCanvasElement extends HTMLElement {
         tokenProvider={this.#tokenProvider}
         fileStore={this.#fileStore}
         votingApi={this.#votingApi}
+        mentionDirectory={this.#mentionDirectory}
+        canModerate={this.hasAttribute('can-moderate')}
         readOnly={this.hasAttribute('readonly')}
         imagesEnabled={this.hasAttribute('images-enabled')}
         maxElements={positiveInteger(this.getAttribute('max-elements'))}
