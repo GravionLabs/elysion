@@ -26,6 +26,9 @@ public static class AuditActions
     /// <summary>The groups of a person from the identity provider changed with their sign-in: one entry per change, not per request.</summary>
     public const string GroupsSynced = "groups.synced";
 
+    /// <summary>The Graph sync changed a linked group (#667): its name, its members or its pending members. Written by the system, one entry per changed group.</summary>
+    public const string GroupGraphSynced = "group.graph_synced";
+
     public const string UserDeactivated = "user.deactivated";
     public const string UserReactivated = "user.reactivated";
 

@@ -27,6 +27,14 @@ public interface IAdminRepository
         int pageSize,
         CancellationToken cancellationToken);
 
+    /// <summary>The people the directory lists in a linked group who have not signed in yet, by address.</summary>
+    Task<PagedResult<AdminPendingMemberDto>> ListGroupPendingAsync(Guid groupId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
+
+    Task<AdminGraphStatusDto> GetGraphStatusAsync(bool enabled, TimeSpan interval, CancellationToken cancellationToken);
+
     Task<PagedResult<AdminRoomDto>> ListRoomsAsync(string? query,
         int page,
         int pageSize,

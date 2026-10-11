@@ -29,6 +29,7 @@ namespace Elysion.BusinessBackend.Api.Identity;
 public sealed class UserProvisioningService(
     IUserRepository users,
     IGroupRepository groups,
+    IGroupSyncRepository groupSync,
     IAuditLog audit,
     IUnitOfWork unitOfWork,
     IMemoryCache cache,
@@ -80,6 +81,11 @@ public sealed class UserProvisioningService(
             if (!ReferenceEquals(user, created))
             {
                 await UpdateAsync(user, email, displayName, cancellationToken);
+            }
+            else if (email is not null)
+            {
+                // The directory may have listed the person in linked groups before they ever came (the Graph sync, #667).
+                await groupSync.AdoptPendingAsync(user.Id, email, time.GetUtcNow(), cancellationToken);
             }
         }
         else
