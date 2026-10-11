@@ -42,3 +42,23 @@ describe('buildOpenIdConfiguration', () => {
     );
   });
 });
+
+describe('buildOpenIdConfiguration and the identity provider hint', () => {
+  it('starts the login with kc_idp_hint when the settings have an idpHint', () => {
+    const config = buildOpenIdConfiguration(
+      { ...settings, idpHint: 'microsoft' },
+      'http://localhost',
+    );
+
+    expect(config.customParamsAuthRequest).toEqual({ kc_idp_hint: 'microsoft' });
+  });
+
+  it.each([undefined, '', '   ', 'micro soft', 'a&b=c', 'x'.repeat(65)])(
+    'adds nothing for the hint %j',
+    (idpHint) => {
+      const config = buildOpenIdConfiguration({ ...settings, idpHint }, 'http://localhost');
+
+      expect(config.customParamsAuthRequest).toBeUndefined();
+    },
+  );
+});

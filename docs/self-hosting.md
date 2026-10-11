@@ -202,6 +202,11 @@ links the account to it; the next sign-ins find the same user. Members of the ad
 sign-in); every sign-in also copies the person's groups (`groups`, object ids) into the access token. **Changes in Entra arrive with the next sign-in through
 Entra, at most 8 hours later** (the realm's SSO session maximum): a person removed from a group or disabled in Entra keeps what the group gave them until then.
 
+**Straight to Microsoft (optional).** With `AUTH_IDP_HINT=microsoft` on the frontend container (compose: `.env`; Helm: `oidc.idpHint`) the shell starts
+the login with `kc_idp_hint=microsoft`, so Keycloak forwards to Entra at once and nobody sees Keycloak's own page. Leave it empty if people also use
+local accounts. A person's name in Elysion is their `preferred_username` unless it is an address or a GUID (what Entra makes of it), then their `name`.
+**Logging out** ends the Keycloak session only; the person stays signed in at Microsoft (Elysion does not end their Office session).
+
 ## Update
 
 Pull the new images (`ELYSION_VERSION` in `.env`, or `docker compose pull && docker compose up -d`; in Kubernetes a new `images.<service>.tag` and `helm upgrade`).
