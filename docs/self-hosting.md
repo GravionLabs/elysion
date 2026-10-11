@@ -214,6 +214,30 @@ the login with `kc_idp_hint=microsoft`, so Keycloak forwards to Entra at once an
 local accounts. A person's name in Elysion is their `preferred_username` unless it is an address or a GUID (what Entra makes of it), then their `name`.
 **Logging out** ends the Keycloak session only; the person stays signed in at Microsoft (Elysion does not end their Office session).
 
+### Members before they sign in (Microsoft Graph, optional)
+
+By default a linked group has the people who have signed in with it, as far as their last sign-in said (above). With **Microsoft Graph** Elysion also reads
+the members of each linked group from the directory, so that an administrator sees who belongs to the group before they ever came, and a group is named
+after its directory name ([ADR 0027](adr/0027-enterprise-sign-in-groups-and-administration.md), #667). It is off unless all three of these are set:
+
+1. In the app registration (or a second one: it needs no sign-in) add the **application permission** `GroupMember.Read.All` of Microsoft Graph (`Group.Read.All`
+   also works) under _API permissions_, and press **Grant admin consent** for your tenant. Without consent every call is refused with 403.
+2. Make a **client secret** for it (a certificate is not supported).
+3. Set `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID` and `GRAPH_CLIENT_SECRET` on the business backend (compose: `.env`; Helm: `graph.enabled: true`, `graph.tenantId`,
+   `graph.clientId`, and the key `GRAPH_CLIENT_SECRET` in the Secret `secrets.existingSecret`). `GRAPH_SYNC_INTERVAL` is the time between two runs in minutes (default 60,
+   at least 5). `GRAPH_AUTHORITY` and `GRAPH_BASE_URL` are for another cloud (for example `https://login.microsoftonline.us` and
+   `https://graph.microsoft.us/v1.0/`).
+
+What a run does, for every linked group whose id is an Entra object id: it reads the group's name and its members (nested groups included; users only). A person
+whose e-mail address (the `mail` field, else the sign-in name) matches somebody who has signed in becomes a member; a person who has not signed in is **waiting** (the
+admin Groups page lists them) and becomes a member at their first sign-in with that address. A person the directory no longer lists loses the membership the sync
+made. The sync never touches a membership that came from a token or from an administrator.
+
+**The token still wins.** A membership that the person's token does not list is removed at their next token check, even if Graph listed it an hour ago, and the sync
+gives it back at its next run: the two only agree once the person has signed in again after the change (at most 8 hours, see above). Graph is for seeing groups
+early, not for cutting access earlier: for that, **deactivate the person** in Elysion and disable the account at the identity provider. A group that fails (deleted in
+Entra, throttled) is logged and left as it was; the others go on. The secret is read from the environment only and is never written to a log.
+
 ## Update
 
 Pull the new images (`ELYSION_VERSION` in `.env`, or `docker compose pull && docker compose up -d`; in Kubernetes a new `images.<service>.tag` and `helm upgrade`).

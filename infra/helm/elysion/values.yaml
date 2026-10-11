@@ -55,6 +55,15 @@ quotas:
 audit:
   retentionDays: 365
 
+# The optional second source of group members (Microsoft Graph, #667, ADR 0027): off by default. When on, the business backend reads the
+# members of the linked groups every `syncInterval` minutes (at least 5). The client secret is the key GRAPH_CLIENT_SECRET of the Secret
+# (`secrets.existingSecret`), never a value here. App permission `GroupMember.Read.All` with admin consent, see docs/self-hosting.md.
+graph:
+  enabled: false
+  tenantId: ''
+  clientId: ''
+  syncInterval: 60
+
 # Limits of a board's document in the realtime service (ADR 0026, docs/specs/realtime.md "Limits"). The canvas limits a board to
 # 20,000 elements besides (the `max-elements` attribute of the element).
 limits:
@@ -110,6 +119,7 @@ secrets:
   #   POSTGRES_CONNECTION_STRING   Npgsql connection string of the business backend
   #   REDIS_URL                    redis://:<password>@host:6379 of the Valkey instance (realtime); it MUST carry a password or an ACL user (#775)
   #   S3_ACCESS_KEY, S3_SECRET_KEY  credentials of the object store (business backend); read and write on the bucket, and creating it
+  #   GRAPH_CLIENT_SECRET          only with graph.enabled: the client secret of the app registration that reads the groups from Microsoft Graph
   existingSecret: elysion-secrets
   # For throwaway installs only: render the Secret from `values` (which then sit in the release). Off by default.
   create: false

@@ -275,6 +275,28 @@ Details hold ids, roles, counts and the names of groups, **never** a token (an i
 
 **Retention.** `AUDIT_RETENTION_DAYS` (default 365; compose, `.env.example` and the chart's `audit.retentionDays` set it) is how long entries are kept. `AuditRetentionService` removes older ones once a night (03:17 UTC) in batches; every instance may run it, the delete is idempotent.
 
+## Microsoft Graph group sync (#667)
+
+An optional second source of the members of **linked** groups (ADR 0027), off unless `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID` and `GRAPH_CLIENT_SECRET` are all set (`GRAPH_SYNC_INTERVAL` minutes, default 60, at
+least 5; `GRAPH_AUTHORITY` and `GRAPH_BASE_URL` for another cloud or a test). `GraphSyncService` (a hosted service: first run after 30 seconds, then every interval; a failing
+run is logged and tried again) calls `GraphGroupSync`, which for every linked group with a GUID external id reads the display name and the transitive members through `IGraphClient`
+and gives them to `IGroupSyncRepository.ApplyAsync` (one commit per group):
+
+- **Matching** is by e-mail address, without regard to case: `mail`, else the sign-in name when it contains an `@`. A person without an address is skipped.
+- A **known, active** person gets a membership marked `FromGraph`; the sync removes only memberships with that mark when the directory drops the person. Memberships from tokens or
+  administrators are never touched. A **deactivated** person gets nothing.
+- An **unknown** person becomes a `PendingGroupMembership` (group, lower-case address, name, object id); at the person's first sign-in `UserProvisioningService` turns the entries of their
+  address into memberships (`FromGraph`) and deletes them. Unlinking a group, or deleting it, removes its entries.
+- The **name**: a group still named after its external id, or one the sync named before (`NameFromProvider`), takes the directory's name; an administrator's rename clears the flag for good.
+- **The token wins** (ADR 0027): the claim sync of #647 removes any membership the claim lacks, `FromGraph` or not; a membership the claim lists loses the mark (it is the token's now, a change of
+  that mark alone is not audited). Keycloak's claims are as of the last brokered login, so the sync restores a membership it made until the person signs in again.
+- One audit entry per changed group (`group.graph_synced`, no actor, counts only, never an address). `GET /admin/groups` has `pendingCount` and `lastSyncAt`, `GET /admin/groups/{id}/pending` lists the waiting
+  people (address, name; administrators only), `GET /admin/graph` says whether the job is on, its interval, when a group was last read and how many people wait.
+- **`HttpGraphClient`**: client-credentials token (`{authority}/{tenant}/oauth2/v2.0/token`, scope `{graph root}/.default`, cached until shortly before it expires; a failed request names only the status, never the
+  secret), `$select` of four fields, 100 per page, at most 200 pages. A 429 or 503 waits `Retry-After` (at most 60 seconds) and tries up to four times. A page link (`@odata.nextLink`) that is not on
+  the Graph host (same scheme, host and port, no credentials in it) is refused, so that an answer cannot make the service send its token elsewhere. A group id that is not a GUID never becomes part of an address. The
+  tenant must look like a GUID or a domain name, else the job stays off.
+
 ## Invitation links
 
 Share a board or a room with a link (#734). `Invitation` has a SHA-256 of the token (`TokenHash`, unique), exactly one of `BoardId` and `RoomId` (a check constraint), the `Role` (Editor or Viewer, never Owner), `ExpiresAt`, an optional `MaxUses`, `Uses`, who made it and `RevokedAt`; it goes with its board or room. The token is 32 random bytes as base64url (43 characters), returned **once**, in the answer to its creation, and never stored or logged (a log line has the route pattern `/invitations/{token}/accept`, never the URL).

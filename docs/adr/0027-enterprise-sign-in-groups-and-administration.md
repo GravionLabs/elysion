@@ -129,6 +129,11 @@ With option 1 and brokering the facts are these, and they are less comfortable t
   boards and rooms over. It does **not** touch Keycloak (Elysion has no admin credentials for it), so the account has to be disabled at the identity provider
   as well; a cut-off that also revokes the Keycloak sessions through its admin API, and a directory that decides (Graph, #667), stay later additions.
 - **Data of a person who left** stays where it is: their boards, their name on elements. Ownership is handed over by an administrator (#668).
+- **Graph as a second source (#667, built):** an optional job reads the linked groups' members from Microsoft Graph. It does not change the answer above: the token
+  stays the source of truth. A membership the sync made is marked, and the token's compare removes it when the claim lacks the group, exactly like any other
+  (the token is "fresher" only in the sense that it is the last word of the identity provider the person was seen with; Keycloak's claims are as of the last brokered
+  login, so the sync restores such a membership at its next run until the person signs in again, at most 8 hours). A membership the claim lists becomes the token's, and the
+  sync no longer removes it. The sync's own work is therefore limited to what the token cannot do: showing a group's members and naming it before the people have come.
 
 ## Decision (proposed)
 
