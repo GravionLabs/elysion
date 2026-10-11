@@ -127,6 +127,20 @@ export interface BoardMember {
   role: 'Owner' | 'Editor' | 'Viewer';
 }
 
+/** A group as the business backend returns it: no members; `source` says whether the identity provider owns them (ADR 0027). */
+export interface Group {
+  id: string;
+  name: string;
+  source: 'Local' | 'IdentityProvider';
+}
+
+/** A group's role in a room. */
+export interface RoomGroup {
+  groupId: string;
+  name: string;
+  role: 'Owner' | 'Editor' | 'Viewer';
+}
+
 const TIMEOUT_MS = 5000;
 /** A file moves as one stream, so it gets longer than a JSON call: 10 MiB over a slow link. */
 const FILE_TIMEOUT_MS = 60_000;
@@ -306,6 +320,33 @@ export class BusinessBackendClient {
 
   async removeRoomMember(token: string, roomId: string, userId: string): Promise<void> {
     await this.request<void>(token, 'DELETE', `/rooms/${roomId}/members/${userId}`);
+  }
+
+  /** The groups whose name contains `query` (at least two characters; the backend answers 400 otherwise). */
+  searchGroups(token: string, query: string): Promise<Group[]> {
+    return this.request<Group[]>(token, 'GET', `/groups?query=${encodeURIComponent(query)}`);
+  }
+
+  /** The groups the caller is in. */
+  listMyGroups(token: string): Promise<Group[]> {
+    return this.request<Group[]>(token, 'GET', '/me/groups');
+  }
+
+  listRoomGroups(token: string, roomId: string): Promise<RoomGroup[]> {
+    return this.request<RoomGroup[]>(token, 'GET', `/rooms/${roomId}/groups`);
+  }
+
+  setRoomGroupRole(
+    token: string,
+    roomId: string,
+    groupId: string,
+    role: string,
+  ): Promise<RoomGroup> {
+    return this.request<RoomGroup>(token, 'PUT', `/rooms/${roomId}/groups/${groupId}`, { role });
+  }
+
+  async removeRoomGroup(token: string, roomId: string, groupId: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/rooms/${roomId}/groups/${groupId}`);
   }
 
   listTemplates(token: string): Promise<TemplateSummary[]> {
