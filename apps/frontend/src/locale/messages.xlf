@@ -610,7 +610,7 @@
     </unit>
     <unit id="boards.sort.name">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:360</note>
+        <note category="location">src/app/board-list/board-list.ts:367</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -618,7 +618,7 @@
     </unit>
     <unit id="boards.sort.opened">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:362</note>
+        <note category="location">src/app/board-list/board-list.ts:369</note>
       </notes>
       <segment>
         <source>Last opened</source>
@@ -626,7 +626,7 @@
     </unit>
     <unit id="boards.sort.newest">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:364</note>
+        <note category="location">src/app/board-list/board-list.ts:371</note>
       </notes>
       <segment>
         <source>Newest</source>
@@ -634,7 +634,7 @@
     </unit>
     <unit id="boards.error.favorite">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:399</note>
+        <note category="location">src/app/board-list/board-list.ts:406</note>
       </notes>
       <segment>
         <source>The star of the board “<ph id="0" equiv="board" disp="board.name"/>” could not be saved. Try again.</source>
@@ -642,7 +642,7 @@
     </unit>
     <unit id="boards.card.unfavorite.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:407</note>
+        <note category="location">src/app/board-list/board-list.ts:414</note>
       </notes>
       <segment>
         <source>Remove the board <ph id="0" equiv="board" disp="board.name"/> from the favorites</source>
@@ -650,7 +650,7 @@
     </unit>
     <unit id="boards.card.favorite.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:408</note>
+        <note category="location">src/app/board-list/board-list.ts:415</note>
       </notes>
       <segment>
         <source>Add the board <ph id="0" equiv="board" disp="board.name"/> to the favorites</source>
@@ -658,7 +658,7 @@
     </unit>
     <unit id="boards.error.nameRequired">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:484</note>
+        <note category="location">src/app/board-list/board-list.ts:491</note>
       </notes>
       <segment>
         <source>Give the board a name.</source>
@@ -666,7 +666,7 @@
     </unit>
     <unit id="boards.error.nameLength">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:489</note>
+        <note category="location">src/app/board-list/board-list.ts:496</note>
       </notes>
       <segment>
         <source>The name can have up to <ph id="0" equiv="max" disp="MAX_BOARD_NAME_LENGTH"/> characters.</source>
@@ -674,7 +674,7 @@
     </unit>
     <unit id="boards.error.created">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:508</note>
+        <note category="location">src/app/board-list/board-list.ts:515</note>
       </notes>
       <segment>
         <source>The board “<ph id="0" equiv="board" disp="board.name"/>” was created, but could not be put in the room “<ph id="1" equiv="room" disp="room.name"/>”.</source>
@@ -682,7 +682,7 @@
     </unit>
     <unit id="boards.error.createdFallback">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:512</note>
+        <note category="location">src/app/board-list/board-list.ts:519</note>
       </notes>
       <segment>
         <source>Move it from its card.</source>
@@ -690,7 +690,7 @@
     </unit>
     <unit id="boards.error.create">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:523</note>
+        <note category="location">src/app/board-list/board-list.ts:530</note>
       </notes>
       <segment>
         <source>The board could not be created. Try again.</source>
@@ -698,7 +698,7 @@
     </unit>
     <unit id="boards.error.duplicate">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:553</note>
+        <note category="location">src/app/board-list/board-list.ts:560</note>
       </notes>
       <segment>
         <source>The board “<ph id="0" equiv="board" disp="board.name"/>” could not be duplicated. Try again.</source>
@@ -706,7 +706,7 @@
     </unit>
     <unit id="boards.error.delete">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:585</note>
+        <note category="location">src/app/board-list/board-list.ts:592</note>
       </notes>
       <segment>
         <source>The board could not be deleted. Try again.</source>
@@ -714,7 +714,7 @@
     </unit>
     <unit id="boards.error.roomName">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:635</note>
+        <note category="location">src/app/board-list/board-list.ts:642</note>
       </notes>
       <segment>
         <source>A room needs a name.</source>
@@ -722,7 +722,7 @@
     </unit>
     <unit id="boards.error.rename">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:655</note>
+        <note category="location">src/app/board-list/board-list.ts:662</note>
       </notes>
       <segment>
         <source>The room could not be renamed.</source>
@@ -730,7 +730,7 @@
     </unit>
     <unit id="boards.error.roomDelete">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:696</note>
+        <note category="location">src/app/board-list/board-list.ts:703</note>
       </notes>
       <segment>
         <source>The room could not be deleted. Try again.</source>
@@ -738,7 +738,7 @@
     </unit>
     <unit id="boards.card.room.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:705</note>
+        <note category="location">src/app/board-list/board-list.ts:712</note>
       </notes>
       <segment>
         <source>In the room <ph id="0" equiv="room" disp="label"/></source>
@@ -746,7 +746,7 @@
     </unit>
     <unit id="boards.card.move.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:709</note>
+        <note category="location">src/app/board-list/board-list.ts:716</note>
       </notes>
       <segment>
         <source>Move the board <ph id="0" equiv="board" disp="board.name"/> to a room</source>
@@ -754,7 +754,7 @@
     </unit>
     <unit id="boards.card.duplicate.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:713</note>
+        <note category="location">src/app/board-list/board-list.ts:720</note>
       </notes>
       <segment>
         <source>Duplicate the board <ph id="0" equiv="board" disp="board.name"/></source>
@@ -762,7 +762,7 @@
     </unit>
     <unit id="boards.card.duplicating">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:718</note>
+        <note category="location">src/app/board-list/board-list.ts:725</note>
       </notes>
       <segment>
         <source>Duplicating…</source>
@@ -770,7 +770,7 @@
     </unit>
     <unit id="boards.card.duplicate.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:719</note>
+        <note category="location">src/app/board-list/board-list.ts:726</note>
       </notes>
       <segment>
         <source>Duplicate this board</source>
@@ -778,7 +778,7 @@
     </unit>
     <unit id="boards.card.delete.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:723</note>
+        <note category="location">src/app/board-list/board-list.ts:730</note>
       </notes>
       <segment>
         <source>Delete the board <ph id="0" equiv="board" disp="board.name"/></source>
@@ -786,7 +786,7 @@
     </unit>
     <unit id="boards.move.to">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:732</note>
+        <note category="location">src/app/board-list/board-list.ts:739</note>
       </notes>
       <segment>
         <source>Move to <ph id="0" equiv="room" disp="room.name"/></source>
@@ -794,7 +794,7 @@
     </unit>
     <unit id="boards.move.remove">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:735</note>
+        <note category="location">src/app/board-list/board-list.ts:742</note>
       </notes>
       <segment>
         <source>Remove from room</source>
@@ -802,7 +802,7 @@
     </unit>
     <unit id="boards.error.move">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:773</note>
+        <note category="location">src/app/board-list/board-list.ts:780</note>
       </notes>
       <segment>
         <source>The board “<ph id="0" equiv="board" disp="board.name"/>” could not be moved.</source>
@@ -810,7 +810,7 @@
     </unit>
     <unit id="boards.error.moveFallback">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:775</note>
+        <note category="location">src/app/board-list/board-list.ts:782</note>
       </notes>
       <segment>
         <source>Try again.</source>
@@ -818,7 +818,7 @@
     </unit>
     <unit id="boards.roomExport.board">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:834</note>
+        <note category="location">src/app/board-list/board-list.ts:841</note>
       </notes>
       <segment>
         <source>Board <ph id="0" equiv="index" disp="index"/> of <ph id="1" equiv="total" disp="total"/></source>
@@ -826,7 +826,7 @@
     </unit>
     <unit id="boards.roomExport.unreadable">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:835</note>
+        <note category="location">src/app/board-list/board-list.ts:842</note>
       </notes>
       <segment>
         <source>This board could not be loaded and is not in the PDF.</source>
@@ -834,7 +834,7 @@
     </unit>
     <unit id="boards.roomExport.empty">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:836</note>
+        <note category="location">src/app/board-list/board-list.ts:843</note>
       </notes>
       <segment>
         <source>This board is empty.</source>
@@ -1323,6 +1323,306 @@
         <source>The voting could not be changed.</source>
       </segment>
     </unit>
+    <unit id="invite.joining">
+      <notes>
+        <note category="location">src/app/invite/invite.html:4,6</note>
+      </notes>
+      <segment>
+        <source>Joining…</source>
+      </segment>
+    </unit>
+    <unit id="invite.gone.title">
+      <notes>
+        <note category="location">src/app/invite/invite.html:7,8</note>
+      </notes>
+      <segment>
+        <source>This link does not work any more</source>
+      </segment>
+    </unit>
+    <unit id="invite.gone.message">
+      <notes>
+        <note category="location">src/app/invite/invite.html:9,13</note>
+      </notes>
+      <segment>
+        <source> It has expired, was revoked or has been used as often as it allows. Ask the person who sent it for a new one. </source>
+      </segment>
+    </unit>
+    <unit id="invite.unknown.title">
+      <notes>
+        <note category="location">src/app/invite/invite.html:14,15</note>
+      </notes>
+      <segment>
+        <source>This link is not valid</source>
+      </segment>
+    </unit>
+    <unit id="invite.unknown.message">
+      <notes>
+        <note category="location">src/app/invite/invite.html:16,19</note>
+      </notes>
+      <segment>
+        <source> Check that the whole address was copied, or ask the person who sent it for a new one. </source>
+      </segment>
+    </unit>
+    <unit id="invite.failed.title">
+      <notes>
+        <note category="location">src/app/invite/invite.html:20,21</note>
+      </notes>
+      <segment>
+        <source>The link could not be used</source>
+      </segment>
+    </unit>
+    <unit id="invite.failed.message">
+      <notes>
+        <note category="location">src/app/invite/invite.html:21,24</note>
+      </notes>
+      <segment>
+        <source>Something went wrong. Try the link again.</source>
+      </segment>
+    </unit>
+    <unit id="invite.toBoards">
+      <notes>
+        <note category="location">src/app/invite/invite.html:26,30</note>
+      </notes>
+      <segment>
+        <source>Go to your boards</source>
+      </segment>
+    </unit>
+    <unit id="invite.pageTitle">
+      <notes>
+        <note category="location">src/app/invite/invite.ts:32</note>
+      </notes>
+      <segment>
+        <source>Joining · Elysion</source>
+      </segment>
+    </unit>
+    <unit id="invite.title">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:2,4</note>
+      </notes>
+      <segment>
+        <source>Invite with a link</source>
+      </segment>
+    </unit>
+    <unit id="invite.role">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:6,7</note>
+      </notes>
+      <segment>
+        <source>Role</source>
+      </segment>
+    </unit>
+    <unit id="share.role.viewer">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:9,11</note>
+        <note category="location">src/app/share/invite-links.ts:172</note>
+        <note category="location">src/app/share/share-dialog.ts:198</note>
+      </notes>
+      <segment>
+        <source> Viewer </source>
+      </segment>
+    </unit>
+    <unit id="share.role.editor">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:12,14</note>
+        <note category="location">src/app/share/invite-links.ts:171</note>
+        <note category="location">src/app/share/share-dialog.ts:196</note>
+      </notes>
+      <segment>
+        <source> Editor </source>
+      </segment>
+    </unit>
+    <unit id="invite.expires">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:17,18</note>
+      </notes>
+      <segment>
+        <source>Valid for</source>
+      </segment>
+    </unit>
+    <unit id="invite.maxUses">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:25,27</note>
+      </notes>
+      <segment>
+        <source>Uses (optional)</source>
+      </segment>
+    </unit>
+    <unit id="invite.create">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:40,42</note>
+      </notes>
+      <segment>
+        <source> Create link </source>
+      </segment>
+    </unit>
+    <unit id="invite.link">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:51,52</note>
+      </notes>
+      <segment>
+        <source>New link</source>
+      </segment>
+    </unit>
+    <unit id="invite.copy">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:54,55</note>
+      </notes>
+      <segment>
+        <source>Copy</source>
+      </segment>
+    </unit>
+    <unit id="invite.copied">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:58,60</note>
+      </notes>
+      <segment>
+        <source>Copied.</source>
+      </segment>
+    </unit>
+    <unit id="invite.copyManual">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:62,64</note>
+      </notes>
+      <segment>
+        <source>Copying did not work here: select the link and copy it.</source>
+      </segment>
+    </unit>
+    <unit id="invite.shownOnce">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:67,69</note>
+      </notes>
+      <segment>
+        <source>This link is shown only now. Anyone who has it can join.</source>
+      </segment>
+    </unit>
+    <unit id="invite.loading">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:76,77</note>
+      </notes>
+      <segment>
+        <source>Loading links…</source>
+      </segment>
+    </unit>
+    <unit id="invite.none">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:78,80</note>
+      </notes>
+      <segment>
+        <source>No active links.</source>
+      </segment>
+    </unit>
+    <unit id="invite.list.label">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:80</note>
+      </notes>
+      <segment>
+        <source>Active links</source>
+      </segment>
+    </unit>
+    <unit id="invite.revoke">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:94,95</note>
+      </notes>
+      <segment>
+        <source>Revoke</source>
+      </segment>
+    </unit>
+    <unit id="invite.hint">
+      <notes>
+        <note category="location">src/app/share/invite-links.html:100,103</note>
+      </notes>
+      <segment>
+        <source> The address of a link cannot be shown again after it was made; revoke it and make a new one. </source>
+      </segment>
+    </unit>
+    <unit id="invite.error.loadFailed">
+      <notes>
+        <note category="location">src/app/share/invite-links.ts:60</note>
+      </notes>
+      <segment>
+        <source>The links could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="invite.error.maxUses">
+      <notes>
+        <note category="location">src/app/share/invite-links.ts:86</note>
+      </notes>
+      <segment>
+        <source>The number of uses is a whole number from 1 to 1000, or empty.</source>
+      </segment>
+    </unit>
+    <unit id="invite.error.createFailed">
+      <notes>
+        <note category="location">src/app/share/invite-links.ts:110</note>
+      </notes>
+      <segment>
+        <source>The link could not be made.</source>
+      </segment>
+    </unit>
+    <unit id="invite.error.revokeFailed">
+      <notes>
+        <note category="location">src/app/share/invite-links.ts:132</note>
+      </notes>
+      <segment>
+        <source>The link could not be revoked.</source>
+      </segment>
+    </unit>
+    <unit id="invite.expiry.hour">
+      <notes>
+        <note category="location">src/app/share/invite-links.ts:159</note>
+      </notes>
+      <segment>
+        <source>1 hour</source>
+      </segment>
+    </unit>
+    <unit id="invite.expiry.day">
+      <notes>
+        <note category="location">src/app/share/invite-links.ts:161</note>
+      </notes>
+      <segment>
+        <source>1 day</source>
+      </segment>
+    </unit>
+    <unit id="invite.expiry.week">
+      <notes>
+        <note category="location">src/app/share/invite-links.ts:163</note>
+      </notes>
+      <segment>
+        <source>7 days</source>
+      </segment>
+    </unit>
+    <unit id="invite.expiry.month">
+      <notes>
+        <note category="location">src/app/share/invite-links.ts:165</note>
+      </notes>
+      <segment>
+        <source>30 days</source>
+      </segment>
+    </unit>
+    <unit id="invite.meta.unlimited">
+      <notes>
+        <note category="location">src/app/share/invite-links.ts:183</note>
+      </notes>
+      <segment>
+        <source>expires <ph id="0" equiv="expires" disp="expires"/> · used <ph id="1" equiv="uses" disp="link.uses"/></source>
+      </segment>
+    </unit>
+    <unit id="invite.meta.limited">
+      <notes>
+        <note category="location">src/app/share/invite-links.ts:184</note>
+      </notes>
+      <segment>
+        <source>expires <ph id="0" equiv="expires" disp="expires"/> · used <ph id="1" equiv="uses" disp="link.uses"/> of <ph id="2" equiv="max" disp="link.maxUses"/></source>
+      </segment>
+    </unit>
+    <unit id="invite.revoke.label">
+      <notes>
+        <note category="location">src/app/share/invite-links.ts:188</note>
+      </notes>
+      <segment>
+        <source>Revoke the link for <ph id="0" equiv="role" disp="this.roleLabel(link.role)"/> that expires <ph id="1" equiv="expires" disp="this.expiresOn(link)"/></source>
+      </segment>
+    </unit>
     <unit id="share.title.room">
       <notes>
         <note category="location">src/app/share/share-dialog.html:12,13</note>
@@ -1421,7 +1721,7 @@
     </unit>
     <unit id="share.hint.login">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:112,114</note>
+        <note category="location">src/app/share/share-dialog.html:114,116</note>
       </notes>
       <segment>
         <source>Someone has to log in to Elysion once before they can be added.</source>
@@ -1429,7 +1729,7 @@
     </unit>
     <unit id="share.hint.room">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:116,118</note>
+        <note category="location">src/app/share/share-dialog.html:118,120</note>
       </notes>
       <segment>
         <source>A member gets this role on every board in the room. Viewers can look at them but not change them.</source>
@@ -1437,7 +1737,7 @@
     </unit>
     <unit id="share.hint.board">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:121,123</note>
+        <note category="location">src/app/share/share-dialog.html:123,125</note>
       </notes>
       <segment>
         <source>Viewers can look at the board but not change it.</source>
@@ -1445,7 +1745,7 @@
     </unit>
     <unit id="share.error.ownerOnlyRoom">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:37</note>
+        <note category="location">src/app/share/share-dialog.ts:38</note>
       </notes>
       <segment>
         <source>Only an owner of the room can do this.</source>
@@ -1453,7 +1753,7 @@
     </unit>
     <unit id="share.error.ownerOnlyBoard">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:38</note>
+        <note category="location">src/app/share/share-dialog.ts:39</note>
       </notes>
       <segment>
         <source>Only an owner of the board can do this.</source>
@@ -1461,7 +1761,7 @@
     </unit>
     <unit id="share.error.loadFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:111</note>
+        <note category="location">src/app/share/share-dialog.ts:113</note>
       </notes>
       <segment>
         <source>The members could not be loaded.</source>
@@ -1469,7 +1769,7 @@
     </unit>
     <unit id="share.error.emailRequired">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:131</note>
+        <note category="location">src/app/share/share-dialog.ts:133</note>
       </notes>
       <segment>
         <source>Enter the email of the person to add.</source>
@@ -1477,7 +1777,7 @@
     </unit>
     <unit id="share.error.addFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:136</note>
+        <note category="location">src/app/share/share-dialog.ts:138</note>
       </notes>
       <segment>
         <source>The member could not be added.</source>
@@ -1485,7 +1785,7 @@
     </unit>
     <unit id="share.error.roleFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:149</note>
+        <note category="location">src/app/share/share-dialog.ts:151</note>
       </notes>
       <segment>
         <source>The role could not be changed.</source>
@@ -1493,7 +1793,7 @@
     </unit>
     <unit id="share.error.removeFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:162</note>
+        <note category="location">src/app/share/share-dialog.ts:164</note>
       </notes>
       <segment>
         <source>The member could not be removed.</source>
@@ -1501,31 +1801,15 @@
     </unit>
     <unit id="share.role.owner">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:192</note>
+        <note category="location">src/app/share/share-dialog.ts:194</note>
       </notes>
       <segment>
         <source>Owner</source>
       </segment>
     </unit>
-    <unit id="share.role.editor">
-      <notes>
-        <note category="location">src/app/share/share-dialog.ts:194</note>
-      </notes>
-      <segment>
-        <source>Editor</source>
-      </segment>
-    </unit>
-    <unit id="share.role.viewer">
-      <notes>
-        <note category="location">src/app/share/share-dialog.ts:196</note>
-      </notes>
-      <segment>
-        <source>Viewer</source>
-      </segment>
-    </unit>
     <unit id="share.remove.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:203</note>
+        <note category="location">src/app/share/share-dialog.ts:205</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="name" disp="member.displayName"/></source>
@@ -1533,7 +1817,7 @@
     </unit>
     <unit id="share.roleOf.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:207</note>
+        <note category="location">src/app/share/share-dialog.ts:209</note>
       </notes>
       <segment>
         <source>Role of <ph id="0" equiv="name" disp="member.displayName"/></source>

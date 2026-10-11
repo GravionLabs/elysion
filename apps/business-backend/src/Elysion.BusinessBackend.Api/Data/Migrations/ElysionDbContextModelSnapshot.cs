@@ -134,6 +134,62 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.ToTable("BoardVisits");
                 });
 
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Invitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BoardId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("MaxUses")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<Guid?>("RoomId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("Uses")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId");
+
+                    b.HasIndex("RoomId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("Invitations", t =>
+                        {
+                            t.HasCheckConstraint("CK_Invitations_OneTarget", "(\"BoardId\" IS NULL) <> (\"RoomId\" IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Room", b =>
                 {
                     b.Property<Guid>("Id")
@@ -427,6 +483,23 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.Navigation("Board");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Invitation", b =>
+                {
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Board");
+
+                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Room", b =>

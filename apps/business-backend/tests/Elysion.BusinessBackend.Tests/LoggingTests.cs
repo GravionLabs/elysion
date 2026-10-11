@@ -88,6 +88,23 @@ public class LoggingTests
     }
 
     [Test]
+    public async Task The_token_of_an_invitation_link_is_not_in_any_line()
+    {
+        using var client = CreateClient(ApiFactory.CreateToken("kc-sub-9"));
+        var token = Elysion.BusinessBackend.Api.Invitations.InvitationTokens.Generate();
+
+        var response = await client.PostAsync($"/invitations/{token}/accept", null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        RequestLine(Lines())
+            .GetProperty("http")
+            .GetProperty("route")
+            .GetString()
+            .ShouldBe("/invitations/{token}/accept");
+        _sink.Events.Select(Render).ShouldAllBe(line => !line.Contains(token, StringComparison.Ordinal));
+    }
+
+    [Test]
     public async Task A_well_formed_id_of_the_caller_is_kept_and_echoed()
     {
         using var client = CreateClient(ApiFactory.CreateToken());

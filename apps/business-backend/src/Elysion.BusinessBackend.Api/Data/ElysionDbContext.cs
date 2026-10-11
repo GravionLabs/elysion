@@ -16,6 +16,10 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
     public DbSet<BoardVisit> BoardVisits => Set<BoardVisit>();
     public DbSet<BoardFavorite> BoardFavorites => Set<BoardFavorite>();
     public DbSet<VotingSession> VotingSessions => Set<VotingSession>();
+
+    public DbSet<Invitation> Invitations => Set<Invitation>();
+
+    public void DiscardChanges() => ChangeTracker.Clear();
     public DbSet<Vote> Votes => Set<Vote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -137,6 +141,20 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
                 .OnDelete(DeleteBehavior.Cascade);
             vote.HasOne(v => v.User).WithMany().HasForeignKey(v => v.UserId).OnDelete(DeleteBehavior.Cascade);
             vote.HasIndex(v => new { v.VotingSessionId, v.UserId });
+        });
+
+        modelBuilder.Entity<Invitation>(invitation =>
+        {
+            invitation.Property(i => i.TokenHash).HasMaxLength(64);
+            invitation.HasIndex(i => i.TokenHash).IsUnique();
+            invitation.Property(i => i.Role).HasConversion<string>().HasMaxLength(16);
+            invitation.Property(i => i.Uses).IsConcurrencyToken();
+            invitation.HasOne(i => i.Board).WithMany().HasForeignKey(i => i.BoardId).OnDelete(DeleteBehavior.Cascade);
+            invitation.HasOne(i => i.Room).WithMany().HasForeignKey(i => i.RoomId).OnDelete(DeleteBehavior.Cascade);
+            invitation.HasIndex(i => i.BoardId);
+            invitation.HasIndex(i => i.RoomId);
+            invitation.ToTable(t => t.HasCheckConstraint("CK_Invitations_OneTarget",
+                "(\"BoardId\" IS NULL) <> (\"RoomId\" IS NULL)"));
         });
 
         // "Which boards are in this room?" starts from the room.

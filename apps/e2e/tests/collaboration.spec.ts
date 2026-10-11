@@ -103,7 +103,11 @@ test('a dot voting ends by itself when both people have voted, and shows the sam
 test('a viewer sees the board but cannot start a timer or a voting', async () => {
   await a.getByRole('button', { name: /^Share/ }).click();
   // The first select is the form's role, then one per member: A (the owner) and B.
-  await a.getByRole('combobox').nth(2).selectOption('Viewer');
+  await a
+    .getByRole('region', { name: 'Members' })
+    .getByRole('combobox')
+    .nth(1)
+    .selectOption('Viewer');
   await a.keyboard.press('Escape');
 
   await b.reload();

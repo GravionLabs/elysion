@@ -1,0 +1,156 @@
+.invite-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-border);
+
+  h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+.make,
+.created {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.grow {
+  flex: 1 1 200px;
+}
+
+.uses-field input {
+  width: 96px;
+}
+
+.field-label {
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+input,
+select {
+  height: 32px;
+  min-width: 0;
+  padding: 0 8px;
+  color: var(--c-text);
+  background: var(--c-surface-2, var(--c-bg));
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 13px;
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: -1px;
+  }
+}
+
+button {
+  height: 32px;
+  padding: 0 12px;
+  color: var(--c-text);
+  background: transparent;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--c-surface-3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.primary {
+  color: var(--c-on-primary);
+  background: var(--c-primary);
+  border: 0;
+  font-weight: 500;
+
+  &:hover:not(:disabled) {
+    background: var(--c-primary-hover);
+  }
+}
+
+.error {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--c-danger);
+  background: var(--c-surface-3);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+
+.note,
+.hint {
+  margin: 0;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.created .note {
+  flex-basis: 100%;
+}
+
+.links {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.link-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.link-role {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.link-meta {
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.remove {
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}

@@ -51,10 +51,18 @@ describe('ShareDialog', () => {
     await settle();
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.match((r) => r.url.endsWith('/invitations')).forEach((r) => r.flush([]));
+    http.verify();
+  });
+
+  /** The links section asks for its own list; these tests are about the members. */
+  const answerLinks = () =>
+    http.match((r) => r.url.endsWith('/invitations')).forEach((r) => r.flush([]));
 
   const open = async (members = [ada, bea]) => {
     http.expectOne(url).flush(members);
+    answerLinks();
     await settle();
   };
 
@@ -320,7 +328,10 @@ describe('ShareDialog for a room', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.match((r) => r.url.endsWith('/invitations')).forEach((r) => r.flush([]));
+    http.verify();
+  });
 
   it('asks the room member API and says it is about the room', async () => {
     http.expectOne(roomUrl).flush([ada, bea]);

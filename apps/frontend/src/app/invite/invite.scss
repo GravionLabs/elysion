@@ -1,0 +1,25 @@
+.invite-page {
+  display: flex;
+  max-width: 480px;
+  margin: 15vh auto 0;
+  padding: 0 16px;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--c-text);
+
+  h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  a {
+    color: var(--c-text); // the primary color is 4.4:1 on this background
+    font-weight: 600;
+    text-decoration: underline;
+  }
+}

@@ -32,6 +32,10 @@ export class FakeBusinessBackend {
   readonly boards = new Map<string, FakeBoard>();
   /** The last request for a search or a per-person state (#730): method and path with its query. */
   lastStateRequest: { method: string; path: string } | null = null;
+  /** The last invitation request (#734): method, path and parsed body. */
+  lastInvitationRequest: { method: string; path: string; body: unknown } | null = null;
+  /** What the invitation routes answer; a test sets it. `body` undefined is an empty answer. */
+  invitationAnswer: { status: number; body?: unknown } = { status: 200, body: undefined };
   /** The last voting request (#732): method, path and parsed body. */
   lastVotingRequest: { method: string; path: string; body: unknown } | null = null;
   /** What the voting routes answer; a test sets it. `body` undefined is an empty answer (204 for "none"). */
@@ -200,6 +204,21 @@ export class FakeBusinessBackend {
     if ((req.url ?? '').startsWith('/boards?')) {
       this.lastStateRequest = { method: req.method ?? '', path: req.url ?? '' };
       return send(200, [...this.boards.values()].reverse());
+    }
+    const invitationRoute = /^\/(?:boards|rooms)\/[^/]+\/invitations(?:\/|$)|^\/invitations\//.exec(
+      req.url ?? '',
+    );
+    if (invitationRoute) {
+      const parts: Buffer[] = [];
+      for await (const chunk of req) parts.push(chunk as Buffer);
+      const text = Buffer.concat(parts).toString();
+      this.lastInvitationRequest = {
+        method: req.method ?? '',
+        path: req.url ?? '',
+        body: text ? JSON.parse(text) : null,
+      };
+      const { status, body } = this.invitationAnswer;
+      return body === undefined ? send(status) : send(status, body);
     }
     const votingRoute = /^\/boards\/([^/]+)\/votings?(?:\/|$)/.exec(req.url ?? '');
     if (votingRoute) {

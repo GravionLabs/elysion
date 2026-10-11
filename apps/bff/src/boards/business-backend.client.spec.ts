@@ -1,4 +1,5 @@
 import {
+  GoneException,
   BadGatewayException,
   BadRequestException,
   ConflictException,
@@ -68,6 +69,33 @@ describe('BusinessBackendClient', () => {
     expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/favorite`);
     await client.setFavorite(TOKEN, board.id, false);
     expect(lastCall().init.method).toBe('DELETE');
+  });
+
+  it('makes, lists, revokes and follows invitation links', async () => {
+    fetchMock.mockResolvedValue(respond(201, { id: 'i1', token: 't' }));
+    await client.createInvitation(TOKEN, 'boards', board.id, { role: 'Viewer', expiresInHours: 2 });
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/invitations`);
+    expect(lastCall().init.method).toBe('POST');
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({ role: 'Viewer', expiresInHours: 2 });
+
+    fetchMock.mockResolvedValue(respond(200, []));
+    await client.listInvitations(TOKEN, 'rooms', 'r1');
+    expect(lastCall().url).toBe('http://backend.test:5174/rooms/r1/invitations');
+
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    await expect(client.revokeInvitation(TOKEN, 'rooms', 'r1', 'i1')).resolves.toBeUndefined();
+    expect(lastCall().init.method).toBe('DELETE');
+    expect(lastCall().url).toBe('http://backend.test:5174/rooms/r1/invitations/i1');
+
+    fetchMock.mockResolvedValue(respond(200, { kind: 'board', id: board.id, role: 'Viewer' }));
+    await client.acceptInvitation(TOKEN, 'abc-_');
+    expect(lastCall().url).toBe('http://backend.test:5174/invitations/abc-_/accept');
+  });
+
+  it('turns the 410 of a link that is no longer valid into a Gone', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 410 }));
+
+    await expect(client.acceptInvitation(TOKEN, 'abc')).rejects.toBeInstanceOf(GoneException);
   });
 
   it('reads, starts, votes, retracts, closes and clears a voting', async () => {

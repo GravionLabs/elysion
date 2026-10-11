@@ -1,0 +1,29 @@
+<main class="invite-page">
+  @switch (state()) {
+    @case ('joining') {
+      <p role="status" i18n="@@invite.joining">Joining…</p>
+    }
+    @case ('gone') {
+      <h1 i18n="@@invite.gone.title">This link does not work any more</h1>
+      <p role="alert" i18n="@@invite.gone.message">
+        It has expired, was revoked or has been used as often as it allows. Ask the person who sent
+        it for a new one.
+      </p>
+    }
+    @case ('unknown') {
+      <h1 i18n="@@invite.unknown.title">This link is not valid</h1>
+      <p role="alert" i18n="@@invite.unknown.message">
+        Check that the whole address was copied, or ask the person who sent it for a new one.
+      </p>
+    }
+    @default {
+      <h1 i18n="@@invite.failed.title">The link could not be used</h1>
+      <p role="alert" i18n="@@invite.failed.message">Something went wrong. Try the link again.</p>
+    }
+  }
+  @if (state() !== 'joining') {
+    <p>
+      <a routerLink="/" i18n="@@invite.toBoards">Go to your boards</a>
+    </p>
+  }
+</main>

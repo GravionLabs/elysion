@@ -28,3 +28,6 @@ accessLog:
   fields:
     queryParameters:
       defaultMode: drop
+    # The path of an invitation link is a secret (#734), see infra/traefik/traefik.yml.
+    names:
+      RequestPath: drop

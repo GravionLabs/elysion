@@ -96,6 +96,12 @@ In the dark theme Excalidraw darkens the whole canvas, so notes look darker than
 | **Editor** | Change the board, use the timer and the voting, add templates                                    |
 | **Viewer** | Look at the board, follow the others live and vote in a voting; the server refuses other changes |
 
+**Invite with a link** (below the list) is for people who are not in Elysion yet or whose e-mail you do not have. Choose a role (Viewer or
+Editor), how long the link works (1 hour to 30 days) and, if you like, how often it may be used, then **Create link** and **Copy** it. The
+address is shown only once, right after it was made. Whoever opens it signs in, joins with the link's role (somebody who has a higher role
+keeps it) and lands on the board. The list shows each active link with its expiry and how often it was used; **Revoke** ends it at once.
+A room has the same section and gives access to all its boards.
+
 Change a role in the list, or **Remove** somebody. A person has to have logged in to Elysion once before they can be added. For a whole team
 use a room instead: its members have access to all its boards.
 
