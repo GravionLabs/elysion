@@ -74,6 +74,7 @@ public class UserProvisioningTests
         stored.Id.ShouldBe(user!.Id);
         (stored.Subject, stored.Email, stored.DisplayName, stored.CreatedAt).ShouldBe(("kc-1", "ada@example.com", "ada",
             Now));
+        stored.LastSeenAt.ShouldBe(Now);
     }
 
     [Test]
@@ -98,18 +99,38 @@ public class UserProvisioningTests
     {
         var principal = Principal(("sub", "kc-1"), ("email", "ada@example.com"), ("preferred_username", "ada"));
         await ProvisionAsync(principal);
+        var unitOfWork = await ProvisionAgainAsync(principal, Now.AddMinutes(4));
+
+        await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task The_time_a_person_was_seen_is_written_when_the_last_one_is_five_minutes_old()
+    {
+        var principal = Principal(("sub", "kc-1"), ("email", "ada@example.com"), ("preferred_username", "ada"));
+        await ProvisionAsync(principal);
+
+        var unitOfWork = await ProvisionAgainAsync(principal, Now.AddMinutes(5));
+
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>A second request of the same person at <paramref name="at"/>, with a unit of work that only counts the saves.</summary>
+    private async Task<IUnitOfWork> ProvisionAgainAsync(ClaimsPrincipal principal, DateTimeOffset at)
+    {
         await using var db = _database.NewContext();
         var unitOfWork = Substitute.For<IUnitOfWork>();
+        var time = Substitute.For<TimeProvider>();
+        time.GetUtcNow().Returns(at);
         var service = new UserProvisioningService(new UserRepository(db),
             new GroupRepository(db),
             unitOfWork,
             new MemoryCache(new MemoryCacheOptions()),
             Options.Create(new OidcOptions()),
-            TimeProvider.System);
+            time);
 
         await service.ProvisionAsync(principal, Ct);
-
-        await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        return unitOfWork;
     }
 
     [TestCase("preferred_username", "ada", "ada")]

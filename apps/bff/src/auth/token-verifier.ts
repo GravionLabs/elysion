@@ -5,6 +5,8 @@ export interface AccessTokenClaims {
   /** The user's id at the identity provider. */
   sub: string;
   email?: string;
+  /** The realm roles (`realm_access.roles`); empty when the token has none. */
+  roles: string[];
 }
 
 /** The token is missing, malformed, expired, signed by someone else or meant for another audience. */
@@ -98,6 +100,7 @@ export class TokenVerifier {
       }
       return {
         sub: payload.sub,
+        roles: realmRoles(payload['realm_access']),
         ...(typeof payload.email === 'string' && payload.email !== ''
           ? { email: payload.email }
           : {}),
@@ -114,4 +117,14 @@ export class TokenVerifier {
       throw error;
     }
   }
+}
+
+/** The role names of a `realm_access` claim; anything that is not `{ roles: string[] }` yields none. */
+export function realmRoles(realmAccess: unknown): string[] {
+  if (typeof realmAccess !== 'object' || realmAccess === null) return [];
+  const roles = (realmAccess as { roles?: unknown }).roles;
+  if (!Array.isArray(roles)) return [];
+  return roles
+    .filter((role): role is string => typeof role === 'string' && role !== '')
+    .slice(0, 200);
 }

@@ -68,6 +68,7 @@ public sealed class UserProvisioningService(
             }
 
             var created = User.Create(Guid.CreateVersion7(), subject, displayName, email, time.GetUtcNow());
+            created.LastSeenAt = created.CreatedAt;
             // Another request may have created the same person since the lookup: the repository returns its row.
             user = await users.GetOrAddAsync(created, cancellationToken);
             if (!ReferenceEquals(user, created))
@@ -86,10 +87,17 @@ public sealed class UserProvisioningService(
 
     private async Task UpdateAsync(User user, string? email, string displayName, CancellationToken cancellationToken)
     {
-        if (user.Email != email || user.DisplayName != displayName)
+        var now = time.GetUtcNow();
+        var seen = user.LastSeenAt is null || now - user.LastSeenAt.Value >= User.SeenInterval;
+        if (user.Email != email || user.DisplayName != displayName || seen)
         {
             user.Email = email;
             user.DisplayName = displayName;
+            if (seen)
+            {
+                user.LastSeenAt = now;
+            }
+
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
     }

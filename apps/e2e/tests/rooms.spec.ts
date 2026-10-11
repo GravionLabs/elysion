@@ -26,7 +26,9 @@ let b: Page;
 let roomPath: string;
 
 const roomLink = (page: Page) =>
-  page.getByRole('navigation', { name: 'Rooms' }).getByRole('link', { name: new RegExp(ROOM) });
+  page
+    .getByRole('navigation', { name: 'Rooms' })
+    .getByRole('link', { name: new RegExp(`^${ROOM} \\d+$`) });
 
 test.beforeAll(async ({ browser }) => {
   a = await login(browser, USER_A);

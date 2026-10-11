@@ -109,6 +109,37 @@ describe('ExcalidrawYjsBinding', () => {
   });
 });
 
+describe('ExcalidrawYjsBinding ties (#735)', () => {
+  it('writes the scene element that wins a tie of version by its lower nonce, so the document and the screen agree', () => {
+    const doc = new Y.Doc();
+    const binding = new ExcalidrawYjsBinding(doc);
+    const base = rectangle();
+    const local = { ...base, version: 5, versionNonce: 50 } as OrderedExcalidrawElement;
+    const stored = { ...base, version: 5, versionNonce: 100 };
+    doc.getMap('elements').set(base.id, stored);
+    const { api } = createMockApi([local]);
+
+    binding.attach(api);
+
+    expect((doc.getMap('elements').get(base.id) as { versionNonce: number }).versionNonce).toBe(50);
+  });
+
+  it('keeps the stored element when it wins the tie, and the scene takes it', () => {
+    const doc = new Y.Doc();
+    const binding = new ExcalidrawYjsBinding(doc);
+    const base = rectangle();
+    const local = { ...base, version: 5, versionNonce: 100 } as OrderedExcalidrawElement;
+    const stored = { ...base, version: 5, versionNonce: 50 };
+    doc.getMap('elements').set(base.id, stored);
+    const { api, elements } = createMockApi([local]);
+
+    binding.attach(api);
+
+    expect((doc.getMap('elements').get(base.id) as { versionNonce: number }).versionNonce).toBe(50);
+    expect(elements()[0].versionNonce).toBe(50);
+  });
+});
+
 describe('ExcalidrawYjsBinding limit and replacement (ADR 0026)', () => {
   it('does not write an element that would take the board over the limit, takes it off the scene and says so', () => {
     const doc = new Y.Doc();

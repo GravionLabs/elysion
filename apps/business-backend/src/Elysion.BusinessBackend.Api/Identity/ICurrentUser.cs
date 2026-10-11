@@ -11,4 +11,7 @@ public interface ICurrentUser
     string Subject { get; }
     string DisplayName { get; }
     string? Email { get; }
+
+    /// <summary>Whether the token has the realm role of an administrator (<c>OIDC_ADMIN_ROLE</c>). Says nothing about any board or room.</summary>
+    bool IsAdministrator { get; }
 }

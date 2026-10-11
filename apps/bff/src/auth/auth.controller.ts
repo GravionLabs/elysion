@@ -1,4 +1,5 @@
 import { Controller, Get, HttpCode, HttpStatus, Req, Res } from '@nestjs/common';
+import { AppConfigService } from '../config/config.module.js';
 import type { Response } from 'express';
 import type { AuthenticatedRequest } from './auth.types.js';
 
@@ -10,6 +11,28 @@ import type { AuthenticatedRequest } from './auth.types.js';
  */
 @Controller('api/auth')
 export class AuthController {
+  constructor(private readonly config: AppConfigService) {}
+
+  /**
+   * Who the caller is, for the shell: the subject, the email and whether the token has the administrator role
+   * (`OIDC_ADMIN_ROLE`, ADR 0027), so that the shell need not parse the token. A hint for the interface only: the business backend
+   * checks the role itself on every `/api/admin` call.
+   */
+  @Get('me')
+  me(@Req() request: AuthenticatedRequest): {
+    id: string;
+    email?: string;
+    isAdministrator: boolean;
+  } {
+    const { sub, email, roles } = request.auth.claims;
+    const adminRole = this.config.get('OIDC_ADMIN_ROLE');
+    return {
+      id: sub,
+      ...(email === undefined ? {} : { email }),
+      isAdministrator: adminRole !== '' && roles.includes(adminRole),
+    };
+  }
+
   @Get('verify')
   @HttpCode(HttpStatus.OK)
   verify(

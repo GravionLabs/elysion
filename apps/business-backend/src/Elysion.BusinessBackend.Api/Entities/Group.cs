@@ -61,6 +61,35 @@ public class Group
         };
     }
 
+    /// <summary>Renames the group (both sources may be renamed: a linked group has only its external id until somebody names it).</summary>
+    public void Rename(string name)
+    {
+        Guard.Against.InvalidInput(name, nameof(name), candidate => TryNormalizeName(candidate, out _));
+        _ = TryNormalizeName(name, out var normalized);
+        Name = normalized;
+    }
+
+    /// <summary>
+    /// Hands the membership to the identity provider: from now on the group is identified by this claim value and its members come
+    /// only from the tokens. Members it has now stay until their next sign-in, which makes them match the claim. Linking a group to
+    /// another id is the same call.
+    /// </summary>
+    public void Link(string externalId)
+    {
+        Guard.Against.InvalidInput(externalId,
+            nameof(externalId),
+            candidate => !string.IsNullOrWhiteSpace(candidate) && candidate.Trim().Length <= MaxExternalIdLength);
+        ExternalId = externalId.Trim();
+        Source = GroupSource.IdentityProvider;
+    }
+
+    /// <summary>Takes the group away from the identity provider: it is local again and keeps the members it has.</summary>
+    public void Unlink()
+    {
+        ExternalId = null;
+        Source = GroupSource.Local;
+    }
+
     /// <summary>The rule for a group name, the room's: trimmed, 1 to <see cref="MaxNameLength"/> characters.</summary>
     public static bool TryNormalizeName(string? raw, out string name)
     {
