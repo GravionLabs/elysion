@@ -11,8 +11,13 @@ public sealed class CurrentUserAccessor : ICurrentUser
     public string Subject => Current.Subject;
     public string DisplayName => Current.DisplayName;
     public string? Email => Current.Email;
+    public bool IsAdministrator { get; private set; }
 
-    internal void Set(User user) => _user = user;
+    internal void Set(User user, bool isAdministrator = false)
+    {
+        _user = user;
+        IsAdministrator = isAdministrator;
+    }
 
     private User Current => _user
                             ?? throw new InvalidOperationException(

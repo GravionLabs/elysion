@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 
 namespace Elysion.BusinessBackend.Api.Identity;
 
@@ -13,7 +14,8 @@ public sealed class UserProvisioningMiddleware(RequestDelegate next)
     public async Task InvokeAsync(
         HttpContext context,
         UserProvisioningService provisioning,
-        CurrentUserAccessor accessor)
+        CurrentUserAccessor accessor,
+        IOptions<OidcOptions> oidc)
     {
         var anonymousEndpoint = context.GetEndpoint()?.Metadata.GetMetadata<IAllowAnonymous>() is not null;
         if (context.User.Identity?.IsAuthenticated == true && !anonymousEndpoint)
@@ -26,7 +28,8 @@ public sealed class UserProvisioningMiddleware(RequestDelegate next)
                 return;
             }
 
-            accessor.Set(user);
+            var adminRole = oidc.Value.AdminRole;
+            accessor.Set(user, !string.IsNullOrWhiteSpace(adminRole) && context.User.IsInRole(adminRole.Trim()));
         }
 
         await next(context);

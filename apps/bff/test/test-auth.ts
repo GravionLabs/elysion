@@ -29,6 +29,8 @@ export interface TokenOptions {
   wrongKey?: boolean;
   algorithm?: 'RS256' | 'RS384';
   key?: CryptoKey;
+  /** The realm roles for `realm_access.roles`; unset: no `realm_access` claim at all. */
+  realmRoles?: string[];
 }
 
 /** A signed access token; the defaults are what Keycloak would issue to the dev user. */
@@ -40,7 +42,10 @@ export async function signToken(options: TokenOptions = {}): Promise<string> {
     audience = AUDIENCE,
   } = options;
   const expires = Math.floor(Date.now() / 1000) + (options.expiresIn ?? 300);
-  const jwt = new SignJWT(email ? { email } : {})
+  const jwt = new SignJWT({
+    ...(email ? { email } : {}),
+    ...(options.realmRoles ? { realm_access: { roles: options.realmRoles } } : {}),
+  })
     .setProtectedHeader({ alg: options.algorithm ?? 'RS256', kid: 'test-key' })
     .setIssuedAt(Math.min(expires - 60, Math.floor(Date.now() / 1000)))
     .setIssuer(issuer)

@@ -396,6 +396,9 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)");
 
+                    b.Property<DateTimeOffset?>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Subject")
                         .IsRequired()
                         .HasMaxLength(255)

@@ -14,6 +14,12 @@ public sealed class GroupRepository(ElysionDbContext db) : IGroupRepository
         return await db.Groups.AsNoTracking().FirstOrDefaultAsync(g => g.Id == id, cancellationToken);
     }
 
+    public async Task<Group?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(id);
+        return await db.Groups.FirstOrDefaultAsync(g => g.Id == id, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Group>> SearchAsync(string query, int limit, CancellationToken cancellationToken)
     {
         Guard.Against.NullOrWhiteSpace(query);
@@ -144,6 +150,20 @@ public sealed class GroupRepository(ElysionDbContext db) : IGroupRepository
         }
 
         db.GroupMemberships.Add(GroupMembership.Create(groupId, userId, now));
+        return true;
+    }
+
+    public async Task<bool> RemoveMemberAsync(Guid groupId, Guid userId, CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(groupId);
+        Guard.Against.Default(userId);
+        var existing = await db.GroupMemberships.FindAsync([groupId, userId], cancellationToken);
+        if (existing is null)
+        {
+            return false;
+        }
+
+        db.GroupMemberships.Remove(existing);
         return true;
     }
 
