@@ -12,7 +12,8 @@ public sealed record AdminUserDto(
     string? Email,
     DateTimeOffset CreatedAt,
     DateTimeOffset? LastSeenAt,
-    IReadOnlyList<AdminGroupRef> Groups);
+    IReadOnlyList<AdminGroupRef> Groups,
+    DateTimeOffset? DeactivatedAt = null);
 
 /// <summary>A room or board a person has a direct role in (<c>Role</c> is Owner, Editor or Viewer): names and roles, no content.</summary>
 public sealed record AdminMembershipDto(Guid Id, string Name, string Role);
@@ -25,7 +26,8 @@ public sealed record AdminUserDetailDto(
     DateTimeOffset? LastSeenAt,
     IReadOnlyList<AdminGroupRef> Groups,
     IReadOnlyList<AdminMembershipDto> Rooms,
-    IReadOnlyList<AdminMembershipDto> Boards);
+    IReadOnlyList<AdminMembershipDto> Boards,
+    DateTimeOffset? DeactivatedAt = null);
 
 /// <summary><c>Source</c> is Local or IdentityProvider (linked); <c>ExternalId</c> is the claim value of a linked group.</summary>
 public sealed record AdminGroupDto(
@@ -36,7 +38,7 @@ public sealed record AdminGroupDto(
     int MemberCount,
     int RoomCount);
 
-public sealed record AdminMemberDto(Guid Id, string DisplayName, string? Email);
+public sealed record AdminMemberDto(Guid Id, string DisplayName, string? Email, DateTimeOffset? DeactivatedAt = null);
 
 public sealed record AdminOwnerDto(Guid Id, string DisplayName);
 
@@ -54,3 +56,9 @@ public sealed record AdminStatsDto(int Users, int UsersSeenLast30Days, int Group
 
 /// <summary>Body of <c>POST /admin/groups</c>.</summary>
 public sealed record AdminGroupCreateRequest(string? Name);
+
+/// <summary>Body of <c>POST /admin/boards/transfer</c> (#668): the person who left and the person who takes over what they owned.</summary>
+public sealed record AdminTransferRequest(Guid FromUserId, Guid ToUserId);
+
+/// <summary>How many boards and rooms changed owner.</summary>
+public sealed record AdminTransferResultDto(int Boards, int Rooms);

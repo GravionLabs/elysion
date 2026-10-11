@@ -6,6 +6,8 @@ using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
+using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Members;
 
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +36,13 @@ public static class AdminEndpoints
 
         admin.MapGet("/users", ListUsers).WithName("AdminListUsers");
         admin.MapGet("/users/{id:guid}", GetUser).WithName("AdminGetUser");
+
+        admin.MapPost("/users/{id:guid}/deactivate", DeactivateUser).WithName("AdminDeactivateUser");
+        admin.MapPost("/users/{id:guid}/reactivate", ReactivateUser).WithName("AdminReactivateUser");
+        admin.MapPost("/boards/transfer", TransferOwnership)
+            .WithName("AdminTransferOwnership")
+            .Accepts<AdminTransferRequest>("application/json")
+            .RequireJsonContentType();
 
         admin.MapGet("/groups", ListGroups).WithName("AdminListGroups");
         admin.MapPost("/groups", CreateGroup)
@@ -85,6 +94,70 @@ public static class AdminEndpoints
     {
         var user = await admin.GetUserAsync(id, cancellationToken);
         return user is null ? NotFound("There is no such person.") : TypedResults.Ok(user);
+    }
+
+    /// <summary>
+    /// Deactivates a person (#668): every request of theirs is refused from now on. 409 for the caller themselves. The identity
+    /// provider is not told, so the account has to be disabled there too. Answers the person's detail.
+    /// </summary>
+    private static async Task<IResult> DeactivateUser(Guid id,
+        UserLifecycleService lifecycle,
+        IAdminRepository admin,
+        ICurrentUser caller,
+        CancellationToken cancellationToken)
+    {
+        var result = await lifecycle.DeactivateAsync(id, caller.Id, cancellationToken);
+        return await LifecycleAnswerAsync(result, id, admin, cancellationToken);
+    }
+
+    private static async Task<IResult> ReactivateUser(Guid id,
+        UserLifecycleService lifecycle,
+        IAdminRepository admin,
+        CancellationToken cancellationToken)
+    {
+        var result = await lifecycle.ReactivateAsync(id, cancellationToken);
+        return await LifecycleAnswerAsync(result, id, admin, cancellationToken);
+    }
+
+    private static async Task<IResult> LifecycleAnswerAsync(LifecycleResult result,
+        Guid id,
+        IAdminRepository admin,
+        CancellationToken cancellationToken) =>
+        result.Outcome switch
+        {
+            LifecycleOutcome.Done => TypedResults.Ok(await admin.GetUserAsync(id, cancellationToken)),
+            LifecycleOutcome.Self => TypedResults.Problem(
+                "You cannot deactivate yourself: nobody would be left to undo it.",
+                statusCode: StatusCodes.Status409Conflict),
+            _ => NotFound("There is no such person."),
+        };
+
+    /// <summary>
+    /// Hands the boards and rooms a deactivated person owned over to another person (#668): the new owner gets the Owner role, the
+    /// previous owner keeps nothing. The administrator who does it gets no role. 409 while the giver is still active, or when the
+    /// receiver is deactivated or the same person.
+    /// </summary>
+    private static async Task<IResult> TransferOwnership(AdminTransferRequest? request,
+        UserLifecycleService lifecycle,
+        CancellationToken cancellationToken)
+    {
+        if (request is null || request.FromUserId == Guid.Empty || request.ToUserId == Guid.Empty)
+        {
+            return Invalid("body", "Send fromUserId and toUserId.");
+        }
+
+        var result = await lifecycle.TransferAsync(request.FromUserId, request.ToUserId, cancellationToken);
+        return result.Outcome switch
+        {
+            LifecycleOutcome.Done => TypedResults.Ok(new AdminTransferResultDto(result.Boards, result.Rooms)),
+            LifecycleOutcome.GiverStillActive => TypedResults.Problem(
+                "Deactivate the person first: a hand-over is for somebody who has left.",
+                statusCode: StatusCodes.Status409Conflict),
+            LifecycleOutcome.InvalidReceiver => TypedResults.Problem(
+                "The person who takes over has to be somebody else, and active.",
+                statusCode: StatusCodes.Status409Conflict),
+            _ => NotFound("There is no such person."),
+        };
     }
 
     private static async Task<Ok<PagedResult<AdminGroupDto>>> ListGroups(string? query,
@@ -267,7 +340,7 @@ public static class AdminEndpoints
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var refusal = await CheckMemberEditAsync(id, userId, groups, users, cancellationToken);
+        var refusal = await CheckMemberEditAsync(id, userId, true, groups, users, cancellationToken);
         if (refusal is not null)
         {
             return refusal;
@@ -290,7 +363,7 @@ public static class AdminEndpoints
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        var refusal = await CheckMemberEditAsync(id, userId, groups, users, cancellationToken);
+        var refusal = await CheckMemberEditAsync(id, userId, false, groups, users, cancellationToken);
         if (refusal is not null)
         {
             return refusal;
@@ -308,6 +381,7 @@ public static class AdminEndpoints
     /// <summary>404 for an unknown group or person, 409 for a linked group (the provider owns its members); null when the edit is fine.</summary>
     private static async Task<IResult?> CheckMemberEditAsync(Guid groupId,
         Guid userId,
+        bool adding,
         IGroupRepository groups,
         IUserRepository users,
         CancellationToken cancellationToken)
@@ -325,7 +399,15 @@ public static class AdminEndpoints
                 statusCode: StatusCodes.Status409Conflict);
         }
 
-        return await users.FindAsync(userId, cancellationToken) is null ? NotFound("There is no such person.") : null;
+        var user = await users.FindAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return NotFound("There is no such person.");
+        }
+
+        return user.IsDeactivated && adding
+            ? TypedResults.Problem("This person is deactivated.", statusCode: StatusCodes.Status409Conflict)
+            : null;
     }
 
     private static async Task<Ok<PagedResult<AdminRoomDto>>> ListRooms(string? query,

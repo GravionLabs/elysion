@@ -126,6 +126,11 @@ People who administer the instance (they have the role `elysion-admin` at the id
 - **Users:** search by name or email; a name opens the rooms and boards the person has directly, with their roles.
 - **Groups:** a _local_ group is made and kept here (**New group**, **Rename**, add and remove members). A _linked_ group belongs to the identity provider: **Link** a local group to a group of the provider by its id and its members then follow the provider as each person signs in; **Unlink** makes it local again and keeps the members. **Delete** says how many rooms lose the role the group gave them.
 - **Rooms:** name, owner and numbers; no board names.
+- **Deactivate a person:** open them in **Users** and choose **Deactivate…**. They are refused everywhere from then on, are not offered when somebody is added,
+  and stay in the member lists as _deactivated_. Elysion cannot switch the account off at the identity provider: do that there as well, otherwise the person can
+  still sign in there. **Reactivate** brings everything back.
+- **Hand over:** for a deactivated person who owns boards or rooms, **Hand over** gives all of them to somebody else, who becomes their owner; the person who left
+  keeps nothing, and you get no role either.
 - **Audit:** who gave or took away access, newest first, with the person who did it. Click a board, room, group or person in a row to
   filter by it, or choose a time span. An entry holds ids, roles and counts, never what is on a board. Entries are kept for a year
   (`AUDIT_RETENTION_DAYS`).

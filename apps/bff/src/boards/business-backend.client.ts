@@ -547,6 +547,28 @@ export class BusinessBackendClient {
     return this.request<unknown>(token, 'GET', `/admin/users/${encodeURIComponent(id)}`);
   }
 
+  /** Deactivates a person (#668); the answer is their detail. */
+  adminDeactivateUser(token: string, id: string): Promise<unknown> {
+    return this.request<unknown>(
+      token,
+      'POST',
+      `/admin/users/${encodeURIComponent(id)}/deactivate`,
+    );
+  }
+
+  adminReactivateUser(token: string, id: string): Promise<unknown> {
+    return this.request<unknown>(
+      token,
+      'POST',
+      `/admin/users/${encodeURIComponent(id)}/reactivate`,
+    );
+  }
+
+  /** Hands what a deactivated person owned over to another person (#668); the answer says how many boards and rooms moved. */
+  adminTransferOwnership(token: string, fromUserId: string, toUserId: string): Promise<unknown> {
+    return this.request<unknown>(token, 'POST', '/admin/boards/transfer', { fromUserId, toUserId });
+  }
+
   adminListGroups(token: string, list: AdminList): Promise<unknown> {
     return this.request<unknown>(token, 'GET', `/admin/groups${adminQuery(list)}`);
   }
@@ -660,7 +682,16 @@ export class BusinessBackendClient {
       throw new UnauthorizedException();
     }
     if (response.status === 403) {
-      throw new ForbiddenException();
+      // A deactivated person's 403 says why (#668), so that the shell can show a page for it instead of an error.
+      const code = await problemCode(response);
+      throw code === ACCOUNT_DEACTIVATED
+        ? new ForbiddenException({
+            statusCode: 403,
+            error: 'Forbidden',
+            message: 'This account has been deactivated.',
+            code,
+          })
+        : new ForbiddenException();
     }
     if (response.status === 404) {
       // A board or room that is not visible has no body; the member and room APIs say why (an unknown email, not a member, no such room).
@@ -696,6 +727,18 @@ function toBoardRole(role: string): BoardRole {
 }
 
 /** The `detail` of an ASP.NET problem-details body, or `undefined` when there is none. */
+/** The code an account that was deactivated gets with its 403 (the business backend's `account-deactivated`). */
+export const ACCOUNT_DEACTIVATED = 'account-deactivated';
+
+async function problemCode(response: Response): Promise<string | undefined> {
+  try {
+    const problem = (await response.json()) as { code?: unknown };
+    return typeof problem.code === 'string' ? problem.code : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function problemDetail(response: Response): Promise<string | undefined> {
   try {
     const problem = (await response.json()) as { detail?: unknown };

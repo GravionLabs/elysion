@@ -67,6 +67,11 @@ Wer die Instanz administriert (die Rolle `elysion-admin` beim Identitätsanbiete
 - **Personen:** Suche nach Name oder E-Mail; ein Name öffnet die Räume und Boards, die die Person direkt hat, mit ihren Rollen.
 - **Gruppen:** Eine _lokale_ Gruppe wird hier angelegt und gepflegt (**Neue Gruppe**, **Umbenennen**, Mitglieder hinzufügen und entfernen). Eine _verknüpfte_ Gruppe gehört dem Identitätsanbieter: Mit **Verknüpfen** bindest du eine lokale Gruppe über ihre ID an eine Gruppe des Anbieters, ihre Mitglieder folgen dann dem Anbieter, sobald sich jemand anmeldet; **Lösen** macht sie wieder lokal und behält die Mitglieder. **Löschen** sagt, wie viele Räume die Rolle verlieren, die die Gruppe ihnen gegeben hat.
 - **Räume:** Name, Besitzer und Zahlen; keine Board-Namen.
+- **Eine Person deaktivieren:** Öffne sie unter **Personen** und wähle **Deaktivieren…**. Sie wird ab dann überall abgewiesen, beim Hinzufügen nicht mehr
+  angeboten und bleibt in den Mitgliederlisten als _deaktiviert_ stehen. Elysion kann das Konto beim Identitätsanbieter nicht abschalten: Tu das dort
+  ebenfalls, sonst kann sich die Person dort weiter anmelden. **Reaktivieren** bringt alles zurück.
+- **Übergeben:** Für eine deaktivierte Person, der Boards oder Räume gehören, gibt **Übergeben** alle an jemand anderen, der damit ihr Eigentümer wird; die
+  Person, die gegangen ist, behält nichts, und du bekommst auch keine Rolle.
 - **Audit:** wer Zugriff gegeben oder genommen hat, neueste zuerst, mit der Person, die es getan hat. Ein Klick auf ein Board, einen Raum, eine
   Gruppe oder eine Person in einer Zeile filtert danach; dazu lässt sich ein Zeitraum wählen. Ein Eintrag enthält IDs, Rollen und Zahlen, nie den
   Inhalt eines Boards. Einträge werden ein Jahr aufbewahrt (`AUDIT_RETENTION_DAYS`).

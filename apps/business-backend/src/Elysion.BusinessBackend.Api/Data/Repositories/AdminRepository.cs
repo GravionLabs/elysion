@@ -1,6 +1,7 @@
 using Ardalis.GuardClauses;
 
 using Elysion.BusinessBackend.Api.Contracts;
+using Elysion.BusinessBackend.Api.Entities;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -29,7 +30,7 @@ public sealed class AdminRepository(ElysionDbContext db) : IAdminRepository
             .ThenBy(u => u.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(u => new { u.Id, u.DisplayName, u.Email, u.CreatedAt, u.LastSeenAt })
+            .Select(u => new { u.Id, u.DisplayName, u.Email, u.CreatedAt, u.LastSeenAt, u.DeactivatedAt })
             .ToListAsync(cancellationToken);
 
         // The groups of this page's people in one query.
@@ -49,7 +50,8 @@ public sealed class AdminRepository(ElysionDbContext db) : IAdminRepository
                 r.Email,
                 r.CreatedAt,
                 r.LastSeenAt,
-                byUser.GetValueOrDefault(r.Id) ?? []))
+                byUser.GetValueOrDefault(r.Id) ?? [],
+                r.DeactivatedAt))
             .ToList();
         return new PagedResult<AdminUserDto>(items, total, page, pageSize);
     }
@@ -76,6 +78,18 @@ public sealed class AdminRepository(ElysionDbContext db) : IAdminRepository
             .Select(m => new { m.BoardId, m.Board!.Name, m.Role })
             .ToListAsync(cancellationToken);
 
+        // The creator of a board or room is its Owner without a membership row (see BoardRepository.GetRoleAsync): they belong in the list.
+        var ownedRooms = await db.Rooms.AsNoTracking()
+            .Where(r => r.OwnerId == id)
+            .Select(r => new { RoomId = r.Id, r.Name, Role = BoardRole.Owner })
+            .ToListAsync(cancellationToken);
+        var ownedBoards = await db.Boards.AsNoTracking()
+            .Where(b => b.OwnerId == id)
+            .Select(b => new { BoardId = b.Id, b.Name, Role = BoardRole.Owner })
+            .ToListAsync(cancellationToken);
+        rooms = rooms.Where(r => ownedRooms.All(o => o.RoomId != r.RoomId)).Concat(ownedRooms).ToList();
+        boards = boards.Where(r => ownedBoards.All(o => o.BoardId != r.BoardId)).Concat(ownedBoards).ToList();
+
         return new AdminUserDetailDto(user.Id,
             user.DisplayName,
             user.Email,
@@ -89,7 +103,8 @@ public sealed class AdminRepository(ElysionDbContext db) : IAdminRepository
                 .ToList(),
             boards.OrderBy(b => b.Name, StringComparer.CurrentCultureIgnoreCase)
                 .Select(b => new AdminMembershipDto(b.BoardId, b.Name, b.Role.ToString()))
-                .ToList());
+                .ToList(),
+            user.DeactivatedAt);
     }
 
     public async Task<PagedResult<AdminGroupDto>> ListGroupsAsync(string? query,
@@ -143,7 +158,7 @@ public sealed class AdminRepository(ElysionDbContext db) : IAdminRepository
             .ThenBy(m => m.UserId)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(m => new AdminMemberDto(m.UserId, m.User!.DisplayName, m.User.Email))
+            .Select(m => new AdminMemberDto(m.UserId, m.User!.DisplayName, m.User.Email, m.User.DeactivatedAt))
             .ToListAsync(cancellationToken);
         return new PagedResult<AdminMemberDto>(items, total, page, pageSize);
     }

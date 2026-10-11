@@ -140,6 +140,34 @@ export class AdminController {
     return this.backend.adminGetUser(token, id);
   }
 
+  @Post('users/:id/deactivate')
+  @HttpCode(HttpStatus.OK)
+  deactivate(@AccessToken() token: string, @Param('id', uuid) id: string): Promise<unknown> {
+    return this.backend.adminDeactivateUser(token, id);
+  }
+
+  @Post('users/:id/reactivate')
+  @HttpCode(HttpStatus.OK)
+  reactivate(@AccessToken() token: string, @Param('id', uuid) id: string): Promise<unknown> {
+    return this.backend.adminReactivateUser(token, id);
+  }
+
+  /** `{ fromUserId, toUserId }`, both ids: the backend decides whether the hand-over is allowed. */
+  @Post('boards/transfer')
+  @HttpCode(HttpStatus.OK)
+  transfer(@AccessToken() token: string, @Body() body: unknown): Promise<unknown> {
+    const { fromUserId, toUserId } = (body ?? {}) as Record<string, unknown>;
+    if (
+      typeof fromUserId !== 'string' ||
+      typeof toUserId !== 'string' ||
+      !UUID.test(fromUserId) ||
+      !UUID.test(toUserId)
+    ) {
+      throw new BadRequestException('Send fromUserId and toUserId, both ids.');
+    }
+    return this.backend.adminTransferOwnership(token, fromUserId, toUserId);
+  }
+
   @Get('groups')
   groups(
     @AccessToken() token: string,

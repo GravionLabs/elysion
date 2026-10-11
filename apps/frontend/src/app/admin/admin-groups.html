@@ -313,6 +313,9 @@
                   <li class="line">
                     <span>
                       {{ member.displayName }}
+                      @if (member.deactivatedAt) {
+                        <span class="chip" i18n="@@admin.deactivated">deactivated</span>
+                      }
                       @if (member.email) {
                         <span class="subtle">{{ member.email }}</span>
                       }

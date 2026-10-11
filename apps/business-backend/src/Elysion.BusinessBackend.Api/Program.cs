@@ -58,6 +58,8 @@ builder.Services.AddScoped<IVotingRepository, VotingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGroupRepository, GroupRepository>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+builder.Services.AddScoped<IOwnershipRepository, OwnershipRepository>();
+builder.Services.AddScoped<UserLifecycleService>();
 
 // Who changed who may see what (#669): entries are staged on the request's unit of work, and the oldest are removed every night.
 builder.Services.AddHttpContextAccessor();

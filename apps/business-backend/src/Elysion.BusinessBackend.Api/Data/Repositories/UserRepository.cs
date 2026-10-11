@@ -20,6 +20,12 @@ public sealed class UserRepository(ElysionDbContext db) : IUserRepository
         return await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Subject == subject, cancellationToken);
     }
 
+    public async Task<User?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(id);
+        return await db.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+    }
+
     public async Task<User?> FindAsync(Guid id, CancellationToken cancellationToken)
     {
         Guard.Against.Default(id);
@@ -35,8 +41,9 @@ public sealed class UserRepository(ElysionDbContext db) : IUserRepository
         // CA1862 asks for are not translated by EF Core.
 #pragma warning disable CA1862
         return await db.Users.AsNoTracking()
-            .Where(u => u.DisplayName.ToLower().Contains(needle)
-                        || (u.Email != null && u.Email.ToLower().Contains(needle)))
+            .Where(u => u.DeactivatedAt == null
+                        && (u.DisplayName.ToLower().Contains(needle)
+                            || (u.Email != null && u.Email.ToLower().Contains(needle))))
             .OrderBy(u => u.DisplayName.ToLower().StartsWith(needle)
                           || (u.Email != null && u.Email.ToLower().StartsWith(needle))
                 ? 0
@@ -56,7 +63,7 @@ public sealed class UserRepository(ElysionDbContext db) : IUserRepository
         // are not translated by EF Core, so the analyzer's advice does not apply inside a query.
 #pragma warning disable CA1862
         return await db.Users.AsNoTracking()
-            .Where(u => u.Email != null && u.Email.ToLower() == lowered)
+            .Where(u => u.DeactivatedAt == null && u.Email != null && u.Email.ToLower() == lowered)
             .ToListAsync(cancellationToken);
 #pragma warning restore CA1862
     }

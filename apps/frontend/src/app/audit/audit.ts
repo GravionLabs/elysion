@@ -59,6 +59,12 @@ export function describeAuditEntry(entry: AuditEntry): string {
       return $localize`:@@audit.group.memberRemoved:${actor}:actor: took ${target}:target: out of the group`;
     case 'groups.synced':
       return $localize`:@@audit.groups.synced:The groups of ${actor}:actor: from the identity provider changed: ${text(entry, 'added')}:added: added, ${text(entry, 'removed')}:removed: removed`;
+    case 'user.deactivated':
+      return $localize`:@@audit.user.deactivated:${actor}:actor: deactivated ${entry.subjectName ?? target}:person:`;
+    case 'user.reactivated':
+      return $localize`:@@audit.user.reactivated:${actor}:actor: reactivated ${entry.subjectName ?? target}:person:`;
+    case 'owner.transferred':
+      return $localize`:@@audit.owner.transferred:${actor}:actor: handed the ownership over to ${target}:target:`;
     case 'invitation.created':
       return $localize`:@@audit.invitation.created:${actor}:actor: made an invitation link for the role ${role}:role:`;
     case 'invitation.revoked':

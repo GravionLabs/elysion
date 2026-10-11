@@ -10,18 +10,21 @@ public interface IUserRepository
     /// <summary>The user of an identity-provider subject, or null; an untracked copy that never creates the user.</summary>
     Task<User?> FindBySubjectAsync(string subject, CancellationToken cancellationToken);
 
+    /// <summary>A user by id, or null; tracked, so a change is saved by the next commit.</summary>
+    Task<User?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken);
+
     /// <summary>A user by id, or null; an untracked copy.</summary>
     Task<User?> FindAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
     /// The users with this email, compared without regard to case (an email is how somebody is invited): normally
-    /// zero or one; untracked copies.
+    /// zero or one; untracked copies. A deactivated person is not found (#668): they cannot be invited.
     /// </summary>
     Task<IReadOnlyList<User>> FindByEmailAsync(string email, CancellationToken cancellationToken);
 
     /// <summary>
     /// The people whose name or email contains <paramref name="text"/> (without regard to case; a match at the start comes first),
-    /// at most <paramref name="max"/>; untracked copies. This is the one place that decides who may be found by whom: today every
+    /// at most <paramref name="max"/>; untracked copies; deactivated people are left out (#668). This is the one place that decides who may be found by whom: today every
     /// person who has logged in can be found by everybody who has (ADR 0027, #663); a narrower directory is a change to this query.
     /// </summary>
     Task<IReadOnlyList<User>> SearchAsync(string text, int max, CancellationToken cancellationToken);

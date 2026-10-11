@@ -369,6 +369,27 @@ describe('AdminGroups', () => {
       expect(dialog.textContent).toContain('Person 7');
     });
 
+    it('does not offer a deactivated person to add, and marks one that is a member (#668)', async () => {
+      await open([group(1)]);
+      await click(rows()[0].querySelector('button.link'));
+      membersRequest('g1').flush(
+        page([{ ...member(1), deactivatedAt: '2026-10-10T10:00:00Z' }, member(2)]),
+      );
+      await settle();
+      const dialog = el().querySelector('[role="dialog"]')!;
+      expect(dialog.querySelectorAll('.stack .line .chip').length).toBe(1);
+
+      await type('input[name="candidate"]', 'per', dialog);
+      await submit(dialog.querySelector('form'));
+      http
+        .expectOne((r) => r.url === '/api/admin/users' && r.params.get('query') === 'per')
+        .flush(page([user(7), { ...user(8), deactivatedAt: '2026-10-10T10:00:00Z' }]));
+      await settle();
+
+      expect(buttonIn(dialog, /^Add Person 7 to the group$/)).toBeTruthy();
+      expect(buttonIn(dialog, /^Add Person 8 to the group$/)).toBeFalsy();
+    });
+
     it('says when nobody matches the search and when the search fails', async () => {
       await open([group(1)]);
       await click(rows()[0].querySelector('button.link'));

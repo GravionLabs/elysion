@@ -56,6 +56,12 @@ export function buildRoutes(loginGuard: CanActivateFn): Routes {
       loadComponent: () => import('./invite/invite').then((m) => m.Invite),
       canActivate: [loginGuard],
     },
+    // Where a deactivated account lands (#668): a message and Log out, nothing else.
+    {
+      path: 'deactivated',
+      loadComponent: () => import('./deactivated/deactivated').then((m) => m.Deactivated),
+      canActivate: [loginGuard],
+    },
     // The administration area (ADR 0027, #659): a lazy tree of its own; the frame tells a person who is not an administrator so.
     {
       path: 'admin',
