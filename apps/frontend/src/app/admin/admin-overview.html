@@ -1,0 +1,56 @@
+<h1 i18n="@@admin.overview.title">Overview</h1>
+<p class="lead" i18n="@@admin.overview.lead">
+  What this instance holds. The administration shows names, numbers and roles, never what is on a
+  board.
+</p>
+
+@if (error(); as message) {
+  <p class="error" role="alert">
+    {{ message }}
+    <button type="button" class="link" (click)="load()" i18n="@@admin.retry">Try again</button>
+  </p>
+} @else if (stats(); as numbers) {
+  <ul class="tiles" aria-label="Numbers" i18n-aria-label="@@admin.overview.numbers">
+    <li class="tile">
+      <span class="tile-number">{{ numbers.users }}</span>
+      <span class="tile-label" i18n="@@admin.overview.users">People</span>
+      <span class="tile-detail" i18n="@@admin.overview.seen"
+        >{{ numbers.usersSeenLast30Days }} seen in the last 30 days</span
+      >
+    </li>
+    <li class="tile">
+      <span class="tile-number">{{ numbers.groups }}</span>
+      <span class="tile-label" i18n="@@admin.overview.groups">Groups</span>
+    </li>
+    <li class="tile">
+      <span class="tile-number">{{ numbers.rooms }}</span>
+      <span class="tile-label" i18n="@@admin.overview.rooms">Rooms</span>
+    </li>
+    <li class="tile">
+      <span class="tile-number">{{ numbers.boards }}</span>
+      <span class="tile-label" i18n="@@admin.overview.boards">Boards</span>
+    </li>
+  </ul>
+} @else {
+  <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+}
+
+<h2 i18n="@@admin.overview.provider">Sign-in</h2>
+@if (provider(); as info) {
+  <dl class="facts">
+    <dt i18n="@@admin.overview.authority">Identity provider (issuer)</dt>
+    <dd>{{ info.authority }}</dd>
+    <dt i18n="@@admin.overview.hint">Provider the shell goes to directly</dt>
+    <dd>
+      @if (info.idpHint) {
+        {{ info.idpHint }}
+      } @else {
+        <span class="subtle" i18n="@@admin.overview.noHint"
+          >None: people see the login page of the realm</span
+        >
+      }
+    </dd>
+  </dl>
+} @else {
+  <p class="note" i18n="@@admin.overview.noProvider">The sign-in settings could not be read.</p>
+}

@@ -57,6 +57,17 @@ Der Knopf **Kommentare** in der Werkzeugleiste (oder die Taste **C**, wenn nicht
 Für ein PDF wählst du im Exportmenü **Kommentare in einem PDF**: Sie kommen als Textseiten ans Ende, die offenen zuerst. Die Option ist standardmäßig aus.
 Wer eine Nachricht geschrieben hat, ist eine Regel der Oberfläche: Sie verhindert, dass man fremde Nachrichten löscht, wer aber an die Daten des Boards kommt, könnte auch als jemand anderes schreiben.
 
+## Administration
+
+Wer die Instanz administriert (die Rolle `elysion-admin` beim Identitätsanbieter), findet **Administration** im Menü unter dem eigenen Namen. Sie zeigt Namen, Zahlen und Rollen, nie, was auf einem Board steht.
+
+- **Übersicht:** wie viele Personen, Gruppen, Räume und Boards es gibt und über welchen Identitätsanbieter man sich anmeldet.
+- **Personen:** Suche nach Name oder E-Mail; ein Name öffnet die Räume und Boards, die die Person direkt hat, mit ihren Rollen.
+- **Gruppen:** Eine _lokale_ Gruppe wird hier angelegt und gepflegt (**Neue Gruppe**, **Umbenennen**, Mitglieder hinzufügen und entfernen). Eine _verknüpfte_ Gruppe gehört dem Identitätsanbieter: Mit **Verknüpfen** bindest du eine lokale Gruppe über ihre ID an eine Gruppe des Anbieters, ihre Mitglieder folgen dann dem Anbieter, sobald sich jemand anmeldet; **Lösen** macht sie wieder lokal und behält die Mitglieder. **Löschen** sagt, wie viele Räume die Rolle verlieren, die die Gruppe ihnen gegeben hat.
+- **Räume:** Name, Besitzer und Zahlen; keine Board-Namen.
+
+Alle anderen sehen unter dieser Adresse „Du bist kein Administrator“.
+
 ## Einen Workshop leiten
 
 - **Timer** startet einen Countdown für alle auf dem Board (Voreinstellungen oder eigene Minuten; pausieren, eine Minute verlängern, stoppen).

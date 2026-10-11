@@ -25,6 +25,7 @@ pnpm test:browser
 - `E2E_USER_A` / `E2E_USER_B` (default `dev1` and `dev2`; the password is the username). A Keycloak database that was imported before `dev1`
   and `dev2` were in the realm has only `dev` and `guest`: `E2E_USER_A=guest E2E_USER_B=dev pnpm test:browser`.
 - `sso.spec.ts` needs a Keycloak that imported the realm `entra-stub` and the identity provider `microsoft` (a database from before ADR 0027 has neither: drop the `keycloak` database). The people of the stand-in are `erika` (in the groups Design and Admins) and `emil` (Design); the password is the username; `loginThroughMicrosoft` signs one in.
+- `admin.spec.ts` logs in as `dev`, the administrator of the dev realm (`elysion-admin`); `dev1` is not one. It makes and deletes the local group "E2E admin group" and needs the realm of #639 (a database from before it has no such role on `dev`: drop the `keycloak` database).
 - `E2E_BASE_URL` (default `http://localhost`), `E2E_CHROME_PATH` (a browser of the machine instead of Playwright's own).
 - The tests of a file run in order on one board that the first test makes and the last one deletes. The canvas is drawn on a `<canvas>`:
   check what shows in the page (the top bar, the results dialog), and click the notes by the coordinates of the Retrospective template in a

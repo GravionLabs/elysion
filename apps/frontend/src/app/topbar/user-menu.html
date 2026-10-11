@@ -32,6 +32,17 @@
         {{ language.name }}
       </button>
     }
+    @if (isAdministrator()) {
+      <a
+        class="menu-item"
+        role="menuitem"
+        routerLink="/admin"
+        (click)="open.set(false)"
+        i18n="@@topbar.user.admin"
+      >
+        Administration
+      </a>
+    }
     <button
       type="button"
       class="menu-item"

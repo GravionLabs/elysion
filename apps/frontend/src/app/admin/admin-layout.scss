@@ -1,0 +1,139 @@
+// The frame of the administration pages: the look of the board list's header and room sidebar, on the shared design tokens.
+:host {
+  display: block;
+  min-height: 100%;
+  color: var(--c-text);
+  background: var(--c-bg);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 52px;
+  padding: 0 14px;
+  background: var(--c-surface-1);
+  border-bottom: 1px solid var(--c-border);
+  box-shadow: var(--shadow);
+}
+
+.back {
+  color: var(--c-text);
+  font-size: 14px;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 2px;
+  }
+}
+
+.header-title {
+  color: var(--c-text-subtle);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.page-actions {
+  margin-left: auto;
+}
+
+.page {
+  box-sizing: border-box;
+  padding: 28px 24px 48px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.content {
+  min-width: 0;
+}
+
+.entries {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: block;
+  padding: 7px 10px;
+  color: var(--c-text);
+  font-size: 14px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+
+  &:hover {
+    background: var(--c-surface-3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 1px;
+  }
+
+  &.active {
+    background: var(--c-primary-soft);
+    border-color: var(--c-primary);
+    font-weight: 600;
+  }
+}
+
+.denied {
+  max-width: 520px;
+  margin: 10vh auto 0;
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 20px;
+  }
+
+  a {
+    color: var(--c-text);
+    font-weight: 600;
+  }
+}
+
+.note {
+  color: var(--c-text-subtle);
+}
+
+// One column with the navigation as a row of chips on a phone.
+@media (max-width: 719px) {
+  .page {
+    padding: 16px 16px 40px;
+  }
+
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .entries {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .entry {
+    border-color: var(--c-border);
+    border-radius: 999px;
+  }
+
+  .header-title {
+    display: none;
+  }
+}

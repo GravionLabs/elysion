@@ -1,0 +1,53 @@
+.heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.new-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .field {
+    flex: 1 1 260px;
+    max-width: 360px;
+  }
+}
+
+.rename-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  input {
+    flex: 1 1 160px;
+  }
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.external-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.add-member {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  input {
+    flex: 1 1 200px;
+  }
+}
