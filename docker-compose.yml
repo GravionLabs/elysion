@@ -204,6 +204,8 @@ services:
       MAX_TEMPLATES_PER_USER: ${MAX_TEMPLATES_PER_USER:-100}
       MAX_TEMPLATE_CHARACTERS_PER_USER: ${MAX_TEMPLATE_CHARACTERS_PER_USER:-20000000}
       MAX_BOARDS_PER_USER: ${MAX_BOARDS_PER_USER:-1000}
+      # How long the audit log keeps its entries (docs/specs/business-backend.md, "Audit log").
+      AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-365}
       # Access tokens come from Keycloak (docs/specs/identity.md). The issuer is the address the browser used;
       # the keys are fetched over the compose network.
       OIDC_ISSUER_URL: http://localhost:8081/realms/elysion

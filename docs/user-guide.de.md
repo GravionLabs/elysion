@@ -36,6 +36,8 @@ Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema. Beim **Expor
 Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema. Beim **Exportieren** wählst du unter **Optionen** (der Browser merkt sie sich) bei einem **PDF**, ob ein Board mit Rahmen **eine Seite pro Rahmen** ergibt (mit dem Namen des Rahmens als Überschrift) oder das ganze Board auf einer Seite liegt, sowie Seitengröße (Größe des Inhalts, A4, Letter) und Ausrichtung; für alle Formate die Farben und den Hintergrund, bei **PNG** den Maßstab.
 Inhalte hinein und heraus (ein **PDF** wird beim Importieren Seite für Seite als Bild in je einen Rahmen "Seite 1", "Seite 2" … gelegt; die Seiten wählst du vorher aus), **Hell/Dunkel** wechselt das Farbschema.
 
+Im Teilen-Fenster zeigt **Verlauf** (nur für Besitzer; er wird erst beim Öffnen geladen) die letzten 20 Änderungen des Boards oder Raums: wer wem welche Rolle gegeben oder genommen hat und welche Einladungslinks erstellt, widerrufen oder benutzt wurden.
+
 **Verbindung weg?** Arbeite einfach weiter: Die Statusanzeige oben sagt **Offline**, und nach einigen Sekunden weist eine Leiste darauf hin, dass deine
 Änderungen **auf diesem Gerät gesichert** und gesendet werden, sobald die Verbindung wieder da ist. Auch wenn du den Tab dazwischen schließt oder neu lädst,
 sind sie noch da: Öffne das Board wieder, wenn du online bist, dann werden sie gesendet. Danach sagt die Leiste, wie viele Änderungen gesendet wurden; haben
@@ -65,6 +67,9 @@ Wer die Instanz administriert (die Rolle `elysion-admin` beim Identitätsanbiete
 - **Personen:** Suche nach Name oder E-Mail; ein Name öffnet die Räume und Boards, die die Person direkt hat, mit ihren Rollen.
 - **Gruppen:** Eine _lokale_ Gruppe wird hier angelegt und gepflegt (**Neue Gruppe**, **Umbenennen**, Mitglieder hinzufügen und entfernen). Eine _verknüpfte_ Gruppe gehört dem Identitätsanbieter: Mit **Verknüpfen** bindest du eine lokale Gruppe über ihre ID an eine Gruppe des Anbieters, ihre Mitglieder folgen dann dem Anbieter, sobald sich jemand anmeldet; **Lösen** macht sie wieder lokal und behält die Mitglieder. **Löschen** sagt, wie viele Räume die Rolle verlieren, die die Gruppe ihnen gegeben hat.
 - **Räume:** Name, Besitzer und Zahlen; keine Board-Namen.
+- **Audit:** wer Zugriff gegeben oder genommen hat, neueste zuerst, mit der Person, die es getan hat. Ein Klick auf ein Board, einen Raum, eine
+  Gruppe oder eine Person in einer Zeile filtert danach; dazu lässt sich ein Zeitraum wählen. Ein Eintrag enthält IDs, Rollen und Zahlen, nie den
+  Inhalt eines Boards. Einträge werden ein Jahr aufbewahrt (`AUDIT_RETENTION_DAYS`).
 
 Alle anderen sehen unter dieser Adresse „Du bist kein Administrator“.
 

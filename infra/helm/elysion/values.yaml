@@ -51,6 +51,10 @@ quotas:
   # Boards a person owns; boards shared with them do not count.
   maxBoards: 1000
 
+# How many days the audit log keeps who gave or took away access (#669); a nightly job removes older entries.
+audit:
+  retentionDays: 365
+
 # Limits of a board's document in the realtime service (ADR 0026, docs/specs/realtime.md "Limits"). The canvas limits a board to
 # 20,000 elements besides (the `max-elements` attribute of the element).
 limits:

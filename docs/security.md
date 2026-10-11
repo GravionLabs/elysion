@@ -154,6 +154,10 @@ Severity is for a production deployment; "demo only" says when the cause is a de
   (`IUserRepository.SearchAsync`, for example to people who share a room with the caller); this is open for the owner to decide.
 - **No HSTS or TLS in the demo.** `HSTS_MAX_AGE` is for deployments with TLS.
 
+## Audit log
+
+Who gave or took away access is written down (#669, [business-backend.md](specs/business-backend.md), "Audit log"): members of boards and rooms, group roles on rooms, groups, the groups a person gets from the identity provider at sign-in, and invitation links. The entry is saved in the same transaction as the change. It holds ids, roles, counts and group names; **never** a token (an invitation link's secret is not in any entry), an email address or what is on a board. It is readable by the instance administrators (metadata only, as everything under `/admin`) and, for one board or room, by its owners. Entries are kept `AUDIT_RETENTION_DAYS` (365 by default). The log is not tamper-proof against someone with write access to the database; for that, ship the structured logs (each entry carries the request id of its log lines) to a store the database operators cannot change.
+
 ## Accepted advisories
 
 `pnpm audit --prod --audit-level high` ignores one advisory, listed with its reason in `pnpm-workspace.yaml` (`auditConfig.ignoreGhsas`): `GHSA-vfj7-8cjw-p6xm`
