@@ -47,6 +47,34 @@
   }
 }
 
+@if (graph(); as status) {
+  <p class="note graph-status" role="status">
+    @if (status.enabled) {
+      <ng-container i18n="@@admin.graph.on"
+        >Microsoft Graph reads the linked groups every
+        {{ status.intervalMinutes }} minutes.</ng-container
+      >
+      @if (status.lastSyncAt) {
+        <ng-container i18n="@@admin.graph.last">
+          Last read: {{ status.lastSyncAt | date: 'medium' }}.</ng-container
+        >
+      } @else {
+        <ng-container i18n="@@admin.graph.never"> Not read yet.</ng-container>
+      }
+    } @else {
+      <ng-container i18n="@@admin.graph.off"
+        >Microsoft Graph is not switched on: the members of a linked group are the people who have
+        signed in with it.</ng-container
+      >
+    }
+    @if (status.pendingMembers > 0) {
+      <ng-container i18n="@@admin.graph.pending">
+        Waiting for their first sign-in: {{ status.pendingMembers }}.</ng-container
+      >
+    }
+  </p>
+}
+
 <form class="tools" role="search" (submit)="$event.preventDefault(); submitSearch()">
   <input
     type="search"
@@ -151,7 +179,14 @@
                 </th>
                 <td>{{ sourceLabel(group) }}</td>
                 <td class="external-id">{{ group.externalId ?? '' }}</td>
-                <td class="number">{{ group.memberCount }}</td>
+                <td class="number">
+                  {{ group.memberCount }}
+                  @if (group.pendingCount) {
+                    <span class="subtle" i18n="@@admin.groups.waiting"
+                      >+{{ group.pendingCount }} waiting</span
+                    >
+                  }
+                </td>
                 <td class="number">{{ group.roomCount }}</td>
                 <td class="actions">
                   <span class="row-actions">
@@ -290,6 +325,12 @@
           </p>
         }
 
+        @if (group.source !== 'Local' && group.lastSyncAt) {
+          <p class="note" i18n="@@admin.groups.lastSync">
+            Last read from the directory: {{ group.lastSyncAt | date: 'medium' }}
+          </p>
+        }
+
         <h3 i18n="@@admin.groups.members.title">Members</h3>
         @switch (members.state()) {
           @case ('error') {
@@ -342,6 +383,45 @@
                 (go)="members.go($event)"
               />
             }
+          }
+        }
+
+        @if (group.pendingCount) {
+          <h3 i18n="@@admin.groups.pending.title">Waiting for their first sign-in</h3>
+          <p class="note" i18n="@@admin.groups.pending.note">
+            The directory lists these people in the group. They become members when they sign in
+            with this address.
+          </p>
+          @if (pending.state() === 'loading') {
+            <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+          } @else if (pending.state() === 'error') {
+            <p class="error" role="alert">
+              <ng-container i18n="@@admin.groups.pending.error"
+                >The list could not be loaded.</ng-container
+              >
+              <button type="button" class="link" (click)="pending.load()" i18n="@@admin.retry">
+                Try again
+              </button>
+            </p>
+          } @else {
+            <ul class="stack">
+              @for (person of pending.items(); track person.email) {
+                <li class="line">
+                  <span>
+                    {{ person.displayName ?? person.email }}
+                    @if (person.displayName) {
+                      <span class="subtle">{{ person.email }}</span>
+                    }
+                  </span>
+                </li>
+              }
+            </ul>
+            <app-admin-pager
+              [page]="pending.page()"
+              [pages]="pending.pages()"
+              [total]="pending.total()"
+              (go)="pending.go($event)"
+            />
           }
         }
       </app-admin-dialog>

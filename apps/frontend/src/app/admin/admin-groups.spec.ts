@@ -1,7 +1,14 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import type { AdminGroup, AdminUser, GroupMember, Page } from './admin-api';
+import type {
+  AdminGroup,
+  AdminUser,
+  GraphStatus,
+  GroupMember,
+  Page,
+  PendingMember,
+} from './admin-api';
 import { AdminGroups } from './admin-groups';
 
 const group = (n: number, source: AdminGroup['source'] = 'Local'): AdminGroup => ({
@@ -70,9 +77,26 @@ describe('AdminGroups', () => {
 
   afterEach(() => http.verify());
 
-  /** Answers the two calls of opening the page: the groups and the sign-in settings. */
-  const open = async (groups: AdminGroup[], settings: object = {}) => {
+  const GRAPH_OFF: GraphStatus = {
+    enabled: false,
+    intervalMinutes: 60,
+    lastSyncAt: null,
+    pendingMembers: 0,
+  };
+
+  /** Answers the three calls of opening the page: the groups, the Graph status and the sign-in settings. */
+  const open = async (
+    groups: AdminGroup[],
+    settings: object = {},
+    graph: GraphStatus | null = GRAPH_OFF,
+  ) => {
     listRequest().flush(page(groups));
+    const status = http.expectOne('/api/admin/graph');
+    if (graph) {
+      status.flush(graph);
+    } else {
+      status.flush(null, { status: 500, statusText: 'Server Error' });
+    }
     http.expectOne('/auth-config.json').flush(settings);
     await settle();
   };
@@ -110,6 +134,7 @@ describe('AdminGroups', () => {
 
   it('says it when the list cannot be loaded', async () => {
     listRequest().flush(null, { status: 500, statusText: 'Server Error' });
+    http.expectOne('/api/admin/graph').flush(GRAPH_OFF);
     http.expectOne('/auth-config.json').flush({});
     await settle();
 
@@ -447,6 +472,90 @@ describe('AdminGroups', () => {
       await settle();
       expect(dialog.querySelector('[role="alert"]')?.textContent).toContain(
         'The provider owns its members.',
+      );
+    });
+  });
+
+  describe('Microsoft Graph (#667)', () => {
+    const statusLine = () =>
+      el().querySelector('.graph-status')?.textContent?.replace(/\s+/g, ' ').trim();
+
+    it('says that the sync is off, and nothing else', async () => {
+      await open([group(1)]);
+
+      expect(statusLine()).toContain('Microsoft Graph is not switched on');
+      expect(statusLine()).not.toContain('wait');
+    });
+
+    it('says how often it reads, when it last did and how many people wait', async () => {
+      await open(
+        [group(1, 'IdentityProvider')],
+        {},
+        {
+          enabled: true,
+          intervalMinutes: 30,
+          lastSyncAt: '2026-10-11T08:00:00Z',
+          pendingMembers: 3,
+        },
+      );
+
+      expect(statusLine()).toContain('every 30 minutes');
+      expect(statusLine()).toContain('Last read:');
+      expect(statusLine()).toContain('Waiting for their first sign-in: 3');
+    });
+
+    it('says that nothing was read yet', async () => {
+      await open(
+        [group(1)],
+        {},
+        { enabled: true, intervalMinutes: 60, lastSyncAt: null, pendingMembers: 0 },
+      );
+
+      expect(statusLine()).toContain('Not read yet');
+    });
+
+    it('shows no status line when the status cannot be loaded', async () => {
+      await open([group(1)], {}, null);
+
+      expect(el().querySelector('.graph-status')).toBeNull();
+      expect(rows().length).toBe(1);
+    });
+
+    it('shows the pending count next to the members and lists the waiting people in the detail', async () => {
+      const linked = {
+        ...group(2, 'IdentityProvider'),
+        pendingCount: 2,
+        lastSyncAt: '2026-10-11T08:00:00Z',
+      };
+      await open([linked]);
+      expect(rows()[0].querySelectorAll('td')[2].textContent).toContain('+2 waiting');
+
+      await click(buttonIn(rows()[0], /^Show the members of/));
+      http.expectOne((r) => r.url === '/api/admin/groups/g2/members').flush(page<GroupMember>([]));
+      const waiting: PendingMember[] = [
+        { email: 'adam@example.com', displayName: null },
+        { email: 'zoe@example.com', displayName: 'Zoe Z' },
+      ];
+      http.expectOne((r) => r.url === '/api/admin/groups/g2/pending').flush(page(waiting));
+      await settle();
+
+      const dialog = document.querySelector('[role="dialog"]')!;
+      expect(dialog.textContent).toContain('Waiting for their first sign-in');
+      expect(dialog.textContent).toContain('Last read from the directory');
+      expect(dialog.textContent).toContain('Zoe Z');
+      expect(dialog.textContent).toContain('adam@example.com');
+    });
+
+    it('does not ask for pending people of a group that has none', async () => {
+      await open([group(2, 'IdentityProvider')]);
+
+      await click(buttonIn(rows()[0], /^Show the members of/));
+      http.expectOne((r) => r.url === '/api/admin/groups/g2/members').flush(page<GroupMember>([]));
+      await settle();
+
+      http.expectNone((r) => r.url.endsWith('/pending'));
+      expect(document.querySelector('[role="dialog"]')?.textContent).not.toContain(
+        'Waiting for their first',
       );
     });
   });

@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, ElementRef, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { Title } from '@angular/platform-browser';
@@ -6,7 +7,9 @@ import {
   AdminApi,
   type AdminGroup,
   type AdminUser,
+  type GraphStatus,
   type GroupMember,
+  type PendingMember,
   MAX_EXTERNAL_ID_LENGTH,
   MAX_GROUP_NAME_LENGTH,
 } from './admin-api';
@@ -23,7 +26,7 @@ type Action = 'detail' | 'link' | 'unlink' | 'delete';
  * provider group by its id (or unlinks it), adds and removes the members of a local group and deletes a group.
  */
 @Component({
-  imports: [AdminDialog, AdminPager],
+  imports: [AdminDialog, AdminPager, DatePipe],
   selector: 'app-admin-groups',
   styleUrls: ['./admin-shared.scss', './admin-groups.scss'],
   templateUrl: './admin-groups.html',
@@ -66,6 +69,12 @@ export class AdminGroups {
   protected readonly members = new PagedList<GroupMember>((_query, page, size) =>
     this.#api.members(this.target()!.id, page, size),
   );
+  /** The people the directory lists in a linked group who have not signed in yet (#667), in the detail dialog. */
+  protected readonly pending = new PagedList<PendingMember>((_query, page, size) =>
+    this.#api.pending(this.target()!.id, page, size),
+  );
+  /** The state of the Graph sync for the line above the table; `null` while it loads or when the call failed. */
+  protected readonly graph = signal<GraphStatus | null>(null);
   protected readonly candidateQuery = signal('');
   protected readonly candidates = signal<AdminUser[]>([]);
   protected readonly candidateState = signal<'idle' | 'loading' | 'done' | 'error'>('idle');
@@ -73,6 +82,10 @@ export class AdminGroups {
   constructor() {
     inject(Title).setTitle($localize`:@@admin.groups.pageTitle:Groups · Administration · Elysion`);
     this.list.load();
+    this.#api.graphStatus().subscribe({
+      next: (status) => this.graph.set(status),
+      error: () => this.graph.set(null),
+    });
     inject(HttpClient)
       .get<Record<string, unknown>>(AUTH_SETTINGS_URL)
       .subscribe({
@@ -212,6 +225,10 @@ export class AdminGroups {
       this.members.query.set('');
       this.members.page.set(1);
       this.members.load();
+      this.pending.page.set(1);
+      if ((group.pendingCount ?? 0) > 0) {
+        this.pending.load();
+      }
     }
   }
 

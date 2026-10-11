@@ -68,8 +68,9 @@
     <unit id="admin.retry">
       <notes>
         <note category="location">src/app/admin/admin-audit.html:42,44</note>
-        <note category="location">src/app/admin/admin-groups.html:76,78</note>
-        <note category="location">src/app/admin/admin-groups.html:301,302</note>
+        <note category="location">src/app/admin/admin-groups.html:104,106</note>
+        <note category="location">src/app/admin/admin-groups.html:342,343</note>
+        <note category="location">src/app/admin/admin-groups.html:403,404</note>
         <note category="location">src/app/admin/admin-overview.html:10,12</note>
         <note category="location">src/app/admin/admin-rooms.html:29,31</note>
         <note category="location">src/app/admin/admin-users.html:29,31</note>
@@ -82,9 +83,10 @@
     <unit id="admin.loading">
       <notes>
         <note category="location">src/app/admin/admin-audit.html:48,50</note>
-        <note category="location">src/app/admin/admin-groups.html:82,84</note>
-        <note category="location">src/app/admin/admin-groups.html:250,252</note>
-        <note category="location">src/app/admin/admin-groups.html:307,308</note>
+        <note category="location">src/app/admin/admin-groups.html:110,112</note>
+        <note category="location">src/app/admin/admin-groups.html:285,287</note>
+        <note category="location">src/app/admin/admin-groups.html:348,349</note>
+        <note category="location">src/app/admin/admin-groups.html:396,397</note>
         <note category="location">src/app/admin/admin-overview.html:35,38</note>
         <note category="location">src/app/admin/admin-rooms.html:35,37</note>
         <note category="location">src/app/admin/admin-users.html:35,37</note>
@@ -288,10 +290,10 @@
     <unit id="admin.cancel">
       <notes>
         <note category="location">src/app/admin/admin-groups.html:42,44</note>
-        <note category="location">src/app/admin/admin-groups.html:138,139</note>
-        <note category="location">src/app/admin/admin-groups.html:387,388</note>
-        <note category="location">src/app/admin/admin-groups.html:422,423</note>
-        <note category="location">src/app/admin/admin-groups.html:457,458</note>
+        <note category="location">src/app/admin/admin-groups.html:166,167</note>
+        <note category="location">src/app/admin/admin-groups.html:467,468</note>
+        <note category="location">src/app/admin/admin-groups.html:502,503</note>
+        <note category="location">src/app/admin/admin-groups.html:537,538</note>
         <note category="location">src/app/admin/admin-users.html:271,272</note>
         <note category="location">src/app/admin/admin-users.html:303,304</note>
       </notes>
@@ -300,9 +302,54 @@
         <target>Abbrechen</target>
       </segment>
     </unit>
+    <unit id="admin.graph.on">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:54,56</note>
+      </notes>
+      <segment>
+        <source>Microsoft Graph reads the linked groups every <ph id="0" equiv="INTERPOLATION" disp="{{ status.intervalMinutes }}"/> minutes.</source>
+        <target>Microsoft Graph liest die verknüpften Gruppen alle <ph id="0" equiv="INTERPOLATION" disp="{{ status.intervalMinutes }}"/> Minuten.</target>
+      </segment>
+    </unit>
+    <unit id="admin.graph.last">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:59,60</note>
+      </notes>
+      <segment>
+        <source> Last read: <ph id="0" equiv="INTERPOLATION" disp="{{ status.lastSyncAt | date: &apos;medium&apos; }}"/>.</source>
+        <target> Zuletzt gelesen: <ph id="0" equiv="INTERPOLATION" disp="{{ status.lastSyncAt | date: &apos;medium&apos; }}"/>.</target>
+      </segment>
+    </unit>
+    <unit id="admin.graph.never">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:62,64</note>
+      </notes>
+      <segment>
+        <source> Not read yet.</source>
+        <target> Noch nicht gelesen.</target>
+      </segment>
+    </unit>
+    <unit id="admin.graph.off">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:66,68</note>
+      </notes>
+      <segment>
+        <source>Microsoft Graph is not switched on: the members of a linked group are the people who have signed in with it.</source>
+        <target>Microsoft Graph ist nicht eingeschaltet: Die Mitglieder einer verknüpften Gruppe sind die Leute, die sich damit angemeldet haben.</target>
+      </segment>
+    </unit>
+    <unit id="admin.graph.pending">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:72,73</note>
+      </notes>
+      <segment>
+        <source> Waiting for their first sign-in: <ph id="0" equiv="INTERPOLATION" disp="{{ status.pendingMembers }}"/>.</source>
+        <target> Warten auf ihre erste Anmeldung: <ph id="0" equiv="INTERPOLATION" disp="{{ status.pendingMembers }}"/>.</target>
+      </segment>
+    </unit>
     <unit id="admin.groups.search.placeholder">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:57,58</note>
+        <note category="location">src/app/admin/admin-groups.html:85,86</note>
       </notes>
       <segment>
         <source>Name of a group</source>
@@ -311,7 +358,7 @@
     </unit>
     <unit id="admin.groups.search">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:59,60</note>
+        <note category="location">src/app/admin/admin-groups.html:87,88</note>
       </notes>
       <segment>
         <source>Search groups</source>
@@ -320,8 +367,8 @@
     </unit>
     <unit id="admin.search">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:64,67</note>
-        <note category="location">src/app/admin/admin-groups.html:246,247</note>
+        <note category="location">src/app/admin/admin-groups.html:92,95</note>
+        <note category="location">src/app/admin/admin-groups.html:281,282</note>
         <note category="location">src/app/admin/admin-rooms.html:21,24</note>
         <note category="location">src/app/admin/admin-users.html:21,24</note>
         <note category="location">src/app/admin/admin-users.html:171,172</note>
@@ -333,7 +380,7 @@
     </unit>
     <unit id="admin.groups.error">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:74,75</note>
+        <note category="location">src/app/admin/admin-groups.html:102,103</note>
       </notes>
       <segment>
         <source>The groups could not be loaded.</source>
@@ -342,7 +389,7 @@
     </unit>
     <unit id="admin.groups.empty">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:85,86</note>
+        <note category="location">src/app/admin/admin-groups.html:113,114</note>
       </notes>
       <segment>
         <source>No group matches.</source>
@@ -351,7 +398,7 @@
     </unit>
     <unit id="admin.groups.caption">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:90,92</note>
+        <note category="location">src/app/admin/admin-groups.html:118,120</note>
       </notes>
       <segment>
         <source> Groups </source>
@@ -360,7 +407,7 @@
     </unit>
     <unit id="admin.groups.name">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:94,95</note>
+        <note category="location">src/app/admin/admin-groups.html:122,123</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -369,7 +416,7 @@
     </unit>
     <unit id="admin.groups.source">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:95,96</note>
+        <note category="location">src/app/admin/admin-groups.html:123,124</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -378,7 +425,7 @@
     </unit>
     <unit id="admin.groups.externalId">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:96,97</note>
+        <note category="location">src/app/admin/admin-groups.html:124,125</note>
       </notes>
       <segment>
         <source>External id</source>
@@ -387,7 +434,7 @@
     </unit>
     <unit id="admin.groups.members">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:97,98</note>
+        <note category="location">src/app/admin/admin-groups.html:125,126</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -396,7 +443,7 @@
     </unit>
     <unit id="admin.groups.rooms">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:98,99</note>
+        <note category="location">src/app/admin/admin-groups.html:126,127</note>
       </notes>
       <segment>
         <source>Rooms</source>
@@ -405,7 +452,7 @@
     </unit>
     <unit id="admin.groups.actions">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:99,101</note>
+        <note category="location">src/app/admin/admin-groups.html:127,129</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -414,7 +461,7 @@
     </unit>
     <unit id="admin.groups.rename.field">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:115,116</note>
+        <note category="location">src/app/admin/admin-groups.html:143,144</note>
       </notes>
       <segment>
         <source>New name</source>
@@ -423,16 +470,25 @@
     </unit>
     <unit id="admin.save">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:129,130</note>
+        <note category="location">src/app/admin/admin-groups.html:157,158</note>
       </notes>
       <segment>
         <source> Save </source>
         <target>Speichern</target>
       </segment>
     </unit>
+    <unit id="admin.groups.waiting">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:186,187</note>
+      </notes>
+      <segment>
+        <source>+<ph id="0" equiv="INTERPOLATION" disp="{{ group.pendingCount }}"/> waiting</source>
+        <target>+<ph id="0" equiv="INTERPOLATION" disp="{{ group.pendingCount }}"/> warten</target>
+      </segment>
+    </unit>
     <unit id="admin.groups.rename">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:165,166</note>
+        <note category="location">src/app/admin/admin-groups.html:200,201</note>
       </notes>
       <segment>
         <source> Rename </source>
@@ -441,7 +497,7 @@
     </unit>
     <unit id="admin.groups.link">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:175,176</note>
+        <note category="location">src/app/admin/admin-groups.html:210,211</note>
       </notes>
       <segment>
         <source> Link </source>
@@ -450,7 +506,7 @@
     </unit>
     <unit id="admin.groups.unlink">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:185,186</note>
+        <note category="location">src/app/admin/admin-groups.html:220,221</note>
       </notes>
       <segment>
         <source> Unlink </source>
@@ -459,7 +515,7 @@
     </unit>
     <unit id="admin.groups.delete">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:195,196</note>
+        <note category="location">src/app/admin/admin-groups.html:230,231</note>
       </notes>
       <segment>
         <source> Delete </source>
@@ -468,7 +524,7 @@
     </unit>
     <unit id="admin.groups.add.placeholder">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:239,240</note>
+        <note category="location">src/app/admin/admin-groups.html:274,275</note>
       </notes>
       <segment>
         <source>Name or email of the person to add</source>
@@ -477,7 +533,7 @@
     </unit>
     <unit id="admin.groups.add.search">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:241,242</note>
+        <note category="location">src/app/admin/admin-groups.html:276,277</note>
       </notes>
       <segment>
         <source>Find a person to add</source>
@@ -486,7 +542,7 @@
     </unit>
     <unit id="admin.groups.add.error">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:254,256</note>
+        <note category="location">src/app/admin/admin-groups.html:289,291</note>
       </notes>
       <segment>
         <source> The search failed. Try again. </source>
@@ -495,7 +551,7 @@
     </unit>
     <unit id="admin.groups.add.none">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:259,261</note>
+        <note category="location">src/app/admin/admin-groups.html:294,296</note>
       </notes>
       <segment>
         <source>Nobody matches.</source>
@@ -504,7 +560,7 @@
     </unit>
     <unit id="admin.groups.add">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:278,279</note>
+        <note category="location">src/app/admin/admin-groups.html:313,314</note>
       </notes>
       <segment>
         <source> Add </source>
@@ -513,16 +569,25 @@
     </unit>
     <unit id="admin.groups.linkedNote">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:288,290</note>
+        <note category="location">src/app/admin/admin-groups.html:323,325</note>
       </notes>
       <segment>
         <source> The identity provider owns the members of this group: they follow its claim as each person signs in and cannot be changed here. </source>
         <target>Der Identitätsanbieter besitzt die Mitglieder dieser Gruppe: Sie folgen seinem Claim, wenn sich jemand anmeldet, und lassen sich hier nicht ändern.</target>
       </segment>
     </unit>
+    <unit id="admin.groups.lastSync">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:330,332</note>
+      </notes>
+      <segment>
+        <source> Last read from the directory: <ph id="0" equiv="INTERPOLATION" disp="{{ group.lastSyncAt | date: &apos;medium&apos; }}"/> </source>
+        <target> Zuletzt aus dem Verzeichnis gelesen: <ph id="0" equiv="INTERPOLATION" disp="{{ group.lastSyncAt | date: &apos;medium&apos; }}"/> </target>
+      </segment>
+    </unit>
     <unit id="admin.groups.members.title">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:293,294</note>
+        <note category="location">src/app/admin/admin-groups.html:334,335</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -531,7 +596,7 @@
     </unit>
     <unit id="admin.groups.members.error">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:298,300</note>
+        <note category="location">src/app/admin/admin-groups.html:339,341</note>
       </notes>
       <segment>
         <source>The members could not be loaded.</source>
@@ -540,7 +605,7 @@
     </unit>
     <unit id="admin.groups.members.empty">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:309,311</note>
+        <note category="location">src/app/admin/admin-groups.html:350,352</note>
       </notes>
       <segment>
         <source>Nobody is in this group yet.</source>
@@ -549,7 +614,7 @@
     </unit>
     <unit id="admin.deactivated">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:317,319</note>
+        <note category="location">src/app/admin/admin-groups.html:358,360</note>
         <note category="location">src/app/admin/admin-users.html:67,69</note>
       </notes>
       <segment>
@@ -559,16 +624,43 @@
     </unit>
     <unit id="admin.groups.remove">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:332,333</note>
+        <note category="location">src/app/admin/admin-groups.html:373,374</note>
       </notes>
       <segment>
         <source> Remove </source>
         <target>Entfernen</target>
       </segment>
     </unit>
+    <unit id="admin.groups.pending.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:390,391</note>
+      </notes>
+      <segment>
+        <source>Waiting for their first sign-in</source>
+        <target>Warten auf ihre erste Anmeldung</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.pending.note">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:392,395</note>
+      </notes>
+      <segment>
+        <source> The directory lists these people in the group. They become members when they sign in with this address. </source>
+        <target> Das Verzeichnis führt diese Leute in der Gruppe. Sie werden Mitglieder, sobald sie sich mit dieser Adresse anmelden. </target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.pending.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:400,402</note>
+      </notes>
+      <segment>
+        <source>The list could not be loaded.</source>
+        <target>Die Liste konnte nicht geladen werden.</target>
+      </segment>
+    </unit>
     <unit id="admin.groups.link.title">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:351,352</note>
+        <note category="location">src/app/admin/admin-groups.html:431,432</note>
       </notes>
       <segment>
         <source>Link to a group of the identity provider</source>
@@ -577,7 +669,7 @@
     </unit>
     <unit id="admin.groups.link.warning">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:356,358</note>
+        <note category="location">src/app/admin/admin-groups.html:436,438</note>
       </notes>
       <segment>
         <source> From now on the provider owns the members of “<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>”: they are replaced by the provider&apos;s claim as each person signs in. People who are in the group now stay until then. </source>
@@ -586,7 +678,7 @@
     </unit>
     <unit id="admin.groups.link.id">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:362,364</note>
+        <note category="location">src/app/admin/admin-groups.html:442,444</note>
       </notes>
       <segment>
         <source>Id of the group at the identity provider</source>
@@ -595,7 +687,7 @@
     </unit>
     <unit id="admin.groups.link.confirm">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:395,397</note>
+        <note category="location">src/app/admin/admin-groups.html:475,477</note>
       </notes>
       <segment>
         <source> Link </source>
@@ -604,7 +696,7 @@
     </unit>
     <unit id="admin.groups.unlink.title">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:403,404</note>
+        <note category="location">src/app/admin/admin-groups.html:483,484</note>
       </notes>
       <segment>
         <source>Unlink the group</source>
@@ -613,7 +705,7 @@
     </unit>
     <unit id="admin.groups.unlink.message">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:408,410</note>
+        <note category="location">src/app/admin/admin-groups.html:488,490</note>
       </notes>
       <segment>
         <source> “<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>” becomes a local group and keeps its members (<ph id="1" equiv="INTERPOLATION_1" disp="{{ group.memberCount }}"/>). The identity provider no longer replaces them. </source>
@@ -622,7 +714,7 @@
     </unit>
     <unit id="admin.groups.unlink.confirm">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:431,433</note>
+        <note category="location">src/app/admin/admin-groups.html:511,513</note>
       </notes>
       <segment>
         <source> Unlink </source>
@@ -631,7 +723,7 @@
     </unit>
     <unit id="admin.groups.delete.title">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:438,439</note>
+        <note category="location">src/app/admin/admin-groups.html:518,519</note>
       </notes>
       <segment>
         <source>Delete the group</source>
@@ -640,7 +732,7 @@
     </unit>
     <unit id="admin.groups.delete.message">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:443,446</note>
+        <note category="location">src/app/admin/admin-groups.html:523,526</note>
       </notes>
       <segment>
         <source> Delete “<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>”? Its memberships go with it (<ph id="1" equiv="INTERPOLATION_1" disp="{{ group.memberCount }}"/>), and the rooms that gave it a role lose that role (<ph id="2" equiv="INTERPOLATION_2" disp="{{ group.roomCount }}"/>). This cannot be undone. </source>
@@ -649,7 +741,7 @@
     </unit>
     <unit id="admin.groups.delete.confirm">
       <notes>
-        <note category="location">src/app/admin/admin-groups.html:466,468</note>
+        <note category="location">src/app/admin/admin-groups.html:546,548</note>
       </notes>
       <segment>
         <source> Delete </source>
@@ -658,7 +750,7 @@
     </unit>
     <unit id="admin.groups.pageTitle">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:74</note>
+        <note category="location">src/app/admin/admin-groups.ts:83</note>
       </notes>
       <segment>
         <source>Groups · Administration · Elysion</source>
@@ -667,7 +759,7 @@
     </unit>
     <unit id="admin.groups.source.local">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:108</note>
+        <note category="location">src/app/admin/admin-groups.ts:121</note>
       </notes>
       <segment>
         <source>Local</source>
@@ -676,7 +768,7 @@
     </unit>
     <unit id="admin.groups.source.provider">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:109</note>
+        <note category="location">src/app/admin/admin-groups.ts:122</note>
       </notes>
       <segment>
         <source>Identity provider</source>
@@ -685,8 +777,8 @@
     </unit>
     <unit id="admin.groups.nameRule">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:132</note>
-        <note category="location">src/app/admin/admin-groups.ts:178</note>
+        <note category="location">src/app/admin/admin-groups.ts:145</note>
+        <note category="location">src/app/admin/admin-groups.ts:191</note>
       </notes>
       <segment>
         <source>A group needs a name of 1 to <ph id="0" equiv="max" disp="MAX_GROUP_NAME_LENGTH"/> characters.</source>
@@ -695,7 +787,7 @@
     </unit>
     <unit id="admin.groups.createError">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:148</note>
+        <note category="location">src/app/admin/admin-groups.ts:161</note>
       </notes>
       <segment>
         <source>The group could not be made.</source>
@@ -704,7 +796,7 @@
     </unit>
     <unit id="admin.groups.renameError">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:194</note>
+        <note category="location">src/app/admin/admin-groups.ts:207</note>
       </notes>
       <segment>
         <source>The group could not be renamed.</source>
@@ -713,7 +805,7 @@
     </unit>
     <unit id="admin.groups.link.rule">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:234</note>
+        <note category="location">src/app/admin/admin-groups.ts:251</note>
       </notes>
       <segment>
         <source>Enter the id of the group at the identity provider (up to <ph id="0" equiv="max" disp="MAX_EXTERNAL_ID_LENGTH"/> characters).</source>
@@ -722,7 +814,7 @@
     </unit>
     <unit id="admin.groups.link.error">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:241</note>
+        <note category="location">src/app/admin/admin-groups.ts:258</note>
       </notes>
       <segment>
         <source>The group could not be linked.</source>
@@ -731,7 +823,7 @@
     </unit>
     <unit id="admin.groups.unlink.error">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:251</note>
+        <note category="location">src/app/admin/admin-groups.ts:268</note>
       </notes>
       <segment>
         <source>The group could not be unlinked.</source>
@@ -740,7 +832,7 @@
     </unit>
     <unit id="admin.groups.delete.error">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:291</note>
+        <note category="location">src/app/admin/admin-groups.ts:308</note>
       </notes>
       <segment>
         <source>The group could not be deleted.</source>
@@ -749,7 +841,7 @@
     </unit>
     <unit id="admin.groups.addError">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:337</note>
+        <note category="location">src/app/admin/admin-groups.ts:354</note>
       </notes>
       <segment>
         <source>The person could not be added.</source>
@@ -758,7 +850,7 @@
     </unit>
     <unit id="admin.groups.removeError">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:360</note>
+        <note category="location">src/app/admin/admin-groups.ts:377</note>
       </notes>
       <segment>
         <source>The person could not be removed.</source>
@@ -767,7 +859,7 @@
     </unit>
     <unit id="admin.groups.rename.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:369</note>
+        <note category="location">src/app/admin/admin-groups.ts:386</note>
       </notes>
       <segment>
         <source>Rename the group <ph id="0" equiv="name" disp="group.name"/></source>
@@ -776,7 +868,7 @@
     </unit>
     <unit id="admin.groups.link.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:373</note>
+        <note category="location">src/app/admin/admin-groups.ts:390</note>
       </notes>
       <segment>
         <source>Link the group <ph id="0" equiv="name" disp="group.name"/> to a group of the identity provider</source>
@@ -785,7 +877,7 @@
     </unit>
     <unit id="admin.groups.unlink.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:377</note>
+        <note category="location">src/app/admin/admin-groups.ts:394</note>
       </notes>
       <segment>
         <source>Unlink the group <ph id="0" equiv="name" disp="group.name"/></source>
@@ -794,7 +886,7 @@
     </unit>
     <unit id="admin.groups.delete.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:381</note>
+        <note category="location">src/app/admin/admin-groups.ts:398</note>
       </notes>
       <segment>
         <source>Delete the group <ph id="0" equiv="name" disp="group.name"/></source>
@@ -803,7 +895,7 @@
     </unit>
     <unit id="admin.groups.open">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:385</note>
+        <note category="location">src/app/admin/admin-groups.ts:402</note>
       </notes>
       <segment>
         <source>Show the members of <ph id="0" equiv="name" disp="group.name"/></source>
@@ -812,7 +904,7 @@
     </unit>
     <unit id="admin.groups.removeMember.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:389</note>
+        <note category="location">src/app/admin/admin-groups.ts:406</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="name" disp="member.displayName"/> from the group</source>
@@ -821,7 +913,7 @@
     </unit>
     <unit id="admin.groups.addMember.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:393</note>
+        <note category="location">src/app/admin/admin-groups.ts:410</note>
       </notes>
       <segment>
         <source>Add <ph id="0" equiv="name" disp="user.displayName"/> to the group</source>
