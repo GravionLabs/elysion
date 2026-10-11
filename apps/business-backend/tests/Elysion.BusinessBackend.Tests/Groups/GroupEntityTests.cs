@@ -85,4 +85,48 @@ public class GroupEntityTests
         Should.Throw<ArgumentException>(() =>
             RoomGroupMembership.Create(Guid.CreateVersion7(), Guid.CreateVersion7(), (BoardRole)99, Now));
     }
+
+    [Test]
+    public void A_group_is_renamed_with_the_same_rule_as_a_new_one()
+    {
+        var group = Group.Create(Guid.CreateVersion7(), "Design", Now);
+
+        group.Rename("  Product ");
+
+        group.Name.ShouldBe("Product");
+        Should.Throw<ArgumentException>(() => group.Rename("  "));
+        Should.Throw<ArgumentException>(() => group.Rename(new string('x', Group.MaxNameLength + 1)));
+        group.Name.ShouldBe("Product");
+    }
+
+    [Test]
+    public void Linking_makes_a_local_group_belong_to_the_provider_and_unlinking_gives_it_back()
+    {
+        var group = Group.Create(Guid.CreateVersion7(), "Design", Now);
+
+        group.Link("  abc-1 ");
+        (group.Source, group.ExternalId).ShouldBe((GroupSource.IdentityProvider, "abc-1"));
+
+        group.Link("abc-2");
+        group.ExternalId.ShouldBe("abc-2");
+
+        group.Unlink();
+        (group.Source, group.ExternalId).ShouldBe((GroupSource.Local, null));
+    }
+
+    [TestCase("")]
+    [TestCase("   ")]
+    public void A_link_needs_an_external_id(string externalId) =>
+        Should.Throw<ArgumentException>(() => Group.Create(Guid.CreateVersion7(), "Design", Now).Link(externalId));
+
+    [Test]
+    public void An_external_id_is_at_most_255_characters()
+    {
+        var group = Group.Create(Guid.CreateVersion7(), "Design", Now);
+
+        group.Link(new string('x', Group.MaxExternalIdLength));
+
+        Should.Throw<ArgumentException>(() => group.Link(new string('x', Group.MaxExternalIdLength + 1)));
+        group.ExternalId!.Length.ShouldBe(Group.MaxExternalIdLength);
+    }
 }

@@ -12,6 +12,8 @@ export interface AppConfig {
   OIDC_AUDIENCE: string;
   /** Where to fetch Keycloak's signing keys, when that differs from the issuer's address (inside compose). */
   OIDC_JWKS_URI?: string;
+  /** The realm role of an administrator (`realm_access.roles`, ADR 0027); empty: nobody is one. Only tells the shell (`/api/auth/me`): the backend decides. */
+  OIDC_ADMIN_ROLE: string;
   /** HS256 secret of the WS token, shared with the realtime service. Required: there is no safe default. */
   WS_TOKEN_SECRET: string;
   /** Lifetime of a WS token in seconds. */
@@ -106,6 +108,8 @@ export function validateEnv(env: Env): AppConfig {
     OIDC_ISSUER_URL: url('OIDC_ISSUER_URL', 'http://localhost:8081/realms/elysion'),
     OIDC_AUDIENCE: text('OIDC_AUDIENCE') ?? 'elysion-bff',
     ...(text('OIDC_JWKS_URI') === undefined ? {} : { OIDC_JWKS_URI: url('OIDC_JWKS_URI') }),
+    OIDC_ADMIN_ROLE:
+      env['OIDC_ADMIN_ROLE'] === undefined ? 'elysion-admin' : (text('OIDC_ADMIN_ROLE') ?? ''),
     WS_TOKEN_SECRET: secret ?? '',
     WS_TOKEN_TTL_SECONDS: integer('WS_TOKEN_TTL_SECONDS', 60, 1, 3600),
     LOG_LEVEL:

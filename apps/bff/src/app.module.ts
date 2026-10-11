@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.js';
+import { AdminModule } from './admin/admin.module.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BoardsModule } from './boards/boards.module.js';
@@ -11,7 +12,15 @@ import { HealthController } from './health.controller.js';
 import { LoggingModule } from './logging/logging.module.js';
 
 @Module({
-  imports: [ConfigModule, LoggingModule, MetricsModule, AuthModule, BoardsModule, RealtimeModule],
+  imports: [
+    ConfigModule,
+    LoggingModule,
+    MetricsModule,
+    AuthModule,
+    BoardsModule,
+    AdminModule,
+    RealtimeModule,
+  ],
   controllers: [AppController, HealthController, CspReportController],
   providers: [AppService],
 })
