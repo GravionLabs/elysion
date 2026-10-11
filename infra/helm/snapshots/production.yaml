@@ -77,6 +77,10 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: monitoring
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: business-backend
+              app.kubernetes.io/instance: elysion
       ports:
         - { protocol: TCP, port: 3000 }
 ---
@@ -423,6 +427,8 @@ spec:
                 secretKeyRef:
                   key: INTERNAL_API_SECRET
                   name: elysion-secrets
+            - name: REALTIME_URL
+              value: http://elysion-realtime:3000
             - name: S3_ENDPOINT
               value: https://s3.example
             - name: S3_BUCKET

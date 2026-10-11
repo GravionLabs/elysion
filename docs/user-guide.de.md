@@ -39,5 +39,6 @@ Inhalte hinein und heraus (ein **PDF** wird beim Importieren Seite für Seite al
 ## Einen Workshop leiten
 
 - **Timer** startet einen Countdown für alle auf dem Board (Voreinstellungen oder eigene Minuten; pausieren, eine Minute verlängern, stoppen).
-- **Abstimmung** startet eine Punkte-Abstimmung: Jede Person verteilt ihre Punkte auf Elemente, die Moderation beendet die Abstimmung und
-  sieht die Ergebnisse.
+- **Abstimmung** startet eine Punkte-Abstimmung: Jede Person verteilt ihre Punkte auf Elemente (auch Betrachter stimmen mit), die Moderation
+  beendet die Abstimmung, und alle sehen das Ergebnis. Während sie läuft, sieht jede Person nur die eigenen Stimmen; Namen zeigt das Ergebnis
+  nur, wenn du beim Start **Zeigen, wer wofür gestimmt hat** angekreuzt hast.

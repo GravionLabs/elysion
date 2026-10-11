@@ -79,6 +79,12 @@ export const en = {
   votesLeft: (left: number, total: number) =>
     `Voting: ${left} of ${total} votes left (click an element to vote)`,
   votesNone: 'Voting: no votes left (click one of your dots to take it back)',
+  legacyVotingClosed: (name: string, top: Array<{ label: string; count: number }>) =>
+    `The voting${name ? ` “${name}”` : ''} was closed by an update.${
+      top.length
+        ? ` Result: ${top.map((entry) => `${entry.label} (${entry.count})`).join(', ')}.`
+        : ''
+    }`,
   // Errors the host receives (as a rejection or an `error` event)
   errorReadOnly: 'This board is read-only.',
   errorBusy: 'Another import is still open.',
@@ -172,6 +178,12 @@ export const de: Messages = {
     `Abstimmung: noch ${left} von ${total} Stimmen übrig (zum Abstimmen ein Element anklicken)`,
   votesNone:
     'Abstimmung: keine Stimmen mehr übrig (eigenen Punkt anklicken, um die Stimme zurückzunehmen)',
+  legacyVotingClosed: (name: string, top: Array<{ label: string; count: number }>) =>
+    `Die Abstimmung${name ? ` „${name}“` : ''} wurde durch ein Update beendet.${
+      top.length
+        ? ` Ergebnis: ${top.map((entry) => `${entry.label} (${entry.count})`).join(', ')}.`
+        : ''
+    }`,
   errorReadOnly: 'Dieses Board ist schreibgeschützt.',
   errorBusy: 'Ein anderer Import ist noch offen.',
   errorNotReady: 'Der Canvas ist noch nicht bereit.',

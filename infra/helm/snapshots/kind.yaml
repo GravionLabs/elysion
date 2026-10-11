@@ -219,6 +219,8 @@ spec:
                 secretKeyRef:
                   key: INTERNAL_API_SECRET
                   name: elysion-secrets
+            - name: REALTIME_URL
+              value: http://elysion-realtime:3000
             - name: S3_ENDPOINT
               value: http://rustfs.invalid:9100
             - name: S3_BUCKET

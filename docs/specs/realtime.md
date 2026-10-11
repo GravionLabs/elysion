@@ -77,6 +77,16 @@ Two `realtime` instances serving one board show the same content: `DocumentRelay
 - Valkey being unreachable never stops editing: publishing failures are logged and the room keeps working and saving on its own; the hello after the reconnect catches up.
 - An unloaded room (see Persistence) unsubscribes from the channel; when someone returns it loads from the store and says hello.
 
+## Voting notifications (ADR 0029)
+
+The votes of a board live in the business backend, not in the document. After every change (`start`, `vote`, `retract`, `close`, `clear`) the backend calls `POST /internal/boards/{boardId}/voting` on this service with `{ "event": "start|vote|retract|close|clear", "voting": VotingBroadcast | null }` (`voting` is `null` only for `clear`) and the service tells every client of the board. The route is not routed at the edge, and `204` is the answer; `400` for a board id that is no UUID or a body that does not match the shape (`voting-broadcast.ts` checks every field, passes on only the known ones and caps lengths and counts; the body limit is Express's 100 KiB), `401` without a valid service token.
+
+**Service token** (`InternalCallVerifier`): `Authorization: Bearer <jwt>`, HS256 with `INTERNAL_API_SECRET` (the key of ADR 0017, in the other direction), `iss` `elysion-business-backend`, `aud` `elysion-realtime` (a token made for the backend's own internal API does not work here), `exp` and `iat` required, at most 60 s of life (a token that claims more is refused), 5 s clock tolerance.
+
+**Relay.** The instance that got the call sends the message to its own clients of the board and publishes it on the board's document channel (`elysion:doc:<boardId>`) as relay type `voting` (the data is the UTF-8 JSON); every other instance that holds the room sends it to its clients. An instance with no client of the board has no subscription, and needs none.
+
+**Wire format to clients: message type `5` (`voting`).** Binary WebSocket frame: `varUint(5)` followed by `varString(json)` (lib0 `writeVarString`: a varUint byte length, then UTF-8). It goes to every socket of the board, viewers included. The JSON is `{ "event": ..., "voting": VotingBroadcast | null }` with `VotingBroadcast = { id, name, votesPerPerson, status: "open"|"closed", named, startedBy: {id, name}, startedAt, closedAt: string|null, placed?: { [userId]: number }, result?: [{ elementId, count, voters?: [{id, name}] }] }`: `placed` while the voting is open (how many votes each person has placed, never on what), `result` once it is closed (`voters` only when it is named). A client never sends type `5`; the gateway ignores it. A failed notification is not retried: clients fetch the voting from the API when they connect.
+
 ## Presence
 
 Cursor/avatar presence (Yjs awareness, message type 1) is broadcast cross-instance via Redis pub/sub (`PresenceRelay`, `src/presence/`), not just to other clients on the same `realtime` process:

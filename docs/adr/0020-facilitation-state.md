@@ -1,6 +1,6 @@
 # ADR 0020: Where the timer and the votes of a board are stored
 
-- Status: Accepted
+- Status: Accepted; the votes are superseded by [ADR 0029](0029-dot-voting-on-the-server.md) (the timer stays as decided here)
 - Date: 2026-10-07
 - Issues: #577, #578 (Feature #574); implemented in #579 (the timer) and #582 (dot voting), which are written for the recommended option
 - Builds on: [ADR 0010](0010-shell-controls-the-canvas.md), [ADR 0011](0011-board-document-persistence.md)

@@ -11,6 +11,7 @@ import { PresenceRelay } from '../presence/presence-relay.js';
 import { type BoardRole, WS_CLOSE_FORBIDDEN } from '@elysion/shared-types';
 import { SaveMetrics } from '../metrics/save-metrics.js';
 import { MESSAGE_SYNC } from './protocol.js';
+import { encodeVotingMessage } from '../voting/voting-broadcast.js';
 import { rebuildDocument } from './compaction.js';
 
 export interface PersistenceOptions {
@@ -399,6 +400,9 @@ export class YjsRoomRegistry implements OnModuleDestroy {
         case 'hello-ack':
           this.publishSafely(room, 'update', Y.encodeStateAsUpdate(room.doc, message.data));
           break;
+        case 'voting':
+          this.sendVotingToClients(room, message.data);
+          break;
         case 'reset': {
           // Another instance rebuilt the document: an idle copy here is out of date and must not be saved over it.
           const state = this.saves.get(room.boardId);
@@ -412,6 +416,28 @@ export class YjsRoomRegistry implements OnModuleDestroy {
       this.logger.warn(
         `Document message for board ${room.boardId} could not be applied: ${String(error)}`,
       );
+    }
+  }
+
+  /**
+   * Tells every client of the board, viewers included, that its voting changed (ADR 0029): the clients of this instance
+   * at once and, through the relay, those of the other instances. `json` is the broadcast, already validated.
+   */
+  async announceVoting(boardId: string, json: string): Promise<void> {
+    const data = new TextEncoder().encode(json);
+    const room = this.rooms.get(boardId);
+    if (room) {
+      this.sendVotingToClients(room, data);
+    }
+    await this.relay.publish(boardId, { type: 'voting', data });
+  }
+
+  private sendVotingToClients(room: YjsRoom, data: Uint8Array): void {
+    const message = encodeVotingMessage(new TextDecoder().decode(data));
+    for (const client of room.clients) {
+      if (client.readyState === client.OPEN) {
+        client.send(message);
+      }
     }
   }
 

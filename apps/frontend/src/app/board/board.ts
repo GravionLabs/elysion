@@ -22,6 +22,7 @@ import { RouterLink } from '@angular/router';
 import { AppBrand } from '../shared/app-brand';
 import { BoardApi, BoardLookup, BoardRole, isStoredBoardId } from './board-api';
 import { FilesApi } from './files-api';
+import { VotingApi } from './voting-api';
 import { ThumbnailUploader } from './thumbnail-uploader';
 import { ShareDialog } from '../share/share-dialog';
 import { CanvasElement } from './canvas-element';
@@ -75,6 +76,7 @@ export class Board {
   readonly #themeService = inject(ThemeService);
   readonly #api = inject(BoardApi);
   readonly #files = inject(FilesApi);
+  readonly #votings = inject(VotingApi);
   readonly #thumbnails = inject(ThumbnailUploader);
   readonly #pageTitle = inject(Title);
   readonly #templates = inject(TemplateApi);
@@ -110,7 +112,7 @@ export class Board {
   /** The board's shared timer from the canvas's `timer` event (ADR 0020), or `null`. */
   readonly timer = signal<TimerState | null>(null);
 
-  /** The board's current dot voting from the canvas's `voting` event (ADR 0020), or `null`. */
+  /** The board's current dot voting from the canvas's `voting` event (ADR 0029), or `null`. */
   readonly voting = signal<VotingSession | null>(null);
 
   /** An export is being prepared: a PDF of a large board takes seconds, so the Export menu says so. */
@@ -325,6 +327,8 @@ export class Board {
 
   /** The images of this board are kept by the BFF (#702); the canvas uploads and loads through this. */
   protected readonly fileStore = this.#files.storeFor(() => this.boardId());
+  /** The voting of this board on the server; the canvas votes through it (ADR 0029). */
+  protected readonly votingApi = this.#votings.forBoard(() => this.boardId());
 
   /**
    * Whether images may be inserted: only on a stored board, because the files belong to a board record (the room

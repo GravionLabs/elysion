@@ -15,6 +15,8 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
     public DbSet<RoomMembership> RoomMemberships => Set<RoomMembership>();
     public DbSet<BoardVisit> BoardVisits => Set<BoardVisit>();
     public DbSet<BoardFavorite> BoardFavorites => Set<BoardFavorite>();
+    public DbSet<VotingSession> VotingSessions => Set<VotingSession>();
+    public DbSet<Vote> Votes => Set<Vote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -110,6 +112,31 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
             favorite.HasOne(f => f.Board).WithMany().HasForeignKey(f => f.BoardId).OnDelete(DeleteBehavior.Cascade);
             favorite.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
             favorite.HasIndex(f => f.UserId);
+        });
+
+        modelBuilder.Entity<VotingSession>(session =>
+        {
+            session.Property(s => s.Name).HasMaxLength(VotingSession.MaxNameLength);
+            session.Property(s => s.StartedBySubject).HasMaxLength(User.MaxSubjectLength);
+            session.Property(s => s.StartedByName).HasMaxLength(User.MaxDisplayNameLength);
+            session.HasOne(s => s.Board).WithMany().HasForeignKey(s => s.BoardId).OnDelete(DeleteBehavior.Cascade);
+            session.HasIndex(s => s.BoardId);
+            // One open voting per board, even when two starts race (Open = 0).
+            session.HasIndex(s => s.BoardId)
+                .IsUnique()
+                .HasFilter("\"Status\" = 0")
+                .HasDatabaseName("IX_VotingSessions_OneOpenPerBoard");
+        });
+
+        modelBuilder.Entity<Vote>(vote =>
+        {
+            vote.Property(v => v.ElementId).HasMaxLength(VotingSession.MaxElementIdLength);
+            vote.HasOne(v => v.VotingSession)
+                .WithMany(s => s.Votes)
+                .HasForeignKey(v => v.VotingSessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            vote.HasOne(v => v.User).WithMany().HasForeignKey(v => v.UserId).OnDelete(DeleteBehavior.Cascade);
+            vote.HasIndex(v => new { v.VotingSessionId, v.UserId });
         });
 
         // "Which boards are in this room?" starts from the room.

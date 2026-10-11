@@ -205,5 +205,4 @@ requests, saves that fail, a backup that is too old and more; [Operations](opera
 
 ## Known limits of this pre-release
 
-See [What is missing](../README.md#what-is-missing) and the [roadmap](roadmap.md): the Kubernetes setup above is untested on a managed cluster, a [security review](security.md) whose findings are still being fixed,
-and votes that are not secret from the server.
+See [What is missing](../README.md#what-is-missing) and the [roadmap](roadmap.md): the Kubernetes setup above is untested on a managed cluster, and a [security review](security.md) whose findings are still being fixed.

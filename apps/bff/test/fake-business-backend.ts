@@ -32,6 +32,10 @@ export class FakeBusinessBackend {
   readonly boards = new Map<string, FakeBoard>();
   /** The last request for a search or a per-person state (#730): method and path with its query. */
   lastStateRequest: { method: string; path: string } | null = null;
+  /** The last voting request (#732): method, path and parsed body. */
+  lastVotingRequest: { method: string; path: string; body: unknown } | null = null;
+  /** What the voting routes answer; a test sets it. `body` undefined is an empty answer (204 for "none"). */
+  votingAnswer: { status: number; body?: unknown } = { status: 200, body: undefined };
   requests = 0;
   /** The role per board id the caller has (`Owner`, `Editor`, `Viewer`); a board that is not in here: 404, as for a non-member. */
   readonly roles = new Map<string, string>();
@@ -196,6 +200,19 @@ export class FakeBusinessBackend {
     if ((req.url ?? '').startsWith('/boards?')) {
       this.lastStateRequest = { method: req.method ?? '', path: req.url ?? '' };
       return send(200, [...this.boards.values()].reverse());
+    }
+    const votingRoute = /^\/boards\/([^/]+)\/votings?(?:\/|$)/.exec(req.url ?? '');
+    if (votingRoute) {
+      const parts: Buffer[] = [];
+      for await (const chunk of req) parts.push(chunk as Buffer);
+      const text = Buffer.concat(parts).toString();
+      this.lastVotingRequest = {
+        method: req.method ?? '',
+        path: req.url ?? '',
+        body: text ? JSON.parse(text) : null,
+      };
+      const { status, body } = this.votingAnswer;
+      return body === undefined ? send(status) : send(status, body);
     }
     const thumbnailRoute = /^\/boards\/([^/]+)\/thumbnail$/.exec(req.url ?? '');
     if (thumbnailRoute) {

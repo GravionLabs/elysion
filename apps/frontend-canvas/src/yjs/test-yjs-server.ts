@@ -6,7 +6,7 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
 import { WebSocketServer, type WebSocket as NodeWebSocket } from 'ws';
-import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC } from './protocol.js';
+import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC, MESSAGE_VOTING } from './protocol.js';
 
 export interface TestYjsServer {
   url: string;
@@ -23,6 +23,8 @@ export interface TestYjsServer {
   docOf: (boardId: string) => Y.Doc;
   /** Tells every client that the board is full (message type 4), as the gateway does for a refused update. */
   sendBoardFull: () => void;
+  /** Tells every client that the voting changed (message type 5): the JSON as a length-prefixed string, or as the rest of the message. */
+  sendVoting: (payload: unknown, framing?: 'string' | 'rest') => void;
 }
 
 interface Room {
@@ -160,6 +162,14 @@ export function startTestYjsServer(): Promise<TestYjsServer> {
           for (const client of wss.clients) client.close(code);
         },
         docOf: (boardId) => getOrCreateRoom(boardId).doc,
+        sendVoting: (payload, framing = 'string') => {
+          const encoder = encoding.createEncoder();
+          encoding.writeVarUint(encoder, MESSAGE_VOTING);
+          const json = JSON.stringify(payload);
+          if (framing === 'string') encoding.writeVarString(encoder, json);
+          else encoding.writeUint8Array(encoder, new TextEncoder().encode(json));
+          for (const client of wss.clients) client.send(encoding.toUint8Array(encoder));
+        },
         sendBoardFull: () => {
           const encoder = encoding.createEncoder();
           encoding.writeVarUint(encoder, MESSAGE_BOARD_FULL);

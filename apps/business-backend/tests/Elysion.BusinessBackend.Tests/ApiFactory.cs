@@ -4,8 +4,10 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 
 using Elysion.BusinessBackend.Api.Data;
+using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Voting;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
@@ -43,6 +45,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     /// <summary>The object store of board files; in memory, so no S3 is needed.</summary>
     public InMemoryFileStore Files { get; } = new();
+
+    /// <summary>What the voting endpoints told the realtime service, in order; nothing is sent anywhere.</summary>
+    public RecordingVotingNotifier Notifications { get; } = new();
 
     private readonly string _databaseName = Guid.NewGuid().ToString();
     private readonly TimeProvider? _time;
@@ -164,6 +169,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<ElysionDbContext>(options => options.UseInMemoryDatabase(_databaseName));
 
+            services.RemoveAll<IVotingNotifier>();
+            services.AddSingleton<IVotingNotifier>(Notifications);
+
             services.RemoveAll<IFileStore>();
             services.AddSingleton<IFileStore>(Files);
 
@@ -173,5 +181,24 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
                 services.AddSingleton(_time);
             }
         });
+    }
+}
+
+/// <summary>Remembers the news of votings instead of posting it.</summary>
+public sealed class RecordingVotingNotifier : IVotingNotifier
+{
+    public List<(Guid BoardId, string Event, VotingBroadcastDto? Voting)> Sent { get; } = [];
+
+    public Task NotifyAsync(Guid boardId,
+        string votingEvent,
+        VotingBroadcastDto? voting,
+        CancellationToken cancellationToken)
+    {
+        lock (Sent)
+        {
+            Sent.Add((boardId, votingEvent, voting));
+        }
+
+        return Task.CompletedTask;
     }
 }

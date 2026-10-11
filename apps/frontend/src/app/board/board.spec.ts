@@ -957,6 +957,7 @@ describe('Board', () => {
       name: 'Best idea',
       votesPerPerson: 5,
       status: 'open',
+      named: false,
       startedBy: { id: 'kc-1', name: 'Ada' },
       myVotes: 1,
     };
@@ -989,7 +990,11 @@ describe('Board', () => {
       fixture.detectChanges();
       (menu().querySelector('button[type="submit"]') as HTMLElement).click();
 
-      expect(canvas().startVoting).toHaveBeenCalledWith({ name: 'Voting', votesPerPerson: 3 });
+      expect(canvas().startVoting).toHaveBeenCalledWith({
+        name: 'Voting',
+        votesPerPerson: 3,
+        named: false,
+      });
     });
 
     it('ends the voting and clears the results through the canvas', () => {
@@ -1145,10 +1150,11 @@ describe('Board', () => {
         name: 'Pick',
         votesPerPerson: 3,
         status: 'open',
+        named: false,
         startedBy: { id: 'someone', name: 'Bea' },
         myVotes: 0,
       });
-      expect(menu().querySelector('.chip')?.textContent).toContain('Voting: Pick');
+      expect(menu().querySelector('.chip')?.textContent).toContain('Voting: Pick · 3 left');
       expect(menu().querySelector('.menu-button')).toBeNull();
 
       announce({
@@ -1156,6 +1162,7 @@ describe('Board', () => {
         name: 'Pick',
         votesPerPerson: 3,
         status: 'closed',
+        named: false,
         startedBy: { id: 'someone', name: 'Bea' },
         myVotes: 0,
         tally: [{ elementId: 'e1', count: 2, label: 'Ship it' }],

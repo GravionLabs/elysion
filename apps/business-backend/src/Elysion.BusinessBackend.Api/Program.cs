@@ -8,6 +8,7 @@ using Elysion.BusinessBackend.Api.Logging;
 using Elysion.BusinessBackend.Api.Members;
 using Elysion.BusinessBackend.Api.Observability;
 using Elysion.BusinessBackend.Api.Quotas;
+using Elysion.BusinessBackend.Api.Voting;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -50,6 +51,7 @@ builder.Services.AddScoped<IUnitOfWork>(services => services.GetRequiredService<
 builder.Services.AddScoped<IBoardRepository, BoardRepository>();
 builder.Services.AddScoped<IBoardDocumentRepository, BoardDocumentRepository>();
 builder.Services.AddScoped<IBoardUserStateRepository, BoardUserStateRepository>();
+builder.Services.AddScoped<IVotingRepository, VotingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMembershipRepository, MembershipRepository>();
 builder.Services.AddScoped<IRoomRepository, RoomRepository>();
@@ -64,6 +66,12 @@ builder.Services.AddScoped<CurrentUserAccessor>();
 builder.Services.AddScoped<ICurrentUser>(services => services.GetRequiredService<CurrentUserAccessor>());
 
 builder.Services.AddSingleton(TimeProvider.System);
+
+// The realtime service is told about every change of a voting so the other clients see it at once (ADR 0029).
+builder.Services.AddOptions<RealtimeOptions>()
+    .Configure<IConfiguration>((options, configuration) =>
+        options.Url = configuration[RealtimeOptions.UrlSetting] ?? "");
+builder.Services.AddHttpClient<IVotingNotifier, HttpVotingNotifier>();
 
 var app = builder.Build();
 
@@ -114,6 +122,7 @@ app.MapBoardAccessEndpoints();
 app.MapBoardFileEndpoints();
 app.MapBoardThumbnailEndpoints();
 app.MapBoardUserStateEndpoints();
+app.MapVotingEndpoints();
 app.MapTemplateEndpoints();
 
 app.Run();

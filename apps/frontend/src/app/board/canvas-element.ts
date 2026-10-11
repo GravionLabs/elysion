@@ -8,21 +8,55 @@ export interface TallyEntry {
   count: number;
   /** The element's text (a sticky note's bound text), else its type. */
   label: string;
+  /** Who voted for it, only in a named voting. */
+  voters?: Array<{ id: string; name: string }>;
 }
 
 /**
  * The current dot voting as the canvas announces it in its `voting` event, for the caller: their own number of votes,
- * never the others', and the ranked `tally` only once it is closed (ADR 0020).
+ * never the others', and the ranked `tally` only once it is closed (ADR 0029).
  */
 export interface VotingSession {
   id: string;
   name: string;
   votesPerPerson: number;
   status: 'open' | 'closed';
+  /** A named voting shows who voted for what in the result. */
+  named: boolean;
   startedBy: { id: string; name: string };
   /** How many votes the caller has placed. */
   myVotes: number;
   tally?: TallyEntry[];
+}
+
+/** The voting as the BFF returns it to the caller (ADR 0029, `VotingView`); the canvas works from it. */
+export interface BoardVoting {
+  id: string;
+  name: string;
+  votesPerPerson: number;
+  status: 'open' | 'closed';
+  named: boolean;
+  startedBy: { id: string; name: string };
+  startedAt?: string | null;
+  closedAt?: string | null;
+  myVotes: number;
+  myElementVotes: Record<string, number>;
+  placed?: Record<string, number>;
+  result?: Array<{
+    elementId: string;
+    count: number;
+    voters?: Array<{ id: string; name: string }>;
+  }>;
+}
+
+/** What the canvas calls to reach the voting on the server (`votingApi` of `<elysion-canvas>`, ADR 0029). */
+export interface BoardVotingApi {
+  get(): Promise<BoardVoting | null>;
+  start(options: { name?: string; votesPerPerson: number; named?: boolean }): Promise<BoardVoting>;
+  vote(votingId: string, elementId: string): Promise<BoardVoting>;
+  retract(votingId: string, elementId: string): Promise<BoardVoting | null>;
+  close(votingId: string): Promise<BoardVoting>;
+  clear(): Promise<void>;
 }
 
 export interface TimerState {
@@ -74,6 +108,8 @@ export type CanvasElement = HTMLElement & {
    * as an object with methods. The `images-enabled` attribute goes with it.
    */
   fileStore?: BoardFileStore;
+  /** How the canvas reaches the board's voting on the server (`GET/POST/DELETE` through the BFF, ADR 0029). A property, as an object with methods. */
+  votingApi?: BoardVotingApi;
   /** Replaces the board with an .excalidraw file; resolves with the number of elements in it. */
   importFile?(file: Blob): Promise<number>;
   /** Opens the PDF import (#725): a dialog with the pages, then a picture in a frame per chosen page; resolves with the number of pages put on the board (0: canceled). */
@@ -94,7 +130,7 @@ export type CanvasElement = HTMLElement & {
    * `startVoting` rejects while a voting is open, `endVoting` and `clearVotingResults` are no-ops without one. The canvas
    * announces the state as the `voting` event.
    */
-  startVoting?(options: { name?: string; votesPerPerson: number }): Promise<void>;
+  startVoting?(options: { name?: string; votesPerPerson: number; named?: boolean }): Promise<void>;
   endVoting?(): Promise<void>;
   clearVotingResults?(): Promise<void>;
   /** Scrolls the view to an element (a result); rejects when it is not on the board. */

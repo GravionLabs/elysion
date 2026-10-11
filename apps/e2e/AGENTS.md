@@ -2,16 +2,16 @@
 
 Playwright tests with two browsers on one board (user A and user B). They are **not** part of `pnpm test`: they need the whole stack.
 
-| Suite                   | What it checks                                                                                                                   |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `collaboration.spec.ts` | a board from a template, sharing, the shared timer, the dot voting (ending by itself when both have voted), a viewer's limits    |
-| `files.spec.ts`         | images: the bytes in the object store, the other person sees them, they survive a reload                                         |
-| `rooms.spec.ts`         | a room, shared as editor, a board in it, moving it out, deleting the room (the boards stay)                                      |
-| `templates.spec.ts`     | the element count of each built-in template, adding one to a board, an own template (save, find, delete)                         |
-| `io.spec.ts`            | importing `fixtures/sample.excalidraw`; PNG, SVG, PDF and Excalidraw export as downloads; exporting the selection only           |
-| `drawing.spec.ts`       | rectangle, text, sticky note color, arrow, a connector from a connection point that follows its shape, undo and redo; B compares |
-| `language.spec.ts`      | German for `Accept-Language: de` ("Neues Board"), the user menu switch is remembered by cookie, English for other languages      |
-| `reconnect.spec.ts`     | the realtime service stopped and started (`compose` helper), drawing during the outage, a WS token of 5 seconds                  |
+| Suite                   | What it checks                                                                                                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `collaboration.spec.ts` | a board from a template, sharing, the shared timer, the dot voting (ending by itself when both have voted; a viewer votes too; a named voting shows the names), a viewer's limits |
+| `files.spec.ts`         | images: the bytes in the object store, the other person sees them, they survive a reload                                                                                          |
+| `rooms.spec.ts`         | a room, shared as editor, a board in it, moving it out, deleting the room (the boards stay)                                                                                       |
+| `templates.spec.ts`     | the element count of each built-in template, adding one to a board, an own template (save, find, delete)                                                                          |
+| `io.spec.ts`            | importing `fixtures/sample.excalidraw`; PNG, SVG, PDF and Excalidraw export as downloads; exporting the selection only                                                            |
+| `drawing.spec.ts`       | rectangle, text, sticky note color, arrow, a connector from a connection point that follows its shape, undo and redo; B compares                                                  |
+| `language.spec.ts`      | German for `Accept-Language: de` ("Neues Board"), the user menu switch is remembered by cookie, English for other languages                                                       |
+| `reconnect.spec.ts`     | the realtime service stopped and started (`compose` helper), drawing during the outage, a WS token of 5 seconds                                                                   |
 
 ```sh
 pnpm demo                                   # or: docker compose up -d --build (the stack, on http://localhost)
