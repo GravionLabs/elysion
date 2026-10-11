@@ -26,6 +26,10 @@ export const ADMIN_ROUTES: Routes = [
         path: 'rooms',
         loadComponent: () => import('./admin-rooms').then((m) => m.AdminRooms),
       },
+      {
+        path: 'audit',
+        loadComponent: () => import('./admin-audit').then((m) => m.AdminAudit),
+      },
       { path: '**', redirectTo: '' },
     ],
   },

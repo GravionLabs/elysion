@@ -243,6 +243,25 @@ All lists are paged: `?page=` (from 1) and `?pageSize=` (default 25, at most 100
 
 `User.LastSeenAt` is written by the provisioning step on a person's first request and then at most **once every five minutes** (`User.SeenInterval`), so that a board session does not write to the database on every request; `usersSeenLast30Days` counts it.
 
+## Audit log
+
+Who gave or took away access (#669). `AuditEntry` (`Id`, `At`, `ActorUserId`, `Action`, `SubjectType`, `SubjectId`, `Details` as a small JSON object, `RequestId`) is **append-only** and has no foreign keys on purpose, so it outlives the person, group, room or board it is about. Services and endpoints write it through `IAuditLog.Record`, which only **stages** the entry on the request's unit of work: it is saved in the same transaction as the change it records, so there is no entry without the change and no change without the entry. A refused or unchanged request (the same name, a person already in the group) writes nothing. `RequestId` is the `X-Request-Id` of the request ([ADR 0025](../adr/0025-structured-logging-and-log-viewer.md)), so a log line and an entry find each other.
+
+| Action                                                                              | Subject           | Details                                                                                                                                |
+| ----------------------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `member.added`, `member.role_changed`, `member.removed`                             | `board` or `room` | `userId`, `role` (or `from` and `to`)                                                                                                  |
+| `room.group_role_set`, `room.group_role_removed`                                    | `room`            | `groupId`, `groupName`, `role`                                                                                                         |
+| `group.created`, `group.renamed`, `group.linked`, `group.unlinked`, `group.deleted` | `group`           | `name`, `from`/`to`, `externalId`                                                                                                      |
+| `group.member_added`, `group.member_removed`                                        | `group`           | `userId`                                                                                                                               |
+| `groups.synced`                                                                     | `user`            | `added`, `removed`: one entry per **changed** set of linked memberships at sign-in ("+2 −1"), not per request; the person is the actor |
+| `invitation.created`, `invitation.revoked`, `invitation.accepted`                   | `board` or `room` | `invitationId`, `role`, `expiresAt`, `maxUses`; the acceptor is the actor                                                              |
+
+Details hold ids, roles, counts and the names of groups, **never** a token (an invitation's token is not in its entries), an email address, or what is on a board. Actions of an administrator on people (deactivating, handing over, #668) will write through the same service.
+
+`GET /admin/audit?subject=&actor=&from=&to=&page=&pageSize=` (the administrator role; 403 otherwise) lists the instance's entries newest first: `subject` is the id of what it is about, `actor` the id of the person, `from` (inclusive) and `to` (exclusive) dates or date-times. Each entry has the current names of its actor, its subject and, for changes to a person, its `target`. `GET /boards/{id}/history` and `GET /rooms/{id}/history` (the Owner of the board or room; 403 for others who can see it, 404 for the rest) return the last 20 entries about it.
+
+**Retention.** `AUDIT_RETENTION_DAYS` (default 365; compose, `.env.example` and the chart's `audit.retentionDays` set it) is how long entries are kept. `AuditRetentionService` removes older ones once a night (03:17 UTC) in batches; every instance may run it, the delete is idempotent.
+
 ## Invitation links
 
 Share a board or a room with a link (#734). `Invitation` has a SHA-256 of the token (`TokenHash`, unique), exactly one of `BoardId` and `RoomId` (a check constraint), the `Role` (Editor or Viewer, never Owner), `ExpiresAt`, an optional `MaxUses`, `Uses`, who made it and `RevokedAt`; it goes with its board or room. The token is 32 random bytes as base64url (43 characters), returned **once**, in the answer to its creation, and never stored or logged (a log line has the route pattern `/invitations/{token}/accept`, never the URL).

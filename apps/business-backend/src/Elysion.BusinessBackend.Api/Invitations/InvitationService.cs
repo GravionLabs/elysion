@@ -1,3 +1,4 @@
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
@@ -33,6 +34,7 @@ public sealed class InvitationService(
     IRoomRepository rooms,
     IMembershipRepository boardMemberships,
     IRoomMembershipRepository roomMemberships,
+    IAuditLog audit,
     IUnitOfWork unitOfWork,
     TimeProvider time)
 {
@@ -111,6 +113,11 @@ public sealed class InvitationService(
         }
 
         invitation.Uses++;
+        audit.Record(AuditActions.InvitationAccepted,
+            isBoard ? AuditActions.Board : AuditActions.Room,
+            targetId,
+            new { invitationId = invitation.Id, userId, role = invitation.Role.ToString() },
+            userId);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new(AcceptOutcome.Joined, kind, targetId, invitation.Role);
     }

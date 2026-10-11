@@ -35,6 +35,39 @@ describe('Administration (e2e, against a fake business backend)', () => {
 
   const api = () => request.agent(app.getHttpServer()).set('Authorization', authorization);
 
+  it('passes the filters of the audit log on, each checked, and the history of a board and a room (#669)', async () => {
+    const id = randomUUID();
+    upstream.adminAnswer = { status: 200, body: { items: [], total: 0, page: 1, pageSize: 25 } };
+
+    await api()
+      .get(
+        `/api/admin/audit?subject=${id}&actor=${id}&from=2026-10-01&to=2026-10-05T12:00:00Z&page=2&pageSize=10`,
+      )
+      .expect(200);
+
+    expect(upstream.lastAdminRequest?.path).toBe(
+      `/admin/audit?subject=${id}&actor=${id}&from=2026-10-01&to=2026-10-05T12%3A00%3A00Z&page=2&pageSize=10`,
+    );
+    for (const bad of [
+      'subject=not-an-id',
+      'actor=1',
+      'from=yesterday',
+      'to=2026-10-01;drop',
+      'page=-1',
+    ]) {
+      await api().get(`/api/admin/audit?${bad}`).expect(400);
+    }
+    await api().get('/api/admin/audit?subject=a&subject=b').expect(400);
+
+    upstream.adminAnswer = { status: 200, body: [] };
+    await api().get(`/api/boards/${id}/history`).expect(200);
+    expect(upstream.lastAdminRequest?.path).toBe(`/boards/${id}/history`);
+    await api().get(`/api/rooms/${id}/history`).expect(200);
+    expect(upstream.lastAdminRequest?.path).toBe(`/rooms/${id}/history`);
+    await api().get('/api/boards/not-an-id/history').expect(404);
+    await api().get('/api/rooms/not-an-id/history').expect(404);
+  });
+
   it('passes a read on with the caller’s token and the query, and returns what the backend says', async () => {
     upstream.adminAnswer = { status: 200, body: { items: [], total: 0, page: 2, pageSize: 10 } };
 

@@ -41,6 +41,12 @@ export class RoomsController {
     return this.backend.renameRoom(token, id, textField(body, 'name', 'A room'));
   }
 
+  /** The last entries of the audit log about the room (#669), for its owners; the backend decides who may read them. */
+  @Get(':id/history')
+  history(@AccessToken() token: string, @Param('id', uuidPipe) id: string): Promise<unknown> {
+    return this.backend.roomHistory(token, id);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@AccessToken() token: string, @Param('id', uuidPipe) id: string): Promise<void> {

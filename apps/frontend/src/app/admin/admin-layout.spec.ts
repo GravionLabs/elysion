@@ -45,6 +45,7 @@ describe('AdminLayout', () => {
       ['Users', '/admin/users'],
       ['Groups', '/admin/groups'],
       ['Rooms', '/admin/rooms'],
+      ['Audit', '/admin/audit'],
     ]);
     expect(el().querySelector('router-outlet')).toBeTruthy();
     expect(el().querySelector('.denied')).toBeNull();

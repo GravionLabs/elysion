@@ -80,6 +80,12 @@ export class BoardsController {
   }
 
   /** The caller opened the board (the overview sorts by it); the backend ignores repeats within minutes. */
+  /** The last entries of the audit log about the board (#669), for its owners; the backend decides who may read them. */
+  @Get(':id/history')
+  history(@AccessToken() token: string, @Param('id', boardId) id: string): Promise<unknown> {
+    return this.backend.boardHistory(token, id);
+  }
+
   @Post(':id/open')
   @HttpCode(HttpStatus.NO_CONTENT)
   async open(@AccessToken() token: string, @Param('id', boardId) id: string): Promise<void> {

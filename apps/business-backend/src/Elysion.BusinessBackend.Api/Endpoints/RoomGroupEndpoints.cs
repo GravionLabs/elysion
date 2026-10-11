@@ -1,3 +1,4 @@
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Data;
@@ -44,6 +45,7 @@ public static class RoomGroupEndpoints
         Guid groupId,
         RoomGroupRoleRequest? request,
         IGroupRepository groups,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -63,6 +65,10 @@ public static class RoomGroupEndpoints
         }
 
         await groups.SetRoomRoleAsync(id, groupId, role, time.GetUtcNow(), cancellationToken);
+        audit.Record(AuditActions.RoomGroupRoleSet,
+            AuditActions.Room,
+            id,
+            new { groupId, groupName = group.Name, role = role.ToString() });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return TypedResults.Ok(new RoomGroupDto(group.Id, group.Name, role.ToString()));
     }
@@ -71,6 +77,7 @@ public static class RoomGroupEndpoints
         Guid id,
         Guid groupId,
         IGroupRepository groups,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -80,6 +87,7 @@ public static class RoomGroupEndpoints
                 statusCode: StatusCodes.Status404NotFound);
         }
 
+        audit.Record(AuditActions.RoomGroupRoleRemoved, AuditActions.Room, id, new { groupId });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return TypedResults.NoContent();
     }

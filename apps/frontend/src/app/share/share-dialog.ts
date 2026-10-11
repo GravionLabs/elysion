@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import type { Observable } from 'rxjs';
 import { describeError } from './error-message';
+import { ShareHistory } from './history';
 import { InviteLinks } from './invite-links';
 import { RoomAccess } from './room-access';
 import { RoomGroups } from './room-groups';
@@ -35,7 +36,7 @@ export { describeError };
  * shown inline, next to what caused them.
  */
 @Component({
-  imports: [InviteLinks, RoomAccess, RoomGroups, Typeahead],
+  imports: [InviteLinks, RoomAccess, RoomGroups, ShareHistory, Typeahead],
   selector: 'app-share-dialog',
   styleUrl: './share-dialog.scss',
   templateUrl: './share-dialog.html',

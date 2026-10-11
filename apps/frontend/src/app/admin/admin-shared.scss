@@ -335,3 +335,25 @@ h3 {
   border: 0;
   clip-path: inset(50%);
 }
+
+.date-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+
+  input {
+    flex: 0 0 auto;
+    max-width: none;
+  }
+}
+
+.filters {
+  margin-bottom: 12px;
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}

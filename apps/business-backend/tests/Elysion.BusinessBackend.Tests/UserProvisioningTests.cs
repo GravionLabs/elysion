@@ -42,6 +42,7 @@ public class UserProvisioningTests
         string groupsClaim = "groups") =>
         new(users,
             new GroupRepository(db),
+            TestAudit.For(db),
             db,
             cache ?? new MemoryCache(new MemoryCacheOptions()),
             Options.Create(new OidcOptions { GroupsClaim = groupsClaim }),
@@ -124,6 +125,7 @@ public class UserProvisioningTests
         time.GetUtcNow().Returns(at);
         var service = new UserProvisioningService(new UserRepository(db),
             new GroupRepository(db),
+            TestAudit.For(db),
             unitOfWork,
             new MemoryCache(new MemoryCacheOptions()),
             Options.Create(new OidcOptions()),

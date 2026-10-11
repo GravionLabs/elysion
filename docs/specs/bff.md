@@ -121,6 +121,10 @@ Read once at startup by `src/config/` (`@nestjs/config`, validated by `validateE
 
 - REST vs GraphQL for BFF-to-frontend contract.
 
+## Audit log (#669)
+
+`GET /api/admin/audit` (filters `subject`, `actor` as ids, `from`, `to` as dates, `page`, `pageSize`; each checked here, a bad value is a 400) and `GET /api/boards/:id/history` and `GET /api/rooms/:id/history` (the last 20 entries, for owners) are explicit handlers with fixed backend paths, like the rest of the administration. The backend decides who may read: see [business-backend.md](business-backend.md), "Audit log".
+
 ## Administration (ADR 0027, #656)
 
 `AdminController` (`src/admin/`) has one handler for each call of the business backend's `/admin` ([business-backend.md](business-backend.md), "Administration"): `GET stats`, `users`, `users/:id`, `groups`, `groups/:id/members`, `rooms`, `POST groups`, `PATCH` and `DELETE groups/:id`, `PUT` and `DELETE groups/:id/members/:userId`, all under `/api/admin`. Each is passed on with the caller's own token and `BusinessBackendClient` builds the backend address from a fixed path, ids that passed the UUID check (a non-UUID is `404` without a call, and the id is encoded anyway) and a query made by `URLSearchParams` from three values only: `query` (one text, at most 100 characters), `page` and `pageSize` (whole numbers); anything else in the query is dropped, a repeated or malformed value is `400`. No method, path or address is ever taken from the request (CodeQL's `js/request-forgery`). A group change takes only `name` (text) and `externalId` (text or `null`). The BFF holds no rule of its own: the backend checks the administrator role on every call and its status and body come back as they are (`201` for a made group, `204` for member changes and deletes, `403` for a caller without the role, `404`, `409`, `400`).

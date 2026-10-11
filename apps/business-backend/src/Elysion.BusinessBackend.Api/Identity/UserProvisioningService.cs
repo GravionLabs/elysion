@@ -2,6 +2,7 @@ using System.Security.Claims;
 
 using Ardalis.GuardClauses;
 
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
@@ -28,6 +29,7 @@ namespace Elysion.BusinessBackend.Api.Identity;
 public sealed class UserProvisioningService(
     IUserRepository users,
     IGroupRepository groups,
+    IAuditLog audit,
     IUnitOfWork unitOfWork,
     IMemoryCache cache,
     IOptions<OidcOptions> oidc,
@@ -148,7 +150,17 @@ public sealed class UserProvisioningService(
             return;
         }
 
-        await groups.SetLinkedMembershipsAsync(user.Id, values, time.GetUtcNow(), cancellationToken);
+        // One entry per changed set ("groups from the identity provider: +2 -1"), written in the same commit; the person is the actor
+        // (the request has no current user yet while it is being provisioned).
+        await groups.SetLinkedMembershipsAsync(user.Id,
+            values,
+            time.GetUtcNow(),
+            (added, removed) => audit.Record(AuditActions.GroupsSynced,
+                AuditActions.User,
+                user.Id,
+                new { added, removed },
+                user.Id),
+            cancellationToken);
         cache.Set(key, hash, GroupClaimMemory);
     }
 

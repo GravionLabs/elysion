@@ -112,6 +112,9 @@ A room has the same section and gives access to all its boards.
 
 A **room** can also be shared with a **group** (for example a department from your company's sign-in): in the room's **Members** window, search the **Groups** section by name, choose a group, give it a role and press **Add**. Everybody in the group gets that role on every board in the room. The window of a board that is in a room tells you who else has access through the room.
 
+**History** (at the bottom of the window, for owners) shows the last 20 changes of the board or room: who gave whom which role, who took access
+away, which links were made, revoked or used. Open it to load it.
+
 Change a role in the list, or **Remove** somebody. A person has to have logged in to Elysion once before they can be added. For a whole team
 use a room instead: its members have access to all its boards.
 
@@ -123,6 +126,9 @@ People who administer the instance (they have the role `elysion-admin` at the id
 - **Users:** search by name or email; a name opens the rooms and boards the person has directly, with their roles.
 - **Groups:** a _local_ group is made and kept here (**New group**, **Rename**, add and remove members). A _linked_ group belongs to the identity provider: **Link** a local group to a group of the provider by its id and its members then follow the provider as each person signs in; **Unlink** makes it local again and keeps the members. **Delete** says how many rooms lose the role the group gave them.
 - **Rooms:** name, owner and numbers; no board names.
+- **Audit:** who gave or took away access, newest first, with the person who did it. Click a board, room, group or person in a row to
+  filter by it, or choose a time span. An entry holds ids, roles and counts, never what is on a board. Entries are kept for a year
+  (`AUDIT_RETENTION_DAYS`).
 
 Everybody else who types the address sees "You are not an administrator".
 

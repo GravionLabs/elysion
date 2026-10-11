@@ -592,6 +592,29 @@ export class BusinessBackendClient {
     return this.request<unknown>(token, 'GET', `/admin/rooms${adminQuery(list)}`);
   }
 
+  /** The audit log of the instance (#669): filters checked by the controller, the path fixed. */
+  adminListAudit(token: string, filter: AuditFilter): Promise<unknown> {
+    const params = new URLSearchParams();
+    if (filter.subject !== undefined) params.append('subject', filter.subject);
+    if (filter.actor !== undefined) params.append('actor', filter.actor);
+    if (filter.from !== undefined) params.append('from', filter.from);
+    if (filter.to !== undefined) params.append('to', filter.to);
+    if (filter.page !== undefined) params.append('page', String(filter.page));
+    if (filter.pageSize !== undefined) params.append('pageSize', String(filter.pageSize));
+    const text = params.toString();
+    return this.request<unknown>(token, 'GET', `/admin/audit${text === '' ? '' : `?${text}`}`);
+  }
+
+  /** The last entries of the audit log about a board, for its owners (#669). */
+  boardHistory(token: string, id: string): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/boards/${encodeURIComponent(id)}/history`);
+  }
+
+  /** The last entries of the audit log about a room, for its owners (#669). */
+  roomHistory(token: string, id: string): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/rooms/${encodeURIComponent(id)}/history`);
+  }
+
   /** The headers of every call: the caller's token and the id of the request being handled, so the backend's lines carry it (ADR 0025). */
   private headers(token: string): Record<string, string> {
     const requestId = currentRequestId();
@@ -699,6 +722,16 @@ async function validationMessage(response: Response): Promise<string> {
 /** What a list of the administration area is asked for: a search text and a page, all checked by the controller. */
 export interface AdminList {
   query?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/** What the audit log is asked for (#669): ids and dates that passed the controller's checks, and a page. */
+export interface AuditFilter {
+  subject?: string;
+  actor?: string;
+  from?: string;
+  to?: string;
   page?: number;
   pageSize?: number;
 }

@@ -29,11 +29,13 @@ public interface IGroupRepository
     /// <summary>
     /// Makes the person's memberships in <b>linked</b> groups exactly those of <paramref name="externalIds"/>: a group that does not
     /// exist yet is created (named after its id), missing memberships are added, others are removed; memberships in local
-    /// groups are not touched. Commits. Returns whether anything changed.
+    /// groups are not touched. Commits. Returns whether anything changed. <paramref name="onChange"/> is called with (added, removed)
+    /// after the change is staged and before it is saved, so that an audit entry goes into the same commit.
     /// </summary>
     Task<bool> SetLinkedMembershipsAsync(Guid userId,
         IReadOnlyCollection<string> externalIds,
         DateTimeOffset now,
+        Action<int, int>? onChange,
         CancellationToken cancellationToken);
 
     /// <summary>Adds a person to a group (a local one in practice); false when they are in it already. Stages.</summary>
