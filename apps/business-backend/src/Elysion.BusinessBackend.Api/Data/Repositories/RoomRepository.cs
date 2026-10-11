@@ -1,5 +1,6 @@
 using Ardalis.GuardClauses;
 
+using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Entities;
 
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,12 @@ public sealed class RoomRepository(ElysionDbContext db) : IRoomRepository
         Guard.Against.Default(userId);
         return await db.Rooms
             .AsNoTracking()
-            .Where(room => room.OwnerId == userId || room.Memberships.Any(m => m.UserId == userId))
+            .Where(room => room.OwnerId == userId
+                           || room.Memberships.Any(m => m.UserId == userId)
+                           || db.RoomGroupMemberships.Any(rg => rg.RoomId == room.Id
+                                                                && db.GroupMemberships.Any(gm =>
+                                                                    gm.GroupId == rg.GroupId
+                                                                    && gm.UserId == userId)))
             .OrderBy(room => room.Name)
             .ThenBy(room => room.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -29,7 +35,12 @@ public sealed class RoomRepository(ElysionDbContext db) : IRoomRepository
             .Select(r => new
             {
                 r.OwnerId,
-                Role = r.Memberships.Where(m => m.UserId == userId).Select(m => (BoardRole?)m.Role).FirstOrDefault()
+                Role = r.Memberships.Where(m => m.UserId == userId).Select(m => (BoardRole?)m.Role).FirstOrDefault(),
+                GroupRoles = db.RoomGroupMemberships
+                    .Where(rg => rg.RoomId == r.Id
+                                 && db.GroupMemberships.Any(gm => gm.GroupId == rg.GroupId && gm.UserId == userId))
+                    .Select(rg => rg.Role)
+                    .ToList()
             })
             .FirstOrDefaultAsync(cancellationToken);
         if (room is null)
@@ -37,7 +48,14 @@ public sealed class RoomRepository(ElysionDbContext db) : IRoomRepository
             return null;
         }
 
-        return room.OwnerId == userId ? BoardRole.Owner : room.Role;
+        if (room.OwnerId == userId)
+        {
+            return BoardRole.Owner;
+        }
+
+        // The person's own role and the roles of their groups (ADR 0027): the highest one counts.
+        return room.GroupRoles.Aggregate(room.Role,
+            (best, role) => best is null || BoardPolicies.Rank(role) > BoardPolicies.Rank(best.Value) ? role : best);
     }
 
     public async Task<Room?> FindAsync(Guid id, CancellationToken cancellationToken)

@@ -26,6 +26,8 @@ public static class AuthenticationExtensions
                 options.IssuerUrl = configuration[OidcOptions.IssuerSetting] ?? "";
                 options.Audience = configuration[OidcOptions.AudienceSetting] ?? "";
                 options.JwksUri = configuration[OidcOptions.JwksUriSetting];
+                // Not set: the default. Set to an empty value: the sync of groups is off.
+                options.GroupsClaim = configuration[OidcOptions.GroupsClaimSetting] ?? OidcOptions.DefaultGroupsClaim;
             })
             .ValidateDataAnnotations()
             .ValidateOnStart();

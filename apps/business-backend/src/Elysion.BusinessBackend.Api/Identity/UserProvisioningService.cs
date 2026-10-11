@@ -6,6 +6,9 @@ using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+
 namespace Elysion.BusinessBackend.Api.Identity;
 
 /// <summary>
@@ -21,8 +24,20 @@ namespace Elysion.BusinessBackend.Api.Identity;
 /// a display name is never blank, whichever optional claims the realm leaves out.</item>
 /// </list>
 /// </remarks>
-public sealed class UserProvisioningService(IUserRepository users, IUnitOfWork unitOfWork, TimeProvider time)
+public sealed class UserProvisioningService(
+    IUserRepository users,
+    IGroupRepository groups,
+    IUnitOfWork unitOfWork,
+    IMemoryCache cache,
+    IOptions<OidcOptions> oidc,
+    TimeProvider time)
 {
+    /// <summary>The most groups one token may put a person into; more are ignored (a token that long is a misconfiguration).</summary>
+    public const int MaxGroupsPerToken = 500;
+
+    /// <summary>How long a person's last claim is remembered; the sync reads the database again after it.</summary>
+    private static readonly TimeSpan GroupClaimMemory = TimeSpan.FromHours(1);
+
     public const string SubjectClaim = "sub";
     public const string EmailClaim = "email";
     public const string PreferredUsernameClaim = "preferred_username";
@@ -55,20 +70,62 @@ public sealed class UserProvisioningService(IUserRepository users, IUnitOfWork u
             var created = User.Create(Guid.CreateVersion7(), subject, displayName, email, time.GetUtcNow());
             // Another request may have created the same person since the lookup: the repository returns its row.
             user = await users.GetOrAddAsync(created, cancellationToken);
-            if (ReferenceEquals(user, created))
+            if (!ReferenceEquals(user, created))
             {
-                return user;
+                await UpdateAsync(user, email, displayName, cancellationToken);
             }
         }
+        else
+        {
+            await UpdateAsync(user, email, displayName, cancellationToken);
+        }
 
+        await SyncGroupsAsync(user, principal, cancellationToken);
+        return user;
+    }
+
+    private async Task UpdateAsync(User user, string? email, string displayName, CancellationToken cancellationToken)
+    {
         if (user.Email != email || user.DisplayName != displayName)
         {
             user.Email = email;
             user.DisplayName = displayName;
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
+    }
 
-        return user;
+    /// <summary>
+    /// Makes the person's memberships in linked groups the claim's values (ADR 0027): groups that do not exist yet are created, the
+    /// ones left out of the claim are dropped, local groups are not touched. A claim that is the one seen last (a hash of the sorted
+    /// values, remembered per person for an hour) costs no database call; memberships are therefore as fresh as the token, and a
+    /// change made in the database by hand is noticed after the hour at the latest.
+    /// </summary>
+    private async Task SyncGroupsAsync(User user, ClaimsPrincipal principal, CancellationToken cancellationToken)
+    {
+        var claimName = oidc.Value.GroupsClaim;
+        if (string.IsNullOrWhiteSpace(claimName))
+        {
+            return;
+        }
+
+        // A value that is not a usable id (empty, over 255 characters) is left out rather than cut: a cut id would be another group's.
+        var values = principal.FindAll(claimName)
+            .Select(c => c.Value.Trim())
+            .Where(v => v.Length is >= 1 and <= Group.MaxExternalIdLength)
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .Take(MaxGroupsPerToken)
+            .ToList();
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(string.Join('\n', values))));
+        var key = (typeof(UserProvisioningService), user.Id);
+        if (cache.TryGetValue(key, out string? seen) && seen == hash)
+        {
+            return;
+        }
+
+        await groups.SetLinkedMembershipsAsync(user.Id, values, time.GetUtcNow(), cancellationToken);
+        cache.Set(key, hash, GroupClaimMemory);
     }
 
     private static string? Claim(ClaimsPrincipal principal, string type)
