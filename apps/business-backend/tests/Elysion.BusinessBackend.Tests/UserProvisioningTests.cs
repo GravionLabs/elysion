@@ -209,6 +209,9 @@ public class UserProvisioningTests
         public Task<IReadOnlyList<User>> FindByEmailAsync(string email, CancellationToken cancellationToken) =>
             inner.FindByEmailAsync(email, cancellationToken);
 
+        public Task<IReadOnlyList<User>> SearchAsync(string text, int max, CancellationToken cancellationToken) =>
+            inner.SearchAsync(text, max, cancellationToken);
+
         public Task<User> GetOrAddAsync(User user, CancellationToken cancellationToken) =>
             inner.GetOrAddAsync(user, cancellationToken);
     }

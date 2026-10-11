@@ -62,6 +62,34 @@ describe('/api/boards/:id/members (e2e, against a fake business backend)', () =>
     });
   });
 
+  it('adds a member by the user id the people search returned', async () => {
+    const person = { id: randomUUID(), displayName: 'Bea Beispiel', email: 'bea@example.com' };
+    upstream.users = [person];
+
+    const { body } = await api()
+      .post(`/api/boards/${BOARD}/members`)
+      .send({ userId: person.id, role: 'Editor' })
+      .expect(201);
+
+    expect(body).toMatchObject({ userId: person.id, displayName: 'Bea Beispiel', role: 'Editor' });
+    expect(upstream.lastMemberRequest?.body).toEqual({ userId: person.id, role: 'Editor' });
+  });
+
+  it('refuses a user id that is no id, and a body without a text for either, before the backend', async () => {
+    const before = upstream.requests;
+
+    await api()
+      .post(`/api/boards/${BOARD}/members`)
+      .send({ userId: 'not-an-id', role: 'Viewer' })
+      .expect(400);
+    await api()
+      .post(`/api/boards/${BOARD}/members`)
+      .send({ email: 42, role: 'Viewer' })
+      .expect(400);
+
+    expect(upstream.requests).toBe(before);
+  });
+
   it('changes a role and removes a member', async () => {
     await api().patch(`/api/boards/${BOARD}/members/${USER}`).send({ role: 'Editor' }).expect(200);
     expect(upstream.members.get(BOARD)![0].role).toBe('Editor');

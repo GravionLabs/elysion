@@ -20,6 +20,13 @@ public interface IUserRepository
     Task<IReadOnlyList<User>> FindByEmailAsync(string email, CancellationToken cancellationToken);
 
     /// <summary>
+    /// The people whose name or email contains <paramref name="text"/> (without regard to case; a match at the start comes first),
+    /// at most <paramref name="max"/>; untracked copies. This is the one place that decides who may be found by whom: today every
+    /// person who has logged in can be found by everybody who has (ADR 0027, #663); a narrower directory is a change to this query.
+    /// </summary>
+    Task<IReadOnlyList<User>> SearchAsync(string text, int max, CancellationToken cancellationToken);
+
+    /// <summary>
     /// The stored user for <paramref name="user"/>'s subject: <paramref name="user"/> itself after it was
     /// inserted, or the user another request inserted first. Commits at once. Two first requests of the same
     /// person race on the unique index of <c>Subject</c>; the loser gets the winner's row, never a second one

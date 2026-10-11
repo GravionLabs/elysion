@@ -135,6 +135,13 @@ export interface Group {
 }
 
 /** A group's role in a room. */
+/** A person found by the people search: enough to recognise them and to add them as a member. */
+export interface DirectoryUser {
+  id: string;
+  displayName: string;
+  email: string | null;
+}
+
 export interface RoomGroup {
   groupId: string;
   name: string;
@@ -303,8 +310,13 @@ export class BusinessBackendClient {
     return this.request<BoardMember[]>(token, 'GET', `/rooms/${roomId}/members`);
   }
 
-  addRoomMember(token: string, roomId: string, email: string, role: string): Promise<BoardMember> {
-    return this.request<BoardMember>(token, 'POST', `/rooms/${roomId}/members`, { email, role });
+  addRoomMember(
+    token: string,
+    roomId: string,
+    who: { email?: string; userId?: string },
+    role: string,
+  ): Promise<BoardMember> {
+    return this.request<BoardMember>(token, 'POST', `/rooms/${roomId}/members`, { ...who, role });
   }
 
   changeRoomMemberRole(
@@ -372,8 +384,18 @@ export class BusinessBackendClient {
     return this.request<BoardMember[]>(token, 'GET', `/boards/${boardId}/members`);
   }
 
-  addMember(token: string, boardId: string, email: string, role: string): Promise<BoardMember> {
-    return this.request<BoardMember>(token, 'POST', `/boards/${boardId}/members`, { email, role });
+  addMember(
+    token: string,
+    boardId: string,
+    who: { email?: string; userId?: string },
+    role: string,
+  ): Promise<BoardMember> {
+    return this.request<BoardMember>(token, 'POST', `/boards/${boardId}/members`, { ...who, role });
+  }
+
+  /** People whose name or email contains the text (2 to 100 characters, at most 10 answers; the backend decides). */
+  searchUsers(token: string, query: string): Promise<DirectoryUser[]> {
+    return this.request<DirectoryUser[]>(token, 'GET', `/users?query=${encodeURIComponent(query)}`);
   }
 
   changeMemberRole(

@@ -16,6 +16,9 @@ public enum MemberOutcome
     /// <summary>No user has this email: the person has to log in to Elysion once before they can be added.</summary>
     UnknownEmail,
 
+    /// <summary>No user has this id (a people search result that is gone, or a made-up id).</summary>
+    UnknownUser,
+
     /// <summary>More than one user has this email, so the invitation would be a guess.</summary>
     AmbiguousEmail,
 
@@ -85,8 +88,28 @@ public sealed class BoardMemberService(
             return new(MemberOutcome.UnknownEmail);
         if (found.Count > 1)
             return new(MemberOutcome.AmbiguousEmail);
-        var user = found[0];
+        return await AddUserAsync(boardId, found[0], role, cancellationToken);
+    }
 
+    /// <summary>Adds the person the people search returned (<c>GET /users</c>), by id.</summary>
+    public async Task<MemberResult> AddByUserIdAsync(Guid boardId,
+        Guid userId,
+        BoardRole role,
+        CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(userId);
+        Guard.Against.EnumOutOfRange(role);
+        var user = await users.FindAsync(userId, cancellationToken);
+        return user is null
+            ? new(MemberOutcome.UnknownUser)
+            : await AddUserAsync(boardId, user, role, cancellationToken);
+    }
+
+    private async Task<MemberResult> AddUserAsync(Guid boardId,
+        User user,
+        BoardRole role,
+        CancellationToken cancellationToken)
+    {
         var board = await boards.FindAsync(boardId, cancellationToken);
         if (board?.OwnerId == user.Id
             || await memberships.FindForUpdateAsync(boardId, user.Id, cancellationToken) is not null)

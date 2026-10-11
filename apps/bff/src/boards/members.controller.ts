@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { AccessToken } from '../auth/access-token.decorator.js';
 import { type BoardMember, BusinessBackendClient } from './business-backend.client.js';
-import { textField, uuidPipe as uuid } from './request-parsing.js';
+import { memberTarget, textField, uuidPipe as uuid } from './request-parsing.js';
 
 const text = (body: unknown, field: string) => textField(body, field, 'A member');
 
@@ -35,7 +35,7 @@ export class MembersController {
     @Param('id', uuid) id: string,
     @Body() body: unknown,
   ): Promise<BoardMember> {
-    return this.backend.addMember(token, id, text(body, 'email'), text(body, 'role'));
+    return this.backend.addMember(token, id, memberTarget(body), text(body, 'role'));
   }
 
   @Patch(':userId')
