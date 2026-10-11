@@ -82,7 +82,7 @@ same, and so does another provider that speaks OpenID Connect). Elysion's side o
 - **The realm:** every release has `realm-elysion.production.json` among its assets ([releases](https://github.com/GravionLabs/elysion/releases)), derived from the
   development realm by `scripts/build-realm.mjs`: no users, no direct password grant, `sslRequired: external`. Import it into an **empty** realm with the environment of
   Keycloak set (it substitutes the placeholders): `ELYSION_APP_URL=https://elysion.example` (no trailing slash) and `ELYSION_BFF_CLIENT_SECRET` (a long random string; the
-  BFF client's secret). Then add your users, or an identity provider ([ADR 0027](adr/0027-enterprise-sign-in-groups-and-administration.md)).
+  BFF client's secret). Then add your users, or switch on Microsoft Entra ID, which the realm already has as an identity provider ([Sign in with Microsoft Entra ID](#sign-in-with-microsoft-entra-id)).
 
 ### 4. The Secret
 
@@ -155,8 +155,52 @@ or S3 key is changed at its owner first and in the Secret second.
 | Postgres, Valkey, object store, and their backups          | You                                                                                        |
 | Alerts and dashboards                                      | [Operations](operations.md) (Prometheus Operator `ServiceMonitor` is in the chart example) |
 
-Not part of this yet: Keycloak as an optional part of the chart, and Microsoft Entra ID without Keycloak ([ADR 0028](adr/0028-production-topology-tls-and-keycloak.md),
+Not part of this yet: Keycloak as an optional part of the chart, and Microsoft Entra ID without Keycloak (with Keycloak: [Sign in with Microsoft Entra ID](#sign-in-with-microsoft-entra-id)) ([ADR 0028](adr/0028-production-topology-tls-and-keycloak.md),
 [ADR 0027](adr/0027-enterprise-sign-in-groups-and-administration.md)).
+
+## Sign in with Microsoft Entra ID
+
+People can sign in with the company's Microsoft account: Entra ID is an identity provider of the Keycloak realm (**identity brokering**,
+[ADR 0027](adr/0027-enterprise-sign-in-groups-and-administration.md)). People click "Microsoft" on Keycloak's login page, Keycloak talks to Entra and issues its
+own token, so Elysion's services see what they always see. **The Helm chart does not run Keycloak**, so the settings below go to wherever your Keycloak runs
+(its environment when it imports the realm). Try it first without a tenant: `docker compose up` already brokers to a stand-in (the realm `entra-stub` of the
+same Keycloak): choose "Microsoft" and sign in as `erika` / `erika`.
+
+**1. Register the application in Entra** (Microsoft Entra admin center, _App registrations_, _New registration_):
+
+- _Supported account types:_ **this organizational directory only** (single tenant). The realm links a person to the Keycloak user with the same e-mail address
+  and trusts the address, which is only safe when the company controls the addresses.
+- _Redirect URI,_ platform **Web:** `https://<your keycloak>/realms/elysion/broker/microsoft/endpoint`.
+- _Certificates & secrets:_ a **client secret**; note its expiry date, because login stops working the day it runs out.
+- _API permissions:_ Microsoft Graph, delegated: `openid`, `profile`, `email` (no admin consent needed beyond the defaults).
+- _Token configuration:_ **Add groups claim**, _Security groups_, and under the access, ID and SAML token types choose **Groups assigned to the application**
+  (assign the groups to the enterprise application first). Without it a person in more than 200 groups gets no `groups` claim at all (Entra sends a pointer to
+  Graph instead, which Keycloak cannot follow). The claim holds the groups' **object ids**, not their names.
+
+**2. Collect three values.** The _Directory (tenant) ID_ and the _Application (client) ID_ are on the app registration's overview; the _object id_ of the group
+whose members should administer Elysion is on the group's page (_Groups_, _Overview_).
+
+**3. Give them to Keycloak.** These variables are substituted into the realm file when it is imported (`realm-elysion.json`, or the release's
+`realm-elysion.production.json`, see [Keycloak](#3-keycloak)). Without `ENTRA_ENABLED=true` the provider exists but is off and the login page shows no button:
+
+| Variable               | Value                                                                 |
+| ---------------------- | --------------------------------------------------------------------- |
+| `ENTRA_ENABLED`        | `true`                                                                |
+| `ENTRA_CLIENT_ID`      | the application (client) ID                                           |
+| `ENTRA_CLIENT_SECRET`  | the client secret (from a secret store, never a file in a repository) |
+| `ENTRA_ISSUER_URL`     | `https://login.microsoftonline.com/<tenant id>/v2.0`                  |
+| `ENTRA_AUTH_URL`       | `https://login.microsoftonline.com/<tenant id>/oauth2/v2.0/authorize` |
+| `ENTRA_TOKEN_URL`      | `https://login.microsoftonline.com/<tenant id>/oauth2/v2.0/token`     |
+| `ENTRA_JWKS_URL`       | `https://login.microsoftonline.com/<tenant id>/discovery/v2.0/keys`   |
+| `ENTRA_ADMIN_GROUP_ID` | the object id of the administrators group                             |
+
+With the compose stack, put the same lines in `.env` (see `.env.example`). **A realm is only imported into a fresh database:** for an existing Keycloak, either
+drop its database or set the same values on the provider `microsoft` in the admin console (_Identity providers_), and add the mappers by hand.
+
+**What a person gets.** On the first sign-in Keycloak makes a user from the Entra account (name and e-mail) or, if a user with the same e-mail address exists,
+links the account to it; the next sign-ins find the same user. Members of the administrators group get the realm role `elysion-admin` (re-evaluated at every
+sign-in); every sign-in also copies the person's groups (`groups`, object ids) into the access token. **Changes in Entra arrive with the next sign-in through
+Entra, at most 8 hours later** (the realm's SSO session maximum): a person removed from a group or disabled in Entra keeps what the group gave them until then.
 
 ## Update
 
