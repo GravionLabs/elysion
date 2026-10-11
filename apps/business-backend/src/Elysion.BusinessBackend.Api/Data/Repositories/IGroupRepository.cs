@@ -13,6 +13,9 @@ public interface IGroupRepository
 {
     Task<Group?> FindAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>A group by id, or null; tracked, so a change is saved by the next commit.</summary>
+    Task<Group?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken);
+
     /// <summary>Groups whose name contains the text (ignoring case), by name; at most <paramref name="limit"/>.</summary>
     Task<IReadOnlyList<Group>> SearchAsync(string query, int limit, CancellationToken cancellationToken);
 
@@ -35,6 +38,9 @@ public interface IGroupRepository
 
     /// <summary>Adds a person to a group (a local one in practice); false when they are in it already. Stages.</summary>
     Task<bool> AddMemberAsync(Guid groupId, Guid userId, DateTimeOffset now, CancellationToken cancellationToken);
+
+    /// <summary>Takes a person out of a group; false when they were not in it. Stages.</summary>
+    Task<bool> RemoveMemberAsync(Guid groupId, Guid userId, CancellationToken cancellationToken);
 
     void Add(Group group);
 

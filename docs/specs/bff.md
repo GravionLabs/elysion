@@ -65,6 +65,7 @@ Every route needs a Keycloak access token (`Authorization: Bearer ...`; [identit
 - `TokenVerifier` (on `jose`) checks signature against the realm's keys, issuer (`OIDC_ISSUER_URL`), audience (`OIDC_AUDIENCE`, `elysion-bff`), expiry (30 s of clock tolerance) and a `sub`; only RS256 is accepted, so a token cannot pick `none` or a weaker algorithm. The keys come from `OIDC_JWKS_URI`, or `<issuer>/protocol/openid-connect/certs`; `jose` caches them and fetches again when a token names an unknown key (rotation). A failure to reach the realm is a server error, not "invalid token". It never calls the business backend.
 - `AuthGuard` is global (`APP_GUARD`): no token or an invalid one is `401` with `WWW-Authenticate: Bearer`; on success `request.auth` holds the token and its claims.
 - `GET /api/auth/verify` is what Traefik's forwardAuth middleware calls (#8; the open-source Traefik has no JWT middleware): `200` with `X-Auth-User-Id` (`sub`) and `X-Auth-User-Email` (when the token has one), or `401`. Cheap by design: a cached key and a signature check.
+- `GET /api/auth/me` answers `{ id, email?, isAdministrator }` for the shell: `isAdministrator` is whether the token's `realm_access.roles` contains `OIDC_ADMIN_ROLE` (default `elysion-admin`; empty: never). It is a hint for the interface; the business backend checks the role on every admin call.
 - The board routes forward the caller's own token to the business backend (`@AccessToken()`), which decides what the user may do; its `401`, `403` and `404` (no role on a board is a 404 there) are passed on.
 
 In tests the verifier is replaced by one that trusts a locally generated key pair (`test/test-auth.ts`: `signToken`, `bearer`, `testVerifier`); everything else about the check is the production code.
@@ -119,3 +120,7 @@ Read once at startup by `src/config/` (`@nestjs/config`, validated by `validateE
 ## Open questions
 
 - REST vs GraphQL for BFF-to-frontend contract.
+
+## Administration (ADR 0027, #656)
+
+`AdminController` (`src/admin/`) passes `/api/admin/*` on to the business backend's `/admin/*` ([business-backend.md](business-backend.md), "Administration") with the caller's own token, the method (`GET`, `POST`, `PATCH`, `PUT`, `DELETE`; anything else is `405`), the query (single values only, at most 300 characters; a repeated one is `400`) and the JSON body, and returns the backend's status and body as they are (`201` stays `201`, `204` has none; `403` for a caller without the role, `404`, `409` and `400` as the backend says). The BFF knows no shape of the area and holds no rule of its own; it checks only the path, so that this one wildcard cannot reach anything else: at most five segments, each only letters, digits, `_` and `-` (no `.`, so no `..`, and no encoded slash), otherwise `404` without a call.

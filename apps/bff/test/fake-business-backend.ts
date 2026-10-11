@@ -98,6 +98,9 @@ export class FakeBusinessBackend {
   readonly authorizations: Array<string | undefined> = [];
   /** The `X-Request-Id` of every request, in order (ADR 0025). */
   readonly requestIds: Array<string | undefined> = [];
+  /** The last `/admin...` request (#656): what the BFF passed on, and what the fake answers with. */
+  lastAdminRequest: { method: string; path: string; body: unknown } | null = null;
+  adminAnswer: { status: number; body?: unknown } = { status: 200, body: { ok: true } };
   #server: Server | null = null;
 
   get url(): string {
@@ -161,6 +164,14 @@ export class FakeBusinessBackend {
         );
       const template = this.templates.find((t) => t.id === id);
       return template ? send(200, template) : send(404);
+    }
+    if (/^\/admin(?:[/?]|$)/.test(req.url ?? '')) {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(chunk as Buffer);
+      const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString()) : undefined;
+      this.lastAdminRequest = { method: req.method ?? '', path: req.url ?? '', body };
+      const answer = this.adminAnswer;
+      return send(answer.status, answer.body);
     }
     const groupRoute = /^\/(groups|me\/groups|rooms\/([^/]+)\/groups(?:\/([^/]+))?)(?:\?.*)?$/.exec(
       req.url ?? '',

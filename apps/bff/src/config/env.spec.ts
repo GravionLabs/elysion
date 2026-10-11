@@ -21,10 +21,19 @@ describe('validateEnv', () => {
       BUSINESS_BACKEND_URL: 'http://localhost:5174',
       OIDC_ISSUER_URL: 'http://localhost:8081/realms/elysion',
       OIDC_AUDIENCE: 'elysion-bff',
+      OIDC_ADMIN_ROLE: 'elysion-admin',
       WS_TOKEN_SECRET: SECRET,
       WS_TOKEN_TTL_SECONDS: 60,
       LOG_LEVEL: 'info',
     });
+  });
+
+  it('names the administrator role elysion-admin unless told otherwise, and an empty value means nobody', () => {
+    expect(validateEnv(valid).OIDC_ADMIN_ROLE).toBe('elysion-admin');
+    expect(validateEnv({ ...valid, OIDC_ADMIN_ROLE: ' company-admin ' }).OIDC_ADMIN_ROLE).toBe(
+      'company-admin',
+    );
+    expect(validateEnv({ ...valid, OIDC_ADMIN_ROLE: '' }).OIDC_ADMIN_ROLE).toBe('');
   });
 
   it('reads the log viewer endpoint, which is off unless it is set, and refuses what is no URL', () => {

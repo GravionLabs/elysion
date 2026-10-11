@@ -510,6 +510,33 @@ export class BusinessBackendClient {
     await this.request<void>(token, 'DELETE', `/boards/${id}`);
   }
 
+  /**
+   * A call of the `/admin` area passed through as it is (ADR 0027, #656): the BFF does not know the shapes, the business backend
+   * checks the role and answers. Returns the status the backend answered with (a 201 stays a 201, a 204 has no body).
+   */
+  async forwardAdmin(
+    token: string,
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<{ status: number; body?: unknown }> {
+    const response = await this.fetchBackend(path, {
+      method,
+      headers: {
+        ...this.headers(token),
+        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      return this.fail(response);
+    }
+    return response.status === 204
+      ? { status: 204 }
+      : { status: response.status, body: await response.json() };
+  }
+
   /** The headers of every call: the caller's token and the id of the request being handled, so the backend's lines carry it (ADR 0025). */
   private headers(token: string): Record<string, string> {
     const requestId = currentRequestId();

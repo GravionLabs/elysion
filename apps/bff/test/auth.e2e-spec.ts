@@ -83,4 +83,36 @@ describe('Authentication (e2e, tokens signed with a local key pair)', () => {
     await server.get('/api/boards/0197a8d2-1c3e-7a10-8000-000000000001').expect(401);
     await server.get('/health').expect(200);
   });
+
+  describe('GET /api/auth/me', () => {
+    const me = async (options?: TokenOptions) =>
+      request(app.getHttpServer())
+        .get('/api/auth/me')
+        .set('Authorization', await bearer(options));
+
+    it('says who the caller is and that they are no administrator', async () => {
+      const { body } = await me({ subject: 'kc-sub-9', email: 'ada@example.com' }).then((r) => {
+        expect(r.status).toBe(200);
+        return r;
+      });
+
+      expect(body).toEqual({ id: 'kc-sub-9', email: 'ada@example.com', isAdministrator: false });
+    });
+
+    it('says the caller is an administrator when the token has the realm role', async () => {
+      const { body } = await me({ realmRoles: ['offline_access', 'elysion-admin'] });
+
+      expect(body.isAdministrator).toBe(true);
+    });
+
+    it('does not take another role for it', async () => {
+      const { body } = await me({ realmRoles: ['board-user'] });
+
+      expect(body.isAdministrator).toBe(false);
+    });
+
+    it('needs a token', async () => {
+      await request(app.getHttpServer()).get('/api/auth/me').expect(401);
+    });
+  });
 });
