@@ -8,7 +8,7 @@ import { clearOfflineStores } from './offline-data';
 export interface SessionUser {
   /** The user's id at the identity provider (`sub`); the same one the backend knows. */
   id: string;
-  /** What is shown: the username, else the name, else the email, else the id. */
+  /** What is shown, see {@link displayNameOf}. */
   name: string;
   email: string | null;
   /** The cursor color other people see; the same for this user on every device. */
@@ -41,6 +41,24 @@ export function colorFor(id: string): string {
   return CURSOR_COLORS[hashOf(id) % CURSOR_COLORS.length];
 }
 
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The name shown for a person: the username, unless it looks like a brokered account (an address or a GUID, which is what
+ * Entra ID makes of it), then the name; else the name, the email, the id. The business backend uses the same order
+ * (`UserProvisioningService`), so the person has one name everywhere (docs/specs/identity.md).
+ */
+export function displayNameOf(claims: {
+  preferredUsername: string | null;
+  name: string | null;
+  email: string | null;
+  id: string;
+}): string {
+  const username = claims.preferredUsername;
+  const brokered = username !== null && (username.includes('@') || GUID.test(username));
+  return (brokered ? null : username) ?? claims.name ?? username ?? claims.email ?? claims.id;
+}
+
 /** Reads the ID token's claims into a {@link SessionUser}; `null` without a usable `sub`. */
 export function toSessionUser(claims: unknown): SessionUser | null {
   const data = claims as Record<string, unknown> | null | undefined;
@@ -55,7 +73,12 @@ export function toSessionUser(claims: unknown): SessionUser | null {
   const email = text('email');
   return {
     id,
-    name: text('preferred_username') ?? text('name') ?? email ?? id,
+    name: displayNameOf({
+      preferredUsername: text('preferred_username'),
+      name: text('name'),
+      email,
+      id,
+    }),
     email,
     color: colorFor(id),
   };

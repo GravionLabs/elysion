@@ -16,6 +16,19 @@ describe('toSessionUser', () => {
     expect(toSessionUser(base)?.name).toBe('kc-1');
   });
 
+  it('prefers the name when the username looks like a brokered account (an address or a GUID)', () => {
+    const base = { sub: 'kc-1', name: 'Ada L', email: 'a@x.y' };
+
+    expect(toSessionUser({ ...base, preferred_username: 'ada@contoso.com' })?.name).toBe('Ada L');
+    expect(
+      toSessionUser({ ...base, preferred_username: '6f9619ff-8b86-d011-b42d-00c04fc964ff' })?.name,
+    ).toBe('Ada L');
+    // Without a name the username is still better than nothing.
+    expect(
+      toSessionUser({ sub: 'kc-1', preferred_username: 'ada@contoso.com', email: 'a@x.y' })?.name,
+    ).toBe('ada@contoso.com');
+  });
+
   it('carries the id, the email and a color derived from the id', () => {
     const user = toSessionUser({ sub: 'kc-1', email: 'a@x.y', preferred_username: 'ada' });
 
