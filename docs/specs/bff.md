@@ -76,7 +76,7 @@ In tests the verifier is replaced by one that trusts a locally generated key pai
 
 ## Board members
 
-`/api/boards/:id/members` (`GET`, `POST { email, role }`, `PATCH :userId { role }`, `DELETE :userId`; `MembersController`) passes on to the business backend's member API with the caller's own token ([business-backend.md](business-backend.md), "Board members"). The BFF only checks the shape: ids that are not UUIDs are `404` and a body without a string `email` or `role` is `400`, both without a call to the backend. The backend's answers come back with its message: `403` (a lower role), `404` (a board the caller cannot see, an unknown email, not a member), `409` (already a member, the creator, the last owner), `400` (a bad role).
+`/api/boards/:id/members` (`GET`, `POST { email, role }` or `POST { userId, role }` (the id `GET /api/users` returned), `PATCH :userId { role }`, `DELETE :userId`; `MembersController`) passes on to the business backend's member API with the caller's own token ([business-backend.md](business-backend.md), "Board members"). The BFF only checks the shape: ids that are not UUIDs are `404` and a body without a string `role` and without an `email` or a `userId` (a UUID), or with either of the wrong type, is `400`, both without a call to the backend. `GET /api/users?query=` (`UsersController`, #663) passes the people search on (up to 10 people with `id`, `displayName`, `email`; `400` from the backend for a query under 2 or over 100 characters; a `query` given twice counts as none). The backend's answers come back with its message: `403` (a lower role), `404` (a board the caller cannot see, an unknown email, not a member), `409` (already a member, the creator, the last owner), `400` (a bad role).
 
 ## Rooms
 

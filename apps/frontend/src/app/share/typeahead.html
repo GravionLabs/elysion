@@ -1,0 +1,41 @@
+<label class="field">
+  <span class="field-label">{{ label() }}</span>
+  <input
+    #field
+    type="text"
+    role="combobox"
+    autocomplete="off"
+    data-1p-ignore
+    data-lpignore="true"
+    aria-autocomplete="list"
+    [attr.aria-expanded]="open()"
+    [attr.aria-controls]="open() ? listId : null"
+    [attr.aria-activedescendant]="open() && active() >= 0 ? optionId(active()) : null"
+    [placeholder]="placeholder()"
+    [value]="value()"
+    [disabled]="disabled()"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+    (blur)="onBlur()"
+  />
+</label>
+@if (open()) {
+  <ul class="options" role="listbox" [id]="listId" [attr.aria-label]="label()">
+    @for (option of options(); track option.id; let index = $index) {
+      <li
+        role="option"
+        class="option"
+        [id]="optionId(index)"
+        [class.active]="index === active()"
+        [attr.aria-selected]="index === active()"
+        (mousedown)="choose($event, option)"
+      >
+        <span class="option-label">{{ option.label }}</span>
+        @if (option.detail) {
+          <span class="option-detail">{{ option.detail }}</span>
+        }
+      </li>
+    }
+  </ul>
+}
+<p class="visually-hidden" role="status" aria-live="polite">{{ status() }}</p>

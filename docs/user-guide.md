@@ -96,7 +96,7 @@ In the dark theme Excalidraw darkens the whole canvas, so notes look darker than
 
 ![The share dialog](images/05-share.png)
 
-**Share** (for the owner) lists who has access. Type an **e-mail address**, choose a **role** and press **Add**:
+**Share** (for the owner) lists who has access. Start typing a **name or an e-mail address**: the people who have logged in to Elysion and match are listed (use the arrow keys and Enter, or click, to choose one). Choose a **role** and press **Add**. A full e-mail address that matches nobody can still be added if that person has logged in once:
 
 | Role       | Can                                                                                              |
 | ---------- | ------------------------------------------------------------------------------------------------ |
@@ -109,6 +109,8 @@ Editor), how long the link works (1 hour to 30 days) and, if you like, how often
 address is shown only once, right after it was made. Whoever opens it signs in, joins with the link's role (somebody who has a higher role
 keeps it) and lands on the board. The list shows each active link with its expiry and how often it was used; **Revoke** ends it at once.
 A room has the same section and gives access to all its boards.
+
+A **room** can also be shared with a **group** (for example a department from your company's sign-in): in the room's **Members** window, search the **Groups** section by name, choose a group, give it a role and press **Add**. Everybody in the group gets that role on every board in the room. The window of a board that is in a room tells you who else has access through the room.
 
 Change a role in the list, or **Remove** somebody. A person has to have logged in to Elysion once before they can be added. For a whole team
 use a room instead: its members have access to all its boards.

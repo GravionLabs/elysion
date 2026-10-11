@@ -1091,7 +1091,7 @@
     </unit>
     <unit id="board.pageTitle.notFound">
       <notes>
-        <note category="location">src/app/board/board.ts:267</note>
+        <note category="location">src/app/board/board.ts:273</note>
       </notes>
       <segment>
         <source>Board not found · Elysion</source>
@@ -1099,7 +1099,7 @@
     </unit>
     <unit id="board.pageTitle.named">
       <notes>
-        <note category="location">src/app/board/board.ts:269</note>
+        <note category="location">src/app/board/board.ts:275</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> · Elysion</source>
@@ -1107,7 +1107,7 @@
     </unit>
     <unit id="board.error.templateNotApplied">
       <notes>
-        <note category="location">src/app/board/board.ts:300</note>
+        <note category="location">src/app/board/board.ts:306</note>
       </notes>
       <segment>
         <source>The template could not be applied. The board is blank.</source>
@@ -1115,7 +1115,7 @@
     </unit>
     <unit id="board.error.renameFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:313</note>
+        <note category="location">src/app/board/board.ts:319</note>
       </notes>
       <segment>
         <source>The board could not be renamed.</source>
@@ -1123,7 +1123,7 @@
     </unit>
     <unit id="board.error.accessLost">
       <notes>
-        <note category="location">src/app/board/board.ts:330</note>
+        <note category="location">src/app/board/board.ts:336</note>
       </notes>
       <segment>
         <source>You no longer have access to this board.</source>
@@ -1131,7 +1131,7 @@
     </unit>
     <unit id="board.error.timerFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:489</note>
+        <note category="location">src/app/board/board.ts:495</note>
       </notes>
       <segment>
         <source>The timer could not be changed.</source>
@@ -1139,8 +1139,8 @@
     </unit>
     <unit id="board.error.nothingSelected">
       <notes>
-        <note category="location">src/app/board/board.ts:522</note>
-        <note category="location">src/app/board/board.ts:669</note>
+        <note category="location">src/app/board/board.ts:528</note>
+        <note category="location">src/app/board/board.ts:675</note>
       </notes>
       <segment>
         <source>Nothing is selected.</source>
@@ -1148,7 +1148,7 @@
     </unit>
     <unit id="board.error.exportEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:523</note>
+        <note category="location">src/app/board/board.ts:529</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to export.</source>
@@ -1156,7 +1156,7 @@
     </unit>
     <unit id="board.error.exportFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:533</note>
+        <note category="location">src/app/board/board.ts:539</note>
       </notes>
       <segment>
         <source>The export failed.</source>
@@ -1164,8 +1164,8 @@
     </unit>
     <unit id="board.error.importFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:564</note>
-        <note category="location">src/app/board/board.ts:592</note>
+        <note category="location">src/app/board/board.ts:570</note>
+        <note category="location">src/app/board/board.ts:598</note>
       </notes>
       <segment>
         <source>The import failed.</source>
@@ -1173,7 +1173,7 @@
     </unit>
     <unit id="board.notice.imported.one">
       <notes>
-        <note category="location">src/app/board/board.ts:585</note>
+        <note category="location">src/app/board/board.ts:591</note>
       </notes>
       <segment>
         <source>Imported 1 element from <ph id="0" equiv="file" disp="file.name"/>.</source>
@@ -1181,7 +1181,7 @@
     </unit>
     <unit id="board.notice.imported.many">
       <notes>
-        <note category="location">src/app/board/board.ts:586</note>
+        <note category="location">src/app/board/board.ts:592</note>
       </notes>
       <segment>
         <source>Imported <ph id="0" equiv="count" disp="count"/> elements from <ph id="1" equiv="file" disp="file.name"/>.</source>
@@ -1189,7 +1189,7 @@
     </unit>
     <unit id="board.error.templateAddFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:612</note>
+        <note category="location">src/app/board/board.ts:618</note>
       </notes>
       <segment>
         <source>The template could not be added.</source>
@@ -1197,7 +1197,7 @@
     </unit>
     <unit id="board.template.defaultSelectionName">
       <notes>
-        <note category="location">src/app/board/board.ts:623</note>
+        <note category="location">src/app/board/board.ts:629</note>
       </notes>
       <segment>
         <source>Selection</source>
@@ -1205,7 +1205,7 @@
     </unit>
     <unit id="board.template.defaultBoardName">
       <notes>
-        <note category="location">src/app/board/board.ts:624</note>
+        <note category="location">src/app/board/board.ts:630</note>
       </notes>
       <segment>
         <source>Board</source>
@@ -1213,7 +1213,7 @@
     </unit>
     <unit id="board.template.nameRequired">
       <notes>
-        <note category="location">src/app/board/board.ts:653</note>
+        <note category="location">src/app/board/board.ts:659</note>
       </notes>
       <segment>
         <source>Give the template a name.</source>
@@ -1221,7 +1221,7 @@
     </unit>
     <unit id="board.error.templateEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:670</note>
+        <note category="location">src/app/board/board.ts:676</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to save as a template.</source>
@@ -1229,7 +1229,7 @@
     </unit>
     <unit id="board.notice.templateSaved">
       <notes>
-        <note category="location">src/app/board/board.ts:681</note>
+        <note category="location">src/app/board/board.ts:687</note>
       </notes>
       <segment>
         <source>Saved the template “<ph id="0" equiv="name" disp="name"/>”.</source>
@@ -1237,7 +1237,7 @@
     </unit>
     <unit id="board.error.templateSaveFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:692</note>
+        <note category="location">src/app/board/board.ts:698</note>
       </notes>
       <segment>
         <source>The template could not be saved.</source>
@@ -1451,6 +1451,22 @@
         <source>Joining · Elysion</source>
       </segment>
     </unit>
+    <unit id="share.error.ownerOnlyRoom">
+      <notes>
+        <note category="location">src/app/share/error-message.ts:17</note>
+      </notes>
+      <segment>
+        <source>Only an owner of the room can do this.</source>
+      </segment>
+    </unit>
+    <unit id="share.error.ownerOnlyBoard">
+      <notes>
+        <note category="location">src/app/share/error-message.ts:18</note>
+      </notes>
+      <segment>
+        <source>Only an owner of the board can do this.</source>
+      </segment>
+    </unit>
     <unit id="invite.title">
       <notes>
         <note category="location">src/app/share/invite-links.html:2,4</note>
@@ -1471,7 +1487,8 @@
       <notes>
         <note category="location">src/app/share/invite-links.html:9,11</note>
         <note category="location">src/app/share/invite-links.ts:172</note>
-        <note category="location">src/app/share/share-dialog.ts:198</note>
+        <note category="location">src/app/share/room-groups.ts:198</note>
+        <note category="location">src/app/share/share-dialog.ts:248</note>
       </notes>
       <segment>
         <source> Viewer </source>
@@ -1481,7 +1498,8 @@
       <notes>
         <note category="location">src/app/share/invite-links.html:12,14</note>
         <note category="location">src/app/share/invite-links.ts:171</note>
-        <note category="location">src/app/share/share-dialog.ts:196</note>
+        <note category="location">src/app/share/room-groups.ts:196</note>
+        <note category="location">src/app/share/share-dialog.ts:246</note>
       </notes>
       <segment>
         <source> Editor </source>
@@ -1679,6 +1697,292 @@
         <source>Revoke the link for <ph id="0" equiv="role" disp="this.roleLabel(link.role)"/> that expires <ph id="1" equiv="expires" disp="this.expiresOn(link)"/></source>
       </segment>
     </unit>
+    <unit id="share.access.title">
+      <notes>
+        <note category="location">src/app/share/room-access.html:2,4</note>
+      </notes>
+      <segment>
+        <source>Access through the room</source>
+      </segment>
+    </unit>
+    <unit id="share.access.loading">
+      <notes>
+        <note category="location">src/app/share/room-access.html:5,8</note>
+      </notes>
+      <segment>
+        <source>Loading the room…</source>
+      </segment>
+    </unit>
+    <unit id="share.access.error">
+      <notes>
+        <note category="location">src/app/share/room-access.html:9,10</note>
+      </notes>
+      <segment>
+        <source>The room could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="share.retry">
+      <notes>
+        <note category="location">src/app/share/room-access.html:10,12</note>
+        <note category="location">src/app/share/room-groups.html:47,49</note>
+        <note category="location">src/app/share/share-dialog.html:71,72</note>
+      </notes>
+      <segment>
+        <source>Try again</source>
+      </segment>
+    </unit>
+    <unit id="share.access.intro">
+      <notes>
+        <note category="location">src/app/share/room-access.html:16,17</note>
+      </notes>
+      <segment>
+        <source>This board is in the room “<ph id="0" equiv="INTERPOLATION" disp="{{ room()?.name ?? &apos;…&apos; }}"/>”. Everyone who has a role in that room can open it with that role:</source>
+      </segment>
+    </unit>
+    <unit id="2548204464334795778">
+      <notes>
+        <note category="location">src/app/share/room-access.html:24,25</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 person} other {<ph id="0" equiv="INTERPOLATION"/> people}}</source>
+      </segment>
+    </unit>
+    <unit id="share.access.people">
+      <notes>
+        <note category="location">src/app/share/room-access.html:24,25</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="ICU" disp="{people(), plural, =1 {1 person} other {{{ people() }} people}}" subFlows="7747169762350532375"/> in the room</source>
+      </segment>
+    </unit>
+    <unit id="share.access.people.unknown">
+      <notes>
+        <note category="location">src/app/share/room-access.html:29,32</note>
+      </notes>
+      <segment>
+        <source>The people of the room (only its owners can list them)</source>
+      </segment>
+    </unit>
+    <unit id="share.access.groups.none">
+      <notes>
+        <note category="location">src/app/share/room-access.html:35,37</note>
+      </notes>
+      <segment>
+        <source>No groups</source>
+      </segment>
+    </unit>
+    <unit id="share.access.groups.label">
+      <notes>
+        <note category="location">src/app/share/room-access.html:37,38</note>
+      </notes>
+      <segment>
+        <source>Groups:</source>
+      </segment>
+    </unit>
+    <unit id="share.access.manage">
+      <notes>
+        <note category="location">src/app/share/room-access.html:44,49</note>
+      </notes>
+      <segment>
+        <source>Manage the room</source>
+      </segment>
+    </unit>
+    <unit id="share.access.group.owner">
+      <notes>
+        <note category="location">src/app/share/room-access.ts:68</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="group.name"/> (Owner)</source>
+      </segment>
+    </unit>
+    <unit id="share.access.group.editor">
+      <notes>
+        <note category="location">src/app/share/room-access.ts:70</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="group.name"/> (Editor)</source>
+      </segment>
+    </unit>
+    <unit id="share.access.group.viewer">
+      <notes>
+        <note category="location">src/app/share/room-access.ts:72</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="group.name"/> (Viewer)</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.title">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:2,5</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.field">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:8</note>
+      </notes>
+      <segment>
+        <source>Group</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.placeholder">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:9,10</note>
+      </notes>
+      <segment>
+        <source>Name of a group</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.empty">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:11,12</note>
+      </notes>
+      <segment>
+        <source>No group found.</source>
+      </segment>
+    </unit>
+    <unit id="share.role">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:22,24</note>
+        <note category="location">src/app/share/share-dialog.html:45,47</note>
+      </notes>
+      <segment>
+        <source>Role</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.newRole.label">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:24,25</note>
+      </notes>
+      <segment>
+        <source>Role of the new group</source>
+      </segment>
+    </unit>
+    <unit id="share.add">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:34,36</note>
+        <note category="location">src/app/share/share-dialog.html:57,60</note>
+      </notes>
+      <segment>
+        <source>Add</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.loading">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:43,44</note>
+      </notes>
+      <segment>
+        <source>Loading groups…</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.none">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:50,52</note>
+      </notes>
+      <segment>
+        <source>No group has a role in this room yet.</source>
+      </segment>
+    </unit>
+    <unit id="share.remove">
+      <notes>
+        <note category="location">src/app/share/room-groups.html:77,78</note>
+        <note category="location">src/app/share/share-dialog.html:102,103</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.source.provider">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:11</note>
+      </notes>
+      <segment>
+        <source>from Microsoft Entra ID</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.source.local">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:12</note>
+      </notes>
+      <segment>
+        <source>local</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.load">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:74</note>
+      </notes>
+      <segment>
+        <source>The groups could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.search">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:110</note>
+      </notes>
+      <segment>
+        <source>The groups could not be searched.</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.pick">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:132</note>
+      </notes>
+      <segment>
+        <source>Search for a group and choose one from the list.</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.add">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:138</note>
+      </notes>
+      <segment>
+        <source>The group could not be added.</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.role">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:152</note>
+      </notes>
+      <segment>
+        <source>The role could not be changed.</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.error.remove">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:164</note>
+      </notes>
+      <segment>
+        <source>The group could not be removed.</source>
+      </segment>
+    </unit>
+    <unit id="share.role.owner">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:194</note>
+        <note category="location">src/app/share/share-dialog.ts:244</note>
+      </notes>
+      <segment>
+        <source>Owner</source>
+      </segment>
+    </unit>
+    <unit id="share.groups.roleOf.label">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:203</note>
+      </notes>
+      <segment>
+        <source>Role of the group <ph id="0" equiv="name" disp="group.name"/></source>
+      </segment>
+    </unit>
+    <unit id="share.groups.remove.label">
+      <notes>
+        <note category="location">src/app/share/room-groups.ts:207</note>
+      </notes>
+      <segment>
+        <source>Remove the group <ph id="0" equiv="name" disp="group.name"/></source>
+      </segment>
+    </unit>
     <unit id="share.title.room">
       <notes>
         <note category="location">src/app/share/share-dialog.html:12,13</note>
@@ -1703,28 +2007,28 @@
         <source>Close</source>
       </segment>
     </unit>
-    <unit id="share.email">
+    <unit id="share.person">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:30,32</note>
+        <note category="location">src/app/share/share-dialog.html:31</note>
       </notes>
       <segment>
-        <source>Email</source>
+        <source>Person</source>
       </segment>
     </unit>
-    <unit id="share.email.placeholder">
+    <unit id="share.person.placeholder">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:37,38</note>
+        <note category="location">src/app/share/share-dialog.html:32,33</note>
       </notes>
       <segment>
-        <source>name@example.com</source>
+        <source>Name or name@example.com</source>
       </segment>
     </unit>
-    <unit id="share.role">
+    <unit id="share.person.empty">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:45,47</note>
+        <note category="location">src/app/share/share-dialog.html:34,35</note>
       </notes>
       <segment>
-        <source>Role</source>
+        <source>Nobody found. A full email address still works.</source>
       </segment>
     </unit>
     <unit id="share.newRole.label">
@@ -1733,14 +2037,6 @@
       </notes>
       <segment>
         <source>Role of the new member</source>
-      </segment>
-    </unit>
-    <unit id="share.add">
-      <notes>
-        <note category="location">src/app/share/share-dialog.html:57,60</note>
-      </notes>
-      <segment>
-        <source>Add</source>
       </segment>
     </unit>
     <unit id="share.members.label">
@@ -1759,25 +2055,9 @@
         <source>Loading members…</source>
       </segment>
     </unit>
-    <unit id="share.retry">
-      <notes>
-        <note category="location">src/app/share/share-dialog.html:71,72</note>
-      </notes>
-      <segment>
-        <source> Try again </source>
-      </segment>
-    </unit>
-    <unit id="share.remove">
-      <notes>
-        <note category="location">src/app/share/share-dialog.html:102,103</note>
-      </notes>
-      <segment>
-        <source>Remove</source>
-      </segment>
-    </unit>
     <unit id="share.hint.login">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:114,116</note>
+        <note category="location">src/app/share/share-dialog.html:120,122</note>
       </notes>
       <segment>
         <source>Someone has to log in to Elysion once before they can be added.</source>
@@ -1785,7 +2065,7 @@
     </unit>
     <unit id="share.hint.room">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:118,120</note>
+        <note category="location">src/app/share/share-dialog.html:124,126</note>
       </notes>
       <segment>
         <source>A member gets this role on every board in the room. Viewers can look at them but not change them.</source>
@@ -1793,47 +2073,39 @@
     </unit>
     <unit id="share.hint.board">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:123,125</note>
+        <note category="location">src/app/share/share-dialog.html:129,131</note>
       </notes>
       <segment>
         <source>Viewers can look at the board but not change it.</source>
       </segment>
     </unit>
-    <unit id="share.error.ownerOnlyRoom">
-      <notes>
-        <note category="location">src/app/share/share-dialog.ts:38</note>
-      </notes>
-      <segment>
-        <source>Only an owner of the room can do this.</source>
-      </segment>
-    </unit>
-    <unit id="share.error.ownerOnlyBoard">
-      <notes>
-        <note category="location">src/app/share/share-dialog.ts:39</note>
-      </notes>
-      <segment>
-        <source>Only an owner of the board can do this.</source>
-      </segment>
-    </unit>
     <unit id="share.error.loadFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:113</note>
+        <note category="location">src/app/share/share-dialog.ts:115</note>
       </notes>
       <segment>
         <source>The members could not be loaded.</source>
       </segment>
     </unit>
-    <unit id="share.error.emailRequired">
+    <unit id="share.error.personRequired">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:133</note>
+        <note category="location">src/app/share/share-dialog.ts:175</note>
       </notes>
       <segment>
-        <source>Enter the email of the person to add.</source>
+        <source>Search for a person by name or email, or enter an email address.</source>
+      </segment>
+    </unit>
+    <unit id="share.error.pickPerson">
+      <notes>
+        <note category="location">src/app/share/share-dialog.ts:180</note>
+      </notes>
+      <segment>
+        <source>Choose a person from the list, or enter a full email address.</source>
       </segment>
     </unit>
     <unit id="share.error.addFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:138</note>
+        <note category="location">src/app/share/share-dialog.ts:186</note>
       </notes>
       <segment>
         <source>The member could not be added.</source>
@@ -1841,7 +2113,7 @@
     </unit>
     <unit id="share.error.roleFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:151</note>
+        <note category="location">src/app/share/share-dialog.ts:201</note>
       </notes>
       <segment>
         <source>The role could not be changed.</source>
@@ -1849,23 +2121,15 @@
     </unit>
     <unit id="share.error.removeFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:164</note>
+        <note category="location">src/app/share/share-dialog.ts:214</note>
       </notes>
       <segment>
         <source>The member could not be removed.</source>
       </segment>
     </unit>
-    <unit id="share.role.owner">
-      <notes>
-        <note category="location">src/app/share/share-dialog.ts:194</note>
-      </notes>
-      <segment>
-        <source>Owner</source>
-      </segment>
-    </unit>
     <unit id="share.remove.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:205</note>
+        <note category="location">src/app/share/share-dialog.ts:255</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="name" disp="member.displayName"/></source>
@@ -1873,10 +2137,34 @@
     </unit>
     <unit id="share.roleOf.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:209</note>
+        <note category="location">src/app/share/share-dialog.ts:259</note>
       </notes>
       <segment>
         <source>Role of <ph id="0" equiv="name" disp="member.displayName"/></source>
+      </segment>
+    </unit>
+    <unit id="typeahead.searching">
+      <notes>
+        <note category="location">src/app/share/typeahead.ts:70</note>
+      </notes>
+      <segment>
+        <source>Searching…</source>
+      </segment>
+    </unit>
+    <unit id="typeahead.results.one">
+      <notes>
+        <note category="location">src/app/share/typeahead.ts:174</note>
+      </notes>
+      <segment>
+        <source>1 match. Use the arrow keys to choose.</source>
+      </segment>
+    </unit>
+    <unit id="typeahead.results.many">
+      <notes>
+        <note category="location">src/app/share/typeahead.ts:175</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="count"/> matches. Use the arrow keys to choose.</source>
       </segment>
     </unit>
     <unit id="app.brand.label">

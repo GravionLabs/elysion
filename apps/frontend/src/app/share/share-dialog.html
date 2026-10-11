@@ -26,21 +26,21 @@
     </header>
 
     <form class="invite" (submit)="$event.preventDefault(); add()">
-      <label class="field">
-        <span class="field-label" i18n="@@share.email">Email</span>
-        <input
-          #emailField
-          type="email"
-          autocomplete="off"
-          data-1p-ignore
-          data-lpignore="true"
-          placeholder="name@example.com"
-          i18n-placeholder="@@share.email.placeholder"
-          [value]="email()"
-          [disabled]="busy()"
-          (input)="updateEmail($event)"
-        />
-      </label>
+      <app-typeahead
+        label="Person"
+        i18n-label="@@share.person"
+        placeholder="Name or name@example.com"
+        i18n-placeholder="@@share.person.placeholder"
+        emptyText="Nobody found. A full email address still works."
+        i18n-emptyText="@@share.person.empty"
+        [value]="email()"
+        (valueChange)="typed($event)"
+        [options]="options()"
+        [busy]="searching()"
+        [disabled]="busy()"
+        (search)="searchPeople($event)"
+        (pick)="pickPerson($event)"
+      />
       <label class="field role-field">
         <span class="field-label" i18n="@@share.role">Role</span>
         <select
@@ -106,6 +106,12 @@
         </ul>
       }
     </section>
+
+    @if (scope() === 'room') {
+      <app-room-groups [roomId]="boardId()" />
+    } @else if (roomId(); as room) {
+      <app-room-access [roomId]="room" />
+    }
 
     <app-invite-links [boardId]="boardId()" [scope]="scope()" />
 

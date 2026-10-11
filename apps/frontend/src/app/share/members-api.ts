@@ -30,14 +30,14 @@ export class MembersApi {
     return this.#http.get<Member[]>(this.#url(scope, id));
   }
 
-  /** Adds somebody who has logged in at least once, by email. */
+  /** Adds somebody who has logged in at least once: by the id the people search returned, or by email. */
   add(
     id: string,
-    email: string,
+    who: { userId: string } | { email: string },
     role: MemberRole,
     scope: MemberScope = 'board',
   ): Observable<Member> {
-    return this.#http.post<Member>(this.#url(scope, id), { email, role });
+    return this.#http.post<Member>(this.#url(scope, id), { ...who, role });
   }
 
   changeRole(

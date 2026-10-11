@@ -148,6 +148,10 @@ Severity is for a production deployment; "demo only" says when the cause is a de
   (`elysion-board:<boardId>:<generation>`) so that a closed tab loses nothing. It holds what the person was allowed to read, never a token, it is removed once the
   changes are sent and **at logout**, and a read-only canvas stores nothing. On a shared computer it is data on the device until then: log out when you leave
   (the same is true of the browser's own cache).
+- **The people search shows names and emails to everybody who has logged in (#663).** `GET /users?query=` answers up to 10 people whose name or
+  email contains at least two typed characters; it cannot list the directory and needs a login. Within one instance that is what a Share dialog needs, but it
+  also tells every signed-in person which colleagues have an account. A deployment that wants less narrows the one query behind it
+  (`IUserRepository.SearchAsync`, for example to people who share a room with the caller); this is open for the owner to decide.
 - **No HSTS or TLS in the demo.** `HSTS_MAX_AGE` is for deployments with TLS.
 
 ## Accepted advisories
