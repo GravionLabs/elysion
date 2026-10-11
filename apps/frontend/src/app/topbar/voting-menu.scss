@@ -357,3 +357,23 @@
     outline-offset: 2px;
   }
 }
+
+// "Show who voted for what": a checkbox with its words, not a text field.
+.start .named-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  input {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+  }
+}
+
+.voters {
+  display: block;
+  padding: 0 8px 4px;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}

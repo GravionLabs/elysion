@@ -5,7 +5,7 @@ import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { connectableAt, toScene, toScreen, type View } from '../connection-points';
 import type { ScenePoint } from '../connector';
 import type { SceneStore } from '../scene-store';
-import type { VotingSnapshot } from './voting-sync';
+import type { VotingSnapshot } from './voting';
 
 /** A press that moves no further than this (screen pixels) before it is released is a click, not a drag. */
 export const CLICK_TOLERANCE = 4;
@@ -21,7 +21,7 @@ export interface VoteBadgesProps {
   /** Tells that the scene, the selection or the view changed. */
   store: SceneStore;
   voting: VotingSnapshot;
-  /** A viewer sees the badges and the result, but cannot vote. */
+  /** A viewer votes like anybody else (ADR 0029); the tool check differs because a read-only canvas has no tools. */
   readOnly: boolean;
   /** The person clicked an element (or a dot of their own, `onRetract`) while a voting was open. */
   onVote: (elementId: string) => void;
@@ -50,7 +50,7 @@ export function hintText(left: number, total: number, t: Messages = en): string 
 }
 
 /**
- * Dot voting on the canvas (docs/specs/frontend.md, "Facilitation: voting"). While a session is open, each element
+ * Dot voting on the canvas (docs/specs/frontend.md, "Facilitation: voting"; viewers vote too, ADR 0029). While a session is open, each element
  * shows the person's **own** votes as small dots at its top-right corner (nobody else's), a click on an element in the
  * selection tool, without a drag, casts a vote, and a click on one of the dots takes one back. Once the session is
  * closed, every element with votes shows a count. A layer of our own over the canvas, like the connection points: it
@@ -88,13 +88,14 @@ export function VoteBadges({
       down = null;
       const { voting: state, readOnly: viewer } = latest.current;
       const api = apiRef.current;
-      if (!pressed || !api || viewer || state.openSessionId === null) return;
+      if (!pressed || !api || state.openSessionId === null) return;
       if (event.button !== 0 || !(event.target instanceof HTMLCanvasElement)) return;
       if (Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) > CLICK_TOLERANCE)
         return;
       const appState = api.getAppState();
       // Drawing, editing text and moving things keep working: only a click with the selection tool votes.
-      if (appState.activeTool.type !== 'selection' || appState.editingTextElement) return;
+      if (!viewer && (appState.activeTool.type !== 'selection' || appState.editingTextElement))
+        return;
       const box = root.getBoundingClientRect();
       const view = currentView(api);
       const point = toScene({ x: event.clientX - box.left, y: event.clientY - box.top }, view);
@@ -154,7 +155,6 @@ export function VoteBadges({
                   tabIndex={-1}
                   className="elysion-vote-dot"
                   data-vote-dot={element.id}
-                  disabled={readOnly}
                   style={{ right: index * DOT_SPACING }}
                   onClick={() => onRetract(element.id)}
                 />
@@ -181,7 +181,7 @@ export function VoteBadges({
           );
         })}
       </div>
-      {open && !readOnly && (
+      {open && (
         <div className="elysion-vote-hint" role="status">
           {hintText(left, session.votesPerPerson, t)}
         </div>

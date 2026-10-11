@@ -277,6 +277,84 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Vote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ElementId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VotingSessionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("VotingSessionId", "UserId");
+
+                    b.ToTable("Votes");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.VotingSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<bool>("Named")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("StartedByName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("StartedBySubject")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VotesPerPerson")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_VotingSessions_OneOpenPerBoard")
+                        .HasFilter("\"Status\" = 0");
+
+                    b.ToTable("VotingSessions");
+                });
+
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Board", b =>
                 {
                     b.HasOne("Elysion.BusinessBackend.Api.Entities.User", "Owner")
@@ -390,6 +468,36 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Vote", b =>
+                {
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.VotingSession", "VotingSession")
+                        .WithMany("Votes")
+                        .HasForeignKey("VotingSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("VotingSession");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.VotingSession", b =>
+                {
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Board", b =>
                 {
                     b.Navigation("Memberships");
@@ -405,6 +513,11 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.User", b =>
                 {
                     b.Navigation("Memberships");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.VotingSession", b =>
+                {
+                    b.Navigation("Votes");
                 });
 #pragma warning restore 612, 618
         }

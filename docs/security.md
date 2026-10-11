@@ -143,7 +143,7 @@ Severity is for a production deployment; "demo only" says when the cause is a de
 - **Postgres and Valkey start as root.** Their entrypoints drop to the `postgres` and `valkey` users (`ps` shows it); only the entrypoint is root.
 - **An access token that works until it expires.** The design (stateless validation, 5 minutes, [ADR 0014](adr/0014-keycloak-identity-provider.md)) accepts it; a
   stolen token is a 5-minute problem. The long-lived socket is not the same thing (F1).
-- **Voting is not secret from the server.** Documented ([ADR 0020](adr/0020-facilitation-state.md), README).
+- **Voting is secret.** The votes are kept by the business backend ([ADR 0029](adr/0029-dot-voting-on-the-server.md)): while a voting runs a person gets their own votes only, and the result has names only when the facilitator started a named voting. (Before ADR 0029 the votes were in the board's document and readable by every client.)
 - **No HSTS or TLS in the demo.** `HSTS_MAX_AGE` is for deployments with TLS.
 
 ## Accepted advisories

@@ -199,6 +199,8 @@ services:
       OIDC_JWKS_URI: http://keycloak:8080/realms/elysion/protocol/openid-connect/certs
       # The realtime service's token for the internal document API is checked with this (ADR 0017). Development value only.
       INTERNAL_API_SECRET: dev-only-internal-api-secret-change-me-0123456789
+      # Where the realtime service takes the news of a voting (ADR 0029); Traefik does not route /internal, so only this network reaches it.
+      REALTIME_URL: http://realtime:3000
       # Also send every log line to the log viewer (the `logs` profile, `pnpm dev:logs`, ADR 0025); empty: nothing is sent.
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${LOGS_OTLP_ENDPOINT:-}
     depends_on:

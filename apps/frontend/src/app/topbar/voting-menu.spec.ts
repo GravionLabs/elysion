@@ -8,6 +8,7 @@ const session = (extra: Partial<VotingSession> = {}): VotingSession => ({
   name: 'Best idea',
   votesPerPerson: 5,
   status: 'open',
+  named: false,
   startedBy: { id: 'u1', name: 'Ada' },
   myVotes: 2,
   ...extra,
@@ -92,8 +93,22 @@ describe('VotingMenu', () => {
       (el().querySelector('button[type="submit"]') as HTMLElement).click();
       fixture.detectChanges();
 
-      expect(events.start).toEqual([{ name: 'Q3 ideas', votesPerPerson: 10 }]);
+      expect(events.start).toEqual([{ name: 'Q3 ideas', votesPerPerson: 10, named: false }]);
       expect(el().querySelector('.menu')).toBeNull();
+    });
+
+    it('starts a named voting when the box is ticked, and anonymous again for the next one', () => {
+      set({ canControl: true });
+      openMenu();
+      const box = el().querySelector('.named-choice input') as HTMLInputElement;
+      expect(box.checked).toBe(false); // anonymous by default
+      box.checked = true;
+      box.dispatchEvent(new Event('change'));
+      (el().querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+      openMenu();
+      (el().querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+
+      expect(events.start.map((request) => request.named)).toEqual([true, false]);
     });
 
     it('names an unnamed voting "Voting" and takes any whole number in the field', () => {
@@ -107,7 +122,7 @@ describe('VotingMenu', () => {
       votes.dispatchEvent(new Event('input'));
       (el().querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
 
-      expect(events.start).toEqual([{ name: 'Voting', votesPerPerson: 7 }]);
+      expect(events.start).toEqual([{ name: 'Voting', votesPerPerson: 7, named: false }]);
     });
 
     it.each(['', 'x', '0', '-1', '2.5', '101'])('refuses "%s" votes with a message', (value) => {
@@ -160,11 +175,11 @@ describe('VotingMenu', () => {
       expect(text('.menu-button')).toBe('Voting · 0 left');
     });
 
-    it('shows a viewer the state and nothing to click', () => {
+    it('shows a viewer the state and what is left to vote, and nothing to start or end', () => {
       set({ session: session(), canControl: false });
 
       expect(button()).toBeNull();
-      expect(text('.chip')).toBe('Voting: Best idea');
+      expect(text('.chip')).toBe('Voting: Best idea · 3 left');
     });
 
     it('shows nothing about anybody else, only the number of votes of the caller', () => {
@@ -210,6 +225,29 @@ describe('VotingMenu', () => {
       expect(text('.note')).toContain('Nobody voted');
     });
 
+    it('names the voters under a result of a named voting', () => {
+      set({
+        session: closed({
+          named: true,
+          tally: [
+            {
+              elementId: 'e2',
+              count: 2,
+              label: 'Ship it',
+              voters: [
+                { id: 'u1', name: 'Ada' },
+                { id: 'u2', name: 'Bea' },
+              ],
+            },
+          ],
+        }),
+        canControl: true,
+      });
+      openMenu();
+
+      expect(el().querySelector('.voters')?.textContent?.trim()).toBe('Voted by Ada, Bea');
+    });
+
     it('gives a viewer no clear button and no start form', () => {
       set({ session: closed(), canControl: false });
       openMenu();
@@ -253,7 +291,7 @@ describe('VotingMenu', () => {
       expect(el().querySelector('.results-dialog')).toBeNull();
       expect(text('.start h3')).toBe('Start another voting');
       (el().querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
-      expect(events.start).toEqual([{ name: 'Voting', votesPerPerson: 5 }]);
+      expect(events.start).toEqual([{ name: 'Voting', votesPerPerson: 5, named: false }]);
     });
 
     it('gives a viewer no New voting button', () => {

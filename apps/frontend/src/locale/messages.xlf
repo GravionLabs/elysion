@@ -1075,7 +1075,7 @@
     </unit>
     <unit id="board.error.canvasNotReady">
       <notes>
-        <note category="location">src/app/board/board.ts:53</note>
+        <note category="location">src/app/board/board.ts:54</note>
       </notes>
       <segment>
         <source>The canvas is not ready yet.</source>
@@ -1083,7 +1083,7 @@
     </unit>
     <unit id="board.error.favoriteFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:152</note>
+        <note category="location">src/app/board/board.ts:154</note>
       </notes>
       <segment>
         <source>The star could not be saved.</source>
@@ -1091,7 +1091,7 @@
     </unit>
     <unit id="board.pageTitle.notFound">
       <notes>
-        <note category="location">src/app/board/board.ts:255</note>
+        <note category="location">src/app/board/board.ts:257</note>
       </notes>
       <segment>
         <source>Board not found · Elysion</source>
@@ -1099,7 +1099,7 @@
     </unit>
     <unit id="board.pageTitle.named">
       <notes>
-        <note category="location">src/app/board/board.ts:257</note>
+        <note category="location">src/app/board/board.ts:259</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> · Elysion</source>
@@ -1107,7 +1107,7 @@
     </unit>
     <unit id="board.error.templateNotApplied">
       <notes>
-        <note category="location">src/app/board/board.ts:288</note>
+        <note category="location">src/app/board/board.ts:290</note>
       </notes>
       <segment>
         <source>The template could not be applied. The board is blank.</source>
@@ -1115,7 +1115,7 @@
     </unit>
     <unit id="board.error.renameFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:301</note>
+        <note category="location">src/app/board/board.ts:303</note>
       </notes>
       <segment>
         <source>The board could not be renamed.</source>
@@ -1123,7 +1123,7 @@
     </unit>
     <unit id="board.error.accessLost">
       <notes>
-        <note category="location">src/app/board/board.ts:318</note>
+        <note category="location">src/app/board/board.ts:320</note>
       </notes>
       <segment>
         <source>You no longer have access to this board.</source>
@@ -1131,7 +1131,7 @@
     </unit>
     <unit id="board.error.timerFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:431</note>
+        <note category="location">src/app/board/board.ts:435</note>
       </notes>
       <segment>
         <source>The timer could not be changed.</source>
@@ -1139,8 +1139,8 @@
     </unit>
     <unit id="board.error.nothingSelected">
       <notes>
-        <note category="location">src/app/board/board.ts:464</note>
-        <note category="location">src/app/board/board.ts:611</note>
+        <note category="location">src/app/board/board.ts:468</note>
+        <note category="location">src/app/board/board.ts:615</note>
       </notes>
       <segment>
         <source>Nothing is selected.</source>
@@ -1148,7 +1148,7 @@
     </unit>
     <unit id="board.error.exportEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:465</note>
+        <note category="location">src/app/board/board.ts:469</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to export.</source>
@@ -1156,7 +1156,7 @@
     </unit>
     <unit id="board.error.exportFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:475</note>
+        <note category="location">src/app/board/board.ts:479</note>
       </notes>
       <segment>
         <source>The export failed.</source>
@@ -1164,8 +1164,8 @@
     </unit>
     <unit id="board.error.importFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:506</note>
-        <note category="location">src/app/board/board.ts:534</note>
+        <note category="location">src/app/board/board.ts:510</note>
+        <note category="location">src/app/board/board.ts:538</note>
       </notes>
       <segment>
         <source>The import failed.</source>
@@ -1173,7 +1173,7 @@
     </unit>
     <unit id="board.notice.imported.one">
       <notes>
-        <note category="location">src/app/board/board.ts:527</note>
+        <note category="location">src/app/board/board.ts:531</note>
       </notes>
       <segment>
         <source>Imported 1 element from <ph id="0" equiv="file" disp="file.name"/>.</source>
@@ -1181,7 +1181,7 @@
     </unit>
     <unit id="board.notice.imported.many">
       <notes>
-        <note category="location">src/app/board/board.ts:528</note>
+        <note category="location">src/app/board/board.ts:532</note>
       </notes>
       <segment>
         <source>Imported <ph id="0" equiv="count" disp="count"/> elements from <ph id="1" equiv="file" disp="file.name"/>.</source>
@@ -1189,7 +1189,7 @@
     </unit>
     <unit id="board.error.templateAddFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:554</note>
+        <note category="location">src/app/board/board.ts:558</note>
       </notes>
       <segment>
         <source>The template could not be added.</source>
@@ -1197,7 +1197,7 @@
     </unit>
     <unit id="board.template.defaultSelectionName">
       <notes>
-        <note category="location">src/app/board/board.ts:565</note>
+        <note category="location">src/app/board/board.ts:569</note>
       </notes>
       <segment>
         <source>Selection</source>
@@ -1205,7 +1205,7 @@
     </unit>
     <unit id="board.template.defaultBoardName">
       <notes>
-        <note category="location">src/app/board/board.ts:566</note>
+        <note category="location">src/app/board/board.ts:570</note>
       </notes>
       <segment>
         <source>Board</source>
@@ -1213,7 +1213,7 @@
     </unit>
     <unit id="board.template.nameRequired">
       <notes>
-        <note category="location">src/app/board/board.ts:595</note>
+        <note category="location">src/app/board/board.ts:599</note>
       </notes>
       <segment>
         <source>Give the template a name.</source>
@@ -1221,7 +1221,7 @@
     </unit>
     <unit id="board.error.templateEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:612</note>
+        <note category="location">src/app/board/board.ts:616</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to save as a template.</source>
@@ -1229,7 +1229,7 @@
     </unit>
     <unit id="board.notice.templateSaved">
       <notes>
-        <note category="location">src/app/board/board.ts:623</note>
+        <note category="location">src/app/board/board.ts:627</note>
       </notes>
       <segment>
         <source>Saved the template “<ph id="0" equiv="name" disp="name"/>”.</source>
@@ -1237,7 +1237,7 @@
     </unit>
     <unit id="board.error.templateSaveFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:634</note>
+        <note category="location">src/app/board/board.ts:638</note>
       </notes>
       <segment>
         <source>The template could not be saved.</source>
@@ -1281,6 +1281,46 @@
       </notes>
       <segment>
         <source>The image could not be saved.</source>
+      </segment>
+    </unit>
+    <unit id="board.voting.invalid">
+      <notes>
+        <note category="location">src/app/board/voting-api.ts:10</note>
+      </notes>
+      <segment>
+        <source>The voting needs a name of up to 80 characters and 1 to 100 votes per person.</source>
+      </segment>
+    </unit>
+    <unit id="board.voting.forbidden">
+      <notes>
+        <note category="location">src/app/board/voting-api.ts:12</note>
+      </notes>
+      <segment>
+        <source>Only editors and owners can start, end and clear a voting.</source>
+      </segment>
+    </unit>
+    <unit id="board.voting.notFound">
+      <notes>
+        <note category="location">src/app/board/voting-api.ts:14</note>
+      </notes>
+      <segment>
+        <source>This voting does not exist any more.</source>
+      </segment>
+    </unit>
+    <unit id="board.voting.conflict">
+      <notes>
+        <note category="location">src/app/board/voting-api.ts:16</note>
+      </notes>
+      <segment>
+        <source>A voting is already open, or it is closed.</source>
+      </segment>
+    </unit>
+    <unit id="board.voting.failed">
+      <notes>
+        <note category="location">src/app/board/voting-api.ts:18</note>
+      </notes>
+      <segment>
+        <source>The voting could not be changed.</source>
       </segment>
     </unit>
     <unit id="share.title.room">
@@ -2202,20 +2242,20 @@
         <note category="location">src/app/topbar/voting-menu.html:6,7</note>
       </notes>
       <segment>
-        <source>A voting is open: collaborators vote by clicking elements</source>
+        <source>A voting is open: click elements to vote</source>
       </segment>
     </unit>
     <unit id="topbar.voting.viewer-chip">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:16,17</note>
+        <note category="location">src/app/topbar/voting-menu.html:17,19</note>
       </notes>
       <segment>
-        <source>Voting: <ph id="0" equiv="INTERPOLATION" disp="{{ session()!.name }}"/></source>
+        <source>Voting: <ph id="0" equiv="INTERPOLATION" disp="{{ session()!.name }}"/> · <ph id="1" equiv="INTERPOLATION_1" disp="{{ left() }}"/> left</source>
       </segment>
     </unit>
     <unit id="topbar.voting.button-title">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:25,26</note>
+        <note category="location">src/app/topbar/voting-menu.html:27,28</note>
       </notes>
       <segment>
         <source>Dot voting</source>
@@ -2223,7 +2263,7 @@
     </unit>
     <unit id="topbar.voting.button-open">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:38,39</note>
+        <note category="location">src/app/topbar/voting-menu.html:40,41</note>
       </notes>
       <segment>
         <source>Voting · <ph id="0" equiv="INTERPOLATION" disp="{{ left() }}"/> left</source>
@@ -2231,7 +2271,7 @@
     </unit>
     <unit id="topbar.voting.button-results">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:40,42</note>
+        <note category="location">src/app/topbar/voting-menu.html:42,44</note>
       </notes>
       <segment>
         <source>Results</source>
@@ -2239,8 +2279,8 @@
     </unit>
     <unit id="topbar.voting.button">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:42,44</note>
-        <note category="location">src/app/topbar/voting-menu.ts:26</note>
+        <note category="location">src/app/topbar/voting-menu.html:44,46</note>
+        <note category="location">src/app/topbar/voting-menu.ts:28</note>
       </notes>
       <segment>
         <source>Voting</source>
@@ -2248,7 +2288,7 @@
     </unit>
     <unit id="topbar.voting.menu">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:49</note>
+        <note category="location">src/app/topbar/voting-menu.html:51</note>
       </notes>
       <segment>
         <source>Dot voting</source>
@@ -2256,7 +2296,7 @@
     </unit>
     <unit id="topbar.voting.left">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:53,55</note>
+        <note category="location">src/app/topbar/voting-menu.html:55,57</note>
       </notes>
       <segment>
         <source> <ph id="0" equiv="INTERPOLATION" disp="{{ left() }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ session()!.votesPerPerson }}"/> votes left. Click an element to vote, click one of your dots to take it back. </source>
@@ -2264,7 +2304,7 @@
     </unit>
     <unit id="topbar.voting.end">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:57,59</note>
+        <note category="location">src/app/topbar/voting-menu.html:59,61</note>
       </notes>
       <segment>
         <source> End voting </source>
@@ -2272,7 +2312,7 @@
     </unit>
     <unit id="topbar.voting.start-another">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:62,64</note>
+        <note category="location">src/app/topbar/voting-menu.html:64,66</note>
       </notes>
       <segment>
         <source>Start another voting</source>
@@ -2280,7 +2320,7 @@
     </unit>
     <unit id="topbar.voting.start-a">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:64,66</note>
+        <note category="location">src/app/topbar/voting-menu.html:66,68</note>
       </notes>
       <segment>
         <source>Start a voting</source>
@@ -2288,7 +2328,7 @@
     </unit>
     <unit id="topbar.voting.name">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:66,68</note>
+        <note category="location">src/app/topbar/voting-menu.html:68,70</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -2296,7 +2336,7 @@
     </unit>
     <unit id="topbar.voting.votes-per-person">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:75,77</note>
+        <note category="location">src/app/topbar/voting-menu.html:77,79</note>
       </notes>
       <segment>
         <source>Votes per person</source>
@@ -2304,15 +2344,23 @@
     </unit>
     <unit id="topbar.voting.votes-per-person-aria">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:92,93</note>
+        <note category="location">src/app/topbar/voting-menu.html:94,95</note>
       </notes>
       <segment>
         <source>Votes per person</source>
       </segment>
     </unit>
+    <unit id="topbar.voting.named">
+      <notes>
+        <note category="location">src/app/topbar/voting-menu.html:104,106</note>
+      </notes>
+      <segment>
+        <source>Show who voted for what in the result</source>
+      </segment>
+    </unit>
     <unit id="topbar.voting.start">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:103,106</note>
+        <note category="location">src/app/topbar/voting-menu.html:109,112</note>
       </notes>
       <segment>
         <source>Start</source>
@@ -2320,7 +2368,7 @@
     </unit>
     <unit id="topbar.voting.results-title">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:128,130</note>
+        <note category="location">src/app/topbar/voting-menu.html:134,136</note>
       </notes>
       <segment>
         <source> Results: <ph id="0" equiv="INTERPOLATION" disp="{{ session()!.name }}"/> </source>
@@ -2328,7 +2376,7 @@
     </unit>
     <unit id="topbar.voting.move-aria">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:133,134</note>
+        <note category="location">src/app/topbar/voting-menu.html:139,140</note>
       </notes>
       <segment>
         <source>Move the dialog (arrow keys)</source>
@@ -2336,7 +2384,7 @@
     </unit>
     <unit id="topbar.voting.move-title">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:135,136</note>
+        <note category="location">src/app/topbar/voting-menu.html:141,142</note>
       </notes>
       <segment>
         <source>Drag the title to move the dialog</source>
@@ -2344,7 +2392,7 @@
     </unit>
     <unit id="topbar.voting.close">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:148,149</note>
+        <note category="location">src/app/topbar/voting-menu.html:154,155</note>
       </notes>
       <segment>
         <source>Close the results</source>
@@ -2352,15 +2400,23 @@
     </unit>
     <unit id="topbar.voting.nobody">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:159,161</note>
+        <note category="location">src/app/topbar/voting-menu.html:165,167</note>
       </notes>
       <segment>
         <source> Nobody voted for anything that is still on the board. </source>
       </segment>
     </unit>
+    <unit id="topbar.voting.voters">
+      <notes>
+        <note category="location">src/app/topbar/voting-menu.html:177,178</note>
+      </notes>
+      <segment>
+        <source>Voted by <ph id="0" equiv="INTERPOLATION" disp="{{ names(entry) }}"/></source>
+      </segment>
+    </unit>
     <unit id="topbar.voting.total">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:173,177</note>
+        <note category="location">src/app/topbar/voting-menu.html:184,188</note>
       </notes>
       <segment>
         <source> <ph id="0" equiv="ICU" disp="{total(), plural, =1 {1 vote in total.} other {{{ total() }} votes in total.}}" subFlows="8346785399981803578"/> </source>
@@ -2368,7 +2424,7 @@
     </unit>
     <unit id="4390155632486311196">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:173,175</note>
+        <note category="location">src/app/topbar/voting-menu.html:184,186</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 vote in total.} other {<ph id="0" equiv="INTERPOLATION"/> votes in total.}}</source>
@@ -2376,7 +2432,7 @@
     </unit>
     <unit id="topbar.voting.clear-confirm">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:180,182</note>
+        <note category="location">src/app/topbar/voting-menu.html:191,193</note>
       </notes>
       <segment>
         <source> Clear these results? The votes are removed for everybody. </source>
@@ -2384,7 +2440,7 @@
     </unit>
     <unit id="topbar.voting.clear-yes">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:186,187</note>
+        <note category="location">src/app/topbar/voting-menu.html:197,198</note>
       </notes>
       <segment>
         <source>Yes, clear the results</source>
@@ -2392,7 +2448,7 @@
     </unit>
     <unit id="topbar.voting.clear">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:188,190</note>
+        <note category="location">src/app/topbar/voting-menu.html:199,201</note>
       </notes>
       <segment>
         <source>Clear results</source>
@@ -2400,7 +2456,7 @@
     </unit>
     <unit id="topbar.voting.new">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.html:197,198</note>
+        <note category="location">src/app/topbar/voting-menu.html:208,209</note>
       </notes>
       <segment>
         <source> New voting… </source>
@@ -2408,7 +2464,7 @@
     </unit>
     <unit id="topbar.voting.error">
       <notes>
-        <note category="location">src/app/topbar/voting-menu.ts:197</note>
+        <note category="location">src/app/topbar/voting-menu.ts:206</note>
       </notes>
       <segment>
         <source>Enter a whole number of votes between 1 and <ph id="0" equiv="max" disp="MAX_VOTES"/>.</source>

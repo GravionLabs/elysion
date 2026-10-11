@@ -70,6 +70,37 @@ describe('BusinessBackendClient', () => {
     expect(lastCall().init.method).toBe('DELETE');
   });
 
+  it('reads, starts, votes, retracts, closes and clears a voting', async () => {
+    const voting = { id: 'v1', status: 'open' };
+    fetchMock.mockImplementation(async () => respond(200, voting));
+    await expect(client.getVoting(TOKEN, board.id)).resolves.toEqual(voting);
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/voting`);
+
+    fetchMock.mockImplementation(async () => new Response(null, { status: 204 }));
+    await expect(client.getVoting(TOKEN, board.id)).resolves.toBeNull();
+
+    fetchMock.mockImplementation(async () => respond(201, voting));
+    await client.startVoting(TOKEN, board.id, { votesPerPerson: 3 });
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/votings`);
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({ votesPerPerson: 3 });
+
+    fetchMock.mockImplementation(async () => respond(200, voting));
+    await client.castVote(TOKEN, board.id, 'v1', 'e 1');
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/votings/v1/votes`);
+    await client.retractVote(TOKEN, board.id, 'v1', 'e 1');
+    expect(lastCall().url).toBe(
+      `http://backend.test:5174/boards/${board.id}/votings/v1/votes/e%201`,
+    );
+    expect(lastCall().init.method).toBe('DELETE');
+    await client.closeVoting(TOKEN, board.id, 'v1');
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/votings/v1/close`);
+
+    fetchMock.mockImplementation(async () => new Response(null, { status: 204 }));
+    await expect(client.retractVote(TOKEN, board.id, 'v1', 'e2')).resolves.toBeNull();
+    await expect(client.clearVotings(TOKEN, board.id)).resolves.toBeUndefined();
+    expect(lastCall().init.method).toBe('DELETE');
+  });
+
   it('gets one board', async () => {
     fetchMock.mockResolvedValue(respond(200, board));
 

@@ -90,11 +90,11 @@ In the dark theme Excalidraw darkens the whole canvas, so notes look darker than
 
 **Share** (for the owner) lists who has access. Type an **e-mail address**, choose a **role** and press **Add**:
 
-| Role       | Can                                                                            |
-| ---------- | ------------------------------------------------------------------------------ |
-| **Owner**  | Everything, including sharing and deleting the board                           |
-| **Editor** | Change the board, use the timer and the voting, add templates                  |
-| **Viewer** | Look at the board and follow the others live; the server refuses their changes |
+| Role       | Can                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| **Owner**  | Everything, including sharing and deleting the board                                             |
+| **Editor** | Change the board, use the timer and the voting, add templates                                    |
+| **Viewer** | Look at the board, follow the others live and vote in a voting; the server refuses other changes |
 
 Change a role in the list, or **Remove** somebody. A person has to have logged in to Elysion once before they can be added. For a whole team
 use a room instead: its members have access to all its boards.
@@ -139,7 +139,7 @@ PDF is shown per page and can be canceled.
 
 ## Running a workshop
 
-The timer and the voting are for the people who lead a session. Everybody on the board sees them, and both can be used by owners and editors.
+The timer and the voting are for the people who lead a session. Everybody on the board sees them; owners and editors start and end them, and everybody, viewers too, votes.
 
 ### The timer
 
@@ -157,7 +157,7 @@ part of the board, so somebody who joins later or reloads sees the time that is 
 
 ![Starting a voting](images/09-voting-start.png)
 
-1. **Voting** opens a form: a **name** and the **votes per person** (3, 5, 10 or your own number). Press **Start**.
+1. **Voting** opens a form: a **name**, the **votes per person** (3, 5, 10 or your own number) and, if you want, **Show who voted for what in the result** (off: the result shows counts only). Press **Start**.
 2. While the voting is open, **click an element** (a sticky note, a shape) to give it a vote. Small dots at its corner are your own votes; click
    a dot to take that vote back. The button in the top bar and a hint above the toolbar say how many votes you have left.
 
@@ -173,8 +173,8 @@ part of the board, so somebody who joins later or reloads sees the time that is 
    Owners and editors can **Clear results** (the second press confirms) or start **New voting…**. Somebody who joins afterwards opens the
    results with the **Results** button.
 
-While a voting is open you only see **your own** votes, never anybody else's, and the results show counts without names. Viewers see the
-voting and its results but cannot vote. This anonymity is a promise of the interface, not of the system (see [what is missing](../README.md#what-is-missing)).
+While a voting is open you only see **your own** votes, never anybody else's, and the server keeps the others' votes from you. The results show
+counts, and names only when the voting was started as named. **Viewers vote too**; only owners and editors start, end and clear a voting.
 
 ## Tips
 

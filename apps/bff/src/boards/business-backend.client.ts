@@ -34,6 +34,38 @@ export interface Board {
   isFavorite?: boolean;
 }
 
+/** A person in a voting: `id` is the identity-provider subject, the id the canvas knows (#732). */
+export interface VotingPerson {
+  id: string;
+  name: string;
+}
+
+/**
+ * A dot voting as the backend returns it to this caller (ADR 0029): the caller's own votes, never another person's targets
+ * while it is open; `placed` (open) says how many votes each person has placed, `result` (closed) the votes per element.
+ */
+export interface Voting {
+  id: string;
+  name: string;
+  votesPerPerson: number;
+  status: 'open' | 'closed';
+  named: boolean;
+  startedBy: VotingPerson;
+  startedAt: string;
+  closedAt: string | null;
+  myVotes: number;
+  myElementVotes: Record<string, number>;
+  placed?: Record<string, number>;
+  result?: Array<{ elementId: string; count: number; voters?: VotingPerson[] }>;
+}
+
+/** What the caller sends to start a voting. */
+export interface StartVotingInput {
+  name?: string;
+  votesPerPerson?: number;
+  named?: boolean;
+}
+
 /** A room as the business backend's room API returns it: `role` is the caller's role in it. */
 export interface Room {
   id: string;
@@ -125,6 +157,48 @@ export class BusinessBackendClient {
 
   duplicateBoard(token: string, id: string): Promise<Board> {
     return this.request<Board>(token, 'POST', `/boards/${id}/duplicate`);
+  }
+
+  /** The board's current voting (the open one, else the last closed) as the caller sees it, or `null` when it has none. */
+  async getVoting(token: string, boardId: string): Promise<Voting | null> {
+    return (
+      (await this.request<Voting | undefined>(token, 'GET', `/boards/${boardId}/voting`)) ?? null
+    );
+  }
+
+  startVoting(token: string, boardId: string, input: StartVotingInput): Promise<Voting> {
+    return this.request<Voting>(token, 'POST', `/boards/${boardId}/votings`, input);
+  }
+
+  castVote(token: string, boardId: string, votingId: string, elementId: string): Promise<Voting> {
+    return this.request<Voting>(token, 'POST', `/boards/${boardId}/votings/${votingId}/votes`, {
+      elementId,
+    });
+  }
+
+  /** Takes back one of the caller's votes on an element; the voting after it, or `null` when they had none there. */
+  async retractVote(
+    token: string,
+    boardId: string,
+    votingId: string,
+    elementId: string,
+  ): Promise<Voting | null> {
+    return (
+      (await this.request<Voting | undefined>(
+        token,
+        'DELETE',
+        `/boards/${boardId}/votings/${votingId}/votes/${encodeURIComponent(elementId)}`,
+      )) ?? null
+    );
+  }
+
+  closeVoting(token: string, boardId: string, votingId: string): Promise<Voting> {
+    return this.request<Voting>(token, 'POST', `/boards/${boardId}/votings/${votingId}/close`);
+  }
+
+  /** Removes the board's closed votings; an open one stays. */
+  async clearVotings(token: string, boardId: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/boards/${boardId}/votings`);
   }
 
   /** Puts a board in a room, or takes it out of its room (`roomId: null`). */

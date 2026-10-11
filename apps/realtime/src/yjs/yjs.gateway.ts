@@ -21,7 +21,7 @@ import { InvalidWsTokenError, WsTokenVerifier } from '../auth/ws-token-verifier.
 import { SaveMetrics } from '../metrics/save-metrics.js';
 import { PresenceRelay } from '../presence/presence-relay.js';
 import { readGeneration } from './generation.js';
-import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC } from './protocol.js';
+import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC, MESSAGE_VOTING } from './protocol.js';
 import { YjsRoom, YjsRoomRegistry } from './yjs-room-registry.js';
 
 /**
@@ -346,6 +346,10 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
           );
         break;
       }
+      case MESSAGE_VOTING:
+        // Only the server sends it (ADR 0029): the votes are changed through the API, never through the socket.
+        this.logger.debug(`Ignored a voting message from a client on board ${room.boardId}`);
+        break;
       default:
         this.logger.warn(`Unknown Yjs message type ${messageType}`);
     }

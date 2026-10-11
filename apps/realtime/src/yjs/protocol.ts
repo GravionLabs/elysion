@@ -6,3 +6,8 @@ export const MESSAGE_AWARENESS = 1;
  * size limit. No payload. A client that knows the type says so; one that does not ignores it.
  */
 export const MESSAGE_BOARD_FULL = 4;
+/**
+ * The dot voting of the board changed (ADR 0029). Payload: one var string, the JSON of a `VotingBroadcast` (see
+ * `voting/voting-broadcast.ts`). Server to client only; a client that does not know the type ignores it. A client never sends it.
+ */
+export const MESSAGE_VOTING = 5;

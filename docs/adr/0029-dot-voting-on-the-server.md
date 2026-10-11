@@ -58,7 +58,7 @@ fetches `GET voting` when it connects and on every `synced`, so a missed signal 
 (`startVoting`, `endVoting`, `clearVotingResults`, the `voting` event) stays; `startVoting` takes `named`.
 
 **Auto-end.** A client that may write still ends the voting once everybody present who may vote has spent their votes
-(awareness `voter` as before, `placed` from the broadcast); closing is idempotent.
+(each client publishes how many votes it has placed through the awareness `voter` field, counts only, never targets; viewers vote, so they are waited for); closing is idempotent. `placed` in the view is for clients that have no awareness.
 
 **Migration.** The `voting` key of the document's `session` map is not read any more. A client that may write deletes it
 when it finds it; if a voting in it was still open, the client tells the person once with the counts of that voting

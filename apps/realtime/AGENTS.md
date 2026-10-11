@@ -30,6 +30,10 @@ Every `/yjs` connection needs `?token=` (the BFF's board-scoped WS token): `src/
 
 `src/document/document-relay.ts` relays Yjs updates between instances on `elysion:doc:<boardId>` and heals gaps with a `hello` / `hello-ack` state-vector exchange (details in `docs/specs/realtime.md`). Unit tests put several registries on one `FakeRedisBus` (`src/testing/fake-redis.ts`); `test/document-relay.e2e-spec.ts` runs two real instances against the shared Valkey. Shared e2e helpers (`SyncClient`, `startInstance`) are in `test/helpers.ts`.
 
+## Voting notifications
+
+`src/voting/` (ADR 0029): `InternalVotingController` takes the business backend's `POST /internal/boards/:boardId/voting` (service token checked by `InternalCallVerifier`, iss `elysion-business-backend`, aud `elysion-realtime`), `parseVotingNotification` validates the body, `YjsRoomRegistry.announceVoting` sends message type 5 (`MESSAGE_VOTING`) to the board's sockets and relays it as document-relay type `voting`. `test/voting.e2e-spec.ts` drives it with two instances. Wire format: `docs/specs/realtime.md`.
+
 ## Persistence
 
 `src/persistence/` holds the `DocumentStore` interface (`load`, `save`, `delete`) and `HttpDocumentStore` (ADR 0011; protocol in `docs/specs/realtime.md`). `YjsRoomRegistry.getOrLoad` is async and fails when the store does; A room without clients is saved and unloaded after a grace period (`ROOM_EVICT_AFTER_MS`, default 30000; `YjsRoomRegistry.release`); the e2e suites shorten the registry's timings by overriding `PERSISTENCE_OPTIONS`. `InMemoryDocumentStore` is for tests: the e2e suites replace `DocumentStore` with it (`overrideProvider(DocumentStore)`), `test/persistence.e2e-spec.ts` covers a restart.

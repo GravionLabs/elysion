@@ -3,7 +3,7 @@ import * as encoding from 'lib0/encoding';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
-import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC } from './protocol.js';
+import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC, MESSAGE_VOTING } from './protocol.js';
 
 /** The longest wait between attempts to get a token. */
 const MAX_BACKOFF_MS = 30_000;
@@ -29,6 +29,29 @@ const STALE_COPY_CLOSE_CODE = 4409;
 /** The key of the document's generation: `meta.generation` (apps/realtime `generation.ts`). */
 const META_MAP_KEY = 'meta';
 const GENERATION_KEY = 'generation';
+
+/**
+ * The JSON of a `voting` message, or `undefined` when it is not JSON. A length-prefixed string is what the realtime
+ * service writes; a payload without a prefix (the rest of the message) is accepted as well.
+ */
+function readVotingPayload(decoder: decoding.Decoder): unknown {
+  const start = decoder.pos;
+  const parse = (text: string): unknown => {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return undefined;
+    }
+  };
+  try {
+    const bytes = decoding.readVarUint8Array(decoder);
+    if (decoder.pos === decoder.arr.length) return parse(new TextDecoder().decode(bytes));
+  } catch {
+    // Not length-prefixed.
+  }
+  decoder.pos = start;
+  return parse(new TextDecoder().decode(decoder.arr.subarray(start)));
+}
 
 export type YjsConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
@@ -56,6 +79,8 @@ export interface YjsWebsocketClientOptions {
    * what the board holds, so a host may write what it has that the board lacks. Called after every (re)connect.
    */
   onSynced?: () => void;
+  /** The realtime service announced a change of the board's voting (message type 5): the parsed JSON payload (ADR 0029). */
+  onVoting?: (payload: unknown) => void;
   /**
    * The document was rebuilt while this client was away (close code 4409, ADR 0026): this client's `Y.Doc` must not be
    * merged into the new one. The client does not reconnect; the host throws the document away, makes a new client and
@@ -280,6 +305,11 @@ export class YjsWebsocketClient {
         decoding.readVarUint8Array(decoder),
         this,
       );
+      return;
+    }
+    if (messageType === MESSAGE_VOTING) {
+      const payload = readVotingPayload(decoder);
+      if (payload !== undefined) this.#options.onVoting?.(payload);
       return;
     }
     if (messageType === MESSAGE_BOARD_FULL) {

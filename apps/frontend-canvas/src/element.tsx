@@ -1,13 +1,13 @@
 import { type Root, createRoot } from 'react-dom/client';
 import { CanvasApp, type CanvasControls } from './CanvasApp';
 import type { TimerState } from './facilitation/timer';
-import type { StartOptions, VotingView } from './facilitation/voting';
+import type { StartOptions, VotingApi, VotingView } from './facilitation/voting';
 import type { ExportFormat, ExportOptions } from './board-io';
 import { parseTheme } from './useResolvedTheme';
 import { parseLocale, createI18n } from './i18n';
 import type { FileStore } from './yjs/files';
 
-export type { FileStore };
+export type { FileStore, VotingApi };
 
 /** What the host gives the canvas to get a WS token. */
 export type TokenProvider = () => Promise<string | null>;
@@ -36,6 +36,7 @@ class ElysionCanvasElement extends HTMLElement {
   #controls: CanvasControls | null = null;
   #tokenProvider: TokenProvider | undefined;
   #fileStore: FileStore | undefined;
+  #votingApi: VotingApi | undefined;
 
   /**
    * Asked before every connection to the board server for the board-scoped WS token (docs/specs/identity.md): it
@@ -67,25 +68,42 @@ class ElysionCanvasElement extends HTMLElement {
     this.#render();
   }
 
+  /**
+   * How the canvas reaches the board's voting on the server (ADR 0029): `get`, `start`, `vote`, `retract`, `close` and
+   * `clear`, backed by the host's API. A property, like `fileStore`, because it is an object with methods. Without one
+   * a voting cannot be started or voted in.
+   */
+  get votingApi(): VotingApi | undefined {
+    return this.#votingApi;
+  }
+
+  set votingApi(api: VotingApi | undefined) {
+    this.#votingApi = api;
+    this.#render();
+  }
+
   connectedCallback(): void {
     // A host may set properties on the element before it is upgraded (the script loads lazily, so on the first visit
     // the element can exist before this class does). That leaves an own property that hides the accessor above, and
     // the value would never arrive: move it onto the accessor.
     this.#adoptEarlyProperty('tokenProvider');
     this.#adoptEarlyProperty('fileStore');
+    this.#adoptEarlyProperty('votingApi');
     this.#root = createRoot(this);
     this.#render();
     this.dispatchEvent(new CustomEvent('ready', { bubbles: true, composed: true }));
   }
 
-  #adoptEarlyProperty(name: 'tokenProvider' | 'fileStore'): void {
+  #adoptEarlyProperty(name: 'tokenProvider' | 'fileStore' | 'votingApi'): void {
     if (Object.prototype.hasOwnProperty.call(this, name)) {
       const value = (this as unknown as Record<string, unknown>)[name];
       delete (this as unknown as Record<string, unknown>)[name];
       if (name === 'tokenProvider') {
         this.tokenProvider = value as TokenProvider | undefined;
-      } else {
+      } else if (name === 'fileStore') {
         this.fileStore = value as FileStore | undefined;
+      } else {
+        this.votingApi = value as VotingApi | undefined;
       }
     }
   }
@@ -176,7 +194,7 @@ class ElysionCanvasElement extends HTMLElement {
     return this.#timer((controls) => controls.stopTimer());
   }
 
-  /** Opens a dot voting for everybody on the board; rejects while one is open, on a read-only canvas and before the canvas is up. */
+  /** Opens a dot voting for everybody on the board (`named` shows who voted for what in the result); rejects while one is open, on a read-only canvas, without a `votingApi` and before the canvas is up. */
   startVoting(options: StartOptions): Promise<void> {
     return this.#timer((controls) => controls.startVoting(options));
   }
@@ -225,6 +243,7 @@ class ElysionCanvasElement extends HTMLElement {
         onSynced={() => this.#emit('synced', {})}
         tokenProvider={this.#tokenProvider}
         fileStore={this.#fileStore}
+        votingApi={this.#votingApi}
         readOnly={this.hasAttribute('readonly')}
         imagesEnabled={this.hasAttribute('images-enabled')}
         maxElements={positiveInteger(this.getAttribute('max-elements'))}

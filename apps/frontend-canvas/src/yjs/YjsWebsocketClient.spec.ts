@@ -462,6 +462,25 @@ describe('YjsWebsocketClient', () => {
       client.destroy();
     });
 
+    it.each(['string', 'rest'] as const)(
+      'hands a voting message (type 5, payload %s-framed) to the host as parsed JSON',
+      async (framing) => {
+        const payloads: unknown[] = [];
+        const client = new YjsWebsocketClient(`${server.url}?board=g6${framing}`, new Y.Doc(), {
+          ...options,
+          onVoting: (payload) => payloads.push(payload),
+        });
+        await waitUntil(() => server.connectionUrls().length === 1);
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        server.sendVoting({ event: 'close', voting: null }, framing);
+        await waitUntil(() => payloads.length === 1);
+
+        expect(payloads).toEqual([{ event: 'close', voting: null }]);
+        client.destroy();
+      },
+    );
+
     it('reports a refused update (1009) and a full board (message 4)', async () => {
       const events: string[] = [];
       const client = new YjsWebsocketClient(`${server.url}?board=g5`, new Y.Doc(), {
