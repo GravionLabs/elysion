@@ -41,7 +41,7 @@ test.afterAll(async () => {
 
 test('the owner sees who got a role in the history of the Share dialog', async () => {
   await owner.getByRole('button', { name: /^Share/ }).click();
-  await owner.getByPlaceholder('Name or name@example.com').fill(emailOf(USER_B));
+  await owner.getByRole('combobox', { name: 'Person' }).fill(emailOf(USER_B));
   await owner.getByLabel('Role of the new member').selectOption('Viewer');
   await owner.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(owner.getByText(emailOf(USER_B))).toBeVisible();
