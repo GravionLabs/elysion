@@ -165,4 +165,58 @@ describe('Administration (e2e, against a fake business backend)', () => {
 
     expect(upstream.lastAdminRequest).toBeNull();
   });
+
+  describe('what the BFF checks before it asks the backend', () => {
+    it.each([
+      ['/api/admin/users?query=' + 'x'.repeat(101)],
+      ['/api/admin/users?page=abc'],
+      ['/api/admin/users?page=-1'],
+      ['/api/admin/users?pageSize=1.5'],
+      ['/api/admin/groups?page=99999999999'],
+    ])('refuses %s with a 400', async (url) => {
+      await api().get(url.slice(0, 2000)).expect(400);
+
+      expect(upstream.lastAdminRequest).toBeNull();
+    });
+
+    it('builds the query from the three values only and encodes the text', async () => {
+      await api().get('/api/admin/rooms?query=a%20%26%20b&page=3&pageSize=7&other=1').expect(200);
+
+      expect(upstream.lastAdminRequest?.path).toBe('/admin/rooms?query=a+%26+b&page=3&pageSize=7');
+    });
+
+    it('needs a text name to make a group', async () => {
+      await api().post('/api/admin/groups').send({}).expect(400);
+      await api().post('/api/admin/groups').send({ name: 5 }).expect(400);
+
+      expect(upstream.lastAdminRequest).toBeNull();
+    });
+
+    it.each([[{}], [{ name: 5 }], [{ externalId: 5 }], [[1]]])(
+      'refuses the group change %j with a 400',
+      async (body) => {
+        await api().patch(`/api/admin/groups/${randomUUID()}`).send(body).expect(400);
+
+        expect(upstream.lastAdminRequest).toBeNull();
+      },
+    );
+
+    it('sends only the keys of a group change it knows', async () => {
+      const id = randomUUID();
+
+      await api().patch(`/api/admin/groups/${id}`).send({ name: 'Dev', extra: 'x' }).expect(200);
+
+      expect(upstream.lastAdminRequest?.body).toEqual({ name: 'Dev' });
+    });
+
+    it('answers 404 for ids that are no UUIDs and for routes the area does not have', async () => {
+      await api().get('/api/admin/users/not-a-uuid').expect(404);
+      await api().delete('/api/admin/groups/1').expect(404);
+      await api().put(`/api/admin/groups/${randomUUID()}/members/x`).expect(404);
+      await api().get('/api/admin/boards').expect(404);
+      await api().post('/api/admin').expect(404);
+
+      expect(upstream.lastAdminRequest).toBeNull();
+    });
+  });
 });

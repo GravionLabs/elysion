@@ -510,31 +510,64 @@ export class BusinessBackendClient {
     await this.request<void>(token, 'DELETE', `/boards/${id}`);
   }
 
-  /**
-   * A call of the `/admin` area passed through as it is (ADR 0027, #656): the BFF does not know the shapes, the business backend
-   * checks the role and answers. Returns the status the backend answered with (a 201 stays a 201, a 204 has no body).
-   */
-  async forwardAdmin(
-    token: string,
-    method: string,
-    path: string,
-    body?: unknown,
-  ): Promise<{ status: number; body?: unknown }> {
-    const response = await this.fetchBackend(path, {
-      method,
-      headers: {
-        ...this.headers(token),
-        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    if (!response.ok) {
-      return this.fail(response);
-    }
-    return response.status === 204
-      ? { status: 204 }
-      : { status: response.status, body: await response.json() };
+  // The administration area (ADR 0027, #656): one method per call, with a fixed path. The only variable parts are ids that passed
+  // the UUID check in the controller (and are encoded anyway) and a query string made from numbers and one short text.
+
+  adminStats(token: string): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', '/admin/stats');
+  }
+
+  adminListUsers(token: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/admin/users${adminQuery(list)}`);
+  }
+
+  adminGetUser(token: string, id: string): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/admin/users/${encodeURIComponent(id)}`);
+  }
+
+  adminListGroups(token: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/admin/groups${adminQuery(list)}`);
+  }
+
+  adminCreateGroup(token: string, name: string): Promise<unknown> {
+    return this.request<unknown>(token, 'POST', '/admin/groups', { name });
+  }
+
+  /** `externalId: null` unlinks the group, a string links it; a key that is left out is not sent. */
+  adminPatchGroup(token: string, id: string, patch: AdminGroupPatch): Promise<unknown> {
+    return this.request<unknown>(token, 'PATCH', `/admin/groups/${encodeURIComponent(id)}`, patch);
+  }
+
+  async adminDeleteGroup(token: string, id: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/admin/groups/${encodeURIComponent(id)}`);
+  }
+
+  adminListGroupMembers(token: string, id: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(
+      token,
+      'GET',
+      `/admin/groups/${encodeURIComponent(id)}/members${adminQuery(list)}`,
+    );
+  }
+
+  async adminAddGroupMember(token: string, id: string, userId: string): Promise<void> {
+    await this.request<void>(
+      token,
+      'PUT',
+      `/admin/groups/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`,
+    );
+  }
+
+  async adminRemoveGroupMember(token: string, id: string, userId: string): Promise<void> {
+    await this.request<void>(
+      token,
+      'DELETE',
+      `/admin/groups/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`,
+    );
+  }
+
+  adminListRooms(token: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/admin/rooms${adminQuery(list)}`);
   }
 
   /** The headers of every call: the caller's token and the id of the request being handled, so the backend's lines carry it (ADR 0025). */
@@ -639,4 +672,27 @@ async function validationMessage(response: Response): Promise<string> {
   } catch {
     return 'Invalid request.';
   }
+}
+
+/** What a list of the administration area is asked for: a search text and a page, all checked by the controller. */
+export interface AdminList {
+  query?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/** The change of a group (`PATCH /admin/groups/:id`): either key may be left out. */
+export interface AdminGroupPatch {
+  name?: string;
+  externalId?: string | null;
+}
+
+/** `?query=..&page=..&pageSize=..` from the three allowed values, encoded; empty when none is given. */
+function adminQuery(list: AdminList): string {
+  const params = new URLSearchParams();
+  if (list.query !== undefined) params.append('query', list.query);
+  if (list.page !== undefined) params.append('page', String(list.page));
+  if (list.pageSize !== undefined) params.append('pageSize', String(list.pageSize));
+  const text = params.toString();
+  return text === '' ? '' : `?${text}`;
 }
