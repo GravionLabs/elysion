@@ -292,7 +292,14 @@ export class BoardList {
     this.#pageTitle.setTitle($localize`:@@boards.pageTitle:Boards · Elysion`);
     this.load();
     // The address holds the search: arriving with `?q=` (or the back button) fills the field.
-    effect(() => this.search.set(this.q() ?? ''));
+    // While the person types, the address trails behind the field: taking its (older) value back would eat characters.
+    effect(() => {
+      const fromAddress = this.q() ?? '';
+      untracked(() => {
+        const typing = document.activeElement === this.searchInput()?.nativeElement;
+        if (!typing && fromAddress.trim() !== this.search().trim()) this.search.set(fromAddress);
+      });
+    });
     // The room's name is selected when it is being renamed.
     effect(() => {
       const field = this.renameInput()?.nativeElement;
