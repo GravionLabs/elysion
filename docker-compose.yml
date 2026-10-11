@@ -321,6 +321,8 @@ services:
       # Where the browser logs in (the address the browser uses, so localhost:8081) and as which client.
       OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
       OIDC_CLIENT_ID: elysion-frontend
+      # Optional: the alias of the realm's identity provider (`microsoft`): the login goes straight to the company's page.
+      AUTH_IDP_HINT: ${AUTH_IDP_HINT:-}
       # The Content-Security-Policy (docs/specs/frontend.md, "Headers"): off, report (the browser reports to the BFF, nothing
       # is blocked) or enforce; and Strict-Transport-Security in seconds, only when TLS is on (empty: none).
       CSP_MODE: ${CSP_MODE:-enforce}

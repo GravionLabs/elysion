@@ -320,6 +320,8 @@ spec:
               value: http://localhost:8081/realms/elysion
             - name: OIDC_CLIENT_ID
               value: elysion-frontend
+            - name: AUTH_IDP_HINT
+              value: ""
             - name: CSP_MODE
               value: enforce
             - name: HSTS_MAX_AGE
