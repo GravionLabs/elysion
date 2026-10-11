@@ -166,15 +166,22 @@ test('both people change the same text during an outage and have the same text w
   });
 
   await expect(a.getByText(/^\s*Back online/)).toBeVisible({ timeout: 30_000 });
+  let seen = '';
   await expect
     .poll(
       async () => {
-        const [mine, theirs] = [(await texts(a))[0], (await texts(b))[0]];
-        return mine === theirs && /^Changed by [AB]$/.test(mine ?? '');
+        const [mine, theirs] = [await texts(a), await texts(b)];
+        seen = JSON.stringify({ a: mine, b: theirs });
+        return (
+          mine.length === 1 && mine[0] === theirs[0] && /^Changed by [AB]$/.test(mine[0] ?? '')
+        );
       },
       { timeout: 60_000 },
     )
-    .toBe(true);
+    .toBe(true)
+    .catch((error: Error) => {
+      throw new Error(`${error.message}\nthe texts at the end: ${seen}`);
+    });
 });
 
 test('a tab that is reloaded during an outage keeps what was drawn, and sends it when the service is back (#735)', async () => {

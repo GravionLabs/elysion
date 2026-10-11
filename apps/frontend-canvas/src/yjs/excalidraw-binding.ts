@@ -28,6 +28,20 @@ export interface BindingOptions {
 }
 
 /**
+ * Whether an element of the scene replaces the stored one: it has a higher `version`, or the same `version` and the lower
+ * `versionNonce` (the rule of Excalidraw's `reconcileElements`, so that the document and every screen agree on a tie).
+ */
+function beats(
+  element: { version: number; versionNonce: number },
+  stored: { version: number; versionNonce: number },
+): boolean {
+  return (
+    element.version > stored.version ||
+    (element.version === stored.version && element.versionNonce < stored.versionNonce)
+  );
+}
+
+/**
  * Binds an Excalidraw scene to a shared Y.Doc: local edits are written into
  * a Y.Map<elementId, element> (never removed — Excalidraw already
  * soft-deletes via `isDeleted`, which doubles as a CRDT-friendly
@@ -103,7 +117,7 @@ export class ExcalidrawYjsBinding {
           }
           live += 1;
         }
-        if (!existing || existing.version < element.version) {
+        if (!existing || beats(element, existing)) {
           // Excalidraw mutates its element objects in place; Y.Map.get()
           // returns the exact reference passed to .set(), so storing
           // `element` directly would make `existing` and `element` alias
@@ -214,6 +228,18 @@ export class ExcalidrawYjsBinding {
     if (changed) {
       api.updateScene({ elements: detached, captureUpdate: CaptureUpdateAction.NEVER });
     }
+    // Two people who changed the same element while apart, each the same number of times, have the same `version`: Excalidraw
+    // keeps the one with the lower `versionNonce` on both screens, but the document keeps the one that Yjs happened to pick.
+    // The scene's element that wins by Excalidraw's rule is written, so the document ends where the screens are.
+    this.#doc.transact(() => {
+      for (const element of detached) {
+        if (storedObjects.has(element)) continue;
+        const existing = this.#elements.get(element.id);
+        if (existing && beats(element, existing)) {
+          this.#elements.set(element.id, structuredClone(element));
+        }
+      }
+    });
     this.#loadMissingFiles();
   };
 
