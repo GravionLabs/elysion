@@ -144,6 +144,10 @@ Severity is for a production deployment; "demo only" says when the cause is a de
 - **An access token that works until it expires.** The design (stateless validation, 5 minutes, [ADR 0014](adr/0014-keycloak-identity-provider.md)) accepts it; a
   stolen token is a 5-minute problem. The long-lived socket is not the same thing (F1).
 - **Voting is secret.** The votes are kept by the business backend ([ADR 0029](adr/0029-dot-voting-on-the-server.md)): while a voting runs a person gets their own votes only, and the result has names only when the facilitator started a named voting. (Before ADR 0029 the votes were in the board's document and readable by every client.)
+- **The local copy of a board for working offline (#735).** While the connection is down the canvas keeps the board's document in the browser's IndexedDB
+  (`elysion-board:<boardId>:<generation>`) so that a closed tab loses nothing. It holds what the person was allowed to read, never a token, it is removed once the
+  changes are sent and **at logout**, and a read-only canvas stores nothing. On a shared computer it is data on the device until then: log out when you leave
+  (the same is true of the browser's own cache).
 - **No HSTS or TLS in the demo.** `HSTS_MAX_AGE` is for deployments with TLS.
 
 ## Accepted advisories

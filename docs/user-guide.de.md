@@ -36,6 +36,12 @@ Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema. Beim **Expor
 Inhalte hinein und heraus, **Hell/Dunkel** wechselt das Farbschema. Beim **Exportieren** wählst du unter **Optionen** (der Browser merkt sie sich) bei einem **PDF**, ob ein Board mit Rahmen **eine Seite pro Rahmen** ergibt (mit dem Namen des Rahmens als Überschrift) oder das ganze Board auf einer Seite liegt, sowie Seitengröße (Größe des Inhalts, A4, Letter) und Ausrichtung; für alle Formate die Farben und den Hintergrund, bei **PNG** den Maßstab.
 Inhalte hinein und heraus (ein **PDF** wird beim Importieren Seite für Seite als Bild in je einen Rahmen "Seite 1", "Seite 2" … gelegt; die Seiten wählst du vorher aus), **Hell/Dunkel** wechselt das Farbschema.
 
+**Verbindung weg?** Arbeite einfach weiter: Die Statusanzeige oben sagt **Offline**, und nach einigen Sekunden weist eine Leiste darauf hin, dass deine
+Änderungen **auf diesem Gerät gesichert** und gesendet werden, sobald die Verbindung wieder da ist. Auch wenn du den Tab dazwischen schließt oder neu lädst,
+sind sie noch da: Öffne das Board wieder, wenn du online bist, dann werden sie gesendet. Danach sagt die Leiste, wie viele Änderungen gesendet wurden; haben
+zwei Personen dasselbe geändert, werden die Änderungen ohne Rückfrage zusammengeführt. Nach fünf Minuten bietet die Leiste **Kopie herunterladen** an, falls du
+lieber selbst eine Datei behalten willst. Die Kopie auf deinem Gerät wird beim Abmelden gelöscht; melde dich auf einem gemeinsam genutzten Rechner ab, wenn du fertig bist.
+
 ## Kommentare
 
 Der Knopf **Kommentare** in der Werkzeugleiste (oder die Taste **C**, wenn nicht zwei Elemente zum Verbinden ausgewählt sind) öffnet die Kommentare rechts.

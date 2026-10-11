@@ -59,6 +59,17 @@ export interface BoardVotingApi {
   clear(): Promise<void>;
 }
 
+/** The `offline` event of the canvas (#735): the connection broke after the board was loaded, or is back. */
+export interface OfflineState {
+  offline: boolean;
+  /** When the outage began (epoch milliseconds), or `null` while online. */
+  since: number | null;
+  /** The changes made on this device during the outage. */
+  pending: number;
+  /** In the report that ends an outage: how many changes were pending when the connection came back. */
+  sent: number;
+}
+
 export interface TimerState {
   /** The length of the timer, including extensions. */
   durationMs: number;

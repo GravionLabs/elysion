@@ -49,6 +49,8 @@ export class TopBar {
   /** Whether the title can be edited: only a stored board has a name to change. */
   readonly canRename = input(false);
   readonly status = input<SyncStatus>('connecting');
+  /** The connection broke after the board was loaded (#735): the bar says "Offline" even while it tries again. */
+  readonly offline = input(false);
   readonly theme = input.required<Theme>();
   /** Whether anything is selected on the canvas (enables 'selection only' in the Export menu). */
   readonly hasSelection = input(false);
@@ -201,7 +203,19 @@ export class TopBar {
   protected readonly renameLabel = computed(
     () => $localize`:@@topbar.rename-aria:Rename the board ${this.title()}:title:`,
   );
-  protected readonly statusLabel = computed(() => STATUS_LABEL[this.status()]);
+  protected readonly statusLabel = computed(() =>
+    this.offline() && this.status() !== 'connected'
+      ? STATUS_LABEL.disconnected
+      : STATUS_LABEL[this.status()],
+  );
+  protected readonly statusHint = computed(() => {
+    if (this.status() === 'connected') {
+      return $localize`:@@topbar.status.connected.hint:Connected to the board server: changes reach everyone at once.`;
+    }
+    return this.offline() || this.status() === 'disconnected'
+      ? $localize`:@@topbar.status.offline.hint:No connection. Your changes are kept on this device and sent when it is back.`
+      : $localize`:@@topbar.status.connecting.hint:Connecting to the board server.`;
+  });
   protected readonly themeTitle = computed(() =>
     this.theme() === 'dark'
       ? $localize`:@@topbar.theme.to-light:Switch to the light theme`

@@ -155,6 +155,8 @@ export const en = {
   boardFull: 'This board is full: 20,000 elements.',
   boardFullServer: 'This board is full. Delete something to make room.',
   updateTooLarge: 'That change is too large to send.',
+  offlineDiscarded:
+    'The board was rebuilt while you were offline, so the changes saved on this device could not be added.',
 };
 
 export type Messages = typeof en;
@@ -294,6 +296,8 @@ export const de: Messages = {
   boardFull: 'Dieses Board ist voll: 20.000 Elemente.',
   boardFullServer: 'Dieses Board ist voll. Lösche etwas, um Platz zu schaffen.',
   updateTooLarge: 'Diese Änderung ist zu groß zum Senden.',
+  offlineDiscarded:
+    'Das Board wurde neu aufgebaut, während du offline warst. Die auf diesem Gerät gesicherten Änderungen konnten nicht hinzugefügt werden.',
 };
 
 /** The name of a sticky note color (`StickyColor.name`, which stays English: it is the stored key) in the locale. */

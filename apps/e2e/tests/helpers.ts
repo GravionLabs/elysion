@@ -151,9 +151,14 @@ export async function waitForApi(): Promise<void> {
 
 /**
  * The places Excalidraw owns and Elysion does not control: its canvases (a drawing has no text alternative) and the hidden
- * inputs behind its tool buttons (they have no label of their own). The list is the allowlist of docs/specs/frontend.md, "Accessibility".
+ * inputs behind its tool buttons (they have no label of their own) and its menu triggers. The list is the allowlist of docs/specs/frontend.md, "Accessibility".
  */
-export const AXE_ALLOWLIST = ['.excalidraw canvas', '.excalidraw input[aria-keyshortcuts]'];
+export const AXE_ALLOWLIST = [
+  '.excalidraw canvas',
+  '.excalidraw input[aria-keyshortcuts]',
+  // Radix' trigger elements in Excalidraw's menus point at content that is not rendered while the menu is closed.
+  '.excalidraw [aria-controls^="radix-"]',
+];
 
 /** Fails when the page has a violation of the WCAG 2.1 A or AA rules outside the allowlist; `where` names the state in the message. */
 export async function expectAccessible(page: Page, where: string): Promise<void> {

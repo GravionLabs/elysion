@@ -955,7 +955,7 @@
     </unit>
     <unit id="board.import.confirmLabel">
       <notes>
-        <note category="location">src/app/board/board.html:50,51</note>
+        <note category="location">src/app/board/board.html:57,58</note>
       </notes>
       <segment>
         <source>Confirm import</source>
@@ -963,7 +963,7 @@
     </unit>
     <unit id="board.import.confirmText">
       <notes>
-        <note category="location">src/app/board/board.html:54,56</note>
+        <note category="location">src/app/board/board.html:61,63</note>
       </notes>
       <segment>
         <source>Replace everything on this board with “<ph id="0" equiv="INTERPOLATION" disp="{{ file.name }}"/>”?</source>
@@ -971,7 +971,7 @@
     </unit>
     <unit id="board.import.replace">
       <notes>
-        <note category="location">src/app/board/board.html:62,64</note>
+        <note category="location">src/app/board/board.html:69,71</note>
       </notes>
       <segment>
         <source> Replace </source>
@@ -979,7 +979,7 @@
     </unit>
     <unit id="board.import.cancel">
       <notes>
-        <note category="location">src/app/board/board.html:70,72</note>
+        <note category="location">src/app/board/board.html:77,79</note>
       </notes>
       <segment>
         <source> Cancel </source>
@@ -987,7 +987,7 @@
     </unit>
     <unit id="board.template.formLabel">
       <notes>
-        <note category="location">src/app/board/board.html:76,77</note>
+        <note category="location">src/app/board/board.html:83,84</note>
       </notes>
       <segment>
         <source>Save as template</source>
@@ -995,7 +995,7 @@
     </unit>
     <unit id="board.template.fromSelection">
       <notes>
-        <note category="location">src/app/board/board.html:82,84</note>
+        <note category="location">src/app/board/board.html:89,91</note>
       </notes>
       <segment>
         <source>Template from the selection</source>
@@ -1003,7 +1003,7 @@
     </unit>
     <unit id="board.template.fromBoard">
       <notes>
-        <note category="location">src/app/board/board.html:84,87</note>
+        <note category="location">src/app/board/board.html:91,94</note>
       </notes>
       <segment>
         <source>Template from the board</source>
@@ -1011,7 +1011,7 @@
     </unit>
     <unit id="board.template.nameLabel">
       <notes>
-        <note category="location">src/app/board/board.html:93,94</note>
+        <note category="location">src/app/board/board.html:100,101</note>
       </notes>
       <segment>
         <source>Template name</source>
@@ -1019,7 +1019,7 @@
     </unit>
     <unit id="board.template.descriptionLabel">
       <notes>
-        <note category="location">src/app/board/board.html:108,109</note>
+        <note category="location">src/app/board/board.html:115,116</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -1027,7 +1027,7 @@
     </unit>
     <unit id="board.template.descriptionPlaceholder">
       <notes>
-        <note category="location">src/app/board/board.html:110,111</note>
+        <note category="location">src/app/board/board.html:117,118</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -1035,7 +1035,7 @@
     </unit>
     <unit id="board.template.saving">
       <notes>
-        <note category="location">src/app/board/board.html:123,125</note>
+        <note category="location">src/app/board/board.html:130,132</note>
       </notes>
       <segment>
         <source>Saving…</source>
@@ -1043,7 +1043,7 @@
     </unit>
     <unit id="board.template.save">
       <notes>
-        <note category="location">src/app/board/board.html:125,127</note>
+        <note category="location">src/app/board/board.html:132,134</note>
       </notes>
       <segment>
         <source>Save</source>
@@ -1051,7 +1051,7 @@
     </unit>
     <unit id="board.template.cancel">
       <notes>
-        <note category="location">src/app/board/board.html:134,136</note>
+        <note category="location">src/app/board/board.html:141,143</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -1059,7 +1059,7 @@
     </unit>
     <unit id="board.notice.dismiss">
       <notes>
-        <note category="location">src/app/board/board.html:146,149</note>
+        <note category="location">src/app/board/board.html:153,156</note>
       </notes>
       <segment>
         <source> Dismiss </source>
@@ -1067,7 +1067,7 @@
     </unit>
     <unit id="board.canvas.label">
       <notes>
-        <note category="location">src/app/board/board.html:155,156</note>
+        <note category="location">src/app/board/board.html:162,163</note>
       </notes>
       <segment>
         <source>Board canvas</source>
@@ -1075,7 +1075,7 @@
     </unit>
     <unit id="board.error.canvasNotReady">
       <notes>
-        <note category="location">src/app/board/board.ts:55</note>
+        <note category="location">src/app/board/board.ts:56</note>
       </notes>
       <segment>
         <source>The canvas is not ready yet.</source>
@@ -1083,7 +1083,7 @@
     </unit>
     <unit id="board.error.favoriteFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:156</note>
+        <note category="location">src/app/board/board.ts:164</note>
       </notes>
       <segment>
         <source>The star could not be saved.</source>
@@ -1091,7 +1091,7 @@
     </unit>
     <unit id="board.pageTitle.notFound">
       <notes>
-        <note category="location">src/app/board/board.ts:259</note>
+        <note category="location">src/app/board/board.ts:267</note>
       </notes>
       <segment>
         <source>Board not found · Elysion</source>
@@ -1099,7 +1099,7 @@
     </unit>
     <unit id="board.pageTitle.named">
       <notes>
-        <note category="location">src/app/board/board.ts:261</note>
+        <note category="location">src/app/board/board.ts:269</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> · Elysion</source>
@@ -1107,7 +1107,7 @@
     </unit>
     <unit id="board.error.templateNotApplied">
       <notes>
-        <note category="location">src/app/board/board.ts:292</note>
+        <note category="location">src/app/board/board.ts:300</note>
       </notes>
       <segment>
         <source>The template could not be applied. The board is blank.</source>
@@ -1115,7 +1115,7 @@
     </unit>
     <unit id="board.error.renameFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:305</note>
+        <note category="location">src/app/board/board.ts:313</note>
       </notes>
       <segment>
         <source>The board could not be renamed.</source>
@@ -1123,7 +1123,7 @@
     </unit>
     <unit id="board.error.accessLost">
       <notes>
-        <note category="location">src/app/board/board.ts:322</note>
+        <note category="location">src/app/board/board.ts:330</note>
       </notes>
       <segment>
         <source>You no longer have access to this board.</source>
@@ -1131,7 +1131,7 @@
     </unit>
     <unit id="board.error.timerFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:452</note>
+        <note category="location">src/app/board/board.ts:489</note>
       </notes>
       <segment>
         <source>The timer could not be changed.</source>
@@ -1139,8 +1139,8 @@
     </unit>
     <unit id="board.error.nothingSelected">
       <notes>
-        <note category="location">src/app/board/board.ts:485</note>
-        <note category="location">src/app/board/board.ts:632</note>
+        <note category="location">src/app/board/board.ts:522</note>
+        <note category="location">src/app/board/board.ts:669</note>
       </notes>
       <segment>
         <source>Nothing is selected.</source>
@@ -1148,7 +1148,7 @@
     </unit>
     <unit id="board.error.exportEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:486</note>
+        <note category="location">src/app/board/board.ts:523</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to export.</source>
@@ -1156,7 +1156,7 @@
     </unit>
     <unit id="board.error.exportFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:496</note>
+        <note category="location">src/app/board/board.ts:533</note>
       </notes>
       <segment>
         <source>The export failed.</source>
@@ -1164,8 +1164,8 @@
     </unit>
     <unit id="board.error.importFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:527</note>
-        <note category="location">src/app/board/board.ts:555</note>
+        <note category="location">src/app/board/board.ts:564</note>
+        <note category="location">src/app/board/board.ts:592</note>
       </notes>
       <segment>
         <source>The import failed.</source>
@@ -1173,7 +1173,7 @@
     </unit>
     <unit id="board.notice.imported.one">
       <notes>
-        <note category="location">src/app/board/board.ts:548</note>
+        <note category="location">src/app/board/board.ts:585</note>
       </notes>
       <segment>
         <source>Imported 1 element from <ph id="0" equiv="file" disp="file.name"/>.</source>
@@ -1181,7 +1181,7 @@
     </unit>
     <unit id="board.notice.imported.many">
       <notes>
-        <note category="location">src/app/board/board.ts:549</note>
+        <note category="location">src/app/board/board.ts:586</note>
       </notes>
       <segment>
         <source>Imported <ph id="0" equiv="count" disp="count"/> elements from <ph id="1" equiv="file" disp="file.name"/>.</source>
@@ -1189,7 +1189,7 @@
     </unit>
     <unit id="board.error.templateAddFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:575</note>
+        <note category="location">src/app/board/board.ts:612</note>
       </notes>
       <segment>
         <source>The template could not be added.</source>
@@ -1197,7 +1197,7 @@
     </unit>
     <unit id="board.template.defaultSelectionName">
       <notes>
-        <note category="location">src/app/board/board.ts:586</note>
+        <note category="location">src/app/board/board.ts:623</note>
       </notes>
       <segment>
         <source>Selection</source>
@@ -1205,7 +1205,7 @@
     </unit>
     <unit id="board.template.defaultBoardName">
       <notes>
-        <note category="location">src/app/board/board.ts:587</note>
+        <note category="location">src/app/board/board.ts:624</note>
       </notes>
       <segment>
         <source>Board</source>
@@ -1213,7 +1213,7 @@
     </unit>
     <unit id="board.template.nameRequired">
       <notes>
-        <note category="location">src/app/board/board.ts:616</note>
+        <note category="location">src/app/board/board.ts:653</note>
       </notes>
       <segment>
         <source>Give the template a name.</source>
@@ -1221,7 +1221,7 @@
     </unit>
     <unit id="board.error.templateEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:633</note>
+        <note category="location">src/app/board/board.ts:670</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to save as a template.</source>
@@ -1229,7 +1229,7 @@
     </unit>
     <unit id="board.notice.templateSaved">
       <notes>
-        <note category="location">src/app/board/board.ts:644</note>
+        <note category="location">src/app/board/board.ts:681</note>
       </notes>
       <segment>
         <source>Saved the template “<ph id="0" equiv="name" disp="name"/>”.</source>
@@ -1237,7 +1237,7 @@
     </unit>
     <unit id="board.error.templateSaveFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:655</note>
+        <note category="location">src/app/board/board.ts:692</note>
       </notes>
       <segment>
         <source>The template could not be saved.</source>
@@ -1281,6 +1281,62 @@
       </notes>
       <segment>
         <source>The image could not be saved.</source>
+      </segment>
+    </unit>
+    <unit id="offline.working">
+      <notes>
+        <note category="location">src/app/board/offline-bar.html:6,8</note>
+      </notes>
+      <segment>
+        <source>Working offline. Your changes are saved on this device and sent when the connection is back.</source>
+      </segment>
+    </unit>
+    <unit id="offline.pending">
+      <notes>
+        <note category="location">src/app/board/offline-bar.html:11,14</note>
+      </notes>
+      <segment>
+        <source> <ph id="0" equiv="ICU" disp="{pending(), plural, =1 {1 change waiting.} other {{{ pending() }} changes waiting.}}" subFlows="9200202489853961690"/> </source>
+      </segment>
+    </unit>
+    <unit id="2395852766486396291">
+      <notes>
+        <note category="location">src/app/board/offline-bar.html:11,12</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 change waiting.} other {<ph id="0" equiv="INTERPOLATION"/> changes waiting.}}</source>
+      </segment>
+    </unit>
+    <unit id="offline.download">
+      <notes>
+        <note category="location">src/app/board/offline-bar.html:17,18</note>
+      </notes>
+      <segment>
+        <source>Download a copy</source>
+      </segment>
+    </unit>
+    <unit id="offline.back">
+      <notes>
+        <note category="location">src/app/board/offline-bar.html:26,28</note>
+      </notes>
+      <segment>
+        <source> Back online, <ph id="0" equiv="ICU" disp="{backSent(), plural, =1 {1 change} other {{{ backSent() }} changes}}" subFlows="2843732334465984810"/> sent. </source>
+      </segment>
+    </unit>
+    <unit id="2872504738023298090">
+      <notes>
+        <note category="location">src/app/board/offline-bar.html:26,27</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 change} other {<ph id="0" equiv="INTERPOLATION"/> changes}}</source>
+      </segment>
+    </unit>
+    <unit id="offline.backNone">
+      <notes>
+        <note category="location">src/app/board/offline-bar.html:29,31</note>
+      </notes>
+      <segment>
+        <source>Back online.</source>
       </segment>
     </unit>
     <unit id="board.voting.invalid">
@@ -2443,7 +2499,7 @@
     </unit>
     <unit id="topbar.favorite-on">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:104</note>
+        <note category="location">src/app/topbar/top-bar.ts:106</note>
       </notes>
       <segment>
         <source>Add to favorites</source>
@@ -2451,7 +2507,7 @@
     </unit>
     <unit id="topbar.favorite-off">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:105</note>
+        <note category="location">src/app/topbar/top-bar.ts:107</note>
       </notes>
       <segment>
         <source>Remove from favorites</source>
@@ -2459,7 +2515,7 @@
     </unit>
     <unit id="topbar.rename.blank">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:158</note>
+        <note category="location">src/app/topbar/top-bar.ts:160</note>
       </notes>
       <segment>
         <source>A board needs a name.</source>
@@ -2467,7 +2523,7 @@
     </unit>
     <unit id="topbar.presence.one">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:185</note>
+        <note category="location">src/app/topbar/top-bar.ts:187</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="names[0]"/> is on this board</source>
@@ -2475,7 +2531,7 @@
     </unit>
     <unit id="topbar.presence.many">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:186</note>
+        <note category="location">src/app/topbar/top-bar.ts:188</note>
       </notes>
       <segment>
         <source>On this board: <ph id="0" equiv="names" disp="names.join(&apos;, &apos;)"/></source>
@@ -2483,15 +2539,39 @@
     </unit>
     <unit id="topbar.rename-aria">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:202</note>
+        <note category="location">src/app/topbar/top-bar.ts:204</note>
       </notes>
       <segment>
         <source>Rename the board <ph id="0" equiv="title" disp="this.title()"/></source>
       </segment>
     </unit>
+    <unit id="topbar.status.connected.hint">
+      <notes>
+        <note category="location">src/app/topbar/top-bar.ts:213</note>
+      </notes>
+      <segment>
+        <source>Connected to the board server: changes reach everyone at once.</source>
+      </segment>
+    </unit>
+    <unit id="topbar.status.offline.hint">
+      <notes>
+        <note category="location">src/app/topbar/top-bar.ts:216</note>
+      </notes>
+      <segment>
+        <source>No connection. Your changes are kept on this device and sent when it is back.</source>
+      </segment>
+    </unit>
+    <unit id="topbar.status.connecting.hint">
+      <notes>
+        <note category="location">src/app/topbar/top-bar.ts:217</note>
+      </notes>
+      <segment>
+        <source>Connecting to the board server.</source>
+      </segment>
+    </unit>
     <unit id="topbar.theme.to-light">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:207</note>
+        <note category="location">src/app/topbar/top-bar.ts:221</note>
       </notes>
       <segment>
         <source>Switch to the light theme</source>
@@ -2499,7 +2579,7 @@
     </unit>
     <unit id="topbar.theme.to-dark">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:208</note>
+        <note category="location">src/app/topbar/top-bar.ts:222</note>
       </notes>
       <segment>
         <source>Switch to the dark theme</source>

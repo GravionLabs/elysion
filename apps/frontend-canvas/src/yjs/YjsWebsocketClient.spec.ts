@@ -420,6 +420,7 @@ describe('YjsWebsocketClient', () => {
         onSynced: () => synced.push(1),
       });
       await waitUntil(() => synced.length === 1);
+      expect(client.generation).toBe('gen-1');
 
       server.dropConnections();
       await waitUntil(() => server.connectionUrls().length === 2);

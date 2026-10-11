@@ -29,12 +29,13 @@ import { MembersApi } from '../share/members-api';
 import { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename, type ExportFormat } from './download';
 import { ExportRequest } from '../topbar/export-menu';
-import { toCanvasOptions } from '../topbar/export-settings';
+import { loadSettings, toCanvasOptions } from '../topbar/export-settings';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
 import { SessionService } from '../auth/session.service';
 import { LanguageService } from '../shared/language';
 import { PresenceStore } from './presence-store';
-import type { TimerState, VotingSession } from './canvas-element';
+import type { OfflineState, TimerState, VotingSession } from './canvas-element';
+import { OFFLINE_BAR_AFTER_MS, OfflineBar } from './offline-bar';
 import { TEMPLATE_STATE_KEY, TemplateApi } from './template-api';
 
 /** What the user is typing into the Save as template form. */
@@ -64,7 +65,7 @@ const ROLE_PENDING = 'pending';
 const LEAVE_WAIT_MS = 1000;
 
 @Component({
-  imports: [AppBrand, RouterLink, ShareDialog, TopBar],
+  imports: [AppBrand, OfflineBar, RouterLink, ShareDialog, TopBar],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [PresenceStore],
   selector: 'app-board',
@@ -130,6 +131,13 @@ export class Board {
 
   /** The Yjs connection, from the element's `status` event. */
   readonly syncStatus = signal<SyncStatus>('connecting');
+
+  /** The outage the board is in (#735), from the element's `offline` event; `null` while connected or before the board was loaded. */
+  readonly outage = signal<{ since: number; pending: number } | null>(null);
+
+  /** After an outage: how many changes were sent when the connection came back; shown for a few seconds. */
+  readonly backSent = signal<number | null>(null);
+  #backTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** What the BFF says about the board id; `pending` until it answers. */
   readonly #lookup = toSignal(
@@ -425,6 +433,35 @@ export class Board {
       // The canvas reports connection failures as `error` and keeps retrying: once it is connected again it is fine.
       this.status.set('ready');
     }
+  }
+
+  /** The canvas reports an outage and the changes made during it, and the way back. */
+  onOffline(event: Event): void {
+    const state = (event as CustomEvent<OfflineState>).detail;
+    if (this.#backTimer !== null) clearTimeout(this.#backTimer);
+    this.#backTimer = null;
+    if (state.offline && state.since !== null) {
+      this.backSent.set(null);
+      this.outage.set({ since: state.since, pending: state.pending });
+      return;
+    }
+    const outage = this.outage();
+    this.outage.set(null);
+    // Something to say only when the bar was there or changes were sent: a blip of a second is not worth a message.
+    const long = outage !== null && Date.now() - outage.since >= OFFLINE_BAR_AFTER_MS;
+    if (long || state.sent > 0) {
+      this.backSent.set(state.sent);
+      this.#backTimer = setTimeout(() => this.backSent.set(null), 6000);
+    }
+  }
+
+  /** "Download a copy" in the offline bar: the board as an .excalidraw file, like the Export menu makes it. */
+  downloadCopy(): Promise<void> {
+    return this.exportBoard({
+      format: 'excalidraw',
+      selectionOnly: false,
+      settings: loadSettings(),
+    });
   }
 
   onVoting(event: Event): void {

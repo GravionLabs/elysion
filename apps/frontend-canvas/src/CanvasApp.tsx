@@ -62,6 +62,7 @@ import * as Y from 'yjs';
 import { ExcalidrawYjsBinding } from './yjs/excalidraw-binding.js';
 import type { FileStore } from './yjs/files.js';
 import { YjsWebsocketClient, type YjsConnectionStatus } from './yjs/YjsWebsocketClient.js';
+import { OfflineWork, type OfflineState } from './yjs/offline-work.js';
 import { createSessionIdentity, withHostIdentity } from './presence/identity';
 import type { PresentUser } from './presence/collaborators';
 import type { Awareness } from 'y-protocols/awareness';
@@ -165,6 +166,11 @@ export interface CanvasAppProps {
   /** The Yjs connection changed; also called once with `connecting` when the canvas starts. */
   onStatusChange?: (status: YjsConnectionStatus) => void;
   /**
+   * An outage began or ended, or the changes made during it grew (#735): whether the connection is down after the board was
+   * loaded, since when, how many changes this device holds that the board does not, and, once it is back, how many were sent.
+   */
+  onOfflineChange?: (state: OfflineState) => void;
+  /**
    * The user switched the theme inside the canvas (Excalidraw's own toggle). Not called when the host
    * sets `theme` or the system preference changes: the host already knows about those.
    */
@@ -266,6 +272,7 @@ export function CanvasApp({
   theme,
   locale = 'en',
   onStatusChange,
+  onOfflineChange,
   onThemeChange,
   onControls,
   onLibraryChange,
@@ -304,6 +311,8 @@ export function CanvasApp({
   // Excalidraw's own value does.
   const lastReportedTheme = useRef<CanvasTheme>(resolvedTheme);
   // Callbacks are read through refs: the connection below is created once per mount.
+  const offlineCallback = useRef(onOfflineChange);
+  offlineCallback.current = onOfflineChange;
   const statusCallback = useRef(onStatusChange);
   const themeCallback = useRef(onThemeChange);
   statusCallback.current = onStatusChange;
@@ -574,8 +583,19 @@ export function CanvasApp({
     // the scene has that the board lacks (the usual per-element rule decides, so nobody's newer change is overwritten).
     const replaced = epoch > 0;
     let pushed = false;
+    // The document is kept on the device during an outage (#735); the client is read when it is needed.
+    const connection: { client?: YjsWebsocketClient } = {};
+    const offlineWork = new OfflineWork({
+      doc,
+      boardId,
+      serverOrigin: () => connection.client,
+      canWrite: () => !readOnlyRef.current,
+      onChange: (state) => offlineCallback.current?.(state),
+      onDiscarded: () => noticeCallback.current?.(tRef.current.offlineDiscarded),
+    });
     const client = new YjsWebsocketClient(url.toString(), doc, {
       onSynced: () => {
+        void offlineWork.synced(connection.client?.generation ?? '');
         syncedCallback.current?.();
         // The voting is the server's: ask for it (a late joiner, a reconnect). The old document key goes.
         void votingSync.refresh();
@@ -594,11 +614,15 @@ export function CanvasApp({
         }
       },
       onVoting: (payload) => votingSync.handleBroadcast(payload),
-      onStaleCopy: () => setEpoch((value) => value + 1),
+      onStaleCopy: () => {
+        void offlineWork.stale();
+        setEpoch((value) => value + 1);
+      },
       onBoardFull: () => noticeCallback.current?.(tRef.current.boardFullServer),
       onUpdateTooLarge: () => noticeCallback.current?.(tRef.current.updateTooLarge),
       onStatusChange: (status) => {
         statusCallback.current?.(status);
+        if (status === 'disconnected') offlineWork.disconnected();
         // The shell learns what the board's timer is once the connection is up, also when there is none.
         if (status === 'connected') {
           timerSync.emit();
@@ -610,6 +634,8 @@ export function CanvasApp({
       // attempt; none set: no token (a gateway without authentication).
       tokenProvider: () => tokenProviderRef.current?.() ?? Promise.resolve(undefined),
     });
+
+    connection.client = client;
 
     const presence = new PresenceSync(
       client.awareness,
@@ -649,6 +675,7 @@ export function CanvasApp({
       presence.destroy();
       presenceRef.current = null;
       client.destroy();
+      offlineWork.destroy();
       binding.destroy();
       bindingRef.current = null;
     };

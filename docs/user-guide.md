@@ -71,6 +71,14 @@ Select exactly two shapes and a **Connect** button appears that joins them.
 Everybody on the board has a color. You see **their cursor with their name**, and their initial next to **Share** in the top bar. Changes
 by different people are merged without conflicts, even when two people edit the same board at the same moment.
 
+### When the connection is lost
+
+If the connection to the board is lost, keep working: the status in the top bar says **Offline**, and after a few seconds a bar tells you that your changes
+are **saved on this device** and sent when the connection is back. If you close or reload the tab in the meantime they are still there: open the board again
+when you are online and they are sent. When the connection is back the bar says how many changes were sent; two people who changed the same thing are merged
+without a question. After five minutes the bar offers **Download a copy** of the board as a file, if you would rather keep one yourself. The copy on your device
+is removed when you log out; on a shared computer, log out when you are done.
+
 ### Light and dark
 
 ![The dark theme](images/16-dark.png)
