@@ -36,7 +36,19 @@ public sealed record AdminGroupDto(
     string Source,
     string? ExternalId,
     int MemberCount,
-    int RoomCount);
+    int RoomCount,
+    int PendingCount = 0,
+    DateTimeOffset? LastSyncAt = null);
+
+/// <summary>A person the directory lists in a linked group who has not signed in yet (#667).</summary>
+public sealed record AdminPendingMemberDto(string Email, string? DisplayName);
+
+/// <summary>Whether the Graph sync runs, its interval, when it last read a group and how many people wait for their first sign-in (#667).</summary>
+public sealed record AdminGraphStatusDto(
+    bool Enabled,
+    int IntervalMinutes,
+    DateTimeOffset? LastSyncAt,
+    int PendingMembers);
 
 public sealed record AdminMemberDto(Guid Id, string DisplayName, string? Email, DateTimeOffset? DeactivatedAt = null);
 

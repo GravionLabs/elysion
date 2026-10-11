@@ -24,6 +24,7 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
     public DbSet<Vote> Votes => Set<Vote>();
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<GroupMembership> GroupMemberships => Set<GroupMembership>();
+    public DbSet<PendingGroupMembership> PendingGroupMemberships => Set<PendingGroupMembership>();
     public DbSet<RoomGroupMembership> RoomGroupMemberships => Set<RoomGroupMembership>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -140,6 +141,17 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
             membership.HasOne(m => m.User).WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
             // "Which groups is this user in?" starts from the user: it runs for every board list.
             membership.HasIndex(m => m.UserId);
+        });
+
+        modelBuilder.Entity<PendingGroupMembership>(pending =>
+        {
+            pending.Property(p => p.Email).HasMaxLength(User.MaxEmailLength);
+            pending.Property(p => p.DisplayName).HasMaxLength(User.MaxDisplayNameLength);
+            pending.Property(p => p.ObjectId).HasMaxLength(PendingGroupMembership.MaxObjectIdLength);
+            pending.HasOne(p => p.Group).WithMany().HasForeignKey(p => p.GroupId).OnDelete(DeleteBehavior.Cascade);
+            // One entry per person and group; the first sign-in looks the person up by their address.
+            pending.HasIndex(p => new { p.GroupId, p.Email }).IsUnique();
+            pending.HasIndex(p => p.Email);
         });
 
         modelBuilder.Entity<RoomGroupMembership>(membership =>

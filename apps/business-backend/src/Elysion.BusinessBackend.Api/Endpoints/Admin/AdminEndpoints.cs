@@ -6,11 +6,13 @@ using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
+using Elysion.BusinessBackend.Api.Graph;
 using Elysion.BusinessBackend.Api.Identity;
 using Elysion.BusinessBackend.Api.Members;
 
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Elysion.BusinessBackend.Api.Endpoints.Admin;
 
@@ -55,6 +57,8 @@ public static class AdminEndpoints
             .RequireJsonContentType();
         admin.MapDelete("/groups/{id:guid}", DeleteGroup).WithName("AdminDeleteGroup");
         admin.MapGet("/groups/{id:guid}/members", ListGroupMembers).WithName("AdminListGroupMembers");
+        admin.MapGet("/groups/{id:guid}/pending", ListGroupPending).WithName("AdminListGroupPending");
+        admin.MapGet("/graph", GraphStatus).WithName("AdminGraphStatus");
         admin.MapPut("/groups/{id:guid}/members/{userId:guid}", AddGroupMember).WithName("AdminAddGroupMember");
         admin.MapDelete("/groups/{id:guid}/members/{userId:guid}", RemoveGroupMember)
             .WithName("AdminRemoveGroupMember");
@@ -198,6 +202,7 @@ public static class AdminEndpoints
     private static async Task<IResult> PatchGroup(Guid id,
         JsonElement body,
         IGroupRepository groups,
+        IGroupSyncRepository groupSync,
         IAdminRepository admin,
         IAuditLog audit,
         IUnitOfWork unitOfWork,
@@ -270,6 +275,7 @@ public static class AdminEndpoints
                 }
 
                 group.Unlink();
+                await groupSync.ClearPendingAsync(id, cancellationToken);
             }
             else
             {
@@ -314,6 +320,31 @@ public static class AdminEndpoints
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return TypedResults.NoContent();
     }
+
+    /// <summary>The people the directory lists in the group who have not signed in yet (#667): name and address, for the administrator.</summary>
+    private static async Task<IResult> ListGroupPending(Guid id,
+        int? page,
+        int? pageSize,
+        IGroupRepository groups,
+        IAdminRepository admin,
+        CancellationToken cancellationToken)
+    {
+        if (await groups.FindAsync(id, cancellationToken) is null)
+        {
+            return NotFound("There is no such group.");
+        }
+
+        var (p, size) = Paging(page, pageSize);
+        return TypedResults.Ok(await admin.ListGroupPendingAsync(id, p, size, cancellationToken));
+    }
+
+    /// <summary>Whether the Graph sync is switched on, when it last read a group and how many people wait for their first sign-in.</summary>
+    private static async Task<Ok<AdminGraphStatusDto>> GraphStatus(IAdminRepository admin,
+        IOptions<GraphOptions> options,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await admin.GetGraphStatusAsync(options.Value.Enabled,
+            options.Value.Interval,
+            cancellationToken));
 
     private static async Task<IResult> ListGroupMembers(Guid id,
         int? page,

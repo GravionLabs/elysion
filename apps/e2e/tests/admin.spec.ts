@@ -107,6 +107,14 @@ test('a local group is made, renamed, gets a member and is deleted', async () =>
   );
 });
 
+test('the groups page says that Microsoft Graph is not switched on in the demo stack (#667)', async () => {
+  await admin.getByRole('link', { name: 'Groups', exact: true }).click();
+
+  await expect(
+    admin.getByRole('status').filter({ hasText: 'Microsoft Graph is not switched on' }),
+  ).toBeVisible();
+});
+
 test('the rooms page lists rooms as numbers', async () => {
   await admin.getByRole('link', { name: 'Rooms', exact: true }).click();
 

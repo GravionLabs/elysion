@@ -133,6 +133,8 @@ public class AdminApiTests
     [TestCase("PUT", "/admin/groups/00000000-0000-0000-0000-000000000001/members/00000000-0000-0000-0000-000000000002")]
     [TestCase("DELETE",
         "/admin/groups/00000000-0000-0000-0000-000000000001/members/00000000-0000-0000-0000-000000000002")]
+    [TestCase("GET", "/admin/groups/00000000-0000-0000-0000-000000000001/pending")]
+    [TestCase("GET", "/admin/graph")]
     [TestCase("GET", "/admin/rooms")]
     public async Task Somebody_without_the_role_gets_403_everywhere(string method, string url)
     {

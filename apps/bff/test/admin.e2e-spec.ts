@@ -102,6 +102,21 @@ describe('Administration (e2e, against a fake business backend)', () => {
     expect(upstream.lastAdminRequest?.method).toBe('DELETE');
   });
 
+  it('reads the pending people of a group and the state of the Graph sync (#667)', async () => {
+    const group = randomUUID();
+    upstream.adminAnswer = { status: 200, body: { items: [], total: 0, page: 1, pageSize: 25 } };
+
+    await api().get(`/api/admin/groups/${group}/pending?page=2&pageSize=10`).expect(200);
+    expect(upstream.lastAdminRequest?.path).toBe(
+      `/admin/groups/${group}/pending?page=2&pageSize=10`,
+    );
+    await api().get('/api/admin/groups/not-an-id/pending').expect(404);
+
+    upstream.adminAnswer = { status: 200, body: { enabled: false } };
+    await api().get('/api/admin/graph').expect(200);
+    expect(upstream.lastAdminRequest?.path).toBe('/admin/graph');
+  });
+
   it('deactivates, reactivates and hands over by fixed paths and checked ids (#668)', async () => {
     const user = randomUUID();
     const other = randomUUID();

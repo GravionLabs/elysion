@@ -124,7 +124,7 @@ People who administer the instance (they have the role `elysion-admin` at the id
 
 - **Overview:** how many people, groups, rooms and boards there are, and which identity provider people sign in with.
 - **Users:** search by name or email; a name opens the rooms and boards the person has directly, with their roles.
-- **Groups:** a _local_ group is made and kept here (**New group**, **Rename**, add and remove members). A _linked_ group belongs to the identity provider: **Link** a local group to a group of the provider by its id and its members then follow the provider as each person signs in; **Unlink** makes it local again and keeps the members. **Delete** says how many rooms lose the role the group gave them.
+- **Groups:** a _local_ group is made and kept here (**New group**, **Rename**, add and remove members). A _linked_ group belongs to the identity provider: **Link** a local group to a group of the provider by its id and its members then follow the provider as each person signs in; **Unlink** makes it local again and keeps the members. **Delete** says how many rooms lose the role the group gave them. If your operator switched on **Microsoft Graph** the page says when the groups were last read from the directory; a linked group then also shows the people **waiting for their first sign-in** (they join as soon as they sign in with that address).
 - **Rooms:** name, owner and numbers; no board names.
 - **Deactivate a person:** open them in **Users** and choose **Deactivate…**. They are refused everywhere from then on, are not offered when somebody is added,
   and stay in the member lists as _deactivated_. Elysion cannot switch the account off at the identity provider: do that there as well, otherwise the person can

@@ -144,7 +144,9 @@ public sealed class AdminRepository(ElysionDbContext db) : IAdminRepository
             g.Source.ToString(),
             g.ExternalId,
             db.GroupMemberships.Count(m => m.GroupId == g.Id),
-            db.RoomGroupMemberships.Count(m => m.GroupId == g.Id)));
+            db.RoomGroupMemberships.Count(m => m.GroupId == g.Id),
+            db.PendingGroupMemberships.Count(p => p.GroupId == g.Id),
+            g.GraphSyncedAt));
 
     public async Task<PagedResult<AdminMemberDto>> ListGroupMembersAsync(Guid groupId,
         int page,
@@ -161,6 +163,36 @@ public sealed class AdminRepository(ElysionDbContext db) : IAdminRepository
             .Select(m => new AdminMemberDto(m.UserId, m.User!.DisplayName, m.User.Email, m.User.DeactivatedAt))
             .ToListAsync(cancellationToken);
         return new PagedResult<AdminMemberDto>(items, total, page, pageSize);
+    }
+
+    public async Task<PagedResult<AdminPendingMemberDto>> ListGroupPendingAsync(Guid groupId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(groupId);
+        var pending = db.PendingGroupMemberships.AsNoTracking().Where(p => p.GroupId == groupId);
+        var total = await pending.CountAsync(cancellationToken);
+        var items = await pending.OrderBy(p => p.Email)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(p => new AdminPendingMemberDto(p.Email, p.DisplayName))
+            .ToListAsync(cancellationToken);
+        return new PagedResult<AdminPendingMemberDto>(items, total, page, pageSize);
+    }
+
+    public async Task<AdminGraphStatusDto> GetGraphStatusAsync(bool enabled,
+        TimeSpan interval,
+        CancellationToken cancellationToken)
+    {
+        // SQLite has no max over a nullable timestamp as text order is fine for the one it stores; Npgsql does it natively.
+        var last = await db.Groups.AsNoTracking()
+            .Where(g => g.GraphSyncedAt != null)
+            .OrderByDescending(g => g.GraphSyncedAt)
+            .Select(g => g.GraphSyncedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+        var pending = await db.PendingGroupMemberships.AsNoTracking().CountAsync(cancellationToken);
+        return new AdminGraphStatusDto(enabled, (int)interval.TotalMinutes, last, pending);
     }
 
     public async Task<PagedResult<AdminRoomDto>> ListRoomsAsync(string? query,

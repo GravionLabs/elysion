@@ -56,6 +56,24 @@ export interface AdminGroup {
   externalId: string | null;
   memberCount: number;
   roomCount: number;
+  /** People the directory lists in a linked group who have not signed in yet (Microsoft Graph sync, #667). */
+  pendingCount?: number;
+  /** When the Graph sync last read the group, or `null`/absent. */
+  lastSyncAt?: string | null;
+}
+
+/** A person the directory lists who has not signed in yet. */
+export interface PendingMember {
+  email: string;
+  displayName: string | null;
+}
+
+/** Whether the Graph sync runs, how often, when it last read a group and how many people wait for their first sign-in. */
+export interface GraphStatus {
+  enabled: boolean;
+  intervalMinutes: number;
+  lastSyncAt: string | null;
+  pendingMembers: number;
 }
 
 export interface GroupMember {
@@ -160,6 +178,17 @@ export class AdminApi {
 
   deleteGroup(id: string): Observable<void> {
     return this.#http.delete<void>(`/api/admin/groups/${encodeURIComponent(id)}`);
+  }
+
+  pending(id: string, page: number, pageSize: number): Observable<Page<PendingMember>> {
+    return this.#http.get<Page<PendingMember>>(
+      `/api/admin/groups/${encodeURIComponent(id)}/pending`,
+      { params: this.#params('', page, pageSize) },
+    );
+  }
+
+  graphStatus(): Observable<GraphStatus> {
+    return this.#http.get<GraphStatus>('/api/admin/graph');
   }
 
   members(id: string, page: number, pageSize: number): Observable<Page<GroupMember>> {

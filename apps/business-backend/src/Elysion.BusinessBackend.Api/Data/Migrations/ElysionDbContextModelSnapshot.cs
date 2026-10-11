@@ -191,10 +191,16 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<DateTimeOffset?>("GraphSyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
+
+                    b.Property<bool>("NameFromProvider")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Source")
                         .IsRequired()
@@ -223,6 +229,9 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("FromGraph")
+                        .HasColumnType("boolean");
 
                     b.HasKey("GroupId", "UserId");
 
@@ -285,6 +294,41 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_Invitations_OneTarget", "(\"BoardId\" IS NULL) <> (\"RoomId\" IS NULL)");
                         });
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.PendingGroupMembership", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ObjectId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("GroupId", "Email")
+                        .IsUnique();
+
+                    b.ToTable("PendingGroupMemberships");
                 });
 
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Room", b =>
@@ -645,6 +689,17 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.Navigation("Board");
 
                     b.Navigation("Room");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.PendingGroupMembership", b =>
+                {
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
                 });
 
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Room", b =>

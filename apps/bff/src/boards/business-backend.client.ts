@@ -594,6 +594,18 @@ export class BusinessBackendClient {
     );
   }
 
+  adminListGroupPending(token: string, id: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(
+      token,
+      'GET',
+      `/admin/groups/${encodeURIComponent(id)}/pending${adminQuery(list)}`,
+    );
+  }
+
+  adminGraphStatus(token: string): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', '/admin/graph');
+  }
+
   async adminAddGroupMember(token: string, id: string, userId: string): Promise<void> {
     await this.request<void>(
       token,

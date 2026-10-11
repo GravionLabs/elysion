@@ -77,7 +77,10 @@ public sealed class GroupRepository(ElysionDbContext db) : IGroupRepository
             return false;
         }
 
-        onChange?.Invoke(staged.Added, staged.Removed);
+        if (staged.Added > 0 || staged.Removed > 0)
+        {
+            onChange?.Invoke(staged.Added, staged.Removed);
+        }
 
         try
         {
@@ -90,7 +93,11 @@ public sealed class GroupRepository(ElysionDbContext db) : IGroupRepository
             staged = await StageLinkedMembershipsAsync(userId, wanted, now, cancellationToken);
             if (staged.Changed)
             {
-                onChange?.Invoke(staged.Added, staged.Removed);
+                if (staged.Added > 0 || staged.Removed > 0)
+                {
+                    onChange?.Invoke(staged.Added, staged.Removed);
+                }
+
                 await db.SaveChangesAsync(cancellationToken);
             }
         }
@@ -117,13 +124,23 @@ public sealed class GroupRepository(ElysionDbContext db) : IGroupRepository
             removed++;
         }
 
+        // The token wins (ADR 0027): a membership it lists is the token's from now on, whoever made it; the Graph sync leaves it alone
+        // when the directory drops the person, until the token drops them too. Only a flag changes: nothing to audit.
+        var confirmed = 0;
+        foreach (var kept in current.Where(c =>
+                     c.ExternalId is not null && wanted.Contains(c.ExternalId) && c.Membership.FromGraph))
+        {
+            kept.Membership.FromGraph = false;
+            confirmed++;
+        }
+
         var have = current.Where(c => c.ExternalId is not null)
             .Select(c => c.ExternalId!)
             .ToHashSet(StringComparer.Ordinal);
         var missing = wanted.Where(id => !have.Contains(id)).ToList();
         if (missing.Count == 0)
         {
-            return (removed > 0, 0, removed);
+            return (removed > 0 || confirmed > 0, 0, removed);
         }
 
         var known = await db.Groups
