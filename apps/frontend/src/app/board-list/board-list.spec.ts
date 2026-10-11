@@ -1054,6 +1054,7 @@ describe('BoardList', () => {
         await clickButton('Members');
 
         http.expectOne('/api/rooms/r1/members').flush([]);
+        http.expectOne('/api/rooms/r1/groups').flush([]);
         await fixture.whenStable();
         expect(el().querySelector('app-share-dialog h2')?.textContent).toContain('Share this room');
       });

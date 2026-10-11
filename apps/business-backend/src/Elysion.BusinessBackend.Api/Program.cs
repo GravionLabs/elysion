@@ -126,6 +126,7 @@ app.MapRoomEndpoints();
 app.MapRoomMemberEndpoints();
 app.MapRoomGroupEndpoints();
 app.MapGroupEndpoints();
+app.MapUserEndpoints();
 app.MapAdminEndpoints();
 app.MapBoardDocumentEndpoints();
 app.MapBoardAccessEndpoints();

@@ -50,8 +50,28 @@ public sealed class RoomMemberService(
             return new(MemberOutcome.UnknownEmail);
         if (found.Count > 1)
             return new(MemberOutcome.AmbiguousEmail);
-        var user = found[0];
+        return await AddUserAsync(roomId, found[0], role, cancellationToken);
+    }
 
+    /// <summary>Adds the person the people search returned (<c>GET /users</c>), by id.</summary>
+    public async Task<MemberResult> AddByUserIdAsync(Guid roomId,
+        Guid userId,
+        BoardRole role,
+        CancellationToken cancellationToken)
+    {
+        Guard.Against.Default(userId);
+        Guard.Against.EnumOutOfRange(role);
+        var user = await users.FindAsync(userId, cancellationToken);
+        return user is null
+            ? new(MemberOutcome.UnknownUser)
+            : await AddUserAsync(roomId, user, role, cancellationToken);
+    }
+
+    private async Task<MemberResult> AddUserAsync(Guid roomId,
+        User user,
+        BoardRole role,
+        CancellationToken cancellationToken)
+    {
         var room = await rooms.FindAsync(roomId, cancellationToken);
         if (room?.OwnerId == user.Id
             || await memberships.FindForUpdateAsync(roomId, user.Id, cancellationToken) is not null)

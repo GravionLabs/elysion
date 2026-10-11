@@ -26,6 +26,28 @@ public sealed class UserRepository(ElysionDbContext db) : IUserRepository
         return await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<User>> SearchAsync(string text, int max, CancellationToken cancellationToken)
+    {
+        Guard.Against.NullOrWhiteSpace(text);
+        Guard.Against.NegativeOrZero(max);
+        var needle = text.Trim().ToLowerInvariant();
+        // `ToLower()` is translated to `lower(...)` in SQL and `Contains` to a `LIKE` that escapes `%` and `_`; the overloads that
+        // CA1862 asks for are not translated by EF Core.
+#pragma warning disable CA1862
+        return await db.Users.AsNoTracking()
+            .Where(u => u.DisplayName.ToLower().Contains(needle)
+                        || (u.Email != null && u.Email.ToLower().Contains(needle)))
+            .OrderBy(u => u.DisplayName.ToLower().StartsWith(needle)
+                          || (u.Email != null && u.Email.ToLower().StartsWith(needle))
+                ? 0
+                : 1)
+            .ThenBy(u => u.DisplayName)
+            .ThenBy(u => u.Id)
+            .Take(max)
+            .ToListAsync(cancellationToken);
+#pragma warning restore CA1862
+    }
+
     public async Task<IReadOnlyList<User>> FindByEmailAsync(string email, CancellationToken cancellationToken)
     {
         Guard.Against.NullOrWhiteSpace(email);

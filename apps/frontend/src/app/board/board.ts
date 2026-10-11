@@ -199,6 +199,12 @@ export class Board {
     return lookup.status === 'found' ? lookup.board.name : null;
   });
 
+  /** The room the board is in, or `null`: the Share dialog explains who else has access through it (#652). */
+  readonly roomId = computed(() => {
+    const lookup = this.#lookup();
+    return lookup.status === 'found' ? lookup.board.roomId : null;
+  });
+
   /** The id belongs to no board: it never existed or the board was deleted. */
   readonly notFound = computed(() => this.#lookup().status === 'missing');
 

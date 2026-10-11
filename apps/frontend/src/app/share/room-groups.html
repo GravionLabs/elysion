@@ -1,0 +1,84 @@
+<section class="room-groups" aria-labelledby="room-groups-title">
+  <h3 id="room-groups-title" i18n="@@share.groups.title">Groups</h3>
+
+  @if (!readOnly()) {
+    <form class="add" (submit)="$event.preventDefault(); add()">
+      <app-typeahead
+        label="Group"
+        i18n-label="@@share.groups.field"
+        placeholder="Name of a group"
+        i18n-placeholder="@@share.groups.placeholder"
+        emptyText="No group found."
+        i18n-emptyText="@@share.groups.empty"
+        [value]="text()"
+        (valueChange)="typed($event)"
+        [options]="options()"
+        [busy]="searching()"
+        [disabled]="busy()"
+        (search)="search($event)"
+        (pick)="pick($event)"
+      />
+      <label class="field role-field">
+        <span class="field-label" i18n="@@share.role">Role</span>
+        <select
+          aria-label="Role of the new group"
+          i18n-aria-label="@@share.groups.newRole.label"
+          [disabled]="busy()"
+          (change)="updateNewRole($event)"
+        >
+          @for (role of roles; track role) {
+            <option [value]="role" [selected]="role === newRole()">{{ roleLabel(role) }}</option>
+          }
+        </select>
+      </label>
+      <button type="submit" class="primary" [disabled]="busy()" i18n="@@share.add">Add</button>
+    </form>
+  }
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  @if (loading()) {
+    <p class="note" role="status" i18n="@@share.groups.loading">Loading groups…</p>
+  } @else if (loadError(); as message) {
+    <p class="error" role="alert">
+      {{ message }}
+      <button type="button" class="link" (click)="load()" i18n="@@share.retry">Try again</button>
+    </p>
+  } @else if (groups().length === 0) {
+    <p class="note" i18n="@@share.groups.none">No group has a role in this room yet.</p>
+  } @else {
+    <ul class="groups">
+      @for (group of groups(); track group.groupId) {
+        <li class="group">
+          <span class="group-name">{{ group.name }}</span>
+          @if (readOnly()) {
+            <span class="group-role">{{ roleLabel(group.role) }}</span>
+          } @else {
+            <select
+              [attr.aria-label]="roleOfLabel(group)"
+              [disabled]="busy()"
+              (change)="changeRole(group, $event)"
+            >
+              @for (role of roles; track role) {
+                <option [value]="role" [selected]="role === group.role">
+                  {{ roleLabel(role) }}
+                </option>
+              }
+            </select>
+            <button
+              type="button"
+              class="remove"
+              [attr.aria-label]="removeLabel(group)"
+              [disabled]="busy()"
+              (click)="remove(group)"
+            >
+              <ng-container i18n="@@share.remove">Remove</ng-container>
+            </button>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>

@@ -1,9 +1,8 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
   DestroyRef,
-  ElementRef,
   HostListener,
+  computed,
   effect,
   inject,
   input,
@@ -13,7 +12,12 @@ import {
   viewChild,
 } from '@angular/core';
 import type { Observable } from 'rxjs';
+import { describeError } from './error-message';
 import { InviteLinks } from './invite-links';
+import { RoomAccess } from './room-access';
+import { RoomGroups } from './room-groups';
+import { Typeahead, type TypeaheadOption } from './typeahead';
+import { type DirectoryUser, UsersApi } from './users-api';
 import {
   MEMBER_ROLES,
   type Member,
@@ -22,44 +26,30 @@ import {
   type MemberScope,
 } from './members-api';
 
-/** The message to show for a failed call: the API's own where it has one, else a general one. */
-export function describeError(
-  error: unknown,
-  fallback: string,
-  scope: MemberScope = 'board',
-): string {
-  if (error instanceof HttpErrorResponse) {
-    const message = (error.error as { message?: unknown } | null)?.message;
-    if (typeof message === 'string' && message.trim() !== '') {
-      return message;
-    }
-    if (error.status === 403) {
-      return scope === 'room'
-        ? $localize`:@@share.error.ownerOnlyRoom:Only an owner of the room can do this.`
-        : $localize`:@@share.error.ownerOnlyBoard:Only an owner of the board can do this.`;
-    }
-  }
-  return fallback;
-}
+export { describeError };
 
 /**
- * Who may open the board and as what: the list of members with their roles, adding by email, changing a role and
- * removing a member. The API's messages (an unknown email, the creator whose role cannot change, a duplicate) are
+ * Who may open the board and as what: the list of members with their roles, adding a person found by name or email (or by a
+ * full email address), changing a role and removing a member. A room's dialog also has the room's groups, a board's dialog in a
+ * room says who else has access through it. The API's messages (an unknown email, the creator whose role cannot change, a duplicate) are
  * shown inline, next to what caused them.
  */
 @Component({
-  imports: [InviteLinks],
+  imports: [InviteLinks, RoomAccess, RoomGroups, Typeahead],
   selector: 'app-share-dialog',
   styleUrl: './share-dialog.scss',
   templateUrl: './share-dialog.html',
 })
 export class ShareDialog {
   readonly #api = inject(MembersApi);
+  readonly #users = inject(UsersApi);
 
   /** The id of the board, or of the room when `scope` is `room`. */
   readonly boardId = input.required<string>();
   /** What is shared: a board (the default) or a room, whose members get its role on every board in it. */
   readonly scope = input<MemberScope>('board');
+  /** For a board: the room it is in, whose people and groups also have access (shown, not changed here). */
+  readonly roomId = input<string | null>(null);
   readonly closed = output<void>();
 
   protected readonly roles = MEMBER_ROLES;
@@ -71,10 +61,22 @@ export class ShareDialog {
   protected readonly error = signal<string | null>(null);
   /** Whether a change is on its way: the controls wait for it. */
   protected readonly busy = signal(false);
+  /** What the person field holds: a name being searched, or an email address. */
   protected readonly email = signal('');
   protected readonly newRole = signal<MemberRole>('Editor');
+  protected readonly found = signal<DirectoryUser[]>([]);
+  protected readonly searching = signal(false);
+  /** The person chosen from the list; typing again takes the choice back. */
+  protected readonly picked = signal<DirectoryUser | null>(null);
+  protected readonly options = computed<TypeaheadOption[]>(() =>
+    this.found()
+      // Somebody who has a role already is changed in the list, not added again.
+      .filter((user) => !this.members().some((m) => m.userId === user.id))
+      .map((user) => ({ id: user.id, label: user.displayName, detail: user.email })),
+  );
+  #searchNo = 0;
 
-  private readonly emailField = viewChild<ElementRef<HTMLInputElement>>('emailField');
+  private readonly personField = viewChild(Typeahead);
 
   constructor() {
     // The button that opened the dialog gets the focus back when it is gone (WCAG 2.4.3).
@@ -88,9 +90,9 @@ export class ShareDialog {
       this.boardId();
       untracked(() => this.load());
     });
-    // Put the cursor in the email field once the dialog is there.
+    // Put the cursor in the person field once the dialog is there.
     effect(() => {
-      const field = this.emailField()?.nativeElement;
+      const field = this.personField();
       if (field) {
         untracked(() => field.focus());
       }
@@ -118,8 +120,41 @@ export class ShareDialog {
     });
   }
 
-  protected updateEmail(event: Event): void {
-    this.email.set((event.target as HTMLInputElement).value);
+  protected typed(text: string): void {
+    this.email.set(text);
+    this.error.set(null);
+  }
+
+  /** The person stopped typing: look for people with that name or email (an empty text clears the list). */
+  protected searchPeople(text: string): void {
+    this.picked.set(null);
+    this.error.set(null);
+    const no = ++this.#searchNo;
+    if (text === '') {
+      this.found.set([]);
+      this.searching.set(false);
+      return;
+    }
+    this.searching.set(true);
+    this.#users.search(text).subscribe({
+      next: (users) => {
+        if (no === this.#searchNo) {
+          this.found.set(users);
+          this.searching.set(false);
+        }
+      },
+      error: () => {
+        // A search that fails leaves the field as it is: a full email address can still be added.
+        if (no === this.#searchNo) {
+          this.found.set([]);
+          this.searching.set(false);
+        }
+      },
+    });
+  }
+
+  protected pickPerson(option: TypeaheadOption): void {
+    this.picked.set(this.found().find((user) => user.id === option.id) ?? null);
     this.error.set(null);
   }
 
@@ -128,17 +163,32 @@ export class ShareDialog {
   }
 
   protected add(): void {
-    const email = this.email().trim();
-    if (!email) {
-      this.error.set($localize`:@@share.error.emailRequired:Enter the email of the person to add.`);
+    const text = this.email().trim();
+    const person = this.picked();
+    let who: { userId: string } | { email: string };
+    if (person && text === person.displayName) {
+      who = { userId: person.id };
+    } else if (text.includes('@')) {
+      who = { email: text };
+    } else if (text === '') {
+      this.error.set(
+        $localize`:@@share.error.personRequired:Search for a person by name or email, or enter an email address.`,
+      );
+      return;
+    } else {
+      this.error.set(
+        $localize`:@@share.error.pickPerson:Choose a person from the list, or enter a full email address.`,
+      );
       return;
     }
     this.#change(
-      this.#api.add(this.boardId(), email, this.newRole(), this.scope()),
+      this.#api.add(this.boardId(), who, this.newRole(), this.scope()),
       $localize`:@@share.error.addFailed:The member could not be added.`,
       (member) => {
         this.members.update((members) => [...members, member]);
         this.email.set('');
+        this.picked.set(null);
+        this.found.set([]);
       },
     );
   }
