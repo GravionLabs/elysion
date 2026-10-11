@@ -141,6 +141,18 @@ services:
       KC_DB_USERNAME: elysion
       KC_DB_PASSWORD: elysion
       KC_HTTP_PORT: '8080'
+      # Microsoft Entra ID as an identity provider of the realm (ADR 0027, docs/self-hosting.md): the realm file reads these when it is
+      # imported. The defaults are the stand-in, the realm `entra-stub` of this same Keycloak, so a clean checkout can sign in as `erika`
+      # (password `erika`) with no tenant. The browser follows the authorization URL (localhost:8081); Keycloak itself calls the token and
+      # key URLs inside the network (keycloak:8080). A tenant's values in `.env` replace all of them.
+      ENTRA_ENABLED: ${ENTRA_ENABLED:-true}
+      ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:-elysion-broker}
+      ENTRA_CLIENT_SECRET: ${ENTRA_CLIENT_SECRET:-elysion-broker-dev-secret}
+      ENTRA_ISSUER_URL: ${ENTRA_ISSUER_URL:-http://localhost:8081/realms/entra-stub}
+      ENTRA_AUTH_URL: ${ENTRA_AUTH_URL:-http://localhost:8081/realms/entra-stub/protocol/openid-connect/auth}
+      ENTRA_TOKEN_URL: ${ENTRA_TOKEN_URL:-http://keycloak:8080/realms/entra-stub/protocol/openid-connect/token}
+      ENTRA_JWKS_URL: ${ENTRA_JWKS_URL:-http://keycloak:8080/realms/entra-stub/protocol/openid-connect/certs}
+      ENTRA_ADMIN_GROUP_ID: ${ENTRA_ADMIN_GROUP_ID:-22222222-2222-4222-8222-222222222222}
     ports:
       # Loopback only: the admin console has the development password. Set KEYCLOAK_BIND=0.0.0.0 to reach it from elsewhere.
       - '${KEYCLOAK_BIND:-127.0.0.1}:${KEYCLOAK_PORT:-8081}:8080'

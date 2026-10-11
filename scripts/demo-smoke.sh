@@ -30,6 +30,10 @@ done
 
 expect 200 "the app is served" -H 'Accept: text/html' "$APP/"
 expect 200 "the identity provider has the realm" "$KEYCLOAK/realms/elysion"
+# The stand-in for Microsoft Entra ID (ADR 0027); the upgrade test turns it off for the version it starts from (SMOKE_STUB=0), which has none.
+if [ "${SMOKE_STUB:-1}" = 1 ]; then
+  expect 200 "the stand-in for Microsoft Entra ID has its realm" "$KEYCLOAK/realms/entra-stub/.well-known/openid-configuration"
+fi
 expect 401 "the API refuses an anonymous request" "$APP/api/boards"
 
 # The security headers (#681); the upgrade test turns them off for the version it starts from (SMOKE_HEADERS=0), which has none.
