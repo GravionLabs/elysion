@@ -134,6 +134,59 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.ToTable("BoardVisits");
                 });
 
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Group", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExternalId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExternalId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Groups_ExternalId")
+                        .HasFilter("\"ExternalId\" IS NOT NULL");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("Groups");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.GroupMembership", b =>
+                {
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("GroupId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("GroupMemberships");
+                });
+
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Invitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -212,6 +265,29 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.HasIndex("OwnerId");
 
                     b.ToTable("Rooms");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.RoomGroupMembership", b =>
+                {
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.HasKey("RoomId", "GroupId");
+
+                    b.HasIndex("GroupId");
+
+                    b.ToTable("RoomGroupMemberships");
                 });
 
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.RoomMembership", b =>
@@ -485,6 +561,25 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.GroupMembership", b =>
+                {
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.Group", "Group")
+                        .WithMany("Memberships")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Invitation", b =>
                 {
                     b.HasOne("Elysion.BusinessBackend.Api.Entities.Board", "Board")
@@ -510,6 +605,25 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.RoomGroupMembership", b =>
+                {
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.RoomMembership", b =>
@@ -572,6 +686,11 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                 });
 
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Board", b =>
+                {
+                    b.Navigation("Memberships");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.Group", b =>
                 {
                     b.Navigation("Memberships");
                 });

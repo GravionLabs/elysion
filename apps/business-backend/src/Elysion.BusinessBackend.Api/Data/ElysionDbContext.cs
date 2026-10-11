@@ -21,6 +21,9 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
 
     public void DiscardChanges() => ChangeTracker.Clear();
     public DbSet<Vote> Votes => Set<Vote>();
+    public DbSet<Group> Groups => Set<Group>();
+    public DbSet<GroupMembership> GroupMemberships => Set<GroupMembership>();
+    public DbSet<RoomGroupMembership> RoomGroupMemberships => Set<RoomGroupMembership>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -99,6 +102,40 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
             membership.HasOne(m => m.User).WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
             // "Which rooms is this user a member of?" starts from the user.
             membership.HasIndex(m => m.UserId);
+        });
+
+        modelBuilder.Entity<Group>(group =>
+        {
+            group.Property(g => g.Name).HasMaxLength(Group.MaxNameLength);
+            group.Property(g => g.ExternalId).HasMaxLength(Group.MaxExternalIdLength);
+            group.Property(g => g.Source).HasConversion<string>().HasMaxLength(24);
+            // A linked group is found by what the provider calls it; a local group has none (a filter keeps every NULL apart).
+            group.HasIndex(g => g.ExternalId)
+                .IsUnique()
+                .HasFilter("\"ExternalId\" IS NOT NULL")
+                .HasDatabaseName("IX_Groups_ExternalId");
+            group.HasIndex(g => g.Name);
+        });
+
+        modelBuilder.Entity<GroupMembership>(membership =>
+        {
+            membership.HasKey(m => new { m.GroupId, m.UserId });
+            membership.HasOne(m => m.Group)
+                .WithMany(g => g.Memberships)
+                .HasForeignKey(m => m.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+            membership.HasOne(m => m.User).WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
+            // "Which groups is this user in?" starts from the user: it runs for every board list.
+            membership.HasIndex(m => m.UserId);
+        });
+
+        modelBuilder.Entity<RoomGroupMembership>(membership =>
+        {
+            membership.HasKey(m => new { m.RoomId, m.GroupId });
+            membership.Property(m => m.Role).HasConversion<string>().HasMaxLength(16);
+            membership.HasOne(m => m.Room).WithMany().HasForeignKey(m => m.RoomId).OnDelete(DeleteBehavior.Cascade);
+            membership.HasOne(m => m.Group).WithMany().HasForeignKey(m => m.GroupId).OnDelete(DeleteBehavior.Cascade);
+            membership.HasIndex(m => m.GroupId);
         });
 
         modelBuilder.Entity<BoardVisit>(visit =>

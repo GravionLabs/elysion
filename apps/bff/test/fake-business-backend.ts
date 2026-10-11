@@ -30,6 +30,13 @@ interface FakeMember {
  */
 export class FakeBusinessBackend {
   readonly boards = new Map<string, FakeBoard>();
+  /** The groups the group routes serve (#647), and the caller's own (`GET /me/groups`). */
+  readonly groups = new Map<string, { id: string; name: string; source: string }>();
+  readonly myGroups = new Set<string>();
+  /** The role of a group per room id, for `/rooms/:id/groups`. */
+  readonly roomGroups = new Map<string, Map<string, string>>();
+  /** The last request to a group route: method, path with its query and the parsed body. */
+  lastGroupRequest: { method: string; path: string; body: unknown } | null = null;
   /** The last request for a search or a per-person state (#730): method and path with its query. */
   lastStateRequest: { method: string; path: string } | null = null;
   /** The last invitation request (#734): method, path and parsed body. */
@@ -155,6 +162,10 @@ export class FakeBusinessBackend {
       const template = this.templates.find((t) => t.id === id);
       return template ? send(200, template) : send(404);
     }
+    const groupRoute = /^\/(groups|me\/groups|rooms\/([^/]+)\/groups(?:\/([^/]+))?)(?:\?.*)?$/.exec(
+      req.url ?? '',
+    );
+    if (groupRoute) return this.#handleGroups(req, res, groupRoute);
     const roomRoute = /^\/rooms(?:\/([^/]+?)(?:\/members(?:\/([^/]+))?)?)?$/.exec(req.url ?? '');
     const moveRoute = /^\/boards\/([^/]+)\/room$/.exec(req.url ?? '');
     if (roomRoute || moveRoute) return this.#handleRoom(req, res, roomRoute, moveRoute);
@@ -339,6 +350,61 @@ export class FakeBusinessBackend {
   }
 
   /** The room routes: rooms, their members, and moving a board into a room. */
+  async #handleGroups(
+    req: IncomingMessage,
+    res: import('node:http').ServerResponse,
+    route: RegExpExecArray,
+  ): Promise<void> {
+    const send = (status: number, body?: unknown) => {
+      res.writeHead(status, { 'content-type': 'application/json' });
+      res.end(body === undefined ? undefined : JSON.stringify(body));
+    };
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString()) : null;
+    this.lastGroupRequest = { method: req.method ?? '', path: req.url ?? '', body };
+    const [, what, roomId, groupId] = route;
+    if (what === 'groups') {
+      const query = new URL(req.url ?? '', 'http://x').searchParams.get('query')?.trim() ?? '';
+      if (query.length < 2) return send(400, { title: 'One or more validation errors occurred.' });
+      return send(
+        200,
+        [...this.groups.values()].filter((g) => g.name.toLowerCase().includes(query.toLowerCase())),
+      );
+    }
+    if (what === 'me/groups') {
+      return send(
+        200,
+        [...this.groups.values()].filter((g) => this.myGroups.has(g.id)),
+      );
+    }
+    const roles = this.roomGroups.get(roomId!);
+    if (!this.rooms.has(roomId!)) return send(404);
+    if (req.method === 'GET' && !groupId) {
+      return send(
+        200,
+        [...(roles ?? new Map()).entries()].map(([id, role]) => ({
+          groupId: id,
+          name: this.groups.get(id)?.name ?? id,
+          role,
+        })),
+      );
+    }
+    const group = this.groups.get(groupId!);
+    if (!group) return send(404);
+    if (req.method === 'PUT') {
+      if (!['Owner', 'Editor', 'Viewer'].includes(body?.role)) return send(400);
+      const map = roles ?? new Map<string, string>();
+      map.set(group.id, body.role);
+      this.roomGroups.set(roomId!, map);
+      return send(200, { groupId: group.id, name: group.name, role: body.role });
+    }
+    if (req.method === 'DELETE') {
+      return roles?.delete(group.id) ? send(204) : send(404);
+    }
+    return send(405);
+  }
+
   async #handleRoom(
     req: IncomingMessage,
     res: import('node:http').ServerResponse,

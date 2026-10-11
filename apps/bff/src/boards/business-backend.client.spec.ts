@@ -129,6 +129,31 @@ describe('BusinessBackendClient', () => {
     expect(lastCall().init.method).toBe('DELETE');
   });
 
+  it('searches groups with an encoded query and lists the caller’s own', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(respond(200, [])));
+
+    await client.searchGroups(TOKEN, 'Design & Brand');
+    expect(lastCall().url).toBe('http://backend.test:5174/groups?query=Design%20%26%20Brand');
+    await client.listMyGroups(TOKEN);
+    expect(lastCall().url).toBe('http://backend.test:5174/me/groups');
+  });
+
+  it('gives a group a role in a room, lists the groups of the room and removes one', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(respond(200, { groupId: 'g1', name: 'G', role: 'Editor' })),
+    );
+
+    await client.setRoomGroupRole(TOKEN, ROOM, 'g1', 'Editor');
+    expect(lastCall().url).toBe(`http://backend.test:5174/rooms/${ROOM}/groups/g1`);
+    expect(lastCall().init.method).toBe('PUT');
+    expect(lastCall().init.body).toBe(JSON.stringify({ role: 'Editor' }));
+    await client.listRoomGroups(TOKEN, ROOM);
+    expect(lastCall().url).toBe(`http://backend.test:5174/rooms/${ROOM}/groups`);
+    fetchMock.mockImplementation(() => Promise.resolve(new Response(null, { status: 204 })));
+    await expect(client.removeRoomGroup(TOKEN, ROOM, 'g1')).resolves.toBeUndefined();
+    expect(lastCall().init.method).toBe('DELETE');
+  });
+
   it('gets one board', async () => {
     fetchMock.mockResolvedValue(respond(200, board));
 

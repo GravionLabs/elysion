@@ -11,6 +11,8 @@ public sealed class OidcOptions
     public const string IssuerSetting = "OIDC_ISSUER_URL";
     public const string AudienceSetting = "OIDC_AUDIENCE";
     public const string JwksUriSetting = "OIDC_JWKS_URI";
+    public const string GroupsClaimSetting = "OIDC_GROUPS_CLAIM";
+    public const string DefaultGroupsClaim = "groups";
 
     /// <summary>The <c>iss</c> the tokens carry, e.g. <c>http://localhost:8081/realms/elysion</c>. Keys are found through its discovery document.</summary>
     [Required, Url]
@@ -27,4 +29,10 @@ public sealed class OidcOptions
     /// </summary>
     [Url]
     public string? JwksUri { get; set; }
+
+    /// <summary>
+    /// The multi-valued claim that carries the person's groups (ADR 0027), by default <c>groups</c>. Empty switches the sync off: no
+    /// token changes any group membership. When it is set, a token without the claim means "no linked groups".
+    /// </summary>
+    public string GroupsClaim { get; set; } = DefaultGroupsClaim;
 }
