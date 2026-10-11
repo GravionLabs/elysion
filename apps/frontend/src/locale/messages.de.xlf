@@ -1,6 +1,1242 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xliff version="2.0" xmlns="urn:oasis:names:tc:xliff:document:2.0" srcLang="en">
   <file id="ngi18n" original="ng.template">
+    <unit id="admin.dialog.close">
+      <notes>
+        <note category="location">src/app/admin/admin-dialog.ts:40</note>
+      </notes>
+      <segment>
+        <source>Close</source>
+        <target>Schließen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:3,4</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+        <target>Gruppen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:5,8</note>
+      </notes>
+      <segment>
+        <source> A <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">local</pc> group is made and kept here. A <pc id="1" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">linked</pc> group belongs to the identity provider: its members follow the provider as each person signs in. </source>
+        <target>Eine <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">lokale</pc> Gruppe wird hier angelegt und gepflegt. Eine <pc id="1" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">verknüpfte</pc> Gruppe gehört dem Identitätsanbieter: Ihre Mitglieder folgen ihm, wenn sich jemand anmeldet.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.new">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:10,14</note>
+      </notes>
+      <segment>
+        <source> New group </source>
+        <target>Neue Gruppe</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.new.name">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:17,19</note>
+      </notes>
+      <segment>
+        <source>Name of the new group</source>
+        <target>Name der neuen Gruppe</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.create">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:33,36</note>
+      </notes>
+      <segment>
+        <source> Create </source>
+        <target>Anlegen</target>
+      </segment>
+    </unit>
+    <unit id="admin.cancel">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:42,44</note>
+        <note category="location">src/app/admin/admin-groups.html:138,139</note>
+        <note category="location">src/app/admin/admin-groups.html:384,385</note>
+        <note category="location">src/app/admin/admin-groups.html:419,420</note>
+        <note category="location">src/app/admin/admin-groups.html:454,455</note>
+      </notes>
+      <segment>
+        <source> Cancel </source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.search.placeholder">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:57,58</note>
+      </notes>
+      <segment>
+        <source>Name of a group</source>
+        <target>Name einer Gruppe</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.search">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:59,60</note>
+      </notes>
+      <segment>
+        <source>Search groups</source>
+        <target>Gruppen suchen</target>
+      </segment>
+    </unit>
+    <unit id="admin.search">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:64,67</note>
+        <note category="location">src/app/admin/admin-groups.html:246,247</note>
+        <note category="location">src/app/admin/admin-rooms.html:21,24</note>
+        <note category="location">src/app/admin/admin-users.html:21,24</note>
+      </notes>
+      <segment>
+        <source>Search</source>
+        <target>Suchen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:74,75</note>
+      </notes>
+      <segment>
+        <source>The groups could not be loaded.</source>
+        <target>Die Gruppen konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.retry">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:76,78</note>
+        <note category="location">src/app/admin/admin-groups.html:301,302</note>
+        <note category="location">src/app/admin/admin-overview.html:10,12</note>
+        <note category="location">src/app/admin/admin-rooms.html:29,31</note>
+        <note category="location">src/app/admin/admin-users.html:29,31</note>
+      </notes>
+      <segment>
+        <source> Try again </source>
+        <target>Erneut versuchen</target>
+      </segment>
+    </unit>
+    <unit id="admin.loading">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:82,84</note>
+        <note category="location">src/app/admin/admin-groups.html:250,252</note>
+        <note category="location">src/app/admin/admin-groups.html:307,308</note>
+        <note category="location">src/app/admin/admin-overview.html:35,38</note>
+        <note category="location">src/app/admin/admin-rooms.html:35,37</note>
+        <note category="location">src/app/admin/admin-users.html:35,37</note>
+        <note category="location">src/app/admin/admin-users.html:138,140</note>
+      </notes>
+      <segment>
+        <source>Loading…</source>
+        <target>Lädt …</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:85,86</note>
+      </notes>
+      <segment>
+        <source>No group matches.</source>
+        <target>Keine Gruppe passt.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.caption">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:90,92</note>
+      </notes>
+      <segment>
+        <source> Groups </source>
+        <target>Gruppen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.name">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:94,95</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.source">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:95,96</note>
+      </notes>
+      <segment>
+        <source>Source</source>
+        <target>Quelle</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.externalId">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:96,97</note>
+      </notes>
+      <segment>
+        <source>External id</source>
+        <target>Externe ID</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.members">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:97,98</note>
+      </notes>
+      <segment>
+        <source>Members</source>
+        <target>Mitglieder</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.rooms">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:98,99</note>
+      </notes>
+      <segment>
+        <source>Rooms</source>
+        <target>Räume</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.actions">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:99,101</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.rename.field">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:115,116</note>
+      </notes>
+      <segment>
+        <source>New name</source>
+        <target>Neuer Name</target>
+      </segment>
+    </unit>
+    <unit id="admin.save">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:129,130</note>
+      </notes>
+      <segment>
+        <source> Save </source>
+        <target>Speichern</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.rename">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:165,166</note>
+      </notes>
+      <segment>
+        <source> Rename </source>
+        <target>Umbenennen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:175,176</note>
+      </notes>
+      <segment>
+        <source> Link </source>
+        <target>Verknüpfen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:185,186</note>
+      </notes>
+      <segment>
+        <source> Unlink </source>
+        <target>Lösen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:195,196</note>
+      </notes>
+      <segment>
+        <source> Delete </source>
+        <target>Löschen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.add.placeholder">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:239,240</note>
+      </notes>
+      <segment>
+        <source>Name or email of the person to add</source>
+        <target>Name oder E-Mail der Person</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.add.search">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:241,242</note>
+      </notes>
+      <segment>
+        <source>Find a person to add</source>
+        <target>Person zum Hinzufügen suchen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.add.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:254,256</note>
+      </notes>
+      <segment>
+        <source> The search failed. Try again. </source>
+        <target>Die Suche ist fehlgeschlagen. Versuche es erneut.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.add.none">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:259,261</note>
+      </notes>
+      <segment>
+        <source>Nobody matches.</source>
+        <target>Niemand passt.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.add">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:278,279</note>
+      </notes>
+      <segment>
+        <source> Add </source>
+        <target>Hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.linkedNote">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:288,290</note>
+      </notes>
+      <segment>
+        <source> The identity provider owns the members of this group: they follow its claim as each person signs in and cannot be changed here. </source>
+        <target>Der Identitätsanbieter besitzt die Mitglieder dieser Gruppe: Sie folgen seinem Claim, wenn sich jemand anmeldet, und lassen sich hier nicht ändern.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.members.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:293,294</note>
+      </notes>
+      <segment>
+        <source>Members</source>
+        <target>Mitglieder</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.members.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:298,300</note>
+      </notes>
+      <segment>
+        <source>The members could not be loaded.</source>
+        <target>Die Mitglieder konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.members.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:309,311</note>
+      </notes>
+      <segment>
+        <source>Nobody is in this group yet.</source>
+        <target>Noch niemand ist in dieser Gruppe.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.remove">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:329,330</note>
+      </notes>
+      <segment>
+        <source> Remove </source>
+        <target>Entfernen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:348,349</note>
+      </notes>
+      <segment>
+        <source>Link to a group of the identity provider</source>
+        <target>Mit einer Gruppe des Identitätsanbieters verknüpfen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.warning">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:353,355</note>
+      </notes>
+      <segment>
+        <source> From now on the provider owns the members of “<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>”: they are replaced by the provider&apos;s claim as each person signs in. People who are in the group now stay until then. </source>
+        <target>Ab jetzt gehören die Mitglieder von „<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>“ dem Anbieter: Sie werden durch seinen Claim ersetzt, sobald sich jemand anmeldet. Wer jetzt in der Gruppe ist, bleibt bis dahin.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.id">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:359,361</note>
+      </notes>
+      <segment>
+        <source>Id of the group at the identity provider</source>
+        <target>ID der Gruppe beim Identitätsanbieter</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.confirm">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:392,394</note>
+      </notes>
+      <segment>
+        <source> Link </source>
+        <target>Verknüpfen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:400,401</note>
+      </notes>
+      <segment>
+        <source>Unlink the group</source>
+        <target>Gruppe lösen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink.message">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:405,407</note>
+      </notes>
+      <segment>
+        <source> “<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>” becomes a local group and keeps its members (<ph id="1" equiv="INTERPOLATION_1" disp="{{ group.memberCount }}"/>). The identity provider no longer replaces them. </source>
+        <target>„<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>“ wird eine lokale Gruppe und behält ihre Mitglieder (<ph id="1" equiv="INTERPOLATION_1" disp="{{ group.memberCount }}"/>). Der Identitätsanbieter ersetzt sie nicht mehr.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink.confirm">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:428,430</note>
+      </notes>
+      <segment>
+        <source> Unlink </source>
+        <target>Lösen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete.title">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:435,436</note>
+      </notes>
+      <segment>
+        <source>Delete the group</source>
+        <target>Gruppe löschen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete.message">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:440,443</note>
+      </notes>
+      <segment>
+        <source> Delete “<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>”? Its memberships go with it (<ph id="1" equiv="INTERPOLATION_1" disp="{{ group.memberCount }}"/>), and the rooms that gave it a role lose that role (<ph id="2" equiv="INTERPOLATION_2" disp="{{ group.roomCount }}"/>). This cannot be undone. </source>
+        <target>„<ph id="0" equiv="INTERPOLATION" disp="{{ group.name }}"/>“ löschen? Ihre Mitgliedschaften gehen mit (<ph id="1" equiv="INTERPOLATION_1" disp="{{ group.memberCount }}"/>), und die Räume, die ihr eine Rolle gegeben haben, verlieren diese Rolle (<ph id="2" equiv="INTERPOLATION_2" disp="{{ group.roomCount }}"/>). Das lässt sich nicht rückgängig machen.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete.confirm">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.html:463,465</note>
+      </notes>
+      <segment>
+        <source> Delete </source>
+        <target>Löschen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:74</note>
+      </notes>
+      <segment>
+        <source>Groups · Administration · Elysion</source>
+        <target>Gruppen · Administration · Elysion</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.source.local">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:108</note>
+      </notes>
+      <segment>
+        <source>Local</source>
+        <target>Lokal</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.source.provider">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:109</note>
+      </notes>
+      <segment>
+        <source>Identity provider</source>
+        <target>Identitätsanbieter</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.nameRule">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:132</note>
+        <note category="location">src/app/admin/admin-groups.ts:178</note>
+      </notes>
+      <segment>
+        <source>A group needs a name of 1 to <ph id="0" equiv="max" disp="MAX_GROUP_NAME_LENGTH"/> characters.</source>
+        <target>Eine Gruppe braucht einen Namen mit 1 bis <ph id="0" equiv="max" disp="MAX_GROUP_NAME_LENGTH"/> Zeichen.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.createError">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:148</note>
+      </notes>
+      <segment>
+        <source>The group could not be made.</source>
+        <target>Die Gruppe konnte nicht angelegt werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.renameError">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:194</note>
+      </notes>
+      <segment>
+        <source>The group could not be renamed.</source>
+        <target>Die Gruppe konnte nicht umbenannt werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.rule">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:234</note>
+      </notes>
+      <segment>
+        <source>Enter the id of the group at the identity provider (up to <ph id="0" equiv="max" disp="MAX_EXTERNAL_ID_LENGTH"/> characters).</source>
+        <target>Gib die ID der Gruppe beim Identitätsanbieter ein (bis zu <ph id="0" equiv="max" disp="MAX_EXTERNAL_ID_LENGTH"/> Zeichen).</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:241</note>
+      </notes>
+      <segment>
+        <source>The group could not be linked.</source>
+        <target>Die Gruppe konnte nicht verknüpft werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:251</note>
+      </notes>
+      <segment>
+        <source>The group could not be unlinked.</source>
+        <target>Die Gruppe konnte nicht gelöst werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete.error">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:291</note>
+      </notes>
+      <segment>
+        <source>The group could not be deleted.</source>
+        <target>Die Gruppe konnte nicht gelöscht werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.addError">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:336</note>
+      </notes>
+      <segment>
+        <source>The person could not be added.</source>
+        <target>Die Person konnte nicht hinzugefügt werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.removeError">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:359</note>
+      </notes>
+      <segment>
+        <source>The person could not be removed.</source>
+        <target>Die Person konnte nicht entfernt werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.rename.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:368</note>
+      </notes>
+      <segment>
+        <source>Rename the group <ph id="0" equiv="name" disp="group.name"/></source>
+        <target>Die Gruppe <ph id="0" equiv="name" disp="group.name"/> umbenennen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.link.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:372</note>
+      </notes>
+      <segment>
+        <source>Link the group <ph id="0" equiv="name" disp="group.name"/> to a group of the identity provider</source>
+        <target>Die Gruppe <ph id="0" equiv="name" disp="group.name"/> mit einer Gruppe des Identitätsanbieters verknüpfen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.unlink.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:376</note>
+      </notes>
+      <segment>
+        <source>Unlink the group <ph id="0" equiv="name" disp="group.name"/></source>
+        <target>Die Gruppe <ph id="0" equiv="name" disp="group.name"/> lösen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.delete.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:380</note>
+      </notes>
+      <segment>
+        <source>Delete the group <ph id="0" equiv="name" disp="group.name"/></source>
+        <target>Die Gruppe <ph id="0" equiv="name" disp="group.name"/> löschen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.open">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:384</note>
+      </notes>
+      <segment>
+        <source>Show the members of <ph id="0" equiv="name" disp="group.name"/></source>
+        <target>Die Mitglieder von <ph id="0" equiv="name" disp="group.name"/> anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.removeMember.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:388</note>
+      </notes>
+      <segment>
+        <source>Remove <ph id="0" equiv="name" disp="member.displayName"/> from the group</source>
+        <target><ph id="0" equiv="name" disp="member.displayName"/> aus der Gruppe entfernen</target>
+      </segment>
+    </unit>
+    <unit id="admin.groups.addMember.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-groups.ts:392</note>
+      </notes>
+      <segment>
+        <source>Add <ph id="0" equiv="name" disp="user.displayName"/> to the group</source>
+        <target><ph id="0" equiv="name" disp="user.displayName"/> zur Gruppe hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="admin.back">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:3,4</note>
+      </notes>
+      <segment>
+        <source>All boards</source>
+        <target>Alle Boards</target>
+      </segment>
+    </unit>
+    <unit id="admin.title">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:4,5</note>
+      </notes>
+      <segment>
+        <source>Administration</source>
+        <target>Administration</target>
+      </segment>
+    </unit>
+    <unit id="admin.nav.label">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:16</note>
+      </notes>
+      <segment>
+        <source>Administration</source>
+        <target>Administration</target>
+      </segment>
+    </unit>
+    <unit id="admin.nav.overview">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:26,28</note>
+      </notes>
+      <segment>
+        <source>Overview</source>
+        <target>Übersicht</target>
+      </segment>
+    </unit>
+    <unit id="admin.nav.users">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:37,38</note>
+      </notes>
+      <segment>
+        <source>Users</source>
+        <target>Personen</target>
+      </segment>
+    </unit>
+    <unit id="admin.nav.groups">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:46,48</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+        <target>Gruppen</target>
+      </segment>
+    </unit>
+    <unit id="admin.nav.rooms">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:57,58</note>
+      </notes>
+      <segment>
+        <source>Rooms</source>
+        <target>Räume</target>
+      </segment>
+    </unit>
+    <unit id="admin.denied.title">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:68,69</note>
+      </notes>
+      <segment>
+        <source>You are not an administrator</source>
+        <target>Du bist kein Administrator</target>
+      </segment>
+    </unit>
+    <unit id="admin.denied.message">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:70,72</note>
+      </notes>
+      <segment>
+        <source> This area is for the administrators of this instance. Ask one of them if you need access. </source>
+        <target>Dieser Bereich ist für die Administratoren dieser Instanz. Frag einen von ihnen, wenn du Zugriff brauchst.</target>
+      </segment>
+    </unit>
+    <unit id="admin.denied.back">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:72,75</note>
+      </notes>
+      <segment>
+        <source>Back to your boards</source>
+        <target>Zurück zu deinen Boards</target>
+      </segment>
+    </unit>
+    <unit id="admin.checking">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:76,80</note>
+      </notes>
+      <segment>
+        <source>Checking your access…</source>
+        <target>Dein Zugriff wird geprüft …</target>
+      </segment>
+    </unit>
+    <unit id="admin.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.ts:25</note>
+      </notes>
+      <segment>
+        <source>Administration · Elysion</source>
+        <target>Administration · Elysion</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.title">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:1,2</note>
+      </notes>
+      <segment>
+        <source>Overview</source>
+        <target>Übersicht</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:3,7</note>
+      </notes>
+      <segment>
+        <source> What this instance holds. The administration shows names, numbers and roles, never what is on a board.
+</source>
+        <target>Was diese Instanz enthält. Die Administration zeigt Namen, Zahlen und Rollen, nie, was auf einem Board steht.</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.numbers">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:13</note>
+      </notes>
+      <segment>
+        <source>Numbers</source>
+        <target>Zahlen</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.users">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:16,17</note>
+      </notes>
+      <segment>
+        <source>People</source>
+        <target>Personen</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.seen">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:18,20</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ numbers.usersSeenLast30Days }}"/> seen in the last 30 days</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ numbers.usersSeenLast30Days }}"/> in den letzten 30 Tagen gesehen</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.groups">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:23,25</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+        <target>Gruppen</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.rooms">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:27,29</note>
+      </notes>
+      <segment>
+        <source>Rooms</source>
+        <target>Räume</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.boards">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:31,35</note>
+      </notes>
+      <segment>
+        <source>Boards</source>
+        <target>Boards</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.provider">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:38,40</note>
+      </notes>
+      <segment>
+        <source>Sign-in</source>
+        <target>Anmeldung</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.authority">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:41,42</note>
+      </notes>
+      <segment>
+        <source>Identity provider (issuer)</source>
+        <target>Identitätsanbieter (Issuer)</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.hint">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:43,45</note>
+      </notes>
+      <segment>
+        <source>Provider the shell goes to directly</source>
+        <target>Anbieter, zu dem die Oberfläche direkt springt</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.noHint">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:49,53</note>
+      </notes>
+      <segment>
+        <source>None: people see the login page of the realm</source>
+        <target>Keiner: Die Leute sehen die Anmeldeseite des Realms</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.noProvider">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.html:55,57</note>
+      </notes>
+      <segment>
+        <source>The sign-in settings could not be read.</source>
+        <target>Die Anmeldeeinstellungen konnten nicht gelesen werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.overview.error">
+      <notes>
+        <note category="location">src/app/admin/admin-overview.ts:55</note>
+      </notes>
+      <segment>
+        <source>The numbers could not be loaded.</source>
+        <target>Die Zahlen konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.pager.label">
+      <notes>
+        <note category="location">src/app/admin/admin-pager.ts:8</note>
+      </notes>
+      <segment>
+        <source>Pages</source>
+        <target>Seiten</target>
+      </segment>
+    </unit>
+    <unit id="admin.pager.previous">
+      <notes>
+        <note category="location">src/app/admin/admin-pager.ts:16,18</note>
+      </notes>
+      <segment>
+        <source> Previous </source>
+        <target>Zurück</target>
+      </segment>
+    </unit>
+    <unit id="admin.pager.position">
+      <notes>
+        <note category="location">src/app/admin/admin-pager.ts:19,21</note>
+      </notes>
+      <segment>
+        <source> Page <ph id="0" equiv="INTERPOLATION" disp="{{ page() }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ pages() }}"/>, <ph id="2" equiv="INTERPOLATION_2" disp="{{ total() }}"/> in all </source>
+        <target>Seite <ph id="0" equiv="INTERPOLATION" disp="{{ page() }}"/> von <ph id="1" equiv="INTERPOLATION_1" disp="{{ pages() }}"/>, insgesamt <ph id="2" equiv="INTERPOLATION_2" disp="{{ total() }}"/></target>
+      </segment>
+    </unit>
+    <unit id="admin.pager.next">
+      <notes>
+        <note category="location">src/app/admin/admin-pager.ts:28,30</note>
+      </notes>
+      <segment>
+        <source> Next </source>
+        <target>Weiter</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.title">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:1,2</note>
+      </notes>
+      <segment>
+        <source>Rooms</source>
+        <target>Räume</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:3,7</note>
+      </notes>
+      <segment>
+        <source> The rooms of this instance with their owners and numbers. Boards and what is on them are not shown.
+</source>
+        <target>Die Räume dieser Instanz mit ihren Besitzern und Zahlen. Boards und ihr Inhalt werden nicht gezeigt.</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.search.placeholder">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:14,15</note>
+      </notes>
+      <segment>
+        <source>Name of a room</source>
+        <target>Name eines Raums</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.search">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:16,17</note>
+      </notes>
+      <segment>
+        <source>Search rooms</source>
+        <target>Räume suchen</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.error">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:27,28</note>
+      </notes>
+      <segment>
+        <source>The rooms could not be loaded.</source>
+        <target>Die Räume konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:38,39</note>
+      </notes>
+      <segment>
+        <source>No room matches.</source>
+        <target>Kein Raum passt.</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.caption">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:43,45</note>
+      </notes>
+      <segment>
+        <source> Rooms </source>
+        <target>Räume</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.name">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:47,48</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.owner">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:48,49</note>
+      </notes>
+      <segment>
+        <source>Owner</source>
+        <target>Besitzer</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.members">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:49,50</note>
+      </notes>
+      <segment>
+        <source>Members</source>
+        <target>Mitglieder</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.groups">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:50,51</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+        <target>Gruppen</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.boards">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:51,52</note>
+      </notes>
+      <segment>
+        <source>Boards</source>
+        <target>Boards</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.created">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:52,53</note>
+      </notes>
+      <segment>
+        <source>Created</source>
+        <target>Erstellt</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.actions">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:53,55</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.share">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.html:74,75</note>
+      </notes>
+      <segment>
+        <source> Share </source>
+        <target>Teilen</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.ts:32</note>
+      </notes>
+      <segment>
+        <source>Rooms · Administration · Elysion</source>
+        <target>Räume · Administration · Elysion</target>
+      </segment>
+    </unit>
+    <unit id="admin.rooms.share.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-rooms.ts:52</note>
+      </notes>
+      <segment>
+        <source>Share the room <ph id="0" equiv="name" disp="room.name"/></source>
+        <target>Den Raum <ph id="0" equiv="name" disp="room.name"/> teilen</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.title">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:1,2</note>
+      </notes>
+      <segment>
+        <source>Users</source>
+        <target>Personen</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:3,7</note>
+      </notes>
+      <segment>
+        <source> Everybody who has signed in at least once. The groups come from the identity provider or from the administrators.
+</source>
+        <target>Alle, die sich mindestens einmal angemeldet haben. Die Gruppen kommen vom Identitätsanbieter oder von den Administratoren.</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.search.placeholder">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:14,15</note>
+      </notes>
+      <segment>
+        <source>Name or email</source>
+        <target>Name oder E-Mail</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.search">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:16,17</note>
+      </notes>
+      <segment>
+        <source>Search users</source>
+        <target>Personen suchen</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.error">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:27,28</note>
+      </notes>
+      <segment>
+        <source>The users could not be loaded.</source>
+        <target>Die Personen konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:38,39</note>
+      </notes>
+      <segment>
+        <source>No user matches.</source>
+        <target>Keine Person passt.</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.caption">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:43,45</note>
+      </notes>
+      <segment>
+        <source> Users </source>
+        <target>Personen</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.name">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:47,48</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.email">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:48,49</note>
+      </notes>
+      <segment>
+        <source>Email</source>
+        <target>E-Mail</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.groups">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:49,50</note>
+      </notes>
+      <segment>
+        <source>Groups</source>
+        <target>Gruppen</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.lastSeen">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:50,51</note>
+      </notes>
+      <segment>
+        <source>Last seen</source>
+        <target>Zuletzt gesehen</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.created">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:51,53</note>
+      </notes>
+      <segment>
+        <source>Created</source>
+        <target>Erstellt</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.never">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:81,83</note>
+      </notes>
+      <segment>
+        <source>never</source>
+        <target>nie</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.note">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:109,111</note>
+      </notes>
+      <segment>
+        <source> The roles this person has directly. Roles through a group or a room are not listed. </source>
+        <target>Die Rollen, die diese Person direkt hat. Rollen über eine Gruppe oder einen Raum stehen hier nicht.</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.rooms">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:111,112</note>
+      </notes>
+      <segment>
+        <source>Rooms</source>
+        <target>Räume</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.noRooms">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:113,115</note>
+      </notes>
+      <segment>
+        <source>No room.</source>
+        <target>Kein Raum.</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.boards">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:124,125</note>
+      </notes>
+      <segment>
+        <source>Boards</source>
+        <target>Boards</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.noBoards">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:126,128</note>
+      </notes>
+      <segment>
+        <source>No board.</source>
+        <target>Kein Board.</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-users.ts:30</note>
+      </notes>
+      <segment>
+        <source>Users · Administration · Elysion</source>
+        <target>Personen · Administration · Elysion</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.detail.error">
+      <notes>
+        <note category="location">src/app/admin/admin-users.ts:52</note>
+      </notes>
+      <segment>
+        <source>The details could not be loaded.</source>
+        <target>Die Details konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.open">
+      <notes>
+        <note category="location">src/app/admin/admin-users.ts:64</note>
+      </notes>
+      <segment>
+        <source>Show the rooms and boards of <ph id="0" equiv="name" disp="user.displayName"/></source>
+        <target>Die Räume und Boards von <ph id="0" equiv="name" disp="user.displayName"/> anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="admin.error.forbidden">
+      <notes>
+        <note category="location">src/app/admin/paged-list.ts:21</note>
+      </notes>
+      <segment>
+        <source>Only an administrator can do this.</source>
+        <target>Das kann nur ein Administrator.</target>
+      </segment>
+    </unit>
     <unit id="boards.new.aria">
       <notes>
         <note category="location">src/app/board-list/board-list.html:9,10</note>
@@ -2917,9 +4153,18 @@
         <target>Konto</target>
       </segment>
     </unit>
+    <unit id="topbar.user.admin">
+      <notes>
+        <note category="location">src/app/topbar/user-menu.html:43,46</note>
+      </notes>
+      <segment>
+        <source> Administration </source>
+        <target>Administration</target>
+      </segment>
+    </unit>
     <unit id="topbar.user.logout">
       <notes>
-        <note category="location">src/app/topbar/user-menu.html:42,46</note>
+        <note category="location">src/app/topbar/user-menu.html:53,57</note>
       </notes>
       <segment>
         <source> Log out </source>
@@ -2928,7 +4173,7 @@
     </unit>
     <unit id="topbar.user.signed-in">
       <notes>
-        <note category="location">src/app/topbar/user-menu.ts:41</note>
+        <note category="location">src/app/topbar/user-menu.ts:46</note>
       </notes>
       <segment>
         <source>Signed in as <ph id="0" equiv="name" disp="this.user().name"/></source>

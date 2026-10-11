@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { Account } from '../auth/account';
 import { LanguageService } from '../shared/language';
 import { UserMenu } from './user-menu';
 
@@ -13,7 +15,10 @@ describe('UserMenu', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [UserMenu],
-      providers: [{ provide: LanguageService, useValue: { current: 'en', use } }],
+      providers: [
+        provideRouter([{ path: 'admin', children: [] }]),
+        { provide: LanguageService, useValue: { current: 'en', use } },
+      ],
     }).compileComponents();
     fixture = TestBed.createComponent(UserMenu);
     fixture.componentRef.setInput('user', {
@@ -111,5 +116,30 @@ describe('UserMenu', () => {
 
     items[1].click();
     expect(use).toHaveBeenCalledWith('de');
+  });
+
+  describe('the way to the administration (ADR 0027)', () => {
+    const entry = () => el().querySelector('a[href="/admin"]');
+
+    it('is offered to an administrator, and closes the menu when followed', async () => {
+      TestBed.inject(Account).isAdministrator.set(true);
+      button().click();
+      await fixture.whenStable();
+
+      expect(entry()?.textContent?.trim()).toBe('Administration');
+      expect(entry()?.getAttribute('role')).toBe('menuitem');
+
+      (entry() as HTMLAnchorElement).click();
+      await fixture.whenStable();
+      expect(menu()).toBeNull();
+    });
+
+    it.each([false, null])('is not offered when the person is not one (%s)', async (flag) => {
+      TestBed.inject(Account).isAdministrator.set(flag);
+      button().click();
+      await fixture.whenStable();
+
+      expect(entry()).toBeNull();
+    });
   });
 });

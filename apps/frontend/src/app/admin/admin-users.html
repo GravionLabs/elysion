@@ -1,0 +1,141 @@
+<h1 i18n="@@admin.users.title">Users</h1>
+<p class="lead" i18n="@@admin.users.lead">
+  Everybody who has signed in at least once. The groups come from the identity provider or from the
+  administrators.
+</p>
+
+<form class="tools" role="search" (submit)="$event.preventDefault(); submit()">
+  <input
+    type="search"
+    name="search"
+    autocomplete="off"
+    data-1p-ignore
+    data-lpignore="true"
+    placeholder="Name or email"
+    i18n-placeholder="@@admin.users.search.placeholder"
+    aria-label="Search users"
+    i18n-aria-label="@@admin.users.search"
+    [value]="search()"
+    (input)="updateSearch($event)"
+  />
+  <button type="submit" class="button" i18n="@@admin.search">Search</button>
+</form>
+
+@switch (list.state()) {
+  @case ('error') {
+    <p class="error" role="alert">
+      <ng-container i18n="@@admin.users.error">The users could not be loaded.</ng-container>
+      <button type="button" class="link" (click)="list.load()" i18n="@@admin.retry">
+        Try again
+      </button>
+    </p>
+  }
+  @default {
+    @if (list.state() === 'loading') {
+      <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+    }
+    @if (list.state() === 'ready' && list.items().length === 0) {
+      <p class="note" i18n="@@admin.users.empty">No user matches.</p>
+    } @else if (list.items().length > 0) {
+      <div class="table-wrap">
+        <table>
+          <caption class="visually-hidden" i18n="@@admin.users.caption">
+            Users
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" i18n="@@admin.users.name">Name</th>
+              <th scope="col" i18n="@@admin.users.email">Email</th>
+              <th scope="col" i18n="@@admin.users.groups">Groups</th>
+              <th scope="col" i18n="@@admin.users.lastSeen">Last seen</th>
+              <th scope="col" i18n="@@admin.users.created">Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of list.items(); track user.id) {
+              <tr>
+                <th scope="row">
+                  <button
+                    type="button"
+                    class="link"
+                    [attr.aria-label]="openLabel(user)"
+                    (click)="open(user)"
+                  >
+                    {{ user.displayName }}
+                  </button>
+                </th>
+                <td>{{ user.email ?? '' }}</td>
+                <td>
+                  @if (user.groups.length > 0) {
+                    <ul class="chips">
+                      @for (group of user.groups; track group.id) {
+                        <li class="chip">{{ group.name }}</li>
+                      }
+                    </ul>
+                  }
+                </td>
+                <td>
+                  @if (user.lastSeenAt) {
+                    {{ user.lastSeenAt | date: 'medium' }}
+                  } @else {
+                    <span class="subtle" i18n="@@admin.users.never">never</span>
+                  }
+                </td>
+                <td>{{ user.createdAt | date: 'mediumDate' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-admin-pager
+        [page]="list.page()"
+        [pages]="list.pages()"
+        [total]="list.total()"
+        (go)="list.go($event)"
+      />
+    }
+  }
+}
+
+@if (detailFor(); as user) {
+  <app-admin-dialog [heading]="user.displayName" (closed)="close()">
+    @if (detailError(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    } @else if (detail(); as person) {
+      @if (person.email) {
+        <p class="note">{{ person.email }}</p>
+      }
+      <p class="note" i18n="@@admin.users.detail.note">
+        The roles this person has directly. Roles through a group or a room are not listed.
+      </p>
+      <h3 i18n="@@admin.users.detail.rooms">Rooms</h3>
+      @if (person.rooms.length === 0) {
+        <p class="note" i18n="@@admin.users.detail.noRooms">No room.</p>
+      } @else {
+        <ul class="stack">
+          @for (room of person.rooms; track room.id) {
+            <li class="line">
+              <span>{{ room.name }}</span>
+              <span class="chip">{{ room.role }}</span>
+            </li>
+          }
+        </ul>
+      }
+      <h3 i18n="@@admin.users.detail.boards">Boards</h3>
+      @if (person.boards.length === 0) {
+        <p class="note" i18n="@@admin.users.detail.noBoards">No board.</p>
+      } @else {
+        <ul class="stack">
+          @for (board of person.boards; track board.id) {
+            <li class="line">
+              <span>{{ board.name }}</span>
+              <span class="chip">{{ board.role }}</span>
+            </li>
+          }
+        </ul>
+      }
+    } @else {
+      <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+    }
+  </app-admin-dialog>
+}

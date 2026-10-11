@@ -1,0 +1,95 @@
+<h1 i18n="@@admin.rooms.title">Rooms</h1>
+<p class="lead" i18n="@@admin.rooms.lead">
+  The rooms of this instance with their owners and numbers. Boards and what is on them are not
+  shown.
+</p>
+
+<form class="tools" role="search" (submit)="$event.preventDefault(); submit()">
+  <input
+    type="search"
+    name="search"
+    autocomplete="off"
+    data-1p-ignore
+    data-lpignore="true"
+    placeholder="Name of a room"
+    i18n-placeholder="@@admin.rooms.search.placeholder"
+    aria-label="Search rooms"
+    i18n-aria-label="@@admin.rooms.search"
+    [value]="search()"
+    (input)="updateSearch($event)"
+  />
+  <button type="submit" class="button" i18n="@@admin.search">Search</button>
+</form>
+
+@switch (list.state()) {
+  @case ('error') {
+    <p class="error" role="alert">
+      <ng-container i18n="@@admin.rooms.error">The rooms could not be loaded.</ng-container>
+      <button type="button" class="link" (click)="list.load()" i18n="@@admin.retry">
+        Try again
+      </button>
+    </p>
+  }
+  @default {
+    @if (list.state() === 'loading') {
+      <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+    }
+    @if (list.state() === 'ready' && list.items().length === 0) {
+      <p class="note" i18n="@@admin.rooms.empty">No room matches.</p>
+    } @else if (list.items().length > 0) {
+      <div class="table-wrap">
+        <table>
+          <caption class="visually-hidden" i18n="@@admin.rooms.caption">
+            Rooms
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" i18n="@@admin.rooms.name">Name</th>
+              <th scope="col" i18n="@@admin.rooms.owner">Owner</th>
+              <th scope="col" class="number" i18n="@@admin.rooms.members">Members</th>
+              <th scope="col" class="number" i18n="@@admin.rooms.groups">Groups</th>
+              <th scope="col" class="number" i18n="@@admin.rooms.boards">Boards</th>
+              <th scope="col" i18n="@@admin.rooms.created">Created</th>
+              <th scope="col" class="actions" i18n="@@admin.rooms.actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (room of list.items(); track room.id) {
+              <tr>
+                <th scope="row">{{ room.name }}</th>
+                <td>{{ room.owner?.displayName ?? '' }}</td>
+                <td class="number">{{ room.memberCount }}</td>
+                <td class="number">{{ room.groupCount }}</td>
+                <td class="number">{{ room.boardCount }}</td>
+                <td>{{ room.createdAt | date: 'mediumDate' }}</td>
+                <td class="actions">
+                  @if (owned().has(room.id)) {
+                    <button
+                      type="button"
+                      class="button small"
+                      [attr.aria-label]="shareLabel(room)"
+                      (click)="sharing.set(room)"
+                      i18n="@@admin.rooms.share"
+                    >
+                      Share
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-admin-pager
+        [page]="list.page()"
+        [pages]="list.pages()"
+        [total]="list.total()"
+        (go)="list.go($event)"
+      />
+    }
+  }
+}
+
+@if (sharing(); as room) {
+  <app-share-dialog [boardId]="room.id" scope="room" (closed)="sharing.set(null)" />
+}
