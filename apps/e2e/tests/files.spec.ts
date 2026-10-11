@@ -61,7 +61,7 @@ test('a blank board is shared with a second person', async () => {
   await expect(a.getByText('Connected', { exact: true })).toBeVisible();
 
   await a.getByRole('button', { name: /^Share/ }).click();
-  await a.getByPlaceholder('name@example.com').fill(emailOf(USER_B));
+  await a.getByRole('combobox', { name: 'Person' }).fill(emailOf(USER_B));
   await a.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(a.getByText(emailOf(USER_B))).toBeVisible();
   await a.keyboard.press('Escape');

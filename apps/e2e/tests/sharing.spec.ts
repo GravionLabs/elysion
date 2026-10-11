@@ -78,10 +78,10 @@ test('a person is found by part of the name and added from the list with the key
 test('Escape closes the list first and the dialog after', async () => {
   const person = dialog(a).getByRole('combobox', { name: 'Person' });
   await person.fill('dev');
-  await expect(dialog(a).getByRole('option').first()).toBeVisible();
+  await expect(dialog(a).getByRole('listbox').getByRole('option').first()).toBeVisible();
 
   await person.press('Escape');
-  await expect(dialog(a).getByRole('option')).toHaveCount(0);
+  await expect(dialog(a).getByRole('listbox').getByRole('option')).toHaveCount(0);
   await expect(dialog(a)).toBeVisible();
 
   await person.press('Escape');
@@ -93,7 +93,7 @@ test('a group gets a role in the room, which can be changed and taken away', asy
   const groups = dialog(a).getByRole('region', { name: 'Groups' });
   await expect(groups.getByText('No group has a role in this room yet.')).toBeVisible();
 
-  const group = groups.getByRole('combobox', { name: 'Group' });
+  const group = groups.getByRole('combobox', { name: 'Group', exact: true });
   await group.fill('zzzz');
   await expect(groups.getByText('No group found.')).toBeVisible();
 
