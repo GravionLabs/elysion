@@ -70,9 +70,24 @@ test('an editor who leaves a drawn board makes the picture of its card', async (
   expect(answer.status()).toBe(200);
   expect(answer.headers()['content-type']).toBe('image/png');
   // The board as it looks (a rectangle on its color), not an empty frame: more than a blank 480 by 300 PNG weighs.
-  expect((await answer.body()).length).toBeGreaterThan(1_500);
+  // (`response.body()` of a response the page fetched itself can hang in a long run, so the picture itself is looked at.)
   const picture = boardCard(a, BOARD).locator('app-board-thumbnail img');
   await expect(picture).toBeVisible();
+  // Not a blank frame: the pixels of the shown image are not all one color.
+  const colors = await picture.evaluate((image: HTMLImageElement) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext('2d')!;
+    context.drawImage(image, 0, 0);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    const seen = new Set<number>();
+    for (let i = 0; i < pixels.length; i += 4) {
+      seen.add((pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2]);
+    }
+    return seen.size;
+  });
+  expect(colors).toBeGreaterThan(1);
   const size = await picture.evaluate((image: HTMLImageElement) => ({
     width: image.naturalWidth,
     height: image.naturalHeight,
