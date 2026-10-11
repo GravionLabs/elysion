@@ -1,6 +1,235 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xliff version="2.0" xmlns="urn:oasis:names:tc:xliff:document:2.0" srcLang="en">
   <file id="ngi18n" original="ng.template">
+    <unit id="admin.audit.title">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:1,2</note>
+      </notes>
+      <segment>
+        <source>Audit</source>
+        <target>Audit</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:3,7</note>
+      </notes>
+      <segment>
+        <source> Who gave or took away access, newest first. An entry holds ids, roles and counts, never what is on a board.
+</source>
+        <target> Wer Zugriff gegeben oder genommen hat, neueste zuerst. Ein Eintrag enthält IDs, Rollen und Zahlen, nie den Inhalt eines Boards. </target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.from">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:9,10</note>
+      </notes>
+      <segment>
+        <source>From</source>
+        <target>Von</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.to">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:13,14</note>
+      </notes>
+      <segment>
+        <source>To</source>
+        <target>Bis</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.filter">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:16,19</note>
+      </notes>
+      <segment>
+        <source>Filter</source>
+        <target>Filtern</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.filters">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:20</note>
+      </notes>
+      <segment>
+        <source>Active filters</source>
+        <target>Aktive Filter</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.error">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:40,41</note>
+      </notes>
+      <segment>
+        <source>The audit log could not be loaded.</source>
+        <target>Das Audit-Protokoll konnte nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.retry">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:42,44</note>
+        <note category="location">src/app/admin/admin-groups.html:76,78</note>
+        <note category="location">src/app/admin/admin-groups.html:301,302</note>
+        <note category="location">src/app/admin/admin-overview.html:10,12</note>
+        <note category="location">src/app/admin/admin-rooms.html:29,31</note>
+        <note category="location">src/app/admin/admin-users.html:29,31</note>
+      </notes>
+      <segment>
+        <source> Try again </source>
+        <target>Erneut versuchen</target>
+      </segment>
+    </unit>
+    <unit id="admin.loading">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:48,50</note>
+        <note category="location">src/app/admin/admin-groups.html:82,84</note>
+        <note category="location">src/app/admin/admin-groups.html:250,252</note>
+        <note category="location">src/app/admin/admin-groups.html:307,308</note>
+        <note category="location">src/app/admin/admin-overview.html:35,38</note>
+        <note category="location">src/app/admin/admin-rooms.html:35,37</note>
+        <note category="location">src/app/admin/admin-users.html:35,37</note>
+        <note category="location">src/app/admin/admin-users.html:138,140</note>
+      </notes>
+      <segment>
+        <source>Loading…</source>
+        <target>Lädt …</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:51,52</note>
+      </notes>
+      <segment>
+        <source>Nothing was recorded for this filter.</source>
+        <target>Für diesen Filter wurde nichts aufgezeichnet.</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.caption">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:56,58</note>
+      </notes>
+      <segment>
+        <source> Audit log </source>
+        <target> Audit-Protokoll </target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.when">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:60,61</note>
+      </notes>
+      <segment>
+        <source>When</source>
+        <target>Wann</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.what">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:61,62</note>
+      </notes>
+      <segment>
+        <source>What happened</source>
+        <target>Was geschah</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.subject">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:62,63</note>
+      </notes>
+      <segment>
+        <source>About</source>
+        <target>Betrifft</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.by">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.html:64,65</note>
+      </notes>
+      <segment>
+        <source>By</source>
+        <target>Von</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:40</note>
+      </notes>
+      <segment>
+        <source>Audit · Administration · Elysion</source>
+        <target>Audit · Administration · Elysion</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.chip.subject">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:84</note>
+      </notes>
+      <segment>
+        <source>About: <ph id="0" equiv="name" disp="chip.label"/></source>
+        <target>Betrifft: <ph id="0" equiv="name" disp="chip.label"/></target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.chip.actor">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:85</note>
+      </notes>
+      <segment>
+        <source>By: <ph id="0" equiv="name" disp="chip.label"/></source>
+        <target>Von: <ph id="0" equiv="name" disp="chip.label"/></target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.chip.remove">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:89</note>
+      </notes>
+      <segment>
+        <source>Remove the filter <ph id="0" equiv="filter" disp="this.chipText(chip)"/></source>
+        <target>Den Filter <ph id="0" equiv="filter" disp="this.chipText(chip)"/> entfernen</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.kind.board">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:95</note>
+      </notes>
+      <segment>
+        <source>Board</source>
+        <target>Board</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.kind.room">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:97</note>
+      </notes>
+      <segment>
+        <source>Room</source>
+        <target>Raum</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.kind.group">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:99</note>
+      </notes>
+      <segment>
+        <source>Group</source>
+        <target>Gruppe</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.kind.user">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:100</note>
+      </notes>
+      <segment>
+        <source>Person</source>
+        <target>Person</target>
+      </segment>
+    </unit>
+    <unit id="admin.audit.gone">
+      <notes>
+        <note category="location">src/app/admin/admin-audit.ts:101</note>
+      </notes>
+      <segment>
+        <source>(gone)</source>
+        <target>(gelöscht)</target>
+      </segment>
+    </unit>
     <unit id="admin.dialog.close">
       <notes>
         <note category="location">src/app/admin/admin-dialog.ts:40</note>
@@ -105,34 +334,6 @@
       <segment>
         <source>The groups could not be loaded.</source>
         <target>Die Gruppen konnten nicht geladen werden.</target>
-      </segment>
-    </unit>
-    <unit id="admin.retry">
-      <notes>
-        <note category="location">src/app/admin/admin-groups.html:76,78</note>
-        <note category="location">src/app/admin/admin-groups.html:301,302</note>
-        <note category="location">src/app/admin/admin-overview.html:10,12</note>
-        <note category="location">src/app/admin/admin-rooms.html:29,31</note>
-        <note category="location">src/app/admin/admin-users.html:29,31</note>
-      </notes>
-      <segment>
-        <source> Try again </source>
-        <target>Erneut versuchen</target>
-      </segment>
-    </unit>
-    <unit id="admin.loading">
-      <notes>
-        <note category="location">src/app/admin/admin-groups.html:82,84</note>
-        <note category="location">src/app/admin/admin-groups.html:250,252</note>
-        <note category="location">src/app/admin/admin-groups.html:307,308</note>
-        <note category="location">src/app/admin/admin-overview.html:35,38</note>
-        <note category="location">src/app/admin/admin-rooms.html:35,37</note>
-        <note category="location">src/app/admin/admin-users.html:35,37</note>
-        <note category="location">src/app/admin/admin-users.html:138,140</note>
-      </notes>
-      <segment>
-        <source>Loading…</source>
-        <target>Lädt …</target>
       </segment>
     </unit>
     <unit id="admin.groups.empty">
@@ -676,9 +877,18 @@
         <target>Räume</target>
       </segment>
     </unit>
+    <unit id="admin.nav.audit">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:67,68</note>
+      </notes>
+      <segment>
+        <source>Audit</source>
+        <target>Audit</target>
+      </segment>
+    </unit>
     <unit id="admin.denied.title">
       <notes>
-        <note category="location">src/app/admin/admin-layout.html:68,69</note>
+        <note category="location">src/app/admin/admin-layout.html:78,79</note>
       </notes>
       <segment>
         <source>You are not an administrator</source>
@@ -687,7 +897,7 @@
     </unit>
     <unit id="admin.denied.message">
       <notes>
-        <note category="location">src/app/admin/admin-layout.html:70,72</note>
+        <note category="location">src/app/admin/admin-layout.html:80,82</note>
       </notes>
       <segment>
         <source> This area is for the administrators of this instance. Ask one of them if you need access. </source>
@@ -696,7 +906,7 @@
     </unit>
     <unit id="admin.denied.back">
       <notes>
-        <note category="location">src/app/admin/admin-layout.html:72,75</note>
+        <note category="location">src/app/admin/admin-layout.html:82,85</note>
       </notes>
       <segment>
         <source>Back to your boards</source>
@@ -705,7 +915,7 @@
     </unit>
     <unit id="admin.checking">
       <notes>
-        <note category="location">src/app/admin/admin-layout.html:76,80</note>
+        <note category="location">src/app/admin/admin-layout.html:86,90</note>
       </notes>
       <segment>
         <source>Checking your access…</source>
@@ -1235,6 +1445,168 @@
       <segment>
         <source>Only an administrator can do this.</source>
         <target>Das kann nur ein Administrator.</target>
+      </segment>
+    </unit>
+    <unit id="audit.somebody">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:32</note>
+      </notes>
+      <segment>
+        <source>Somebody</source>
+        <target>Jemand</target>
+      </segment>
+    </unit>
+    <unit id="audit.aPerson">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:33</note>
+      </notes>
+      <segment>
+        <source>a person</source>
+        <target>eine Person</target>
+      </segment>
+    </unit>
+    <unit id="audit.member.added">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:37</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> gave <ph id="1" equiv="target" disp="target"/> the role <ph id="2" equiv="role" disp="role"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat <ph id="1" equiv="target" disp="target"/> die Rolle <ph id="2" equiv="role" disp="role"/> gegeben</target>
+      </segment>
+    </unit>
+    <unit id="audit.member.changed">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:39</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> changed the role of <ph id="1" equiv="target" disp="target"/> from <ph id="2" equiv="from" disp="text(entry, &apos;from&apos;)"/> to <ph id="3" equiv="to" disp="text(entry, &apos;to&apos;)"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat die Rolle von <ph id="1" equiv="target" disp="target"/> von <ph id="2" equiv="from" disp="text(entry, &apos;from&apos;)"/> auf <ph id="3" equiv="to" disp="text(entry, &apos;to&apos;)"/> geändert</target>
+      </segment>
+    </unit>
+    <unit id="audit.member.removed">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:41</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> removed <ph id="1" equiv="target" disp="target"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat <ph id="1" equiv="target" disp="target"/> entfernt</target>
+      </segment>
+    </unit>
+    <unit id="audit.room.groupSet">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:43</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> gave the group <ph id="1" equiv="group" disp="text(entry, &apos;groupName&apos;)"/> the role <ph id="2" equiv="role" disp="role"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat der Gruppe <ph id="1" equiv="group" disp="text(entry, &apos;groupName&apos;)"/> die Rolle <ph id="2" equiv="role" disp="role"/> gegeben</target>
+      </segment>
+    </unit>
+    <unit id="audit.room.groupRemoved">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:45</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> took a group out of the room</source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat eine Gruppe aus dem Raum genommen</target>
+      </segment>
+    </unit>
+    <unit id="audit.group.created">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:47</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> created the group <ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat die Gruppe <ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/> erstellt</target>
+      </segment>
+    </unit>
+    <unit id="audit.group.renamed">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:49</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> renamed the group from <ph id="1" equiv="from" disp="text(entry, &apos;from&apos;)"/> to <ph id="2" equiv="to" disp="text(entry, &apos;to&apos;)"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat die Gruppe von <ph id="1" equiv="from" disp="text(entry, &apos;from&apos;)"/> in <ph id="2" equiv="to" disp="text(entry, &apos;to&apos;)"/> umbenannt</target>
+      </segment>
+    </unit>
+    <unit id="audit.group.linked">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:51</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> linked the group to the identity provider</source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat die Gruppe mit dem Identitätsanbieter verknüpft</target>
+      </segment>
+    </unit>
+    <unit id="audit.group.unlinked">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:53</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> unlinked the group from the identity provider</source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat die Verknüpfung der Gruppe mit dem Identitätsanbieter gelöst</target>
+      </segment>
+    </unit>
+    <unit id="audit.group.deleted">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:55</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> deleted the group <ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat die Gruppe <ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/> gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="audit.group.memberAdded">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:57</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> added <ph id="1" equiv="target" disp="target"/> to the group</source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat <ph id="1" equiv="target" disp="target"/> zur Gruppe hinzugefügt</target>
+      </segment>
+    </unit>
+    <unit id="audit.group.memberRemoved">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:59</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> took <ph id="1" equiv="target" disp="target"/> out of the group</source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat <ph id="1" equiv="target" disp="target"/> aus der Gruppe genommen</target>
+      </segment>
+    </unit>
+    <unit id="audit.groups.synced">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:61</note>
+      </notes>
+      <segment>
+        <source>The groups of <ph id="0" equiv="actor" disp="actor"/> from the identity provider changed: <ph id="1" equiv="added" disp="text(entry, &apos;added&apos;)"/> added, <ph id="2" equiv="removed" disp="text(entry, &apos;removed&apos;)"/> removed</source>
+        <target>Die Gruppen von <ph id="0" equiv="actor" disp="actor"/> vom Identitätsanbieter haben sich geändert: <ph id="1" equiv="added" disp="text(entry, &apos;added&apos;)"/> hinzugefügt, <ph id="2" equiv="removed" disp="text(entry, &apos;removed&apos;)"/> entfernt</target>
+      </segment>
+    </unit>
+    <unit id="audit.invitation.created">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:63</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> made an invitation link for the role <ph id="1" equiv="role" disp="role"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat einen Einladungslink für die Rolle <ph id="1" equiv="role" disp="role"/> erstellt</target>
+      </segment>
+    </unit>
+    <unit id="audit.invitation.revoked">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:65</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> revoked an invitation link</source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat einen Einladungslink widerrufen</target>
+      </segment>
+    </unit>
+    <unit id="audit.invitation.accepted">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:67</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> joined with an invitation link as <ph id="1" equiv="role" disp="role"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> ist mit einem Einladungslink als <ph id="1" equiv="role" disp="role"/> beigetreten</target>
       </segment>
     </unit>
     <unit id="boards.new.aria">
@@ -2887,6 +3259,54 @@
         <target>Das kann nur ein Eigentümer des Boards tun.</target>
       </segment>
     </unit>
+    <unit id="share.history.title">
+      <notes>
+        <note category="location">src/app/share/history.html:10,11</note>
+      </notes>
+      <segment>
+        <source>History</source>
+        <target>Verlauf</target>
+      </segment>
+    </unit>
+    <unit id="share.history.loading">
+      <notes>
+        <note category="location">src/app/share/history.html:17,19</note>
+      </notes>
+      <segment>
+        <source>Loading the history…</source>
+        <target>Verlauf wird geladen…</target>
+      </segment>
+    </unit>
+    <unit id="share.history.error">
+      <notes>
+        <note category="location">src/app/share/history.html:21,22</note>
+      </notes>
+      <segment>
+        <source>The history could not be loaded.</source>
+        <target>Der Verlauf konnte nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="share.retry">
+      <notes>
+        <note category="location">src/app/share/history.html:22,24</note>
+        <note category="location">src/app/share/room-access.html:10,12</note>
+        <note category="location">src/app/share/room-groups.html:47,49</note>
+        <note category="location">src/app/share/share-dialog.html:71,72</note>
+      </notes>
+      <segment>
+        <source>Try again</source>
+        <target>Erneut versuchen</target>
+      </segment>
+    </unit>
+    <unit id="share.history.empty">
+      <notes>
+        <note category="location">src/app/share/history.html:27,29</note>
+      </notes>
+      <segment>
+        <source>Nothing was recorded yet.</source>
+        <target>Es wurde noch nichts aufgezeichnet.</target>
+      </segment>
+    </unit>
     <unit id="invite.title">
       <notes>
         <note category="location">src/app/share/invite-links.html:2,4</note>
@@ -2910,7 +3330,7 @@
         <note category="location">src/app/share/invite-links.html:9,11</note>
         <note category="location">src/app/share/invite-links.ts:172</note>
         <note category="location">src/app/share/room-groups.ts:198</note>
-        <note category="location">src/app/share/share-dialog.ts:248</note>
+        <note category="location">src/app/share/share-dialog.ts:249</note>
       </notes>
       <segment>
         <source> Viewer </source>
@@ -2922,7 +3342,7 @@
         <note category="location">src/app/share/invite-links.html:12,14</note>
         <note category="location">src/app/share/invite-links.ts:171</note>
         <note category="location">src/app/share/room-groups.ts:196</note>
-        <note category="location">src/app/share/share-dialog.ts:246</note>
+        <note category="location">src/app/share/share-dialog.ts:247</note>
       </notes>
       <segment>
         <source> Editor </source>
@@ -3170,17 +3590,6 @@
       <segment>
         <source>The room could not be loaded.</source>
         <target>Der Raum konnte nicht geladen werden.</target>
-      </segment>
-    </unit>
-    <unit id="share.retry">
-      <notes>
-        <note category="location">src/app/share/room-access.html:10,12</note>
-        <note category="location">src/app/share/room-groups.html:47,49</note>
-        <note category="location">src/app/share/share-dialog.html:71,72</note>
-      </notes>
-      <segment>
-        <source>Try again</source>
-        <target>Erneut versuchen</target>
       </segment>
     </unit>
     <unit id="share.access.intro">
@@ -3441,7 +3850,7 @@
     <unit id="share.role.owner">
       <notes>
         <note category="location">src/app/share/room-groups.ts:194</note>
-        <note category="location">src/app/share/share-dialog.ts:244</note>
+        <note category="location">src/app/share/share-dialog.ts:245</note>
       </notes>
       <segment>
         <source>Owner</source>
@@ -3549,7 +3958,7 @@
     </unit>
     <unit id="share.hint.login">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:120,122</note>
+        <note category="location">src/app/share/share-dialog.html:122,124</note>
       </notes>
       <segment>
         <source>Someone has to log in to Elysion once before they can be added.</source>
@@ -3558,7 +3967,7 @@
     </unit>
     <unit id="share.hint.room">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:124,126</note>
+        <note category="location">src/app/share/share-dialog.html:126,128</note>
       </notes>
       <segment>
         <source>A member gets this role on every board in the room. Viewers can look at them but not change them.</source>
@@ -3567,7 +3976,7 @@
     </unit>
     <unit id="share.hint.board">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:129,131</note>
+        <note category="location">src/app/share/share-dialog.html:131,133</note>
       </notes>
       <segment>
         <source>Viewers can look at the board but not change it.</source>
@@ -3576,7 +3985,7 @@
     </unit>
     <unit id="share.error.loadFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:115</note>
+        <note category="location">src/app/share/share-dialog.ts:116</note>
       </notes>
       <segment>
         <source>The members could not be loaded.</source>
@@ -3585,7 +3994,7 @@
     </unit>
     <unit id="share.error.personRequired">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:175</note>
+        <note category="location">src/app/share/share-dialog.ts:176</note>
       </notes>
       <segment>
         <source>Search for a person by name or email, or enter an email address.</source>
@@ -3594,7 +4003,7 @@
     </unit>
     <unit id="share.error.pickPerson">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:180</note>
+        <note category="location">src/app/share/share-dialog.ts:181</note>
       </notes>
       <segment>
         <source>Choose a person from the list, or enter a full email address.</source>
@@ -3603,7 +4012,7 @@
     </unit>
     <unit id="share.error.addFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:186</note>
+        <note category="location">src/app/share/share-dialog.ts:187</note>
       </notes>
       <segment>
         <source>The member could not be added.</source>
@@ -3612,7 +4021,7 @@
     </unit>
     <unit id="share.error.roleFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:201</note>
+        <note category="location">src/app/share/share-dialog.ts:202</note>
       </notes>
       <segment>
         <source>The role could not be changed.</source>
@@ -3621,7 +4030,7 @@
     </unit>
     <unit id="share.error.removeFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:214</note>
+        <note category="location">src/app/share/share-dialog.ts:215</note>
       </notes>
       <segment>
         <source>The member could not be removed.</source>
@@ -3630,7 +4039,7 @@
     </unit>
     <unit id="share.remove.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:255</note>
+        <note category="location">src/app/share/share-dialog.ts:256</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="name" disp="member.displayName"/></source>
@@ -3639,7 +4048,7 @@
     </unit>
     <unit id="share.roleOf.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:259</note>
+        <note category="location">src/app/share/share-dialog.ts:260</note>
       </notes>
       <segment>
         <source>Role of <ph id="0" equiv="name" disp="member.displayName"/></source>

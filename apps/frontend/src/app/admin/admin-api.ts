@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
+import type { AuditEntry } from '../audit/audit';
 
 /** A page of a list of the admin API: `?page=` from 1, `?pageSize=` up to 100. */
 export interface Page<T> {
@@ -77,6 +78,14 @@ export interface GroupChange {
   externalId?: string | null;
 }
 
+/** What the audit log is filtered by: what it is about, who did it, and a time span (dates as `YYYY-MM-DD`). */
+export interface AuditFilter {
+  subject?: string;
+  actor?: string;
+  from?: string;
+  to?: string;
+}
+
 /** The longest text the admin lists search by. */
 export const MAX_QUERY_LENGTH = 100;
 /** The longest name the API accepts for a group. */
@@ -148,6 +157,16 @@ export class AdminApi {
     return this.#http.get<Page<AdminRoom>>('/api/admin/rooms', {
       params: this.#params(query, page, pageSize),
     });
+  }
+
+  audit(filter: AuditFilter, page: number, pageSize: number): Observable<Page<AuditEntry>> {
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    for (const [key, value] of Object.entries(filter)) {
+      if (value) {
+        params = params.set(key, value);
+      }
+    }
+    return this.#http.get<Page<AuditEntry>>('/api/admin/audit', { params });
   }
 
   #params(query: string, page: number, pageSize: number): HttpParams {

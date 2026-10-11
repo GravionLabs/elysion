@@ -1,0 +1,43 @@
+<section class="history" aria-labelledby="share-history-title">
+  <h3 id="share-history-title">
+    <button
+      type="button"
+      class="toggle"
+      [attr.aria-expanded]="open()"
+      aria-controls="share-history-body"
+      (click)="toggle()"
+    >
+      <ng-container i18n="@@share.history.title">History</ng-container>
+      <span aria-hidden="true">{{ open() ? '▾' : '▸' }}</span>
+    </button>
+  </h3>
+  <div id="share-history-body" [hidden]="!open()">
+    @switch (state()) {
+      @case ('loading') {
+        <p class="note" role="status" i18n="@@share.history.loading">Loading the history…</p>
+      }
+      @case ('error') {
+        <p class="note error" role="alert">
+          <ng-container i18n="@@share.history.error">The history could not be loaded.</ng-container>
+          <button type="button" class="link" (click)="load()" i18n="@@share.retry">
+            Try again
+          </button>
+        </p>
+      }
+      @case ('ready') {
+        @if (entries().length === 0) {
+          <p class="note" i18n="@@share.history.empty">Nothing was recorded yet.</p>
+        } @else {
+          <ol class="entries">
+            @for (entry of entries(); track entry.id) {
+              <li>
+                <span>{{ describe(entry) }}</span>
+                <time [attr.datetime]="entry.at">{{ entry.at | date: 'medium' }}</time>
+              </li>
+            }
+          </ol>
+        }
+      }
+    }
+  </div>
+</section>
