@@ -6,6 +6,8 @@ using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Identity;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
@@ -32,13 +34,26 @@ public class UserProvisioningTests
     private static ClaimsPrincipal Principal(params (string Type, string Value)[] claims) =>
         new(new ClaimsIdentity(claims.Select(c => new Claim(c.Type, c.Value)), "test"));
 
+    /// <summary>The service as the app builds it, with the groups claim at its default and a cache of its own.</summary>
+    internal static UserProvisioningService Service(ElysionDbContext db,
+        IUserRepository users,
+        TimeProvider time,
+        IMemoryCache? cache = null,
+        string groupsClaim = "groups") =>
+        new(users,
+            new GroupRepository(db),
+            db,
+            cache ?? new MemoryCache(new MemoryCacheOptions()),
+            Options.Create(new OidcOptions { GroupsClaim = groupsClaim }),
+            time);
+
     private async Task<User?> ProvisionAsync(ClaimsPrincipal principal,
         Func<ElysionDbContext, IUserRepository>? repository = null)
     {
         await using var db = _database.NewContext();
         var time = Substitute.For<TimeProvider>();
         time.GetUtcNow().Returns(Now);
-        var service = new UserProvisioningService(repository?.Invoke(db) ?? new UserRepository(db), db, time);
+        var service = Service(db, repository?.Invoke(db) ?? new UserRepository(db), time);
         return await service.ProvisionAsync(principal, Ct);
     }
 
@@ -85,7 +100,12 @@ public class UserProvisioningTests
         await ProvisionAsync(principal);
         await using var db = _database.NewContext();
         var unitOfWork = Substitute.For<IUnitOfWork>();
-        var service = new UserProvisioningService(new UserRepository(db), unitOfWork, TimeProvider.System);
+        var service = new UserProvisioningService(new UserRepository(db),
+            new GroupRepository(db),
+            unitOfWork,
+            new MemoryCache(new MemoryCacheOptions()),
+            Options.Create(new OidcOptions()),
+            TimeProvider.System);
 
         await service.ProvisionAsync(principal, Ct);
 
@@ -209,7 +229,7 @@ public class UserProvisioningTests
             await using var db = database.NewContext();
             var time = Substitute.For<TimeProvider>();
             time.GetUtcNow().Returns(Now);
-            return await new UserProvisioningService(new UserRepository(db), db, time)
+            return await Service(db, new UserRepository(db), time)
                 .ProvisionAsync(Principal(("sub", "kc-1"), ("preferred_username", "ada")), Ct);
         }
 

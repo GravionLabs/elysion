@@ -27,7 +27,12 @@ public sealed class BoardRepository(ElysionDbContext db) : IBoardRepository
                             || (board.RoomId != null
                                 && db.Rooms.Any(room => room.Id == board.RoomId
                                                         && (room.OwnerId == userId
-                                                            || room.Memberships.Any(m => m.UserId == userId)))))
+                                                            || room.Memberships.Any(m => m.UserId == userId)
+                                                            // A group of the person's has a role in the room (ADR 0027): the same query.
+                                                            || db.RoomGroupMemberships.Any(rg => rg.RoomId == room.Id
+                                                                && db.GroupMemberships.Any(gm =>
+                                                                    gm.GroupId == rg.GroupId
+                                                                    && gm.UserId == userId))))))
 #pragma warning disable CA1862 // `string.Contains(string, StringComparison)` is not translated by EF Core; this form is
             .Where(board => string.IsNullOrEmpty(needle) || board.Name.ToLower().Contains(needle))
 #pragma warning restore CA1862
@@ -68,10 +73,21 @@ public sealed class BoardRepository(ElysionDbContext db) : IBoardRepository
             .Select(r => new
             {
                 r.OwnerId,
-                Role = r.Memberships.Where(m => m.UserId == userId).Select(m => (BoardRole?)m.Role).FirstOrDefault()
+                Role = r.Memberships.Where(m => m.UserId == userId).Select(m => (BoardRole?)m.Role).FirstOrDefault(),
+                GroupRoles = db.RoomGroupMemberships
+                    .Where(rg => rg.RoomId == r.Id
+                                 && db.GroupMemberships.Any(gm => gm.GroupId == rg.GroupId && gm.UserId == userId))
+                    .Select(rg => rg.Role)
+                    .ToList()
             })
             .FirstOrDefaultAsync(cancellationToken);
         var viaRoom = room is null ? null : room.OwnerId == userId ? BoardRole.Owner : room.Role;
+        if (room is not null)
+        {
+            // The roles of the person's groups in the room count like the room's own: the highest of all wins.
+            viaRoom = room.GroupRoles.Aggregate(viaRoom, (best, role) => Higher(best, role));
+        }
+
         return Higher(own, viaRoom);
     }
 

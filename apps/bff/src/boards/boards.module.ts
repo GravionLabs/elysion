@@ -8,6 +8,8 @@ import { InvitationsController } from './invitations.controller.js';
 import { TemplatesController } from './templates.controller.js';
 import { MembersController } from './members.controller.js';
 import { RoomMembersController } from './room-members.controller.js';
+import { GroupsController } from './groups.controller.js';
+import { RoomGroupsController } from './room-groups.controller.js';
 import { RoomsController } from './rooms.controller.js';
 import { BUSINESS_BACKEND_URL, BusinessBackendClient } from './business-backend.client.js';
 
@@ -22,6 +24,8 @@ import { BUSINESS_BACKEND_URL, BusinessBackendClient } from './business-backend.
     MembersController,
     RoomsController,
     RoomMembersController,
+    GroupsController,
+    RoomGroupsController,
     TemplatesController,
   ],
   providers: [
