@@ -41,6 +41,27 @@ export async function login(
   return page;
 }
 
+/**
+ * Logs a person in through the identity provider the realm brokers to (the stand-in realm `entra-stub`, ADR 0027): "Microsoft" on
+ * Keycloak's page, then the form of the stand-in (the password is the username: `erika`, `emil`). The page has the name of the person.
+ */
+export async function loginThroughMicrosoft(
+  browser: Browser,
+  user: string,
+  options?: BrowserContextOptions,
+): Promise<Page> {
+  const context = await browser.newContext(options);
+  const page = await context.newPage();
+  failOnCspViolation(page);
+  await page.goto('/');
+  await page.locator('#social-microsoft').click();
+  await page.fill('#username', user);
+  await page.fill('#password', user);
+  await page.click('#kc-login');
+  await expect(page.getByRole('button', { name: user, exact: true })).toBeVisible();
+  return page;
+}
+
 /** Opens a board and waits until the realtime connection is up. */
 export async function openBoard(page: Page, url: string): Promise<void> {
   await page.goto(url);
