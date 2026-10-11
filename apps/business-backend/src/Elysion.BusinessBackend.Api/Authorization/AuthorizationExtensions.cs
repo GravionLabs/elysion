@@ -12,6 +12,7 @@ public static class AuthorizationExtensions
         services.AddScoped<IAuthorizationHandler, BoardAuthorizationHandler>();
         services.AddScoped<IAuthorizationHandler, RoomAuthorizationHandler>();
         services.AddSingleton<IAuthorizationMiddlewareResultHandler, BoardAuthorizationResultHandler>();
+        services.AddScoped<IAuthorizationHandler, InstanceAdministerHandler>();
         services.AddAuthorizationBuilder()
             .AddPolicy(BoardPolicies.Read,
                 policy => policy.RequireAuthenticatedUser().AddRequirements(new BoardRoleRequirement(BoardRole.Viewer)))
@@ -24,7 +25,10 @@ public static class AuthorizationExtensions
             .AddPolicy(RoomPolicies.Write,
                 policy => policy.RequireAuthenticatedUser().AddRequirements(new RoomRoleRequirement(BoardRole.Editor)))
             .AddPolicy(RoomPolicies.Administer,
-                policy => policy.RequireAuthenticatedUser().AddRequirements(new RoomRoleRequirement(BoardRole.Owner)));
+                policy => policy.RequireAuthenticatedUser().AddRequirements(new RoomRoleRequirement(BoardRole.Owner)))
+            // Not a role on any board or room: an administrator who is not a member still gets 404 for a board (ADR 0027).
+            .AddPolicy(AdminPolicies.InstanceAdminister,
+                policy => policy.RequireAuthenticatedUser().AddRequirements(new InstanceAdministerRequirement()));
         return services;
     }
 }
