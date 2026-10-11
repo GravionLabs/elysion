@@ -25,7 +25,7 @@ public static class BoardAccessEndpoints
 
     /// <summary>
     /// The role of the person with the identity-provider subject <paramref name="sub"/>: 200 with the role, or 404 when
-    /// the board does not exist, the person is unknown or has no role on it (the three look the same, as everywhere).
+    /// the board does not exist, the person is unknown or deactivated or has no role on it (they look the same, as everywhere).
     /// </summary>
     private static async Task<Results<Ok<MembershipDto>, NotFound>> Get(
         string boardId,
@@ -40,8 +40,9 @@ public static class BoardAccessEndpoints
         }
 
         var user = await users.FindBySubjectAsync(sub, cancellationToken);
-        if (user is null)
+        if (user is null || user.IsDeactivated)
         {
+            // A deactivated person has no role (#668): the realtime service closes their open sockets at its next check.
             return TypedResults.NotFound();
         }
 

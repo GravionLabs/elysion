@@ -26,6 +26,12 @@ public static class AuditActions
     /// <summary>The groups of a person from the identity provider changed with their sign-in: one entry per change, not per request.</summary>
     public const string GroupsSynced = "groups.synced";
 
+    public const string UserDeactivated = "user.deactivated";
+    public const string UserReactivated = "user.reactivated";
+
+    /// <summary>The ownership of a board or room moved from one person to another by an administrator (#668).</summary>
+    public const string OwnerTransferred = "owner.transferred";
+
     public const string InvitationCreated = "invitation.created";
     public const string InvitationRevoked = "invitation.revoked";
     public const string InvitationAccepted = "invitation.accepted";

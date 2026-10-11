@@ -64,7 +64,8 @@ public sealed class RoomMemberService(
         Guard.Against.Default(userId);
         Guard.Against.EnumOutOfRange(role);
         var user = await users.FindAsync(userId, cancellationToken);
-        return user is null
+        // A deactivated person is not offered by the people search either: an id of one is as good as unknown (#668).
+        return user is null || user.IsDeactivated
             ? new(MemberOutcome.UnknownUser)
             : await AddUserAsync(roomId, user, role, cancellationToken);
     }
@@ -157,5 +158,6 @@ public sealed class RoomMemberService(
         return null;
     }
 
-    private static MemberView View(User user, BoardRole role) => new(user.Id, user.DisplayName, user.Email, role);
+    private static MemberView View(User user, BoardRole role) =>
+        new(user.Id, user.DisplayName, user.Email, role, user.IsDeactivated);
 }

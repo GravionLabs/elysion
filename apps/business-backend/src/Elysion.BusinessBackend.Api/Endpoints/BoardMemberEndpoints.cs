@@ -125,5 +125,5 @@ public static class BoardMemberEndpoints
         TypedResults.Problem(detail, statusCode: status);
 
     internal static MemberDto ToDto(MemberView member) =>
-        new(member.UserId, member.DisplayName, member.Email, member.Role.ToString());
+        new(member.UserId, member.DisplayName, member.Email, member.Role.ToString(), member.IsDeactivated);
 }

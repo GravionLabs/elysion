@@ -7,8 +7,13 @@ using Elysion.BusinessBackend.Api.Entities;
 
 namespace Elysion.BusinessBackend.Api.Members;
 
-/// <summary>A member of a board as the API shows them.</summary>
-public sealed record MemberView(Guid UserId, string DisplayName, string? Email, BoardRole Role);
+/// <summary>A member of a board as the API shows them; <c>IsDeactivated</c> marks a person an administrator deactivated (#668): they stay in the list.</summary>
+public sealed record MemberView(
+    Guid UserId,
+    string DisplayName,
+    string? Email,
+    BoardRole Role,
+    bool IsDeactivated = false);
 
 public enum MemberOutcome
 {
@@ -102,7 +107,8 @@ public sealed class BoardMemberService(
         Guard.Against.Default(userId);
         Guard.Against.EnumOutOfRange(role);
         var user = await users.FindAsync(userId, cancellationToken);
-        return user is null
+        // A deactivated person is not offered by the people search either: an id of one is as good as unknown (#668).
+        return user is null || user.IsDeactivated
             ? new(MemberOutcome.UnknownUser)
             : await AddUserAsync(boardId, user, role, cancellationToken);
     }
@@ -195,5 +201,6 @@ public sealed class BoardMemberService(
         return null;
     }
 
-    private static MemberView View(User user, BoardRole role) => new(user.Id, user.DisplayName, user.Email, role);
+    private static MemberView View(User user, BoardRole role) =>
+        new(user.Id, user.DisplayName, user.Email, role, user.IsDeactivated);
 }

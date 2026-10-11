@@ -87,7 +87,11 @@ public sealed class UserProvisioningService(
             await UpdateAsync(user, email, displayName, cancellationToken);
         }
 
-        await SyncGroupsAsync(user, principal, cancellationToken);
+        if (!user.IsDeactivated)
+        {
+            await SyncGroupsAsync(user, principal, cancellationToken);
+        }
+
         return user;
     }
 

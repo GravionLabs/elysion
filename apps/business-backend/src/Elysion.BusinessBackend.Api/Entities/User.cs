@@ -33,6 +33,14 @@ public class User
     /// </summary>
     public DateTimeOffset? LastSeenAt { get; set; }
 
+    /// <summary>
+    /// When an administrator deactivated the person (#668), or null for a person who may use Elysion. A deactivated person is refused
+    /// on every request, is not found by the people search and stays in member lists as deactivated. The identity provider is not told.
+    /// </summary>
+    public DateTimeOffset? DeactivatedAt { get; set; }
+
+    public bool IsDeactivated => DeactivatedAt is not null;
+
     /// <summary>The least time between two writes of <see cref="LastSeenAt"/>.</summary>
     public static readonly TimeSpan SeenInterval = TimeSpan.FromMinutes(5);
 
