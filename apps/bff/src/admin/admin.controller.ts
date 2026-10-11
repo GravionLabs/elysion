@@ -212,6 +212,23 @@ export class AdminController {
     return this.backend.adminListGroupMembers(token, id, listFrom(undefined, page, pageSize));
   }
 
+  /** The people the directory lists in the group who have not signed in yet (#667): address and name, paged. */
+  @Get('groups/:id/pending')
+  pending(
+    @AccessToken() token: string,
+    @Param('id', uuid) id: string,
+    @Query('page') page?: unknown,
+    @Query('pageSize') pageSize?: unknown,
+  ): Promise<unknown> {
+    return this.backend.adminListGroupPending(token, id, listFrom(undefined, page, pageSize));
+  }
+
+  /** Whether the Graph sync is on, when it last ran and how many people wait for their first sign-in (#667). */
+  @Get('graph')
+  graph(@AccessToken() token: string): Promise<unknown> {
+    return this.backend.adminGraphStatus(token);
+  }
+
   @Put('groups/:id/members/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async addMember(
