@@ -87,6 +87,7 @@ describe('AdminRooms', () => {
     await fixture.whenStable();
     expect(el().querySelector('app-share-dialog')).toBeTruthy();
     http.expectOne('/api/rooms/r1/members').flush([]);
+    http.expectOne('/api/rooms/r1/groups').flush([]);
     http.expectOne('/api/rooms/r1/invitations').flush([]);
   });
 
