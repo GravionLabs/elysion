@@ -18,6 +18,7 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
     public DbSet<VotingSession> VotingSessions => Set<VotingSession>();
 
     public DbSet<Invitation> Invitations => Set<Invitation>();
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     public void DiscardChanges() => ChangeTracker.Clear();
     public DbSet<Vote> Votes => Set<Vote>();
@@ -27,6 +28,18 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<AuditEntry>(entry =>
+        {
+            entry.Property(e => e.Action).HasMaxLength(AuditEntry.MaxActionLength);
+            entry.Property(e => e.SubjectType).HasMaxLength(AuditEntry.MaxSubjectTypeLength);
+            entry.Property(e => e.Details).HasMaxLength(AuditEntry.MaxDetailsLength);
+            entry.Property(e => e.RequestId).HasMaxLength(AuditEntry.MaxRequestIdLength);
+            // "What happened to this board" and "what did this person do", newest first; the date alone serves the filter and the cleanup.
+            entry.HasIndex(e => new { e.SubjectType, e.SubjectId, e.At });
+            entry.HasIndex(e => new { e.ActorUserId, e.At });
+            entry.HasIndex(e => e.At);
+        });
+
         modelBuilder.Entity<BoardDocument>(document =>
         {
             document.HasKey(d => d.BoardId);

@@ -1,3 +1,4 @@
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
@@ -57,6 +58,18 @@ builder.Services.AddScoped<IVotingRepository, VotingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGroupRepository, GroupRepository>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+
+// Who changed who may see what (#669): entries are staged on the request's unit of work, and the oldest are removed every night.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditLog, AuditLog>();
+builder.Services.AddScoped<IAuditRepository, AuditRepository>();
+builder.Services.AddOptions<AuditOptions>()
+    .Configure<IConfiguration>((options, configuration) =>
+        options.RetentionDays = configuration.GetValue(AuditOptions.RetentionDaysSetting,
+            AuditOptions.DefaultRetentionDays))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddHostedService<AuditRetentionService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
 builder.Services.AddScoped<InvitationService>();
@@ -128,6 +141,7 @@ app.MapRoomGroupEndpoints();
 app.MapGroupEndpoints();
 app.MapUserEndpoints();
 app.MapAdminEndpoints();
+app.MapHistoryEndpoints();
 app.MapBoardDocumentEndpoints();
 app.MapBoardAccessEndpoints();
 app.MapBoardFileEndpoints();

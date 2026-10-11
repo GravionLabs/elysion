@@ -1,5 +1,6 @@
 using Ardalis.GuardClauses;
 
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
@@ -53,6 +54,7 @@ public sealed class BoardMemberService(
     IBoardRepository boards,
     IMembershipRepository memberships,
     IUserRepository users,
+    IAuditLog audit,
     IUnitOfWork unitOfWork,
     TimeProvider time)
 {
@@ -118,6 +120,10 @@ public sealed class BoardMemberService(
         }
 
         memberships.Add(BoardMembership.Create(boardId, user.Id, role, time.GetUtcNow()));
+        audit.Record(AuditActions.MemberAdded,
+            AuditActions.Board,
+            boardId,
+            new { userId = user.Id, role = role.ToString() });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new(MemberOutcome.Done, View(user, role));
     }
@@ -133,7 +139,12 @@ public sealed class BoardMemberService(
             return blocked;
 
         var membership = (await memberships.FindForUpdateAsync(boardId, userId, cancellationToken))!;
+        var before = membership.Role;
         membership.Role = role;
+        audit.Record(AuditActions.MemberRoleChanged,
+            AuditActions.Board,
+            boardId,
+            new { userId, from = before.ToString(), to = role.ToString() });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         var user = (await users.FindAsync(userId, cancellationToken))!;
         return new(MemberOutcome.Done, View(user, role));
@@ -145,7 +156,12 @@ public sealed class BoardMemberService(
         if (blocked is not null)
             return blocked;
 
-        memberships.Remove((await memberships.FindForUpdateAsync(boardId, userId, cancellationToken))!);
+        var membership = (await memberships.FindForUpdateAsync(boardId, userId, cancellationToken))!;
+        memberships.Remove(membership);
+        audit.Record(AuditActions.MemberRemoved,
+            AuditActions.Board,
+            boardId,
+            new { userId, role = membership.Role.ToString() });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new(MemberOutcome.Done);
     }

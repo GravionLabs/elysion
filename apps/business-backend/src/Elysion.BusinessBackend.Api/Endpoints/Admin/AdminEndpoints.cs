@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Data;
@@ -50,6 +51,8 @@ public static class AdminEndpoints
             .WithName("AdminRemoveGroupMember");
 
         admin.MapGet("/rooms", ListRooms).WithName("AdminListRooms");
+
+        admin.MapGet("/audit", ListAudit).WithName("AdminListAudit");
         return routes;
     }
 
@@ -97,6 +100,7 @@ public static class AdminEndpoints
     private static async Task<IResult> CreateGroup(AdminGroupCreateRequest? request,
         IGroupRepository groups,
         IAdminRepository admin,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -108,6 +112,7 @@ public static class AdminEndpoints
 
         var group = Group.Create(Guid.CreateVersion7(), name, time.GetUtcNow());
         groups.Add(group);
+        audit.Record(AuditActions.GroupCreated, AuditActions.Group, group.Id, new { name });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         var created = await admin.GetGroupAsync(group.Id, cancellationToken);
         return TypedResults.Created($"/admin/groups/{group.Id}", created);
@@ -121,6 +126,7 @@ public static class AdminEndpoints
         JsonElement body,
         IGroupRepository groups,
         IAdminRepository admin,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -173,6 +179,11 @@ public static class AdminEndpoints
 
         if (name is not null)
         {
+            if (name != group.Name)
+            {
+                audit.Record(AuditActions.GroupRenamed, AuditActions.Group, id, new { from = group.Name, to = name });
+            }
+
             group.Rename(name);
         }
 
@@ -180,10 +191,20 @@ public static class AdminEndpoints
         {
             if (externalId is null)
             {
+                if (group.Source != GroupSource.Local)
+                {
+                    audit.Record(AuditActions.GroupUnlinked, AuditActions.Group, id);
+                }
+
                 group.Unlink();
             }
             else
             {
+                if (group.ExternalId != externalId)
+                {
+                    audit.Record(AuditActions.GroupLinked, AuditActions.Group, id, new { externalId });
+                }
+
                 group.Link(externalId);
             }
         }
@@ -204,6 +225,7 @@ public static class AdminEndpoints
 
     private static async Task<IResult> DeleteGroup(Guid id,
         IGroupRepository groups,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -215,6 +237,7 @@ public static class AdminEndpoints
 
         // Its memberships and its roles on rooms go with it (cascade).
         groups.Remove(group);
+        audit.Record(AuditActions.GroupDeleted, AuditActions.Group, id, new { name = group.Name });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return TypedResults.NoContent();
     }
@@ -239,6 +262,7 @@ public static class AdminEndpoints
         Guid userId,
         IGroupRepository groups,
         IUserRepository users,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -251,6 +275,7 @@ public static class AdminEndpoints
 
         if (await groups.AddMemberAsync(id, userId, time.GetUtcNow(), cancellationToken))
         {
+            audit.Record(AuditActions.GroupMemberAdded, AuditActions.Group, id, new { userId });
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -261,6 +286,7 @@ public static class AdminEndpoints
         Guid userId,
         IGroupRepository groups,
         IUserRepository users,
+        IAuditLog audit,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -272,6 +298,7 @@ public static class AdminEndpoints
 
         if (await groups.RemoveMemberAsync(id, userId, cancellationToken))
         {
+            audit.Record(AuditActions.GroupMemberRemoved, AuditActions.Group, id, new { userId });
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -309,6 +336,23 @@ public static class AdminEndpoints
     {
         var (p, size) = Paging(page, pageSize);
         return TypedResults.Ok(await admin.ListRoomsAsync(Query(query), p, size, cancellationToken));
+    }
+
+    /// <summary>
+    /// The audit log of the instance (#669), newest first: <c>subject</c> (what it is about), <c>actor</c> (who did it), <c>from</c>
+    /// (inclusive) and <c>to</c> (exclusive) as dates or date-times. Only ids, roles and counts are in an entry, never content.
+    /// </summary>
+    private static async Task<Ok<PagedResult<AuditEntryDto>>> ListAudit(Guid? subject,
+        Guid? actor,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        int? page,
+        int? pageSize,
+        IAuditRepository audit,
+        CancellationToken cancellationToken)
+    {
+        var (p, size) = Paging(page, pageSize);
+        return TypedResults.Ok(await audit.QueryAsync(subject, actor, from, to, p, size, cancellationToken));
     }
 
     private static ProblemHttpResult NotFound(string detail) =>
