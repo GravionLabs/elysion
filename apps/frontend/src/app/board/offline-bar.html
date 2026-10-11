@@ -1,0 +1,34 @@
+<div class="offline-region" role="status" aria-live="polite">
+  @if (showOffline()) {
+    <div class="offline-bar">
+      <span class="offline-text">
+        <ng-container i18n="@@offline.working"
+          >Working offline. Your changes are saved on this device and sent when the connection is
+          back.</ng-container
+        >
+        @if (pending() > 0) {
+          <span class="offline-count" i18n="@@offline.pending">
+            {pending(), plural, =1 {1 change waiting.} other {{{ pending() }} changes waiting.}}
+          </span>
+        }
+      </span>
+      @if (showDownload()) {
+        <button type="button" class="offline-button" (click)="downloadCopy.emit()">
+          <ng-container i18n="@@offline.download">Download a copy</ng-container>
+        </button>
+      }
+    </div>
+  } @else if (backSent() !== null) {
+    <div class="offline-bar back">
+      <span class="offline-text">
+        @if (backSent()! > 0) {
+          <ng-container i18n="@@offline.back">
+            Back online, {backSent(), plural, =1 {1 change} other {{{ backSent() }} changes}} sent.
+          </ng-container>
+        } @else {
+          <ng-container i18n="@@offline.backNone">Back online.</ng-container>
+        }
+      </span>
+    </div>
+  }
+</div>

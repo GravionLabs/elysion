@@ -1,7 +1,8 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
-import { map } from 'rxjs';
+import { from, map, switchMap } from 'rxjs';
+import { clearOfflineStores } from './offline-data';
 
 /** The signed-in user as the shell shows them. */
 export interface SessionUser {
@@ -77,9 +78,14 @@ export class SessionService {
   );
   readonly isAuthenticated = computed(() => this.user() !== null);
 
-  /** Ends the session here and at the identity provider, then returns to the app. */
+  /**
+   * Ends the session here and at the identity provider, then returns to the app. What the canvas kept on this device for working
+   * through an outage (#735) is removed first, because logging off leaves the page.
+   */
   logout(): void {
-    this.#oidc.logoff().subscribe();
+    from(clearOfflineStores())
+      .pipe(switchMap(() => this.#oidc.logoff()))
+      .subscribe();
   }
 
   /** Starts the login again: the token was not accepted. */

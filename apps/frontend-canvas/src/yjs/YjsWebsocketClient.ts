@@ -153,6 +153,11 @@ export class YjsWebsocketClient {
     this.#connect();
   }
 
+  /** The generation of the document this copy comes from (`''`: it has none), known once the server's state has arrived. */
+  get generation(): string | undefined {
+    return this.#generation;
+  }
+
   destroy(): void {
     this.#destroyed = true;
     if (this.#reconnectTimer !== null) {

@@ -11,6 +11,7 @@
     [boardName]="boardName()"
     [canRename]="boardName() !== null"
     [status]="syncStatus()"
+    [offline]="outage() !== null"
     [theme]="theme()"
     [libraryOpen]="libraryOpen()"
     [hasSelection]="selectionCount() > 0"
@@ -42,6 +43,12 @@
     (votingEnd)="timerCommand((c) => c.endVoting?.())"
     (votingClear)="timerCommand((c) => c.clearVotingResults?.())"
     (votingFocus)="timerCommand((c) => c.scrollToElement?.($event))"
+  />
+  <app-offline-bar
+    [since]="outage()?.since ?? null"
+    [pending]="outage()?.pending ?? 0"
+    [backSent]="backSent()"
+    (downloadCopy)="downloadCopy()"
   />
   @if (pendingImport(); as file) {
     <div
@@ -173,6 +180,7 @@
       (notice)="onCanvasNotice($event)"
       (fileerror)="onFileError($event)"
       (status)="onSyncStatus($event)"
+      (offline)="onOffline($event)"
       (themechange)="onCanvasThemeChange($event)"
       (librarychange)="onLibraryChange($event)"
       (selectioncount)="onSelectionCount($event)"

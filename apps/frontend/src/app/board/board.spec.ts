@@ -121,6 +121,56 @@ describe('Board', () => {
     expect(chip()).toContain('Offline');
   });
 
+  describe('an outage (#735)', () => {
+    const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement;
+    const offline = (detail: object) =>
+      canvas().dispatchEvent(new CustomEvent('offline', { detail }));
+    const region = () => fixture.nativeElement.querySelector('app-offline-bar') as HTMLElement;
+    const text = () => region().textContent?.replace(/\s+/g, ' ').trim() ?? '';
+
+    it('shows the bar and Offline in the top bar, then how many changes were sent', async () => {
+      canvas().dispatchEvent(new CustomEvent('status', { detail: { status: 'connected' } }));
+      offline({ offline: true, since: Date.now() - 20_000, pending: 2, sent: 0 });
+      canvas().dispatchEvent(new CustomEvent('status', { detail: { status: 'connecting' } }));
+      await fixture.whenStable();
+
+      expect(text()).toContain('Working offline');
+      expect(text()).toContain('2 changes waiting.');
+      expect(fixture.nativeElement.querySelector('.status').textContent).toContain('Offline');
+
+      offline({ offline: false, since: null, pending: 0, sent: 2 });
+      canvas().dispatchEvent(new CustomEvent('status', { detail: { status: 'connected' } }));
+      await fixture.whenStable();
+
+      expect(text()).toBe('Back online, 2 changes sent.');
+      expect(fixture.nativeElement.querySelector('.status').textContent).toContain('Connected');
+    });
+
+    it('says nothing when the connection was back after a blink with nothing to send', async () => {
+      offline({ offline: true, since: Date.now() - 1000, pending: 0, sent: 0 });
+      offline({ offline: false, since: null, pending: 0, sent: 0 });
+      await fixture.whenStable();
+
+      expect(text()).toBe('');
+    });
+
+    it('downloads a copy of the board as an .excalidraw file when asked', async () => {
+      const exportBoard = vi.fn().mockResolvedValue(new Blob(['x']));
+      Object.assign(canvas(), { exportBoard });
+      const click = vi
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(() => undefined);
+      offline({ offline: true, since: Date.now() - 6 * 60_000, pending: 1, sent: 0 });
+      await fixture.whenStable();
+
+      (region().querySelector('button') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      expect(exportBoard).toHaveBeenCalledWith('excalidraw', expect.anything());
+      click.mockRestore();
+    });
+  });
+
   describe('library', () => {
     const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement;
     const button = () =>

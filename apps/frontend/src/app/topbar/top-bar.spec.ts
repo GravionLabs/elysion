@@ -59,6 +59,21 @@ describe('TopBar', () => {
     expect(chip.getAttribute('data-status')).toBe(status);
   });
 
+  it('says Offline, not Connecting…, while it tries again after an outage, and explains the status in a tooltip', async () => {
+    fixture.componentRef.setInput('status', 'connecting');
+    fixture.componentRef.setInput('offline', true);
+    await fixture.whenStable();
+
+    const chip = el().querySelector('[role="status"]') as HTMLElement;
+    expect(chip.textContent).toContain('Offline');
+    expect(chip.title).toContain('kept on this device');
+
+    fixture.componentRef.setInput('status', 'connected');
+    await fixture.whenStable();
+    expect(chip.textContent).toContain('Connected');
+    expect(chip.title).toContain('reach everyone');
+  });
+
   it('offers the theme to switch to, like ariadne', async () => {
     const button = () => el().querySelector('.theme-toggle') as HTMLButtonElement;
     expect(button().textContent).toContain('Dark');

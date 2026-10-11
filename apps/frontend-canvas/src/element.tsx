@@ -264,6 +264,7 @@ class ElysionCanvasElement extends HTMLElement {
         onVotingChange={(session: VotingView | null) => this.#emit('voting', { session })}
         onCommentsChange={(summary) => this.#emit('comments', summary)}
         onError={(error) => this.#emit('error', { message: error.message })}
+        onOfflineChange={(state) => this.#emit('offline', state)}
         onNotice={(message) => this.#emit('notice', { message })}
         onFileError={(error) => this.#emit('fileerror', { message: error.message })}
         onSynced={() => this.#emit('synced', {})}

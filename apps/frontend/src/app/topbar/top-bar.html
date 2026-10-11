@@ -68,7 +68,7 @@
     <span id="title-error" class="title-error" role="alert">{{ message }}</span>
   }
 
-  <span class="status" [attr.data-status]="status()" role="status">
+  <span class="status" [attr.data-status]="status()" [title]="statusHint()" role="status">
     <span class="status-dot" aria-hidden="true"></span>{{ statusLabel() }}
   </span>
 
