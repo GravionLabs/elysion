@@ -10,6 +10,10 @@
       {
         "name": "board-user",
         "description": "Can create and open boards"
+      },
+      {
+        "name": "elysion-admin",
+        "description": "Administers users, groups, rooms and boards (never reads a board's content), ADR 0027"
       }
     ]
   },
@@ -43,6 +47,22 @@
             "id.token.claim": "false",
             "access.token.claim": "true"
           }
+        },
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "groups",
+            "claim.name": "groups",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "aggregate.attrs": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
         }
       ]
     },
@@ -73,7 +93,7 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["board-user"]
+      "realmRoles": ["board-user", "elysion-admin"]
     },
     {
       "username": "guest",
@@ -122,6 +142,84 @@
         }
       ],
       "realmRoles": ["board-user"]
+    }
+  ],
+  "ssoSessionMaxLifespan": 28800,
+  "attributes": {},
+  "authenticationFlows": [
+    {
+      "alias": "elysion first broker login",
+      "description": "Creates the user, or links the person to the user with the same e-mail address (ADR 0027)",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "idp-create-user-if-unique",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "idp-auto-link",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "userSetupAllowed": false
+        }
+      ]
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "microsoft",
+      "displayName": "Microsoft",
+      "providerId": "oidc",
+      "enabled": "${ENTRA_ENABLED:false}",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "elysion first broker login",
+      "config": {
+        "clientId": "${ENTRA_CLIENT_ID:not-configured}",
+        "clientSecret": "${ENTRA_CLIENT_SECRET:not-configured}",
+        "clientAuthMethod": "client_secret_post",
+        "authorizationUrl": "${ENTRA_AUTH_URL:https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize}",
+        "tokenUrl": "${ENTRA_TOKEN_URL:https://login.microsoftonline.com/organizations/oauth2/v2.0/token}",
+        "jwksUrl": "${ENTRA_JWKS_URL:https://login.microsoftonline.com/organizations/discovery/v2.0/keys}",
+        "issuer": "${ENTRA_ISSUER_URL:https://login.microsoftonline.com/organizations/v2.0}",
+        "useJwksUrl": "true",
+        "validateSignature": "true",
+        "defaultScope": "openid profile email",
+        "syncMode": "FORCE",
+        "pkceEnabled": "false"
+      }
+    }
+  ],
+  "identityProviderMappers": [
+    {
+      "name": "groups",
+      "identityProviderAlias": "microsoft",
+      "identityProviderMapper": "oidc-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "FORCE",
+        "claim": "groups",
+        "user.attribute": "groups"
+      }
+    },
+    {
+      "name": "administrators",
+      "identityProviderAlias": "microsoft",
+      "identityProviderMapper": "oidc-advanced-role-idp-mapper",
+      "config": {
+        "syncMode": "FORCE",
+        "are.claim.values.regex": "false",
+        "claims": "[{\"key\": \"groups\", \"value\": \"${ENTRA_ADMIN_GROUP_ID:00000000-0000-0000-0000-000000000000}\"}]",
+        "role": "elysion-admin"
+      }
     }
   ]
 }
