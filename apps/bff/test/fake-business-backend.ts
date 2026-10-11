@@ -168,7 +168,10 @@ export class FakeBusinessBackend {
       const template = this.templates.find((t) => t.id === id);
       return template ? send(200, template) : send(404);
     }
-    if (/^\/admin(?:[/?]|$)/.test(req.url ?? '')) {
+    if (
+      /^\/admin(?:[/?]|$)/.test(req.url ?? '') ||
+      /^\/(?:boards|rooms)\/[^/]+\/history$/.test(req.url ?? '')
+    ) {
       const chunks: Buffer[] = [];
       for await (const chunk of req) chunks.push(chunk as Buffer);
       const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString()) : undefined;
