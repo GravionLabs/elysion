@@ -10,6 +10,7 @@ import { Board } from './board/board';
 import { CanvasElementLoader } from './board/canvas-element-loader';
 import { BoardList } from './board-list/board-list';
 import { Invite } from './invite/invite';
+import { Deactivated } from './deactivated/deactivated';
 import { AdminLayout } from './admin/admin-layout';
 import { HttpTestingController } from '@angular/common/http/testing';
 
@@ -47,6 +48,13 @@ describe('routes', () => {
     const board = await harness.navigateByUrl('/board/q3%20plan%2Fv2', Board);
 
     expect(board.boardId()).toBe('q3 plan/v2');
+  });
+
+  it('opens the page of a deactivated account (#668)', async () => {
+    const page = await harness.navigateByUrl('/deactivated', Deactivated);
+
+    expect(page).toBeInstanceOf(Deactivated);
+    TestBed.inject(HttpTestingController).expectOne('/api/rooms').flush([]);
   });
 
   it('opens an invitation link with the token as an input', async () => {
@@ -166,7 +174,7 @@ describe('routes', () => {
       const pages = (list: ReturnType<typeof buildRoutes>) =>
         list.filter((route) => route.component || route.loadComponent);
 
-      expect(pages(routes).length).toBe(3);
+      expect(pages(routes).length).toBe(4);
       // Each page is a chunk of its own (#710), not part of the first load.
       expect(pages(routes).every((route) => route.loadComponent && !route.component)).toBe(true);
       for (const route of pages(routes)) {

@@ -62,11 +62,18 @@ describe('ShareDialog', () => {
   const answerLinks = () =>
     http.match((r) => r.url.endsWith('/invitations')).forEach((r) => r.flush([]));
 
-  const open = async (members = [ada, bea]) => {
+  const open = async (members: Array<typeof ada & { isDeactivated?: boolean }> = [ada, bea]) => {
     http.expectOne(url).flush(members);
     answerLinks();
     await settle();
   };
+
+  it('marks a person an administrator deactivated, who stays in the list (#668)', async () => {
+    await open([ada, { ...bea, isDeactivated: true }]);
+
+    expect(rows()[0].querySelector('.member-state')).toBeNull();
+    expect(rows()[1].querySelector('.member-state')?.textContent).toContain('deactivated');
+  });
 
   it('says it is loading until the members arrive, then lists them with name, email and role', async () => {
     expect(el().querySelector('.note[role="status"]')?.textContent).toContain('Loading');

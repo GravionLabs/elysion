@@ -1,0 +1,16 @@
+<main class="deactivated-page">
+  @if (checked()) {
+    <h1 i18n="@@deactivated.title">This account has been deactivated</h1>
+    <p role="alert" i18n="@@deactivated.message">
+      An administrator has deactivated your account, so Elysion refuses every request. If you think
+      this is a mistake, ask the administrators of your organization to reactivate it.
+    </p>
+    <p>
+      <button type="button" class="button" (click)="session.logout()" i18n="@@deactivated.logout">
+        Log out
+      </button>
+    </p>
+  } @else {
+    <p role="status" i18n="@@deactivated.checking">Checking your account…</p>
+  }
+</main>

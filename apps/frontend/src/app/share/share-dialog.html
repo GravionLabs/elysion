@@ -77,6 +77,9 @@
             <li class="member">
               <span class="member-text">
                 <span class="member-name">{{ member.displayName }}</span>
+                @if (member.isDeactivated) {
+                  <span class="member-state" i18n="@@share.member.deactivated">deactivated</span>
+                }
                 @if (member.email) {
                   <span class="member-email">{{ member.email }}</span>
                 }

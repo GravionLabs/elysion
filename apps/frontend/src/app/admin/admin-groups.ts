@@ -310,7 +310,8 @@ export class AdminGroups {
     this.candidateState.set('loading');
     this.#api.users(query, 1, 8).subscribe({
       next: (answer) => {
-        this.candidates.set(answer.items);
+        // A deactivated person cannot be added (#668), as they are not offered anywhere else.
+        this.candidates.set(answer.items.filter((user) => !user.deactivatedAt));
         this.candidateState.set('done');
       },
       error: () => this.candidateState.set('error'),

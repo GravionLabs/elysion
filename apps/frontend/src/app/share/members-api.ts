@@ -16,6 +16,8 @@ export interface Member {
   displayName: string;
   email: string | null;
   role: MemberRole;
+  /** An administrator deactivated the person (#668): they stay in the list, and cannot open anything. */
+  isDeactivated?: boolean;
 }
 
 /**

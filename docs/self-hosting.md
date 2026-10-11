@@ -158,6 +158,13 @@ or S3 key is changed at its owner first and in the Secret second.
 Not part of this yet: Keycloak as an optional part of the chart, and Microsoft Entra ID without Keycloak (with Keycloak: [Sign in with Microsoft Entra ID](#sign-in-with-microsoft-entra-id)) ([ADR 0028](adr/0028-production-topology-tls-and-keycloak.md),
 [ADR 0027](adr/0027-enterprise-sign-in-groups-and-administration.md)).
 
+## Taking a person off
+
+When somebody leaves, do **both**: **disable the account at your identity provider** (Entra ID or Keycloak: that stops them from signing in and from using
+anything else behind it) **and deactivate the person in Elysion** (_Administration_, _Users_, **Deactivate…**: that refuses every request at once, removes
+them from the pickers and lets you **hand over** their boards and rooms). Elysion cannot reach into your identity provider, and the identity provider
+alone leaves the person's Elysion access alive until their token and the realm's SSO session (8 hours) run out.
+
 ## Sign in with Microsoft Entra ID
 
 People can sign in with the company's Microsoft account: Entra ID is an identity provider of the Keycloak realm (**identity brokering**,

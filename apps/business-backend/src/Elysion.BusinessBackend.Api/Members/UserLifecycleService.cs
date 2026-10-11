@@ -135,7 +135,7 @@ public sealed class UserLifecycleService(
             audit.Record(AuditActions.OwnerTransferred,
                 AuditActions.Board,
                 board.Id,
-                new { fromUserId = from.Id, toUserId = to.Id });
+                new { userId = to.Id, fromUserId = from.Id });
         }
 
         var rooms = await ownership.RoomsOwnedByAsync(from.Id, cancellationToken);
@@ -164,7 +164,7 @@ public sealed class UserLifecycleService(
             audit.Record(AuditActions.OwnerTransferred,
                 AuditActions.Room,
                 room.Id,
-                new { fromUserId = from.Id, toUserId = to.Id });
+                new { userId = to.Id, fromUserId = from.Id });
         }
 
         if (boards.Count + rooms.Count > 0)

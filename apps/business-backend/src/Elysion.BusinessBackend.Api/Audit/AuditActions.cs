@@ -29,7 +29,10 @@ public static class AuditActions
     public const string UserDeactivated = "user.deactivated";
     public const string UserReactivated = "user.reactivated";
 
-    /// <summary>The ownership of a board or room moved from one person to another by an administrator (#668).</summary>
+    /// <summary>
+    /// The ownership of a board or room moved from one person to another by an administrator (#668); <c>userId</c> in the details is
+    /// the new owner (the log shows them as the person it is about), <c>fromUserId</c> the previous one.
+    /// </summary>
     public const string OwnerTransferred = "owner.transferred";
 
     public const string InvitationCreated = "invitation.created";

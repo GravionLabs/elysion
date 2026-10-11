@@ -33,6 +33,7 @@ describe('describeAuditEntry', () => {
     ['group.linked', { externalId: 'x' }, 'Ada linked the group to the identity provider'],
     ['group.unlinked', null, 'Ada unlinked the group from the identity provider'],
     ['group.deleted', { name: 'Staff' }, 'Ada deleted the group Staff'],
+    ['owner.transferred', { userId: 'u2' }, 'Ada handed the ownership over to Bob'],
     ['group.member_added', { userId: 'u2' }, 'Ada added Bob to the group'],
     ['group.member_removed', { userId: 'u2' }, 'Ada took Bob out of the group'],
     [
@@ -51,5 +52,18 @@ describe('describeAuditEntry', () => {
     const lost = { ...entry('member.added', { role: 'Viewer' }), actor: null, target: null };
     expect(describeAuditEntry(lost)).toBe('Somebody gave a person the role Viewer');
     expect(describeAuditEntry(entry('something.new'))).toBe('Ada: something.new');
+  });
+
+  it('names the person a deactivation or reactivation is about by the subject of the entry', () => {
+    const about = (action: string): AuditEntry => ({
+      ...entry(action),
+      subjectType: 'user',
+      subjectId: 'u2',
+      subjectName: 'Bob',
+      target: null,
+    });
+
+    expect(describeAuditEntry(about('user.deactivated'))).toBe('Ada deactivated Bob');
+    expect(describeAuditEntry(about('user.reactivated'))).toBe('Ada reactivated Bob');
   });
 });

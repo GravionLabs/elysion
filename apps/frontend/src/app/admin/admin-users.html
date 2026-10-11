@@ -63,6 +63,9 @@
                   >
                     {{ user.displayName }}
                   </button>
+                  @if (user.deactivatedAt) {
+                    <span class="chip" i18n="@@admin.deactivated">deactivated</span>
+                  }
                 </th>
                 <td>{{ user.email ?? '' }}</td>
                 <td>
@@ -105,6 +108,108 @@
       @if (person.email) {
         <p class="note">{{ person.email }}</p>
       }
+      @if (actionError(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+      @if (transferred(); as moved) {
+        <p class="note" role="status" i18n="@@admin.users.handover.done">
+          Handed over: boards {{ moved.boards }}, rooms {{ moved.rooms }}.
+        </p>
+      }
+      <section class="status-block" aria-labelledby="user-status-title">
+        <h3 id="user-status-title" i18n="@@admin.users.status">Status</h3>
+        @if (person.deactivatedAt) {
+          <p class="note" i18n="@@admin.users.deactivated.since">
+            Deactivated on {{ person.deactivatedAt | date: 'medium' }}. Every request of this person
+            is refused.
+          </p>
+          <button
+            type="button"
+            class="button"
+            [disabled]="busy()"
+            (click)="reactivate()"
+            i18n="@@admin.users.reactivate"
+          >
+            Reactivate
+          </button>
+        } @else {
+          <p class="note" i18n="@@admin.users.active">This person can use Elysion.</p>
+          <button
+            type="button"
+            class="button danger"
+            [attr.aria-label]="deactivateLabel(person)"
+            [disabled]="busy()"
+            (click)="askDeactivate()"
+            i18n="@@admin.users.deactivate"
+          >
+            Deactivate…
+          </button>
+        }
+      </section>
+      @if (person.deactivatedAt && (owned().boards > 0 || owned().rooms > 0)) {
+        <section class="status-block" aria-labelledby="user-handover-title">
+          <h3 id="user-handover-title" i18n="@@admin.users.handover.title">Hand over</h3>
+          <p class="note" i18n="@@admin.users.handover.note">
+            Owned by this person: boards {{ owned().boards }}, rooms {{ owned().rooms }}. Give their
+            ownership to somebody else: the new owner gets the Owner role, this person keeps
+            nothing.
+          </p>
+          <form class="tools" role="search" (submit)="$event.preventDefault(); findReceivers()">
+            <input
+              type="search"
+              name="receiver"
+              autocomplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              placeholder="Name or email"
+              i18n-placeholder="@@admin.users.search.placeholder"
+              aria-label="Find the person who takes over"
+              i18n-aria-label="@@admin.users.handover.find"
+              [value]="receiverQuery()"
+              (input)="updateReceiverQuery($event)"
+            />
+            <button type="submit" class="button" i18n="@@admin.search">Search</button>
+          </form>
+          @switch (receiverState()) {
+            @case ('loading') {
+              <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+            }
+            @case ('error') {
+              <p class="error" role="alert" i18n="@@admin.users.handover.findError">
+                The search did not work.
+              </p>
+            }
+            @case ('done') {
+              @if (receivers().length === 0) {
+                <p class="note" i18n="@@admin.users.empty">No user matches.</p>
+              } @else {
+                <ul class="stack">
+                  @for (candidate of receivers(); track candidate.id) {
+                    <li class="line">
+                      <span>
+                        {{ candidate.displayName }}
+                        @if (candidate.email) {
+                          <span class="subtle">{{ candidate.email }}</span>
+                        }
+                      </span>
+                      <button
+                        type="button"
+                        class="button small"
+                        [attr.aria-label]="handOverLabel(candidate)"
+                        [disabled]="busy()"
+                        (click)="askHandOver(candidate)"
+                        i18n="@@admin.users.handover.button"
+                      >
+                        Hand over
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          }
+        </section>
+      }
       <p class="note" i18n="@@admin.users.detail.note">
         The roles this person has directly. Roles through a group or a room are not listed.
       </p>
@@ -138,4 +243,76 @@
       <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
     }
   </app-admin-dialog>
+}
+
+@if (confirming(); as question) {
+  @if (detail(); as person) {
+    @if (question === 'deactivate') {
+      <app-admin-dialog
+        heading="Deactivate this person"
+        i18n-heading="@@admin.users.deactivate.title"
+        (closed)="cancelConfirm()"
+      >
+        <p i18n="@@admin.users.deactivate.message">
+          Deactivate “{{ person.displayName }}”? They are refused everywhere from now on and are not
+          offered when somebody is added; they stay in the member lists as deactivated, and what
+          they own stays where it is until you hand it over. Disable the account at the identity
+          provider as well: Elysion cannot do that, and it is what keeps the person from signing in
+          there.
+        </p>
+        <div class="dialog-actions">
+          <button
+            type="button"
+            class="button"
+            [disabled]="busy()"
+            (click)="cancelConfirm()"
+            i18n="@@admin.cancel"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="button danger"
+            [disabled]="busy()"
+            (click)="deactivate()"
+            i18n="@@admin.users.deactivate.confirm"
+          >
+            Deactivate
+          </button>
+        </div>
+      </app-admin-dialog>
+    } @else if (receiver(); as to) {
+      <app-admin-dialog
+        heading="Hand over the ownership"
+        i18n-heading="@@admin.users.handover.dialog"
+        (closed)="cancelConfirm()"
+      >
+        <p i18n="@@admin.users.handover.message">
+          Make “{{ to.displayName }}” the owner of what “{{ person.displayName }}” owns (boards
+          {{ owned().boards }}, rooms {{ owned().rooms }})? “{{ person.displayName }}” keeps no role
+          on it. You get no role either: you only hand it over.
+        </p>
+        <div class="dialog-actions">
+          <button
+            type="button"
+            class="button"
+            [disabled]="busy()"
+            (click)="cancelConfirm()"
+            i18n="@@admin.cancel"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="button primary"
+            [disabled]="busy()"
+            (click)="handOver()"
+            i18n="@@admin.users.handover.confirm"
+          >
+            Hand over
+          </button>
+        </div>
+      </app-admin-dialog>
+    }
+  }
 }

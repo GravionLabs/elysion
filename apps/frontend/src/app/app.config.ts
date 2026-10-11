@@ -4,6 +4,7 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { authInterceptor } from 'angular-auth-oidc-client';
 import { provideLogin } from './auth/provide-auth';
 import { restartLoginOn401 } from './auth/restart-login-on-401';
+import { showDeactivatedPage } from './auth/show-deactivated-page';
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
@@ -11,7 +12,9 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     // `authInterceptor` adds the access token to `/api` calls only (secureRoutes); `restartLoginOn401` starts the
     // login again when the API does not accept it.
-    provideHttpClient(withInterceptors([restartLoginOn401, authInterceptor()])),
+    provideHttpClient(
+      withInterceptors([restartLoginOn401, showDeactivatedPage, authInterceptor()]),
+    ),
     provideLogin(),
     provideRouter(routes, withComponentInputBinding()),
   ],

@@ -31,6 +31,8 @@ export interface AdminUser {
   createdAt: string;
   lastSeenAt: string | null;
   groups: GroupRef[];
+  /** When an administrator deactivated the person (#668), or `null`/absent. */
+  deactivatedAt?: string | null;
 }
 
 /** A room or a board the person has a role on directly: names and roles, never content. */
@@ -60,6 +62,13 @@ export interface GroupMember {
   id: string;
   displayName: string;
   email: string | null;
+  deactivatedAt?: string | null;
+}
+
+/** How many boards and rooms changed owner in a hand-over (#668). */
+export interface TransferResult {
+  boards: number;
+  rooms: number;
 }
 
 export interface AdminRoom {
@@ -113,6 +122,26 @@ export class AdminApi {
 
   user(id: string): Observable<AdminUserDetail> {
     return this.#http.get<AdminUserDetail>(`/api/admin/users/${encodeURIComponent(id)}`);
+  }
+
+  /** Deactivates a person (#668): every request of theirs is refused from now on. Answers their detail. */
+  deactivate(id: string): Observable<AdminUserDetail> {
+    return this.#http.post<AdminUserDetail>(
+      `/api/admin/users/${encodeURIComponent(id)}/deactivate`,
+      null,
+    );
+  }
+
+  reactivate(id: string): Observable<AdminUserDetail> {
+    return this.#http.post<AdminUserDetail>(
+      `/api/admin/users/${encodeURIComponent(id)}/reactivate`,
+      null,
+    );
+  }
+
+  /** Makes `toUserId` the owner of the boards and rooms the deactivated person `fromUserId` owned (#668). */
+  transfer(fromUserId: string, toUserId: string): Observable<TransferResult> {
+    return this.#http.post<TransferResult>('/api/admin/boards/transfer', { fromUserId, toUserId });
   }
 
   groups(query: string, page: number, pageSize: number): Observable<Page<AdminGroup>> {
