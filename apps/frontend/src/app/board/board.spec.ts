@@ -1093,6 +1093,32 @@ describe('Board', () => {
       expect(fixture.nativeElement.querySelector('app-share-dialog')).toBeNull();
     });
 
+    type Directory = () => Promise<Array<{ id: string; name: string }>>;
+
+    it('lets an owner moderate the comments and offers the members for @ (#733)', async () => {
+      await openAs('owner');
+      expect(canvas()!.hasAttribute('can-moderate')).toBe(true);
+
+      const asked = (canvas() as unknown as { mentionDirectory: Directory }).mentionDirectory();
+      http
+        .expectOne(`/api/boards/${uuid}/members`)
+        .flush([{ userId: 'm1', displayName: 'Bob', email: null, role: 'Editor' }]);
+
+      expect(await asked).toEqual([{ id: 'm1', name: 'Bob' }]);
+    });
+
+    it('offers no member list to an editor or a viewer, and no moderation (#733)', async () => {
+      await openAs('viewer');
+      expect(canvas()!.hasAttribute('can-moderate')).toBe(false);
+
+      const people = await (
+        canvas() as unknown as { mentionDirectory: Directory }
+      ).mentionDirectory();
+
+      expect(people).toEqual([]);
+      http.expectNone(`/api/boards/${uuid}/members`);
+    });
+
     it('gives an editor no Share button and a canvas that is not read-only', async () => {
       await openAs('editor');
 

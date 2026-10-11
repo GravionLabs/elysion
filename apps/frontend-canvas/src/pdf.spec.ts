@@ -157,6 +157,67 @@ describe('placePage', () => {
   });
 });
 
+describe('the comments appendix (#733)', () => {
+  const appendix = {
+    title: 'Comments',
+    sections: [
+      {
+        heading: 'Open',
+        threads: [
+          {
+            where: 'On Sticky',
+            messages: [{ author: 'Ann', date: 'today', text: 'Why this one?' }],
+          },
+        ],
+      },
+      {
+        heading: 'Resolved',
+        threads: [
+          {
+            where: 'On a point of the board',
+            resolvedBy: 'Resolved by Bob',
+            messages: [{ author: 'Bob', date: 'today', text: 'Done' }],
+          },
+        ],
+      },
+    ],
+  };
+
+  it('adds an A4 page of text after the board and a bookmark for it', async () => {
+    const content = '<rect x="0" y="0" width="100" height="50" fill="red"/>';
+
+    const result = await inspect(
+      await svgsToPdf([{ svg: svgOf(400, 200, content) }], {}, appendix),
+    );
+
+    expect(result.pages).toBe(2);
+    expect(result.text).toContain('/Title (Comments)');
+  });
+
+  it('starts a new page when the text is longer than one', async () => {
+    const long = {
+      ...appendix,
+      sections: [
+        {
+          heading: 'Open',
+          threads: Array.from({ length: 60 }, (_, index) => ({
+            where: `On element ${index}`,
+            messages: [{ author: 'Ann', date: 'today', text: 'A comment. '.repeat(20) }],
+          })),
+        },
+      ],
+    };
+
+    const result = await inspect(await svgsToPdf([{ svg: svgOf(400, 200) }], {}, long));
+
+    expect(result.pages).toBeGreaterThan(3);
+  });
+
+  it('adds nothing without an appendix', async () => {
+    expect((await inspect(await svgsToPdf([{ svg: svgOf(400, 200) }], {}, null))).pages).toBe(1);
+  });
+});
+
 describe('svgsToPdf', () => {
   const content = '<rect x="10" y="10" width="50" height="30" fill="#ff0000"/>';
 

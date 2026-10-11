@@ -23,6 +23,8 @@ export interface ExportOptions {
   pageFormat?: PageFormat;
   /** `auto` (default) turns the page the way the content is shaped. */
   orientation?: PageOrientation;
+  /** For a PDF: append the board's comments as text pages (#733). Off by default. */
+  comments?: boolean;
 }
 
 /** The part of a frame that its order depends on. */

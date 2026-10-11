@@ -25,6 +25,7 @@ import { FilesApi } from './files-api';
 import { VotingApi } from './voting-api';
 import { ThumbnailUploader } from './thumbnail-uploader';
 import { ShareDialog } from '../share/share-dialog';
+import { MembersApi } from '../share/members-api';
 import { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename, type ExportFormat } from './download';
 import { ExportRequest } from '../topbar/export-menu';
@@ -77,6 +78,7 @@ export class Board {
   readonly #api = inject(BoardApi);
   readonly #files = inject(FilesApi);
   readonly #votings = inject(VotingApi);
+  readonly #members = inject(MembersApi);
   readonly #thumbnails = inject(ThumbnailUploader);
   readonly #pageTitle = inject(Title);
   readonly #templates = inject(TemplateApi);
@@ -329,6 +331,21 @@ export class Board {
   protected readonly fileStore = this.#files.storeFor(() => this.boardId());
   /** The voting of this board on the server; the canvas votes through it (ADR 0029). */
   protected readonly votingApi = this.#votings.forBoard(() => this.boardId());
+
+  /**
+   * The people `@` offers in a comment (#733). Only an owner may list the members, so everybody else is offered the people who
+   * commented before (the canvas adds those itself); a failure is an empty list, never an error on the page. The ids are the
+   * business backend's user ids, which is what a mention stores until the notifications (a later PBI) resolve them.
+   */
+  protected readonly mentionDirectory = async (): Promise<Array<{ id: string; name: string }>> => {
+    if (!this.canShare() || !isStoredBoardId(this.boardId())) return [];
+    try {
+      const members = await firstValueFrom(this.#members.list(this.boardId()));
+      return members.map((member) => ({ id: member.userId, name: member.displayName }));
+    } catch {
+      return [];
+    }
+  };
 
   /**
    * Whether images may be inserted: only on a stored board, because the files belong to a board record (the room

@@ -22,6 +22,7 @@ import { SaveMetrics } from '../metrics/save-metrics.js';
 import { PresenceRelay } from '../presence/presence-relay.js';
 import { readGeneration } from './generation.js';
 import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC, MESSAGE_VOTING } from './protocol.js';
+import { viewerMayApply } from './viewer-writes.js';
 import { YjsRoom, YjsRoomRegistry } from './yjs-room-registry.js';
 
 /**
@@ -31,8 +32,8 @@ import { YjsRoom, YjsRoomRegistry } from './yjs-room-registry.js';
 const MAX_MESSAGE_BYTES = 16 * 1024 * 1024;
 
 /**
- * A viewer's connection is read-only. Its sync step 2 and update messages are dropped (never applied, never
- * relayed); this many in total close the connection, so a client that keeps editing is told. A viewer
+ * A viewer's connection is read-only except for the comment threads (#733). Its sync step 2 and update messages are dropped (never applied, never
+ * relayed) unless they change nothing but `session.comments` (`viewer-writes.ts`); this many in total close the connection, so a client that keeps editing is told. A viewer
  * that just looks sends none beyond the one reply to the server's first sync step.
  */
 export const MAX_DROPPED_VIEWER_WRITES = 20;
@@ -292,13 +293,21 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     switch (messageType) {
       case MESSAGE_SYNC: {
-        // A viewer may ask for the board's state (sync step 1) and nothing else: step 2 and updates are writes.
+        // A viewer may ask for the board's state (sync step 1) and write the comment threads (#733); step 2 and
+        // updates are writes, so they are applied only when they change nothing but `session.comments`.
         if (
           room.memberBySocket.get(client)?.role === 'viewer' &&
           decoding.peekVarUint(decoder) !== syncProtocol.messageYjsSyncStep1
         ) {
-          this.dropViewerWrite(client, room);
-          break;
+          const update = this.updateOf(decoder);
+          if (
+            update === null ||
+            update.byteLength > this.registry.limits.maxUpdateBytes ||
+            !viewerMayApply(room.doc, update)
+          ) {
+            this.dropViewerWrite(client, room);
+            break;
+          }
         }
         const written = this.writtenBytes(decoder);
         if (written !== null) {
@@ -353,6 +362,16 @@ export class YjsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       default:
         this.logger.warn(`Unknown Yjs message type ${messageType}`);
     }
+  }
+
+  /** The Yjs update a step 2 or update message carries, without consuming the message; `null` for anything else. */
+  private updateOf(decoder: decoding.Decoder): Uint8Array | null {
+    const peek = decoding.clone(decoder);
+    const type = decoding.readVarUint(peek);
+    if (type !== syncProtocol.messageYjsSyncStep2 && type !== syncProtocol.messageYjsUpdate) {
+      return null;
+    }
+    return decoding.readVarUint8Array(peek);
   }
 
   /**

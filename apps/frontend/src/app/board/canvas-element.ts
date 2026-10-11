@@ -94,6 +94,8 @@ export type CanvasElement = HTMLElement & {
       pdfPages?: 'auto' | 'whole';
       pageFormat?: 'fit' | 'a4' | 'letter';
       orientation?: 'auto' | 'portrait' | 'landscape';
+      /** A PDF gets the board's comments as text pages at the end (#733). */
+      comments?: boolean;
     },
   ): Promise<Blob | null>;
   /**
@@ -110,6 +112,11 @@ export type CanvasElement = HTMLElement & {
   fileStore?: BoardFileStore;
   /** How the canvas reaches the board's voting on the server (`GET/POST/DELETE` through the BFF, ADR 0029). A property, as an object with methods. */
   votingApi?: BoardVotingApi;
+  /**
+   * The people `@` offers in a comment (#733), asked each time the comments open: `{id, name}`. A property, as a function.
+   * The `can-moderate` attribute (the board's owner may delete any comment) goes with the comments.
+   */
+  mentionDirectory?: () => Promise<Array<{ id: string; name: string }>>;
   /** Replaces the board with an .excalidraw file; resolves with the number of elements in it. */
   importFile?(file: Blob): Promise<number>;
   /** Opens the PDF import (#725): a dialog with the pages, then a picture in a frame per chosen page; resolves with the number of pages put on the board (0: canceled). */

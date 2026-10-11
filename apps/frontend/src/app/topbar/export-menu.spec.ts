@@ -113,6 +113,21 @@ describe('ExportMenu', () => {
     ]);
   });
 
+  it('has a Comments in a PDF option that is off, remembered once it is switched on (#733)', async () => {
+    await open();
+    const option = [...el().querySelectorAll<HTMLInputElement>('.menu-settings input')].find(
+      (input) => input.parentElement?.textContent?.includes('Comments in a PDF'),
+    )!;
+    expect(option.checked).toBe(false);
+
+    option.click();
+    await fixture.whenStable();
+    items()[2].click();
+
+    expect(requests[0].settings.comments).toBe(true);
+    localStorage.clear(); // the menu remembers it; the other tests start from the defaults
+  });
+
   describe('while a file is being prepared', () => {
     beforeEach(async () => {
       fixture.componentRef.setInput('busy', 'pdf');

@@ -162,7 +162,11 @@ export class RoomPdfExporter {
       await waitFor(canvas, 'synced', timings.syncMs, signal);
       await canvas.whenSettled?.(timings.imagesMs);
       if (!canvas.exportBoard) throw new Error('The canvas is not ready.');
-      return await canvas.exportBoard('pdf', toCanvasOptions(settings, false));
+      // The comments of every board are not appended to the room's document: the boards are its pages.
+      return await canvas.exportBoard('pdf', {
+        ...toCanvasOptions(settings, false),
+        comments: false,
+      });
     } finally {
       host.remove();
     }

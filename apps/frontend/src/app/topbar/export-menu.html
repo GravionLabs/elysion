@@ -103,6 +103,14 @@
         />
         <span i18n="@@topbar.export.background">Background</span>
       </label>
+      <label class="menu-check">
+        <input
+          type="checkbox"
+          [checked]="settings().comments"
+          (change)="change('comments', $any($event.target).checked)"
+        />
+        <span i18n="@@topbar.export.comments">Comments in a PDF</span>
+      </label>
     </fieldset>
   </div>
 }

@@ -15,7 +15,7 @@ import type {
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { VIEW_BACKGROUND_COLOR } from './element-style';
 import { framesInOrder, type ExportOptions } from './export-options';
-import { svgsToPdf } from './pdf';
+import { svgsToPdf, type PdfAppendix } from './pdf';
 
 export type ExportFormat = 'png' | 'svg' | 'excalidraw' | 'pdf';
 export type { ExportOptions } from './export-options';
@@ -144,6 +144,8 @@ export async function exportBoard(
   api: ExcalidrawImperativeAPI,
   format: ExportFormat,
   options: ExportOptions = {},
+  /** Text pages for the end of a PDF (the comments, #733); only used when `options.comments` is on. */
+  appendix?: PdfAppendix | null,
 ): Promise<Blob | null> {
   const { selectionOnly = false, background = true, theme = 'current', scale = 1 } = options;
   const appState = api.getAppState();
@@ -179,6 +181,7 @@ export async function exportBoard(
         return svgsToPdf(
           [{ svg: await exportToSvg({ elements, appState: exportState, files }) }],
           layout,
+          options.comments ? appendix : null,
         );
       }
       const pages = [];
@@ -193,7 +196,7 @@ export async function exportBoard(
           }),
         });
       }
-      return svgsToPdf(pages, layout);
+      return svgsToPdf(pages, layout, options.comments ? appendix : null);
     }
     case 'excalidraw':
       return new Blob(
