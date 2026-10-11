@@ -51,6 +51,10 @@ up() {
   docker exec "$POSTGRES_CONTAINER" psql -U elysion -d postgres -tc "select 1 from pg_database where datname='elysion_kind'" | grep -q 1 \
     || docker exec "$POSTGRES_CONTAINER" psql -U elysion -d postgres -c 'create database elysion_kind' >/dev/null
   kubectl create namespace elysion-external --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+  # Valkey has a password, generated once (#775): `redis://valkey.elysion-external:6379` without one would let any pod publish into any board.
+  kubectl -n elysion-external get secret valkey-auth >/dev/null 2>&1 \
+    || kubectl -n elysion-external create secret generic valkey-auth --from-literal=password="$(openssl rand -hex 16)" >/dev/null
+  VALKEY_PASSWORD=$(kubectl -n elysion-external get secret valkey-auth -o jsonpath='{.data.password}' | base64 -d)
   kubectl apply -f infra/kind/valkey.yaml >/dev/null
   kubectl -n elysion-external rollout status deployment/valkey --timeout=120s
 
@@ -61,7 +65,7 @@ up() {
       --from-literal=WS_TOKEN_SECRET="$(openssl rand -hex 32)" \
       --from-literal=INTERNAL_API_SECRET="$(openssl rand -hex 32)" \
       --from-literal=POSTGRES_CONNECTION_STRING="Host=$HOST_IP;Port=5432;Database=elysion_kind;Username=elysion;Password=elysion" \
-      --from-literal=REDIS_URL="redis://valkey.elysion-external:6379" \
+      --from-literal=REDIS_URL="redis://:${VALKEY_PASSWORD}@valkey.elysion-external:6379" \
       --from-literal=S3_ACCESS_KEY="${S3_ACCESS_KEY:-elysion}" \
       --from-literal=S3_SECRET_KEY="${S3_SECRET_KEY:-elysion123}"
   fi

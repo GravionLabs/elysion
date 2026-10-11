@@ -1,0 +1,10 @@
+{
+  "name": "stress",
+  "description": "600 clients on 30 boards (20 per board) for two minutes: how far one machine and two replicas go. Not a pass or fail run; it records the numbers the limits in docs/performance.md come from.",
+  "clients": 600,
+  "boards": 30,
+  "durationMs": 120000,
+  "rampMs": 30000,
+  "writeEveryMs": 500,
+  "events": []
+}

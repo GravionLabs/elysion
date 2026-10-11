@@ -447,7 +447,8 @@ describe('the grid', () => {
       (window as unknown as { h: { state: { objectsSnapModeEnabled: boolean } } }).h.state
         .objectsSnapModeEnabled;
     await setup();
-    expect(state()).toBe(true);
+    // The effect that puts the setting into Excalidraw's state runs a moment after the first render, longer on a loaded machine.
+    await waitFor(() => expect(state()).toBe(true));
     open();
     expect(
       screen
@@ -467,7 +468,7 @@ describe('the grid', () => {
         .objectsSnapModeEnabled;
     await setup({ readOnly: true });
 
-    expect(state()).toBe(false);
+    await waitFor(() => expect(state()).toBe(false));
   });
 
   it('shows a viewer the grid and its menu items, disabled: the grid is the editors', async () => {

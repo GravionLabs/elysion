@@ -80,6 +80,20 @@ describe('POST /api/realtime/token (e2e, against a fake business backend)', () =
     expect(upstream.requests).toBe(0);
   });
 
+  it('mints the same kind of token for a person whose role comes from a group: the WS flow only learns the effective role (ADR 0027)', async () => {
+    upstream.roles.set(BOARD, 'Editor'); // what the backend answers for a member of a group that is Editor in the board's room
+
+    const response = await post({ boardId: BOARD }, await bearer({ subject: 'kc-group-member' }));
+
+    expect(response.status).toBe(200);
+    expect(decodeJwt(response.body.token)).toMatchObject({
+      sub: 'kc-group-member',
+      boardId: BOARD,
+      role: 'editor',
+    });
+    expect(decodeJwt(response.body.token)).not.toHaveProperty('groups');
+  });
+
   it('is 200 with a decodable token for the requested board when the user has a role', async () => {
     upstream.roles.set(BOARD, 'Editor');
     const authorization = await bearer({ subject: 'kc-sub-9' });

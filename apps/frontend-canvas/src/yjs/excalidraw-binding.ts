@@ -13,11 +13,32 @@ import { type FileReference, type FileStore, blobToDataUrl, dataUrlToBlob } from
 const ELEMENTS_MAP_KEY = 'elements';
 const FILES_MAP_KEY = 'files';
 
+/** The most live elements a board holds (ADR 0026): about 7.5 MB of document. A product limit, not a security one. */
+export const MAX_ELEMENTS = 20_000;
+
 export interface BindingOptions {
+  /** The most live elements the board holds, read at every use; {@link MAX_ELEMENTS} when not given. */
+  maxElements?: () => number | undefined;
+  /** An element was not added because the board has {@link MAX_ELEMENTS} live elements; it was taken off the scene again. */
+  onLimit?: () => void;
   /** Where the bytes of images live; read at every use, so a store the host sets later is used. Without one, images stay local. */
   fileStore?: () => FileStore | undefined;
   /** A file could not be stored or loaded. */
   onError?: (error: Error) => void;
+}
+
+/**
+ * Whether an element of the scene replaces the stored one: it has a higher `version`, or the same `version` and the lower
+ * `versionNonce` (the rule of Excalidraw's `reconcileElements`, so that the document and every screen agree on a tie).
+ */
+function beats(
+  element: { version: number; versionNonce: number },
+  stored: { version: number; versionNonce: number },
+): boolean {
+  return (
+    element.version > stored.version ||
+    (element.version === stored.version && element.versionNonce < stored.versionNonce)
+  );
 }
 
 /**
@@ -45,6 +66,8 @@ export class ExcalidrawYjsBinding {
   /** Ids being uploaded or fetched right now, so that a burst of changes does not start the same transfer twice. */
   readonly #uploading = new Set<string>();
   readonly #fetching = new Set<string>();
+  /** Ids the limit refused: whatever the scene does with them later (their deletion) is not written either. */
+  readonly #refused = new Set<string>();
   #destroyed = false;
 
   constructor(doc: Y.Doc, options: BindingOptions = {}) {
@@ -76,10 +99,25 @@ export class ExcalidrawYjsBinding {
    */
   onLocalChange = (elements: readonly OrderedExcalidrawElement[], files?: BinaryFiles): void => {
     this.#uploadNewFiles(elements, files);
+    let live = 0;
+    for (const stored of this.#elements.values()) {
+      if (!stored.isDeleted) live += 1;
+    }
+    const refused: string[] = [];
     this.#doc.transact(() => {
       for (const element of elements) {
+        if (this.#refused.has(element.id)) continue;
         const existing = this.#elements.get(element.id);
-        if (!existing || existing.version < element.version) {
+        if (!existing && !element.isDeleted) {
+          // A new element that would take the board over the limit is not written (ADR 0026).
+          if (live >= (this.#options.maxElements?.() ?? MAX_ELEMENTS)) {
+            this.#refused.add(element.id);
+            refused.push(element.id);
+            continue;
+          }
+          live += 1;
+        }
+        if (!existing || beats(element, existing)) {
           // Excalidraw mutates its element objects in place; Y.Map.get()
           // returns the exact reference passed to .set(), so storing
           // `element` directly would make `existing` and `element` alias
@@ -91,7 +129,56 @@ export class ExcalidrawYjsBinding {
         }
       }
     });
+    if (refused.length > 0) {
+      this.#takeOffScene(refused);
+      this.#options.onLimit?.();
+    }
   };
+
+  /**
+   * Writes what the scene holds into the document, by the rule of {@link onLocalChange}: an element goes in when the
+   * document lacks it or has an older version. Used after the document was replaced (the board was rebuilt while this
+   * client was away, ADR 0026) and the server's state has arrived, so that what was changed meanwhile is kept and what
+   * others changed meanwhile is not overwritten.
+   */
+  pushScene(): void {
+    const api = this.#api;
+    if (api) {
+      this.onLocalChange(api.getSceneElementsIncludingDeleted(), api.getFiles());
+    }
+  }
+
+  /** How many files are being fetched or uploaded right now. */
+  get pending(): number {
+    return this.#fetching.size + this.#uploading.size;
+  }
+
+  /**
+   * Resolves when nothing has been pending for a moment (the files that the scene shows are in), or after `timeoutMs`. A file
+   * that is listed after its image arrived starts its fetch a moment later, so one quiet look is not enough: two, `quietMs` apart.
+   */
+  async whenSettled(timeoutMs = 20_000, quietMs = 150): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    let quiet = 0;
+    while (quiet < 2 && Date.now() < deadline && !this.#destroyed) {
+      quiet = this.pending === 0 ? quiet + 1 : 0;
+      await new Promise((resolve) => setTimeout(resolve, quietMs));
+    }
+  }
+
+  #takeOffScene(ids: readonly string[]): void {
+    const api = this.#api;
+    if (!api) return;
+    const gone = new Set(ids);
+    const elements = api
+      .getSceneElementsIncludingDeleted()
+      .map((element) =>
+        gone.has(element.id) && !element.isDeleted
+          ? newElementWith(element, { isDeleted: true })
+          : element,
+      );
+    api.updateScene({ elements, captureUpdate: CaptureUpdateAction.NEVER });
+  }
 
   #handleRemoteChange = (): void => {
     const api = this.#api;
@@ -141,6 +228,18 @@ export class ExcalidrawYjsBinding {
     if (changed) {
       api.updateScene({ elements: detached, captureUpdate: CaptureUpdateAction.NEVER });
     }
+    // Two people who changed the same element while apart, each the same number of times, have the same `version`: Excalidraw
+    // keeps the one with the lower `versionNonce` on both screens, but the document keeps the one that Yjs happened to pick.
+    // The scene's element that wins by Excalidraw's rule is written, so the document ends where the screens are.
+    this.#doc.transact(() => {
+      for (const element of detached) {
+        if (storedObjects.has(element)) continue;
+        const existing = this.#elements.get(element.id);
+        if (existing && beats(element, existing)) {
+          this.#elements.set(element.id, structuredClone(element));
+        }
+      }
+    });
     this.#loadMissingFiles();
   };
 

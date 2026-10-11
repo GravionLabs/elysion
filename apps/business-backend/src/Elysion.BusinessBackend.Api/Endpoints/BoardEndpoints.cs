@@ -5,9 +5,11 @@ using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Quotas;
 
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Options;
 
 namespace Elysion.BusinessBackend.Api.Endpoints;
 
@@ -46,20 +48,34 @@ public static class BoardEndpoints
         return routes;
     }
 
+    /// <summary>The caller's boards, newest first; <c>?query=</c> keeps those whose name contains it. Each carries the caller's own state (#730).</summary>
     private static async Task<Ok<IReadOnlyList<BoardDto>>> List(IBoardRepository boards,
+        IBoardUserStateRepository states,
         ICurrentUser user,
+        string? query,
         CancellationToken cancellationToken)
     {
-        var all = await boards.ListVisibleToAsync(user.Id, cancellationToken);
-        return TypedResults.Ok<IReadOnlyList<BoardDto>>(all.Select(BoardDto.From).ToList());
+        var all = await boards.ListVisibleToAsync(user.Id, query, cancellationToken);
+        var personal = await states.StatesAsync(user.Id, all.Select(b => b.Id).ToList(), cancellationToken);
+        return TypedResults.Ok<IReadOnlyList<BoardDto>>(all
+            .Select(board => BoardDto.From(board, personal.GetValueOrDefault(board.Id)))
+            .ToList());
     }
 
     private static async Task<Results<Ok<BoardDto>, NotFound>> Get(Guid id,
         IBoardRepository boards,
+        IBoardUserStateRepository states,
+        ICurrentUser user,
         CancellationToken cancellationToken)
     {
         var board = await boards.FindAsync(id, cancellationToken);
-        return board is null ? TypedResults.NotFound() : TypedResults.Ok(BoardDto.From(board));
+        if (board is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        var personal = await states.StatesAsync(user.Id, [id], cancellationToken);
+        return TypedResults.Ok(BoardDto.From(board, personal.GetValueOrDefault(id)));
     }
 
     /// <summary>The caller's role on the board in the route, for the BFF's WS token check (#120). 404 for non-members.</summary>
@@ -73,10 +89,11 @@ public static class BoardEndpoints
         return role is null ? TypedResults.NotFound() : TypedResults.Ok(new MembershipDto(id, role.Value.ToString()));
     }
 
-    private static async Task<Results<Created<BoardDto>, ValidationProblem>> Create(
+    private static async Task<Results<Created<BoardDto>, ValidationProblem, ProblemHttpResult>> Create(
         BoardNameRequest? request,
         HttpRequest http,
         IBoardRepository boards,
+        IOptions<QuotaOptions> quotas,
         IUnitOfWork unitOfWork,
         ICurrentUser user,
         TimeProvider time,
@@ -85,6 +102,11 @@ public static class BoardEndpoints
         if (!Board.TryNormalizeName(request?.Name, out var name))
         {
             return InvalidName();
+        }
+
+        if (await OverBoardQuotaAsync(boards, quotas.Value, user, cancellationToken))
+        {
+            return BoardQuotaReached(quotas.Value);
         }
 
         var board = NewOwnedBoard(name, user, TruncateToMicroseconds(time.GetUtcNow()));
@@ -122,10 +144,11 @@ public static class BoardEndpoints
     /// A new board named "&lt;name&gt; (copy)" with a copy of the source's stored content (ADR 0011). The copy
     /// is what was last saved: changes still inside a room's save window are not in it yet.
     /// </summary>
-    private static async Task<Results<Created<BoardDto>, NotFound>> Duplicate(
+    private static async Task<Results<Created<BoardDto>, NotFound, ProblemHttpResult>> Duplicate(
         Guid id,
         HttpRequest http,
         IBoardRepository boards,
+        IOptions<QuotaOptions> quotas,
         IBoardDocumentRepository documents,
         IFileStore files,
         IUnitOfWork unitOfWork,
@@ -139,9 +162,28 @@ public static class BoardEndpoints
             return TypedResults.NotFound();
         }
 
+        if (await OverBoardQuotaAsync(boards, quotas.Value, user, cancellationToken))
+        {
+            return BoardQuotaReached(quotas.Value);
+        }
+
         var now = TruncateToMicroseconds(time.GetUtcNow());
         // The copy is the caller's own board, whoever owns the source.
         var copy = NewOwnedBoard(CopyName(source.Name), user, now);
+        if (source.ThumbnailUpdatedAt is not null)
+        {
+            // The copy looks like the source until somebody edits it: its card gets the same picture.
+            await using var picture = await files.GetAsync(FileTypes.ThumbnailKey(id), cancellationToken);
+            if (picture is not null)
+            {
+                await files.PutAsync(FileTypes.ThumbnailKey(copy.Id),
+                    picture.Content,
+                    picture.ContentType,
+                    cancellationToken);
+                copy.ThumbnailUpdatedAt = now;
+            }
+        }
+
         boards.Add(copy);
 
         var document = await documents.FindAsync(id.ToString(), cancellationToken);
@@ -201,8 +243,20 @@ public static class BoardEndpoints
         await unitOfWork.SaveChangesAsync(cancellationToken);
         // The files go with the board; they are only reachable through it.
         await files.DeletePrefixAsync(FileTypes.Prefix(id), cancellationToken);
+        await files.DeletePrefixAsync(FileTypes.ThumbnailKey(id), cancellationToken);
         return TypedResults.NoContent();
     }
+
+    private static async Task<bool> OverBoardQuotaAsync(IBoardRepository boards,
+        QuotaOptions limits,
+        ICurrentUser user,
+        CancellationToken cancellationToken) =>
+        await boards.CountOwnedAsync(user.Id, cancellationToken) >= limits.MaxBoards;
+
+    private static ProblemHttpResult BoardQuotaReached(QuotaOptions limits) =>
+        TypedResults.Problem($"You own {limits.MaxBoards} boards, the most you may keep. Delete one to make another.",
+            statusCode: StatusCodes.Status409Conflict,
+            title: "Board quota reached");
 
     // Postgres keeps microseconds; without this the response to the create would show more digits than
     // every later read of the same board.

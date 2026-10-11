@@ -4,6 +4,7 @@ import { CanvasApp, type CanvasControls } from '../CanvasApp';
 import { excalidrawReady } from '../test-utils';
 import { CLICK_TOLERANCE, hintText, topRightCorner } from './VoteBadges';
 import type { VotingView } from './voting';
+import { fakeVotingApi } from './fake-voting-api';
 
 type Point = [number, number];
 
@@ -26,6 +27,7 @@ function press(canvas: Element, from: Point, to: Point = from) {
 /** A rectangle at (100,100)-(260,200) and the canvas to drive the voting on it. */
 async function setup(options: { readOnly?: boolean; userId?: string } = {}) {
   const onControls = vi.fn();
+  const server = fakeVotingApi();
   const onVotingChange = vi.fn();
   const boardId = `vote-${crypto.randomUUID()}`;
   const app = (readOnly?: boolean) => (
@@ -34,6 +36,7 @@ async function setup(options: { readOnly?: boolean; userId?: string } = {}) {
       userId={options.userId ?? 'kc-1'}
       onControls={onControls}
       onVotingChange={onVotingChange}
+      votingApi={server.api}
       readOnly={readOnly}
     />
   );
@@ -51,9 +54,20 @@ async function setup(options: { readOnly?: boolean; userId?: string } = {}) {
     await controls.startVoting({ name: 'Pick', votesPerPerson: votes });
     await waitFor(() => expect(view()?.status).toBe('open'));
   };
-  /** The same canvas, now for a viewer: what a person who may not write sees of a voting that is open. */
+  /** The same canvas, now for a viewer: viewers vote like anybody else (ADR 0029), but do not start, close or clear. */
   const becomeViewer = () => rerender(app(true));
-  return { container, controls, canvas, onVotingChange, view, dots, hint, open, becomeViewer };
+  return {
+    container,
+    controls,
+    canvas,
+    onVotingChange,
+    view,
+    dots,
+    hint,
+    open,
+    becomeViewer,
+    server,
+  };
 }
 
 describe('dot voting on the canvas', () => {
@@ -85,6 +99,7 @@ describe('dot voting on the canvas', () => {
     await open(2);
 
     press(canvas, [180, 150]);
+    await waitFor(() => expect(view()?.myVotes).toBe(1));
     press(canvas, [180, 150]);
 
     await waitFor(() => expect(view()?.status).toBe('closed'));
@@ -99,7 +114,9 @@ describe('dot voting on the canvas', () => {
     await open(3);
 
     press(canvas, [180, 150]);
+    await waitFor(() => expect(view()?.myVotes).toBe(1));
     press(canvas, [180, 150]);
+    await waitFor(() => expect(view()?.myVotes).toBe(2));
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     expect(view()?.status).toBe('open');
@@ -141,26 +158,27 @@ describe('dot voting on the canvas', () => {
     expect(hint()).toBeNull();
   });
 
-  it('gives a viewer no hint, no way to vote and no way to take a vote back, but shows what is there', async () => {
-    const { container, canvas, open, dots, hint, view, becomeViewer } = await setup();
+  it('lets a viewer vote and take a vote back, with the hint, but not start or end a voting', async () => {
+    const { container, canvas, controls, dots, hint, view, becomeViewer, open } = await setup();
     await open();
+    becomeViewer();
+    await waitFor(() => expect(hint()).not.toBeNull());
+
     press(canvas, [180, 150]);
     await waitFor(() => expect(dots()).toHaveLength(1));
-
-    becomeViewer();
-    await waitFor(() => expect(hint()).toBeNull());
-    press(canvas, [180, 150]);
+    expect(view()?.myVotes).toBe(1);
     fireEvent.click(container.querySelector('[data-vote-dot]') as Element);
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await waitFor(() => expect(dots()).toHaveLength(0));
 
-    expect(view()?.myVotes).toBe(1); // neither a vote nor a retract went through
-    expect((container.querySelector('[data-vote-dot]') as HTMLButtonElement).disabled).toBe(true);
+    await expect(controls.endVoting()).rejects.toThrow('read-only');
+    await expect(controls.startVoting({ votesPerPerson: 1 })).rejects.toThrow('read-only');
   });
 
   it('shows count badges on the voted elements once closed, and no dots or hint', async () => {
     const { container, controls, canvas, open, dots, hint, view } = await setup();
     await open();
     press(canvas, [180, 150]);
+    await waitFor(() => expect(dots()).toHaveLength(1));
     press(canvas, [180, 150]);
     await waitFor(() => expect(dots()).toHaveLength(2));
 
@@ -205,11 +223,16 @@ describe('dot voting on the canvas', () => {
     expect(svg).not.toMatch(/elysion-vote/);
   });
 
-  it('keeps the vote after the person is told apart by a user id that arrives later, per tab before', async () => {
-    const { open, view } = await setup({ userId: 'kc-1' });
-    await open();
+  it('shows who voted when the voting is named', async () => {
+    const { controls, canvas, dots, view } = await setup();
+    await controls.startVoting({ votesPerPerson: 1, named: true });
+    await waitFor(() => expect(view()?.named).toBe(true));
+    press(canvas, [180, 150]);
+    await waitFor(() => expect(dots()).toHaveLength(1));
 
-    expect(view()?.startedBy.id).toBe('kc-1');
+    await controls.endVoting();
+
+    await waitFor(() => expect(view()?.tally?.[0]?.voters).toEqual([{ id: 'u-me', name: 'Me' }]));
   });
 });
 

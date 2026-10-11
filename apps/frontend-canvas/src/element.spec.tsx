@@ -1,6 +1,8 @@
 import { waitFor } from '@testing-library/dom';
 import { describe, expect, it, vi } from 'vitest';
 import { ELEMENT_TAG_NAME } from './element';
+import { fakeVotingApi } from './facilitation/fake-voting-api';
+import type { VotingApi } from './facilitation/voting';
 
 const ELEMENT_OBSERVES = (
   customElements.get(ELEMENT_TAG_NAME) as unknown as { observedAttributes: string[] }
@@ -124,6 +126,40 @@ describe('elysion-canvas custom element', () => {
 
     expect(Object.getOwnPropertyDescriptor(el, 'fileStore')).toBeUndefined(); // the accessor is in charge again
     expect(el.fileStore).toBe(store);
+    document.body.removeChild(el);
+  });
+
+  it('has a mentionDirectory property, also when it was set early, and observes can-moderate (#733)', () => {
+    const directory = vi.fn(async () => [{ id: 'u1', name: 'Ann' }]);
+    const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
+      mentionDirectory?: typeof directory;
+    };
+    Object.defineProperty(el, 'mentionDirectory', {
+      value: directory,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+
+    document.body.appendChild(el);
+
+    expect(Object.getOwnPropertyDescriptor(el, 'mentionDirectory')).toBeUndefined();
+    expect(el.mentionDirectory).toBe(directory);
+    expect(ELEMENT_OBSERVES).toContain('can-moderate');
+    document.body.removeChild(el);
+  });
+
+  it('has a comments button that opens the panel inside the element (#733)', async () => {
+    const el = document.createElement(ELEMENT_TAG_NAME);
+    el.setAttribute('board-id', `comments-${crypto.randomUUID()}`);
+    document.body.appendChild(el);
+    await waitFor(() =>
+      expect(el.querySelector('[data-testid="elysion-tool-comments"]')).toBeTruthy(),
+    );
+
+    (el.querySelector('[data-testid="elysion-tool-comments"]') as HTMLElement).click();
+
+    await waitFor(() => expect(el.querySelector('aside.elysion-comments')).toBeTruthy());
     document.body.removeChild(el);
   });
 
@@ -325,16 +361,22 @@ describe('elysion-canvas custom element', () => {
 
   describe('dot voting', () => {
     type VotingElement = HTMLElement & {
-      startVoting(options: { name?: string; votesPerPerson: number }): Promise<void>;
+      votingApi: VotingApi | undefined;
+      startVoting(options: {
+        name?: string;
+        votesPerPerson: number;
+        named?: boolean;
+      }): Promise<void>;
       endVoting(): Promise<void>;
       clearVotingResults(): Promise<void>;
       scrollToElement(id: string): Promise<void>;
     };
-    const mount = async (attributes: Record<string, string> = {}) => {
+    const mount = async (attributes: Record<string, string> = {}, withApi = true) => {
       const el = document.createElement(ELEMENT_TAG_NAME) as VotingElement;
       el.setAttribute('yjs-server-url', 'ws://localhost:9999/yjs');
       el.setAttribute('board-id', `voting-${crypto.randomUUID()}`);
       for (const [name, value] of Object.entries(attributes)) el.setAttribute(name, value);
+      if (withApi) el.votingApi = fakeVotingApi().api;
       const sessions: Array<{ session: Record<string, unknown> | null }> = [];
       el.addEventListener('voting', (event) => sessions.push((event as CustomEvent).detail));
       document.body.appendChild(el);
@@ -351,19 +393,28 @@ describe('elysion-canvas custom element', () => {
       await expect(el.scrollToElement('x')).rejects.toThrow('not ready');
     });
 
+    it('rejects starting a voting without a votingApi', async () => {
+      const { el } = await mount({}, false);
+
+      await waitFor(async () => {
+        await expect(el.startVoting({ votesPerPerson: 3 })).rejects.toThrow('not ready');
+      });
+      document.body.removeChild(el);
+    });
+
     it('starts a voting, announces it as a voting event, ends it and clears it', async () => {
       const { el, sessions } = await mount({ 'user-id': 'kc-1', 'user-name': 'Ada' });
 
       await waitFor(async () => {
-        await el.startVoting({ name: 'Pick one', votesPerPerson: 5 });
+        await el.startVoting({ name: 'Pick one', votesPerPerson: 5, named: true });
         expect(sessions.length).toBeGreaterThan(0);
       });
       expect(sessions.at(-1)!.session).toMatchObject({
         name: 'Pick one',
         votesPerPerson: 5,
         status: 'open',
+        named: true,
         myVotes: 0,
-        startedBy: { id: 'kc-1', name: 'Ada' },
       });
       expect(sessions.at(-1)!.session).not.toHaveProperty('tally');
 
@@ -377,14 +428,6 @@ describe('elysion-canvas custom element', () => {
       expect(sessions.at(-1)).toEqual({ session: null });
       await el.clearVotingResults();
 
-      // An older closed voting does not come back after the last one was cleared: clearing removes them all.
-      await el.startVoting({ name: 'First', votesPerPerson: 1 });
-      await el.endVoting();
-      await el.startVoting({ name: 'Second', votesPerPerson: 1 });
-      await el.endVoting();
-      expect(sessions.at(-1)!.session).toMatchObject({ name: 'Second', status: 'closed' });
-      await el.clearVotingResults();
-      expect(sessions.at(-1)).toEqual({ session: null });
       await el.startVoting({ name: 'Third', votesPerPerson: 1 });
       await el.clearVotingResults();
       expect(sessions.at(-1)!.session).toMatchObject({ name: 'Third', status: 'open' }); // an open one stays

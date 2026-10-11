@@ -27,6 +27,15 @@ public class User
     public required string DisplayName { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 
+    /// <summary>
+    /// When the person last made an authenticated request, rounded to the throttle of <see cref="SeenInterval"/> (a board session
+    /// would otherwise write on every request). Null for a person who has not been seen since this was introduced.
+    /// </summary>
+    public DateTimeOffset? LastSeenAt { get; set; }
+
+    /// <summary>The least time between two writes of <see cref="LastSeenAt"/>.</summary>
+    public static readonly TimeSpan SeenInterval = TimeSpan.FromMinutes(5);
+
     public List<BoardMembership> Memberships { get; set; } = [];
 
     /// <summary>A user with a subject, a display name and (optionally) an email that fit the model.</summary>

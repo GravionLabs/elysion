@@ -18,7 +18,9 @@ replicas:
 resources:
   frontend: { requests: { cpu: 25m, memory: 32Mi }, limits: { memory: 128Mi } }
   bff: { requests: { cpu: 50m, memory: 96Mi }, limits: { memory: 256Mi } }
-  realtime: { requests: { cpu: 50m, memory: 128Mi }, limits: { memory: 512Mi } }
+  # Measured (docs/performance.md): 300 connections on a replica, each moving an element twice a second, take about 30 % of a core
+  # and 175 MiB; an idle replica 55 MiB. With a request of 250m and a target of 70 % the autoscaler adds a replica at about 180 connections each.
+  realtime: { requests: { cpu: 250m, memory: 256Mi }, limits: { memory: 512Mi } }
   businessBackend: { requests: { cpu: 100m, memory: 160Mi }, limits: { memory: 512Mi } }
 
 # The identity provider (Keycloak, ADR 0014) is external: where tokens come from and what they are for.
@@ -38,6 +40,25 @@ migrateJob:
   # A Helm hook (pre-install, pre-upgrade) that runs the business backend image with `--migrate` and exits; the release waits for it.
   # The Secret (existingSecret) has to exist before the first install. When on, the replicas do not migrate at start-up.
   enabled: false
+
+# What one person may keep (docs/specs/business-backend.md, "Quotas"): a request over a quota is answered 409.
+quotas:
+  maxTemplates: 100
+  # The scenes of a person's own templates together, in characters (one scene is at most 5,000,000).
+  maxTemplateCharacters: 20000000
+  # Boards a person owns; boards shared with them do not count.
+  maxBoards: 1000
+
+# Limits of a board's document in the realtime service (ADR 0026, docs/specs/realtime.md "Limits"). The canvas limits a board to
+# 20,000 elements besides (the `max-elements` attribute of the element).
+limits:
+  # The largest Yjs update one client may send; above it the connection is closed (1009).
+  maxUpdateBytes: 2097152
+  # The largest encoded state of a board; above it updates are refused with a "board full" message. Keep it below the
+  # business backend's own limit of 32 MiB and the WebSocket's 16 MiB frame.
+  maxDocumentBytes: 8388608
+  # A board whose stored state is larger than this is rebuilt when nobody has it open (0: never).
+  compactThresholdBytes: 1048576
 
 # The realtime service scales on CPU and, with the Prometheus adapter, on its open WebSocket connections. Off: `replicas.realtime`.
 autoscaling:
@@ -81,7 +102,7 @@ secrets:
   #   WS_TOKEN_SECRET              HS256 secret of the board WS tokens (BFF and realtime), at least 32 characters
   #   INTERNAL_API_SECRET          HS256 secret of the internal API token (realtime and business backend), at least 32 characters, a different value
   #   POSTGRES_CONNECTION_STRING   Npgsql connection string of the business backend
-  #   REDIS_URL                    redis://... of the Valkey instance (realtime)
+  #   REDIS_URL                    redis://:<password>@host:6379 of the Valkey instance (realtime); it MUST carry a password or an ACL user (#775)
   #   S3_ACCESS_KEY, S3_SECRET_KEY  credentials of the object store (business backend); read and write on the bucket, and creating it
   existingSecret: elysion-secrets
   # For throwaway installs only: render the Secret from `values` (which then sit in the release). Off by default.
@@ -100,8 +121,12 @@ edge:
   rateLimit:
     average: 50
     burst: 100
-  # A Secret of type kubernetes.io/tls to terminate TLS at the entry point; empty: none.
+  # A Secret of type kubernetes.io/tls to terminate TLS at the entry point; empty: none. cert-manager (or your PKI) makes it; the
+  # chart never talks to an ACME server (ADR 0028). One wildcard certificate can serve the application and the identity host.
   tlsSecretName: ''
+  # Redirect plain HTTP to HTTPS: a second route on the `web` entry point with a permanent redirectScheme. Needs entryPoints without `web`
+  # (use [websecure]) and a tlsSecretName. Off, so that the kind setup keeps working over HTTP.
+  redirectToHttps: false
 
 # Response headers (docs/specs/frontend.md, "Headers").
 security:

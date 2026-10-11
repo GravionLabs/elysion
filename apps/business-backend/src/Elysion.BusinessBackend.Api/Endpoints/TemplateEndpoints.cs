@@ -3,7 +3,9 @@ using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Quotas;
 
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -47,10 +49,11 @@ public static class TemplateEndpoints
         return template is null ? TypedResults.NotFound() : TypedResults.Ok(TemplateDto.From(template));
     }
 
-    private static async Task<Results<Created<TemplateDto>, ValidationProblem>> Create(
+    private static async Task<Results<Created<TemplateDto>, ValidationProblem, ProblemHttpResult>> Create(
         CreateTemplateRequest? request,
         HttpRequest http,
         ITemplateRepository templates,
+        IOptions<QuotaOptions> quotas,
         IUnitOfWork unitOfWork,
         ICurrentUser user,
         TimeProvider time,
@@ -77,6 +80,23 @@ public static class TemplateEndpoints
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
+        }
+
+        var limits = quotas.Value;
+        var (count, characters) = await templates.OwnedUsageAsync(user.Id, cancellationToken);
+        if (count >= limits.MaxTemplates)
+        {
+            return TypedResults.Problem(
+                $"You have {limits.MaxTemplates} templates, the most you may keep. Delete one to make another.",
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Template quota reached");
+        }
+
+        if (characters + request!.Scene!.Length > limits.MaxTemplateCharacters)
+        {
+            return TypedResults.Problem("Your templates together are too large for this one. Delete one to make room.",
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Template quota reached");
         }
 
         var now = time.GetUtcNow();

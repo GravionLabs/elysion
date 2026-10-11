@@ -14,6 +14,17 @@
     <li>
       <a
         class="entry"
+        routerLink="/favorites"
+        [class.active]="selected() === 'favorites'"
+        [attr.aria-current]="selected() === 'favorites' ? 'page' : null"
+      >
+        <span class="entry-name" i18n="@@boards.sidebar.favorites">Favorites</span>
+        <span class="entry-count">{{ favorites() }}</span>
+      </a>
+    </li>
+    <li>
+      <a
+        class="entry"
         routerLink="/rooms/none"
         [class.active]="selected() === 'none'"
         [class.can-drop]="canDropOn(null)"

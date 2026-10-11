@@ -1,6 +1,7 @@
 import {
   CaptureUpdateAction,
   exportToBlob,
+  exportToCanvas,
   exportToSvg,
   getCommonBounds,
   loadFromBlob,
@@ -8,17 +9,66 @@ import {
 } from '@excalidraw/excalidraw';
 import type {
   ExcalidrawElement,
+  ExcalidrawFrameLikeElement,
   NonDeletedExcalidrawElement,
 } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { VIEW_BACKGROUND_COLOR } from './element-style';
-import { svgToPdf } from './pdf';
+import { framesInOrder, type ExportOptions } from './export-options';
+import { svgsToPdf, type PdfAppendix } from './pdf';
 
 export type ExportFormat = 'png' | 'svg' | 'excalidraw' | 'pdf';
+export type { ExportOptions } from './export-options';
 
-export interface ExportOptions {
-  /** Export only what is selected (with the text bound to selected shapes). */
-  selectionOnly?: boolean;
+/** The size of a board's preview picture (the image on its card, #729). */
+export const THUMBNAIL_WIDTH = 480;
+export const THUMBNAIL_HEIGHT = 300;
+
+/**
+ * Where content of a given size goes in a box of the thumbnail's size: as large as fits, its proportions kept, centered.
+ * Content that is smaller than the box is not enlarged beyond twice its size (a single small note is not a poster).
+ */
+export function fitInto(
+  content: { width: number; height: number },
+  box: { width: number; height: number } = { width: THUMBNAIL_WIDTH, height: THUMBNAIL_HEIGHT },
+): { x: number; y: number; width: number; height: number } {
+  const scale = Math.min(box.width / content.width, box.height / content.height, 2);
+  const width = content.width * scale;
+  const height = content.height * scale;
+  return { x: (box.width - width) / 2, y: (box.height - height) / 2, width, height };
+}
+
+/**
+ * The whole board as a picture of {@link THUMBNAIL_WIDTH} by {@link THUMBNAIL_HEIGHT} pixels, always in the light theme on the
+ * board's color (whatever the screen shows), or `null` for an empty board. The grid is not in it: the canvas does not draw it.
+ */
+export async function exportThumbnail(api: ExcalidrawImperativeAPI): Promise<Blob | null> {
+  const elements = api.getSceneElements();
+  if (elements.length === 0) return null;
+  const rendered = await exportToCanvas({
+    elements,
+    appState: {
+      ...api.getAppState(),
+      viewBackgroundColor: VIEW_BACKGROUND_COLOR,
+      exportBackground: false,
+      exportWithDarkMode: false,
+      exportScale: 1,
+    },
+    files: api.getFiles(),
+    maxWidthOrHeight: THUMBNAIL_WIDTH * 2, // sharp enough to be scaled down
+    exportPadding: 12,
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = THUMBNAIL_WIDTH;
+  canvas.height = THUMBNAIL_HEIGHT;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+  context.fillStyle = VIEW_BACKGROUND_COLOR;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.imageSmoothingQuality = 'high';
+  const place = fitInto({ width: rendered.width, height: rendered.height });
+  context.drawImage(rendered, place.x, place.y, place.width, place.height);
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }
 
 /** The elements to export: everything, or the selected ones plus the text inside selected shapes. */
@@ -76,17 +126,32 @@ export function replaceScene(
   return [...next, ...incoming.values()];
 }
 
+/** The frames to make pages of: the frames of the board, or only those that are selected when the selection holds any. */
+function framesToExport(
+  elements: readonly NonDeletedExcalidrawElement[],
+  selectedIds: Readonly<Record<string, boolean>> | null,
+): ExcalidrawFrameLikeElement[] {
+  const frames = elements.filter(
+    (element): element is ExcalidrawFrameLikeElement =>
+      element.type === 'frame' || element.type === 'magicframe',
+  );
+  const chosen = selectedIds ? frames.filter((frame) => selectedIds[frame.id] === true) : frames;
+  return framesInOrder(chosen);
+}
+
 /** The board as a file in the chosen format, or `null` when there is nothing to export. */
 export async function exportBoard(
   api: ExcalidrawImperativeAPI,
   format: ExportFormat,
-  { selectionOnly = false }: ExportOptions = {},
+  options: ExportOptions = {},
+  /** Text pages for the end of a PDF (the comments, #733); only used when `options.comments` is on. */
+  appendix?: PdfAppendix | null,
 ): Promise<Blob | null> {
+  const { selectionOnly = false, background = true, theme = 'current', scale = 1 } = options;
   const appState = api.getAppState();
-  const elements = elementsToExport(
-    api.getSceneElements(),
-    selectionOnly ? appState.selectedElementIds : null,
-  );
+  const scene = api.getSceneElements();
+  const selected = selectionOnly ? appState.selectedElementIds : null;
+  const elements = elementsToExport(scene, selected);
   if (elements.length === 0) return null;
 
   const files = api.getFiles();
@@ -95,7 +160,9 @@ export async function exportBoard(
     ...appState,
     // The canvas itself is transparent (the board's color and grid are CSS), so the export brings the board's color.
     viewBackgroundColor: VIEW_BACKGROUND_COLOR,
-    exportBackground: true,
+    exportBackground: background,
+    exportScale: scale,
+    ...(theme === 'current' ? {} : { exportWithDarkMode: theme === 'dark' }),
   };
 
   switch (format) {
@@ -105,8 +172,32 @@ export async function exportBoard(
       const svg = await exportToSvg({ elements, appState: exportState, files });
       return new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' });
     }
-    case 'pdf':
-      return svgToPdf(await exportToSvg({ elements, appState: exportState, files }));
+    case 'pdf': {
+      const layout = { format: options.pageFormat, orientation: options.orientation };
+      // A board with frames is a document: one page per frame, in the order of their names or their places, each with its
+      // name as a title. A selection that holds frames makes pages of those; anything else is one page, as before.
+      const frames = options.pdfPages === 'whole' ? [] : framesToExport(scene, selected);
+      if (frames.length === 0) {
+        return svgsToPdf(
+          [{ svg: await exportToSvg({ elements, appState: exportState, files }) }],
+          layout,
+          options.comments ? appendix : null,
+        );
+      }
+      const pages = [];
+      for (const [index, frame] of frames.entries()) {
+        pages.push({
+          title: frame.name?.trim() || `${index + 1}`,
+          svg: await exportToSvg({
+            elements: scene,
+            appState: exportState,
+            files,
+            exportingFrame: frame,
+          }),
+        });
+      }
+      return svgsToPdf(pages, layout, options.comments ? appendix : null);
+    }
     case 'excalidraw':
       return new Blob(
         [

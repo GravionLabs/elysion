@@ -4,7 +4,7 @@
 // OTLP block at it, writing a generated copy that compose mounts in place of the original.
 //
 // The export is experimental in Traefik (`experimental.otlpLogs`) and keeps the JSON access log on stdout (`dualOutput`).
-// The query parameters stay dropped from `RequestPath`, which is what keeps the WS token of /yjs out of the viewer.
+// The query parameters stay dropped and `RequestPath` is not logged, which keeps the WS token of /yjs and the invitation tokens out of the viewer.
 
 export const MARKER = /^ {2}# logs:otlp.*$/m;
 

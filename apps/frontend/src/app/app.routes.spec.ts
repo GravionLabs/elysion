@@ -9,6 +9,8 @@ import { provideFakeSession } from './auth/testing';
 import { Board } from './board/board';
 import { CanvasElementLoader } from './board/canvas-element-loader';
 import { BoardList } from './board-list/board-list';
+import { Invite } from './invite/invite';
+import { HttpTestingController } from '@angular/common/http/testing';
 
 describe('routes', () => {
   let harness: RouterTestingHarness;
@@ -44,6 +46,15 @@ describe('routes', () => {
     const board = await harness.navigateByUrl('/board/q3%20plan%2Fv2', Board);
 
     expect(board.boardId()).toBe('q3 plan/v2');
+  });
+
+  it('opens an invitation link with the token as an input', async () => {
+    const invite = await harness.navigateByUrl('/invite/abc-_123', Invite);
+
+    expect(invite.token()).toBe('abc-_123');
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/invitations/abc-_123/accept')
+      .flush({ kind: 'board', id: 'b1', role: 'Viewer' });
   });
 
   it('opens the board list at /', async () => {
@@ -106,9 +117,11 @@ describe('routes', () => {
   describe('the login guard', () => {
     it("is on every page of the app, and the real routes use the login library's guard", () => {
       const pages = (list: ReturnType<typeof buildRoutes>) =>
-        list.filter((route) => route.component);
+        list.filter((route) => route.component || route.loadComponent);
 
-      expect(pages(routes).length).toBe(2);
+      expect(pages(routes).length).toBe(3);
+      // Each page is a chunk of its own (#710), not part of the first load.
+      expect(pages(routes).every((route) => route.loadComponent && !route.component)).toBe(true);
       for (const route of pages(routes)) {
         expect(route.canActivate).toContain(autoLoginPartialRoutesGuard);
       }

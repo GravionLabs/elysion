@@ -8,9 +8,18 @@ import { MetricsController } from './metrics/metrics.controller.js';
 import { MetricsService } from './metrics/metrics.service.js';
 import { SaveMetrics } from './metrics/save-metrics.js';
 import { DocumentRelay } from './document/document-relay.js';
+import { InternalTokenSigner } from './auth/internal-token-signer.js';
+import { loadConfig } from './config/config.js';
+import { HttpMembershipSource, MembershipSource } from './membership/membership-source.js';
+import {
+  MEMBERSHIP_OPTIONS,
+  MembershipWatcher,
+  membershipOptionsFromEnv,
+} from './membership/membership-watcher.js';
 import { PersistenceModule } from './persistence/persistence.module.js';
 import { PresenceRelay } from './presence/presence-relay.js';
 import { RedisModule } from './redis/redis.module.js';
+import { InternalVotingController } from './voting/internal-voting.controller.js';
 import { YjsGateway } from './yjs/yjs.gateway.js';
 import {
   PERSISTENCE_OPTIONS,
@@ -20,7 +29,7 @@ import {
 
 @Module({
   imports: [LoggingModule, AuthModule, RedisModule, PersistenceModule],
-  controllers: [AppController, HealthController, MetricsController],
+  controllers: [AppController, HealthController, MetricsController, InternalVotingController],
   providers: [
     AppService,
     MetricsService,
@@ -29,6 +38,15 @@ import {
     YjsRoomRegistry,
     PresenceRelay,
     DocumentRelay,
+    MembershipWatcher,
+    {
+      provide: MembershipSource,
+      useFactory: () =>
+        new HttpMembershipSource(
+          new InternalTokenSigner(loadConfig(process.env).internalApiSecret),
+        ),
+    },
+    { provide: MEMBERSHIP_OPTIONS, useFactory: membershipOptionsFromEnv },
     { provide: PERSISTENCE_OPTIONS, useFactory: persistenceOptionsFromEnv },
   ],
 })

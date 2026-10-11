@@ -26,6 +26,7 @@ describe('WsTokenService', () => {
 
     const payload = decodeJwt(token);
     expect(payload).toEqual({
+      jti: expect.stringMatching(/^[0-9a-f-]{36}$/),
       sub: 'kc-sub-1',
       boardId: claims.boardId,
       role: 'editor',
@@ -34,6 +35,13 @@ describe('WsTokenService', () => {
       iat: NOW.getTime() / 1000,
       exp: NOW.getTime() / 1000 + 60,
     });
+  });
+
+  it('gives every token its own id, so that the realtime service can let it open one socket', async () => {
+    const a = decodeJwt((await serviceWith().issue(claims, NOW)).token);
+    const b = decodeJwt((await serviceWith().issue(claims, NOW)).token);
+
+    expect(a.jti).not.toBe(b.jti);
   });
 
   it('uses HS256', async () => {
@@ -86,6 +94,7 @@ describe('WsTokenService', () => {
         'exp',
         'iat',
         'iss',
+        'jti',
         'role',
         'sub',
       ]);

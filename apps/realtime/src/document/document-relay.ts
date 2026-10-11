@@ -1,6 +1,7 @@
-import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Redis } from 'ioredis';
+import { parseEnvelope, rateLimited } from '../redis/envelope.js';
 import { REDIS_PUB_CLIENT, REDIS_SUB_CLIENT } from '../redis/redis.provider.js';
 
 /**
@@ -14,7 +15,11 @@ import { REDIS_PUB_CLIENT, REDIS_SUB_CLIENT } from '../redis/redis.provider.js';
 export type DocumentMessage =
   | { readonly type: 'update'; readonly data: Uint8Array }
   | { readonly type: 'hello'; readonly data: Uint8Array }
-  | { readonly type: 'hello-ack'; readonly data: Uint8Array };
+  | { readonly type: 'hello-ack'; readonly data: Uint8Array }
+  /** The board's document was rebuilt (ADR 0026): an instance that holds an idle copy drops it; `data` is empty. */
+  | { readonly type: 'reset'; readonly data: Uint8Array }
+  /** The board's voting changed (ADR 0029): `data` is the UTF-8 JSON that goes to the clients as message type 5. */
+  | { readonly type: 'voting'; readonly data: Uint8Array };
 
 export interface DocumentSubscription {
   /** A message from another instance. */
@@ -25,6 +30,7 @@ export interface DocumentSubscription {
 
 // Valkey is shared with other projects (local-infra): everything Elysion writes is namespaced.
 const CHANNEL_PREFIX = 'elysion:doc:';
+const MESSAGE_TYPES: readonly string[] = ['update', 'hello', 'hello-ack', 'reset', 'voting'];
 
 /**
  * Relays Yjs document updates between `realtime` instances through Valkey pub/sub, one channel per board
@@ -35,6 +41,7 @@ const CHANNEL_PREFIX = 'elysion:doc:';
  */
 @Injectable()
 export class DocumentRelay implements OnModuleDestroy {
+  private readonly logger = new Logger(DocumentRelay.name);
   private readonly instanceId = randomUUID();
   private readonly subscriptions = new Map<string, DocumentSubscription>();
   private wasReady = false;
@@ -91,19 +98,20 @@ export class DocumentRelay implements OnModuleDestroy {
       return;
     }
 
-    const envelope = JSON.parse(raw) as {
-      from: string;
-      type: DocumentMessage['type'];
-      data: string;
-    };
+    const envelope = parseEnvelope(raw, MESSAGE_TYPES);
+    if (!envelope) {
+      this.warnMalformed();
+      return;
+    }
     if (envelope.from === this.instanceId) {
       return;
     }
-    subscription.onMessage({
-      type: envelope.type,
-      data: new Uint8Array(Buffer.from(envelope.data, 'base64')),
-    });
+    subscription.onMessage({ type: envelope.type as DocumentMessage['type'], data: envelope.data });
   }
+
+  private readonly warnMalformed = rateLimited(() =>
+    this.logger.warn('Dropped a malformed message on a document relay channel'),
+  );
 
   private channelFor(boardId: string): string {
     return `${CHANNEL_PREFIX}${boardId}`;

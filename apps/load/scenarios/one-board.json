@@ -1,0 +1,10 @@
+{
+  "name": "one-board",
+  "description": "50 clients on one board for five minutes, every one moving an element every 500 ms.",
+  "clients": 50,
+  "boards": 1,
+  "durationMs": 300000,
+  "rampMs": 10000,
+  "writeEveryMs": 500,
+  "events": []
+}

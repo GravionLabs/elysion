@@ -6,6 +6,7 @@ import {
   type SaveResult,
   type StoredDocument,
 } from '../persistence/document-store.js';
+import { DocumentRejectedError } from '../persistence/document-store.js';
 import { InMemoryDocumentStore } from '../persistence/in-memory-document-store.js';
 import { inertDocumentRelay } from '../testing/fake-document-relay.js';
 import type { PresenceRelay } from '../presence/presence-relay.js';
@@ -333,6 +334,83 @@ describe('YjsRoomRegistry persistence', () => {
       const saved = new Y.Doc();
       Y.applyUpdate(saved, store.saves.at(-1)!.state);
       expect(elementsOf(saved)).toEqual({ a: 'precious' });
+    });
+
+    describe('a save that can never work (#774)', () => {
+      const connectClosing = (room: { clients: Set<WebSocket> }) => {
+        const close = vi.fn(() => room.clients.delete(socket));
+        const socket = { readyState: 1, OPEN: 1, send: vi.fn(), close } as unknown as WebSocket;
+        room.clients.add(socket);
+        return close;
+      };
+
+      it('gives up on a board that is gone: no more retries, the sockets are closed with 4403, the room is unloaded', async () => {
+        const presence = fakePresence();
+        registry = new YjsRoomRegistry(presence, store, inertDocumentRelay(), OPTIONS);
+        const room = await registry.getOrLoad('b');
+        const close = connectClosing(room);
+        store.saveResult = async () => {
+          throw new DocumentRejectedError(404, 'Document store answered 404, expected 204');
+        };
+
+        room.doc.getMap('elements').set('a', '1');
+        await vi.advanceTimersByTimeAsync(1_100);
+        expect(close).toHaveBeenCalledWith(4403, expect.any(String));
+        await registry.release(room);
+        await vi.advanceTimersByTimeAsync(120_000);
+
+        expect(store.saves).toHaveLength(1); // not retried
+        expect(presence.unsubscribe).toHaveBeenCalledWith('b'); // unloaded
+      });
+
+      it('gives up on a state the store refuses as too large, the same way', async () => {
+        const room = await registry.getOrLoad('b');
+        const close = connectClosing(room);
+        store.saveResult = async () => {
+          throw new DocumentRejectedError(413, 'Document store answered 413, expected 204');
+        };
+
+        room.doc.getMap('elements').set('a', '1');
+        await vi.advanceTimersByTimeAsync(1_100);
+        await vi.advanceTimersByTimeAsync(60_000);
+
+        expect(store.saves).toHaveLength(1);
+        expect(close).toHaveBeenCalled();
+      });
+
+      it('keeps retrying other failures while somebody is connected', async () => {
+        const room = await registry.getOrLoad('b');
+        const close = connectClosing(room);
+        store.saveResult = async () => {
+          throw new Error('backend down');
+        };
+
+        room.doc.getMap('elements').set('a', '1');
+        await vi.advanceTimersByTimeAsync(600_000);
+
+        expect(store.saves.length).toBeGreaterThan(20);
+        expect(close).not.toHaveBeenCalled();
+        expect(await registry.getOrLoad('b')).toBe(room);
+      });
+
+      it('gives up on a room nobody has open after a cap of failed saves, and unloads it', async () => {
+        const presence = fakePresence();
+        registry = new YjsRoomRegistry(presence, store, inertDocumentRelay(), {
+          ...OPTIONS,
+          maxFailuresWithoutClients: 5,
+        });
+        const room = await registry.getOrLoad('b');
+        store.saveResult = async () => {
+          throw new Error('backend down');
+        };
+        room.doc.getMap('elements').set('a', 'lost');
+        await registry.release(room);
+
+        await vi.advanceTimersByTimeAsync(120_000);
+
+        expect(store.saves).toHaveLength(5);
+        expect(presence.unsubscribe).toHaveBeenCalledWith('b');
+      });
     });
 
     it('does not unload anything while a client is still connected', async () => {

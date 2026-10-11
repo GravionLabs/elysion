@@ -54,6 +54,7 @@ public static class BoardDocumentEndpoints
         string boardId,
         HttpRequest request,
         IBoardDocumentRepository documents,
+        IBoardRepository boards,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -62,6 +63,13 @@ public static class BoardDocumentEndpoints
         if (request.ContentType?.StartsWith(OctetStream, StringComparison.OrdinalIgnoreCase) != true)
         {
             return TypedResults.StatusCode(StatusCodes.Status415UnsupportedMediaType);
+        }
+
+        // A document belongs to a board: a save for a board that was deleted (a room that still had it open) or never
+        // existed is a 404 and not a new row (#778). Ids that are no UUID (the demo room `default`) have no board record.
+        if (Guid.TryParse(boardId, out var id) && !await boards.ExistsAsync(id, cancellationToken))
+        {
+            return TypedResults.NotFound();
         }
 
         var ifMatch = request.Headers.IfMatch.ToString();
@@ -74,9 +82,27 @@ public static class BoardDocumentEndpoints
                 statusCode: StatusCodes.Status428PreconditionRequired);
         }
 
+        if (request.ContentLength > MaxStateBytes)
+        {
+            return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
+        }
+
         using var buffer = new MemoryStream();
-        await request.Body.CopyToAsync(buffer, cancellationToken);
+        try
+        {
+            await request.Body.CopyToAsync(buffer, cancellationToken);
+        }
+        catch (BadHttpRequestException e) when (e.StatusCode == StatusCodes.Status413PayloadTooLarge)
+        {
+            // Over MaxStateBytes: a 413 the realtime service understands as "never", not a 500 it would retry for ever (#773).
+            return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
+        }
+
         var state = buffer.ToArray();
+        if (state.Length > MaxStateBytes)
+        {
+            return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
+        }
 
         var result = await documents.SaveAsync(boardId,
             state,

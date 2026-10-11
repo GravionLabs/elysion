@@ -33,10 +33,11 @@ export class RoomSidebar {
 
   readonly rooms = input.required<readonly RoomInfo[]>();
   readonly state = input<RoomsState>('ready');
-  /** The view that is open: `undefined` for all boards, `none` for boards in no room, else a room's id. */
+  /** The view that is open: `undefined` for all boards, `none` for boards in no room, `favorites` for the starred ones, else a room's id. */
   readonly selected = input<string | undefined>();
   readonly total = input(0);
   readonly unassigned = input(0);
+  readonly favorites = input(0);
   readonly counts = input<Readonly<Record<string, number>>>({});
   /** Whether a board is being dragged: the entries that can take it light up. */
   readonly dragging = input(false);

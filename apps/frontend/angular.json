@@ -38,8 +38,20 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "450kB",
+                  "maximumError": "500kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "board",
+                  "maximumWarning": "100kB",
+                  "maximumError": "150kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "board-list",
+                  "maximumWarning": "70kB",
+                  "maximumError": "100kB"
                 },
                 {
                   "type": "anyComponentStyle",

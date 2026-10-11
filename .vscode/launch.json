@@ -20,7 +20,7 @@
       "name": "realtime",
       "type": "node-terminal",
       "request": "launch",
-      "command": "PORT=3001 REDIS_URL=redis://localhost:6380 pnpm --filter @elysion/realtime exec nest start --debug=9230 --watch",
+      "command": "PORT=3001 REDIS_URL=redis://:dev-only-valkey-password@localhost:6380 pnpm --filter @elysion/realtime exec nest start --debug=9230 --watch",
       "cwd": "${workspaceFolder}"
     },
     {

@@ -1,0 +1,10 @@
+{
+  "name": "replica-kill",
+  "description": "100 clients on 10 boards; after one minute one realtime replica is killed (no clean shutdown) and started again 30 seconds later. No client's last write may be missing from the final documents.",
+  "clients": 100,
+  "boards": 10,
+  "durationMs": 180000,
+  "rampMs": 15000,
+  "writeEveryMs": 500,
+  "events": [{ "atMs": 60000, "action": "kill-replica", "restartAfterMs": 30000 }]
+}

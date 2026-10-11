@@ -5,6 +5,7 @@ packages:
   - 'apps/realtime'
   - 'apps/site'
   - 'apps/e2e'
+  - 'apps/load'
   - 'packages/*'
 
 allowBuilds:

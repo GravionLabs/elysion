@@ -49,6 +49,8 @@ export class TopBar {
   /** Whether the title can be edited: only a stored board has a name to change. */
   readonly canRename = input(false);
   readonly status = input<SyncStatus>('connecting');
+  /** The connection broke after the board was loaded (#735): the bar says "Offline" even while it tries again. */
+  readonly offline = input(false);
   readonly theme = input.required<Theme>();
   /** Whether anything is selected on the canvas (enables 'selection only' in the Export menu). */
   readonly hasSelection = input(false);
@@ -64,6 +66,9 @@ export class TopBar {
   readonly canShare = input(false);
   /** A viewer: Import and Library, which only change the board, are hidden. */
   readonly readOnly = input(false);
+  /** Whether the board can be starred (it has a record), and whether it is (#730). */
+  readonly canFavorite = input(false);
+  readonly favorite = input(false);
   /** Who is signed in; the menu with the log-out action is shown for them. */
   readonly user = input<SessionUser | null>(null);
   /** The other people on the board. */
@@ -72,6 +77,7 @@ export class TopBar {
   /** The user confirmed a new name (trimmed, different from the current one). */
   readonly renameRequested = output<string>();
   readonly themeToggle = output<void>();
+  readonly favoriteToggle = output<void>();
   readonly libraryToggle = output<void>();
   readonly exportRequested = output<ExportRequest>();
   /** The user chose a template to add to the board. */
@@ -97,6 +103,8 @@ export class TopBar {
   /** A result was clicked: scroll the canvas to the element. */
   readonly votingFocus = output<string>();
 
+  protected readonly favoriteOnTitle = $localize`:@@topbar.favorite-on:Add to favorites`;
+  protected readonly favoriteOffTitle = $localize`:@@topbar.favorite-off:Remove from favorites`;
   protected readonly maxNameLength = MAX_BOARD_NAME_LENGTH;
   protected readonly editing = signal(false);
   protected readonly draft = signal('');
@@ -195,7 +203,19 @@ export class TopBar {
   protected readonly renameLabel = computed(
     () => $localize`:@@topbar.rename-aria:Rename the board ${this.title()}:title:`,
   );
-  protected readonly statusLabel = computed(() => STATUS_LABEL[this.status()]);
+  protected readonly statusLabel = computed(() =>
+    this.offline() && this.status() !== 'connected'
+      ? STATUS_LABEL.disconnected
+      : STATUS_LABEL[this.status()],
+  );
+  protected readonly statusHint = computed(() => {
+    if (this.status() === 'connected') {
+      return $localize`:@@topbar.status.connected.hint:Connected to the board server: changes reach everyone at once.`;
+    }
+    return this.offline() || this.status() === 'disconnected'
+      ? $localize`:@@topbar.status.offline.hint:No connection. Your changes are kept on this device and sent when it is back.`
+      : $localize`:@@topbar.status.connecting.hint:Connecting to the board server.`;
+  });
   protected readonly themeTitle = computed(() =>
     this.theme() === 'dark'
       ? $localize`:@@topbar.theme.to-light:Switch to the light theme`

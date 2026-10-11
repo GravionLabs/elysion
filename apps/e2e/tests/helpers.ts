@@ -41,6 +41,27 @@ export async function login(
   return page;
 }
 
+/**
+ * Logs a person in through the identity provider the realm brokers to (the stand-in realm `entra-stub`, ADR 0027): "Microsoft" on
+ * Keycloak's page, then the form of the stand-in (the password is the username: `erika`, `emil`). The page has the name of the person.
+ */
+export async function loginThroughMicrosoft(
+  browser: Browser,
+  user: string,
+  options?: BrowserContextOptions,
+): Promise<Page> {
+  const context = await browser.newContext(options);
+  const page = await context.newPage();
+  failOnCspViolation(page);
+  await page.goto('/');
+  await page.locator('#social-microsoft').click();
+  await page.fill('#username', user);
+  await page.fill('#password', user);
+  await page.click('#kc-login');
+  await expect(page.getByRole('button', { name: user, exact: true })).toBeVisible();
+  return page;
+}
+
 /** Opens a board and waits until the realtime connection is up. */
 export async function openBoard(page: Page, url: string): Promise<void> {
   await page.goto(url);
@@ -151,9 +172,14 @@ export async function waitForApi(): Promise<void> {
 
 /**
  * The places Excalidraw owns and Elysion does not control: its canvases (a drawing has no text alternative) and the hidden
- * inputs behind its tool buttons (they have no label of their own). The list is the allowlist of docs/specs/frontend.md, "Accessibility".
+ * inputs behind its tool buttons (they have no label of their own) and its menu triggers. The list is the allowlist of docs/specs/frontend.md, "Accessibility".
  */
-export const AXE_ALLOWLIST = ['.excalidraw canvas', '.excalidraw input[aria-keyshortcuts]'];
+export const AXE_ALLOWLIST = [
+  '.excalidraw canvas',
+  '.excalidraw input[aria-keyshortcuts]',
+  // Radix' trigger elements in Excalidraw's menus point at content that is not rendered while the menu is closed.
+  '.excalidraw [aria-controls^="radix-"]',
+];
 
 /** Fails when the page has a violation of the WCAG 2.1 A or AA rules outside the allowlist; `where` names the state in the message. */
 export async function expectAccessible(page: Page, where: string): Promise<void> {

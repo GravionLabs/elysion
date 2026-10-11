@@ -28,6 +28,42 @@ export class SaveMetrics {
     registers: [this.registry],
   });
 
+  readonly #durations = new Histogram({
+    name: 'elysion_realtime_document_save_duration_seconds',
+    help: 'How long a save of a board document to the business backend takes, in seconds (the whole exchange, with a merge after a conflict).',
+    buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+    registers: [this.registry],
+  });
+
+  /** Starts timing a save; call the result when it ends, saved or not. */
+  startSave(): () => void {
+    const end = this.#durations.startTimer();
+    return () => {
+      end();
+    };
+  }
+
+  readonly #compactions = new Counter({
+    name: 'elysion_realtime_document_compactions_total',
+    help: 'Board documents rebuilt from their live elements when nobody had them open (ADR 0026).',
+    registers: [this.registry],
+  });
+
+  readonly #refused = new Counter({
+    name: 'elysion_realtime_document_updates_refused_total',
+    help: 'Client updates refused: over the size of one update or over the size of the document (ADR 0026).',
+    labelNames: ['reason'],
+    registers: [this.registry],
+  });
+
+  compacted(): void {
+    this.#compactions.inc();
+  }
+
+  refused(reason: 'update' | 'document'): void {
+    this.#refused.inc({ reason });
+  }
+
   saved(bytes: number): void {
     this.#saves.inc();
     this.#sizes.observe(bytes);

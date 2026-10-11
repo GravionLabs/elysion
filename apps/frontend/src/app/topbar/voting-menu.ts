@@ -11,12 +11,14 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import type { VotingSession } from '../board/canvas-element';
+import type { TallyEntry, VotingSession } from '../board/canvas-element';
 
 /** What the Start form asks for. */
 export interface VotingRequest {
   name: string;
   votesPerPerson: number;
+  /** Show who voted for what in the result. */
+  named: boolean;
 }
 
 /** The numbers of votes the form offers. */
@@ -26,15 +28,16 @@ const MAX_VOTES = 100;
 const DEFAULT_NAME = $localize`:@@topbar.voting.button:Voting`;
 
 /**
- * The Voting part of the top bar (ADR 0020): editors and owners start a dot voting (a name and the votes each person
- * has), see how many votes they have left and end it; once it is closed, by them or because everybody present has used
- * all their votes, the **results** open by themselves for everybody in a dialog
- * of their own, the ranked list of what got votes (a click scrolls the canvas to the element). The dialog sits on the
- * right of the window at first, can be moved (by its title, or with the arrow keys) and does not block the board;
- * editors and owners can clear the results or start another voting from it. A viewer sees the state and the results and has nothing to click while a voting is open.
+ * The Voting part of the top bar (ADR 0029): editors and owners start a dot voting (a name, the votes each person has and
+ * whether the result names the voters), see how many votes they have left and end it; once it is closed, by them or because
+ * everybody present has used all their votes, the **results** open by themselves for everybody in a dialog of their own,
+ * the ranked list of what got votes (a click scrolls the canvas to the element). The dialog sits on the right of the
+ * window at first, can be moved (by its title, or with the arrow keys) and does not block the board; editors and owners
+ * can clear the results or start another voting from it. A viewer votes on the canvas like anybody else and sees the state
+ * and the results; starting, ending and clearing are for editors and owners.
  *
- * Anonymity: while a voting is open the interface knows only the caller's own number of votes, and the results are
- * counts without names. That is what the canvas tells the shell; the board's document holds more (the ADR says so).
+ * Secrecy: the server keeps the votes; while a voting is open the interface knows only the caller's own number of votes,
+ * and the results are counts, with names only when the voting was started as named.
  */
 @Component({
   selector: 'app-voting-menu',
@@ -59,6 +62,8 @@ export class VotingMenu {
   protected readonly open = signal(false);
   protected readonly name = signal(DEFAULT_NAME);
   protected readonly votes = signal('5');
+  /** The choice at the start: anonymous (the default) or named results. */
+  protected readonly named = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly confirmingClear = signal(false);
   /** Whether the results dialog is open (only a closed voting has results). */
@@ -185,6 +190,10 @@ export class VotingMenu {
     this.name.set((event.target as HTMLInputElement).value);
   }
 
+  protected updateNamed(event: Event): void {
+    this.named.set((event.target as HTMLInputElement).checked);
+  }
+
   protected updateVotes(event: Event): void {
     this.votes.set((event.target as HTMLInputElement).value);
     this.error.set(null);
@@ -199,7 +208,12 @@ export class VotingMenu {
       return;
     }
     this.open.set(false);
-    this.startRequested.emit({ name: this.name().trim() || DEFAULT_NAME, votesPerPerson: value });
+    this.startRequested.emit({
+      name: this.name().trim() || DEFAULT_NAME,
+      votesPerPerson: value,
+      named: this.named(),
+    });
+    this.named.set(false);
   }
 
   protected end(): void {
@@ -216,6 +230,11 @@ export class VotingMenu {
     this.confirmingClear.set(false);
     this.resultsOpen.set(false);
     this.clearRequested.emit();
+  }
+
+  /** The people who voted for an element, as one line (a named voting). */
+  protected names(entry: TallyEntry): string {
+    return (entry.voters ?? []).map((voter) => voter.name).join(', ');
   }
 
   protected show(elementId: string): void {

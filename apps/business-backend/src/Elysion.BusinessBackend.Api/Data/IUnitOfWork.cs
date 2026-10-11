@@ -7,4 +7,7 @@ namespace Elysion.BusinessBackend.Api.Data;
 public interface IUnitOfWork
 {
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Forgets what was loaded and staged, to start a request's work again after a conflicting commit.</summary>
+    void DiscardChanges();
 }

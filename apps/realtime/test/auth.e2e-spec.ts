@@ -1,3 +1,4 @@
+import * as Y from 'yjs';
 import { InMemoryDocumentStore } from '../src/persistence/in-memory-document-store.js';
 import { SyncClient, startInstance, waitUntil } from './helpers.js';
 import { boardUrl, signWsToken } from './ws-token.js';
@@ -104,6 +105,31 @@ describe('WS token at the handshake (e2e)', () => {
     }
   });
 
+  it('opens one socket per token: the same token a second time is refused with 4401 (#772)', async () => {
+    const id = board();
+    const target = boardUrl(url, id, { jti: `jti-${Math.random().toString(36).slice(2)}` });
+    const first = new SyncClient(target);
+    await first.waitForOpen();
+
+    const second = new SyncClient(target);
+    second.waitForOpen().catch(() => undefined);
+
+    expect(await second.closed).toBe(4401);
+    first.close();
+  });
+
+  it('lets a token without an id in, as one of a BFF that predates the rule', async () => {
+    const id = board();
+    const target = boardUrl(url, id);
+    const first = new SyncClient(target);
+    const second = new SyncClient(target);
+
+    await Promise.all([first.waitForOpen(), second.waitForOpen()]);
+
+    first.close();
+    second.close();
+  });
+
   describe('viewers are read-only', () => {
     it("does not let a viewer's edit reach an editor, but the editor's edit reaches the viewer", async () => {
       const id = board();
@@ -140,6 +166,70 @@ describe('WS token at the handshake (e2e)', () => {
 
       expect(reader.doc.getMap('elements').has('dropped')).toBe(false);
       reader.close();
+    });
+
+    it('lets a viewer comment: the thread reaches an editor and the stored board', async () => {
+      const id = board();
+      const editor = new SyncClient(boardUrl(url, id, { sub: 'ed', role: 'editor' }));
+      const viewer = new SyncClient(boardUrl(url, id, { sub: 'vi', role: 'viewer' }));
+      await Promise.all([editor.waitForOpen(), viewer.waitForOpen()]);
+      // The editors' canvas creates the map; a viewer may add to it (and create it when it is missing).
+      editor.doc.getMap('session').set('comments', new Y.Map());
+      await waitUntil(() => viewer.doc.getMap('session').has('comments'));
+
+      const thread = new Y.Map<unknown>();
+      thread.set('text', 'Looks good');
+      (viewer.doc.getMap('session').get('comments') as Y.Map<unknown>).set('t1', thread);
+
+      await waitUntil(() =>
+        (editor.doc.getMap('session').get('comments') as Y.Map<unknown>).has('t1'),
+      );
+      // The editor resolves it; the viewer sees that.
+      (
+        (editor.doc.getMap('session').get('comments') as Y.Map<unknown>).get('t1') as Y.Map<unknown>
+      ).set('resolved', true);
+      await waitUntil(
+        () =>
+          (
+            (viewer.doc.getMap('session').get('comments') as Y.Map<unknown>).get(
+              't1',
+            ) as Y.Map<unknown>
+          ).get('resolved') === true,
+      );
+      editor.close();
+      viewer.close();
+      await waitUntil(() => store.documents.has(id));
+
+      const reader = new SyncClient(boardUrl(url, id, { sub: 'ed2', role: 'owner' }));
+      await reader.waitForOpen();
+      await waitUntil(() => reader.doc.getMap('session').has('comments'));
+      await waitUntil(() =>
+        (reader.doc.getMap('session').get('comments') as Y.Map<unknown>).has('t1'),
+      );
+      reader.close();
+    });
+
+    it("drops a viewer's edit that mixes a comment with a change to the board, and closes a viewer that keeps trying", async () => {
+      const id = board();
+      const editor = new SyncClient(boardUrl(url, id, { sub: 'ed', role: 'editor' }));
+      const viewer = new SyncClient(boardUrl(url, id, { sub: 'vi', role: 'viewer' }));
+      await Promise.all([editor.waitForOpen(), viewer.waitForOpen()]);
+      editor.doc.getMap('session').set('comments', new Y.Map());
+      await waitUntil(() => viewer.doc.getMap('session').has('comments'));
+
+      viewer.doc.transact(() => {
+        (viewer.doc.getMap('session').get('comments') as Y.Map<unknown>).set('t1', new Y.Map());
+        viewer.doc.getMap('elements').set('smuggled', 1);
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect((editor.doc.getMap('session').get('comments') as Y.Map<unknown>).has('t1')).toBe(
+        false,
+      );
+      expect(editor.doc.getMap('elements').has('smuggled')).toBe(false);
+
+      for (let i = 0; i < 25; i++) viewer.doc.getMap('elements').set(`more-${i}`, i);
+      expect(await viewer.closed).toBe(4403);
+      editor.close();
     });
 
     it('lets a viewer open a board that already has content', async () => {

@@ -24,3 +24,24 @@ export abstract class DocumentStore {
   ): Promise<SaveResult>;
   abstract delete(boardId: string): Promise<void>;
 }
+
+/** Statuses that say the board's document will never be accepted as it is; retrying is pointless. 401 and 403 are not here: a secret that is set right later makes them work. */
+const PERMANENT_STATUSES = new Set([400, 404, 410, 413, 422]);
+
+/**
+ * The store answered, and the answer will not change by asking again: the board is gone (404, 410) or its state is
+ * refused (400, 413, 422). The registry gives up on such a board instead of retrying for ever (#774).
+ */
+export class DocumentRejectedError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'DocumentRejectedError';
+  }
+
+  static isPermanent(status: number): boolean {
+    return PERMANENT_STATUSES.has(status);
+  }
+}

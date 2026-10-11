@@ -1,0 +1,24 @@
+{
+  "name": "@elysion/load",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Load test of the realtime service with several replicas (ADR-free, see AGENTS.md). Not part of `pnpm test`: it needs the stack.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "oxlint -c oxlint.json src/",
+    "test:load": "pnpm run build && node dist/run.js"
+  },
+  "dependencies": {
+    "lib0": "^0.2.119",
+    "ws": "^8.22.0",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.33"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/ws": "^8.18.2",
+    "typescript": "^6.0.3"
+  }
+}

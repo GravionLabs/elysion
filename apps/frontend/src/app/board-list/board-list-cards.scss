@@ -37,7 +37,9 @@
 
 // A neutral placeholder until boards get real thumbnails: the initials on a tint of a node token.
 .board-preview {
+  position: relative;
   display: grid;
+  overflow: hidden;
   height: 84px;
   place-items: center;
   // The initials are decorative, but still readable (WCAG AA): the tint toward the text color.
@@ -244,4 +246,96 @@
 
 .duplicate-error {
   margin-bottom: 12px;
+}
+
+// The picture of the board covers the initials once it is loaded (#729).
+.board-thumbnail {
+  position: absolute;
+  inset: 0;
+  background: var(--c-surface-1);
+}
+
+// The star sits in the preview's top left corner: always there once set, otherwise like the other actions.
+.favorite-button {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+
+  .board-item:hover &,
+  &:focus-visible,
+  &.on {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    opacity: 1;
+  }
+
+  &.on {
+    color: var(--c-node-amber);
+
+    svg {
+      fill: currentColor;
+    }
+  }
+}
+
+.list-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+
+  .search {
+    position: relative;
+    flex: 1 1 220px;
+    max-width: 360px;
+  }
+
+  input[type='search'] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 7px 36px 7px 10px;
+    color: var(--c-text);
+    background: var(--c-surface-1);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    font: inherit;
+  }
+
+  input[type='search']::-webkit-search-cancel-button {
+    appearance: none;
+  }
+
+  .search-clear {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+  }
+
+  .sort {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--c-text-subtle);
+    font-size: 13px;
+  }
+
+  select {
+    padding: 6px 8px;
+    color: var(--c-text);
+    background: var(--c-surface-1);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    font: inherit;
+  }
 }

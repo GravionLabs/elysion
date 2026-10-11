@@ -23,6 +23,11 @@ export const DEFAULT_WS_TOKEN_TTL_SECONDS = 60;
 /** Close codes of the `/yjs` socket when the handshake is refused. */
 export const WS_CLOSE_UNAUTHORIZED = 4401;
 export const WS_CLOSE_FORBIDDEN = 4403;
+/**
+ * The client's copy of the board belongs to an older generation of the document (the document was rebuilt while the
+ * client was away, ADR 0026): it must throw its `Y.Doc` away and connect again instead of merging it in.
+ */
+export const WS_CLOSE_STALE_COPY = 4409;
 
 /** The claims we put into the token, besides the registered `iss`, `aud`, `iat` and `exp`. */
 export interface WsTokenClaims {

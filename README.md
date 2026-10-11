@@ -4,14 +4,14 @@
 
 [![CI](https://github.com/GravionLabs/elysion/actions/workflows/ci.yml/badge.svg)](https://github.com/GravionLabs/elysion/actions/workflows/ci.yml)
 
-An open-source alternative to [Mural](https://mural.co): a collaborative whiteboard you can self-host. Several people draw on the same board at the same time and see each other's cursors; boards are kept, shared with roles, grouped in rooms and started from templates; and a facilitator can run a timer and a dot voting. It is a **pre-release**: it works end to end, but it is not yet a production setup (see [What is missing](#what-is-missing)).
+An open-source alternative to [Mural](https://mural.co): a collaborative whiteboard you can self-host. Several people draw on the same board at the same time and see each other's cursors; boards are kept, shared with roles, grouped in rooms and started from templates; and a facilitator can run a timer and a dot voting. It is a **pre-release**: it works end to end, and production is Kubernetes through the Helm chart (see [What is missing](#what-is-missing)).
 
 ## What it does
 
 - **Boards:** a board overview with rooms (shared spaces for a team), create, rename, duplicate and delete; sharing with the roles owner, editor and viewer (per board and per room); built-in templates and your own, applied when a board is created or added to one; PDF, PNG, SVG and `.excalidraw` export and an `.excalidraw` import.
 - **The canvas** ([Excalidraw](https://excalidraw.com) in the ariadne look, light and dark): shapes, text, drawing, sticky notes with a remembered color and one-click creation, **connectors** with connection points, a grid with snapping, a minimap, undo and redo, and the cursors, names and avatars of everybody on the board.
 - **Realtime:** every change is merged by Yjs CRDTs over WebSockets (several realtime instances stay in step through Valkey); boards are persisted and survive a restart.
-- **Facilitation:** a **shared timer** with a countdown for everybody, and **dot voting** (votes per person, your own dots while it runs, a ranked result in a movable dialog when it ends, by the facilitator or when everybody has voted). Viewers see both and cannot vote.
+- **Facilitation:** a **shared timer** with a countdown for everybody, and **dot voting** (votes per person, your own dots while it runs, a ranked result in a movable dialog when it ends, by the facilitator or when everybody has voted). The votes are kept on the server and are secret while the voting runs; viewers vote too, and a voting can be started as "named" to show who voted for what.
 - **Identity:** login through Keycloak; the BFF, the realtime service and the business backend each check the token, and a viewer's changes are refused by the server, not only hidden in the interface.
 - **Operations:** Traefik at the edge with CORS and rate limits, metrics and structured logs, a Helm chart ([ADR 0018](docs/adr/0018-kubernetes-packaging.md)).
 
@@ -24,19 +24,17 @@ pnpm demo        # = `docker compose up -d --build`, then open http://localhost 
 pnpm demo:down   # = `docker compose down`
 ```
 
-The [Demo](#demo) section has the details. How to use it is in the [user guide](docs/user-guide.md). The published images and what a real deployment needs are in [self-hosting](docs/self-hosting.md); every merge to `main` is a (pre-)release with images on GHCR ([ADR 0021](docs/adr/0021-versioning-and-releases.md)). The documentation is also a website (`apps/site`, [ADR 0022](docs/adr/0022-documentation-site.md)) at <https://gravionlabs.github.io/elysion/> once GitHub Pages is switched on. To work on Elysion see [Getting started](#getting-started).
+The [Demo](#demo) section has the details. How to use it is in the [user guide](docs/user-guide.md). The published images and the Kubernetes setup are in [self-hosting](docs/self-hosting.md); every merge to `main` is a (pre-)release with images on GHCR ([ADR 0021](docs/adr/0021-versioning-and-releases.md)). The documentation is also a website (`apps/site`, [ADR 0022](docs/adr/0022-documentation-site.md)) at <https://gravionlabs.github.io/elysion/> once GitHub Pages is switched on. To work on Elysion see [Getting started](#getting-started).
 
 ## What is missing
 
 Known gaps, so nobody finds them by surprise (the [roadmap](docs/roadmap.md) says what comes next):
 
-- **Not a production setup:** the demo and the development stack run Keycloak in development mode, wired to `localhost`, with development secrets. A real deployment needs TLS, a host name, a production Keycloak and its own secrets (see [self-hosting](docs/self-hosting.md)).
+- **The compose stack is a demo:** it runs Keycloak in development mode, wired to `localhost`, with development secrets. Production is the Helm chart with TLS, two host names, a production Keycloak that you run and a realm file from the release ([self-hosting](docs/self-hosting.md#run-it-in-kubernetes)); it has been run on a local kind cluster only.
 - **Security:** [docs/security.md](docs/security.md) has the threat model, the review of the token flows, the internal API and the edge, and the known findings; to report a vulnerability use GitHub's private reporting, see [SECURITY.md](SECURITY.md).
-- **Voting is not secret from the server:** with the votes in the board's document (ADR 0020) the interface shows no names while a voting runs and only counts afterwards, but the document holds who voted for what, and viewers cannot vote.
 - **Timer clocks** of two clients may differ by a few seconds (the end is worked out on every client).
 - **Images are PNG, JPEG, GIF or WebP** up to 10 MiB, 200 per board (SVG is refused: it can carry script). They are kept in the object store (RustFS in the stack).
 - **Backup is a service you start** (`docker compose --profile backup up -d backup`, [self-hosting](docs/self-hosting.md#back-up-and-restore)): nightly dumps of the databases and a copy of the images, on the same host unless you point it elsewhere, with no alert yet when one fails (#687).
-- **Cards show initials**, not thumbnails of the board.
 - **Dark theme:** Excalidraw darkens all colors on a dark canvas, so a sticky note is a darker shade than its pastel color in the light theme.
 - **Browser tests cover the main paths, not every corner:** `apps/e2e` (Playwright, two browsers on one board, against the container stack in CI) covers sharing, the timer, the dot voting, a viewer's limits, images, rooms, templates, import and export, the drawing tools with connectors and undo, and losing and regaining the connection; there is no visual regression test and only Chromium is used.
 
@@ -96,7 +94,7 @@ pnpm format:dotnet  # formats the backend's C# with the JetBrains tools (Prettie
 pnpm format:check    # Prettier (pnpm format fixes)
 ```
 
-The browser tests (`apps/e2e`) need the running stack: `pnpm demo`, then `pnpm test:browser` (see its `AGENTS.md`). To verify a change as a whole, run `pnpm format:check && pnpm lint && pnpm test && pnpm build` (CI runs the same commands). CI (`.github/workflows/ci.yml`) has three jobs: that command chain; the .NET tests with a coverage report; and the BFF and realtime end-to-end tests against a Valkey service container, plus their coverage. Coverage reports are uploaded as workflow artifacts; there is no threshold yet. The .NET parts need the .NET 10 SDK; the realtime end-to-end tests need a Valkey: `pnpm dev:infra` starts the stack's on `localhost:6380`, so run them with `REDIS_URL=redis://localhost:6380 pnpm --filter @elysion/realtime test:e2e` (CI uses a service container on 6379).
+The browser tests (`apps/e2e`) need the running stack: `pnpm demo`, then `pnpm test:browser` (see its `AGENTS.md`). To verify a change as a whole, run `pnpm format:check && pnpm lint && pnpm test && pnpm build` (CI runs the same commands). CI (`.github/workflows/ci.yml`) has three jobs: that command chain; the .NET tests with a coverage report; and the BFF and realtime end-to-end tests against a Valkey service container, plus their coverage. Coverage reports are uploaded as workflow artifacts; there is no threshold yet. The .NET parts need the .NET 10 SDK; the realtime end-to-end tests need a Valkey: `pnpm dev:infra` starts the stack's on `localhost:6380`, so run them with `REDIS_URL=redis://:dev-only-valkey-password@localhost:6380 pnpm --filter @elysion/realtime test:e2e` (CI uses a service container on 6379).
 
 Each app has a `Dockerfile`; build from the repo root so the workspace files are in context:
 
@@ -122,7 +120,7 @@ The BFF reaches the business backend at `BUSINESS_BACKEND_URL` (default `http://
 
 Valkey is **Elysion's own**: `docker-compose.yml` defines it with the image and the settings of `local-infra`'s Valkey, so the stack needs nothing from the machine ([ADR 0023](docs/adr/0023-own-valkey-one-compose-file.md), which replaces the sharing of ADR 0006). RabbitMQ, Portainer and other projects' services stay in [`local-infra`](../local-infra), and Elysion does not need them.
 
-- Containers reach Valkey at `valkey:6379`. Apps on the host use `REDIS_URL=redis://localhost:6380`: `pnpm dev:infra` publishes it on **6380** (`VALKEY_PORT`), not 6379, so it cannot clash with a Valkey of `local-infra` on the machine. The realtime service's default is `redis://localhost:6379` (what CI's service container has); `apps/realtime/.env.example` and the VS Code configuration set 6380.
+- Containers reach Valkey at `valkey:6379`. Apps on the host use `REDIS_URL=redis://:dev-only-valkey-password@localhost:6380`: `pnpm dev:infra` publishes it on **6380** (`VALKEY_PORT`), not 6379, so it cannot clash with a Valkey of `local-infra` on the machine. The realtime service's default is `redis://localhost:6379` (what CI's service container has); `apps/realtime/.env.example` and the VS Code configuration set 6380.
 - Everything Elysion stores in Valkey is still prefixed with `elysion:` (for example `elysion:presence:<board>`).
 - RustFS (reserved, no app uses it yet) is only in `docker-compose.dev.yml`, on 9100 (S3) and 9101 (console), because Portainer from `local-infra` may own 9000. If a port is taken on your machine, copy `.env.example` to `.env` and change it.
 

@@ -1,5 +1,9 @@
 {{- if .Values.edge.enabled }}
 {{- $full := include "elysion.fullname" . }}
+{{- if .Values.edge.redirectToHttps }}
+{{- if has "web" .Values.edge.entryPoints }}{{ fail "edge.redirectToHttps needs edge.entryPoints without \"web\" (use [websecure]): the redirect is a second route on web" }}{{ end }}
+{{- if not .Values.edge.tlsSecretName }}{{ fail "edge.redirectToHttps needs edge.tlsSecretName: a redirect to an HTTPS entry point without a certificate leads nowhere" }}{{ end }}
+{{- end }}
 {{- $host := ternary (printf "Host(`%s`) && " .Values.edge.host) "" (ne .Values.edge.host "") }}
 # Middlewares, in the order the routes use them (docs/specs/gateway.md): security-headers first, so that an answer the later ones give (401, 429) carries the headers, then cors, rate-limit, bff-auth.
 apiVersion: traefik.io/v1alpha1
@@ -112,4 +116,35 @@ spec:
   tls:
     secretName: {{ .Values.edge.tlsSecretName }}
   {{- end }}
+{{- if .Values.edge.redirectToHttps }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $full }}-redirect-https
+  labels:
+    {{- include "elysion.labels" . | nindent 4 }}
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $full }}-redirect
+  labels:
+    {{- include "elysion.labels" . | nindent 4 }}
+spec:
+  entryPoints: [web]
+  routes:
+    - kind: Rule
+      match: {{ if ne .Values.edge.host "" }}Host(`{{ .Values.edge.host }}`){{ else }}PathPrefix(`/`){{ end }}
+      middlewares:
+        - name: {{ $full }}-redirect-https
+      # Nothing is behind it: the middleware answers. Traefik needs a service, so the frontend's is named.
+      services:
+        - name: {{ $full }}-frontend
+          port: 8080
+{{- end }}
 {{- end }}

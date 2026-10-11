@@ -7,6 +7,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  GoneException,
   Inject,
   Injectable,
   NotFoundException,
@@ -25,6 +26,75 @@ export interface Board {
   createdAt: string;
   /** The room the board is in, or null (ADR 0019). */
   roomId: string | null;
+  /** When the board's preview picture was stored, or null when it has none (#729); `hasThumbnail` says the same. */
+  thumbnailUpdatedAt?: string | null;
+  hasThumbnail?: boolean;
+  /** When the caller last opened the board, or null (#730). */
+  lastOpenedAt?: string | null;
+  /** Whether the caller starred the board (#730). */
+  isFavorite?: boolean;
+}
+
+/** A person in a voting: `id` is the identity-provider subject, the id the canvas knows (#732). */
+export interface VotingPerson {
+  id: string;
+  name: string;
+}
+
+/**
+ * A dot voting as the backend returns it to this caller (ADR 0029): the caller's own votes, never another person's targets
+ * while it is open; `placed` (open) says how many votes each person has placed, `result` (closed) the votes per element.
+ */
+export interface Voting {
+  id: string;
+  name: string;
+  votesPerPerson: number;
+  status: 'open' | 'closed';
+  named: boolean;
+  startedBy: VotingPerson;
+  startedAt: string;
+  closedAt: string | null;
+  myVotes: number;
+  myElementVotes: Record<string, number>;
+  placed?: Record<string, number>;
+  result?: Array<{ elementId: string; count: number; voters?: VotingPerson[] }>;
+}
+
+/** What the caller sends to start a voting. */
+export interface StartVotingInput {
+  name?: string;
+  votesPerPerson?: number;
+  named?: boolean;
+}
+
+/** An active invitation link as the list shows it (#734): never the token. */
+export interface Invitation {
+  id: string;
+  role: 'Editor' | 'Viewer';
+  expiresAt: string;
+  maxUses: number | null;
+  uses: number;
+  createdAt: string;
+}
+
+/** The answer to making a link: the one time the token is shown. */
+export interface CreatedInvitation extends Invitation {
+  token: string;
+  url: string | null;
+}
+
+/** What the caller sends to make a link; the limits (1 to 720 hours, 1 to 1000 uses) belong to the business backend, which answers 400. */
+export interface CreateInvitationInput {
+  role?: string;
+  expiresInHours?: number;
+  maxUses?: number;
+}
+
+/** What following a link did: the board or room and the role the person has there now. */
+export interface AcceptedInvitation {
+  kind: 'board' | 'room';
+  id: string;
+  role: 'Owner' | 'Editor' | 'Viewer';
 }
 
 /** A room as the business backend's room API returns it: `role` is the caller's role in it. */
@@ -54,6 +124,20 @@ export interface BoardMember {
   userId: string;
   displayName: string;
   email: string | null;
+  role: 'Owner' | 'Editor' | 'Viewer';
+}
+
+/** A group as the business backend returns it: no members; `source` says whether the identity provider owns them (ADR 0027). */
+export interface Group {
+  id: string;
+  name: string;
+  source: 'Local' | 'IdentityProvider';
+}
+
+/** A group's role in a room. */
+export interface RoomGroup {
+  groupId: string;
+  name: string;
   role: 'Owner' | 'Editor' | 'Viewer';
 }
 
@@ -88,8 +172,20 @@ const FILE_RESPONSE_HEADERS = [
 export class BusinessBackendClient {
   constructor(@Inject(BUSINESS_BACKEND_URL) private readonly baseUrl: string) {}
 
-  listBoards(token: string): Promise<Board[]> {
-    return this.request<Board[]>(token, 'GET', '/boards');
+  /** The caller's boards; `query` keeps those whose name contains it (ignoring case). */
+  listBoards(token: string, query?: string): Promise<Board[]> {
+    const search = query ? `?query=${encodeURIComponent(query)}` : '';
+    return this.request<Board[]>(token, 'GET', `/boards${search}`);
+  }
+
+  /** Records that the caller opened the board (the backend writes at most every few minutes). */
+  openBoard(token: string, id: string): Promise<void> {
+    return this.request<void>(token, 'POST', `/boards/${id}/open`);
+  }
+
+  /** Stars the board for the caller, or takes the star away. */
+  setFavorite(token: string, id: string, favorite: boolean): Promise<void> {
+    return this.request<void>(token, favorite ? 'PUT' : 'DELETE', `/boards/${id}/favorite`);
   }
 
   getBoard(token: string, id: string): Promise<Board> {
@@ -108,9 +204,83 @@ export class BusinessBackendClient {
     return this.request<Board>(token, 'POST', `/boards/${id}/duplicate`);
   }
 
+  /** The board's current voting (the open one, else the last closed) as the caller sees it, or `null` when it has none. */
+  async getVoting(token: string, boardId: string): Promise<Voting | null> {
+    return (
+      (await this.request<Voting | undefined>(token, 'GET', `/boards/${boardId}/voting`)) ?? null
+    );
+  }
+
+  startVoting(token: string, boardId: string, input: StartVotingInput): Promise<Voting> {
+    return this.request<Voting>(token, 'POST', `/boards/${boardId}/votings`, input);
+  }
+
+  castVote(token: string, boardId: string, votingId: string, elementId: string): Promise<Voting> {
+    return this.request<Voting>(token, 'POST', `/boards/${boardId}/votings/${votingId}/votes`, {
+      elementId,
+    });
+  }
+
+  /** Takes back one of the caller's votes on an element; the voting after it, or `null` when they had none there. */
+  async retractVote(
+    token: string,
+    boardId: string,
+    votingId: string,
+    elementId: string,
+  ): Promise<Voting | null> {
+    return (
+      (await this.request<Voting | undefined>(
+        token,
+        'DELETE',
+        `/boards/${boardId}/votings/${votingId}/votes/${encodeURIComponent(elementId)}`,
+      )) ?? null
+    );
+  }
+
+  closeVoting(token: string, boardId: string, votingId: string): Promise<Voting> {
+    return this.request<Voting>(token, 'POST', `/boards/${boardId}/votings/${votingId}/close`);
+  }
+
+  /** Removes the board's closed votings; an open one stays. */
+  async clearVotings(token: string, boardId: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/boards/${boardId}/votings`);
+  }
+
   /** Puts a board in a room, or takes it out of its room (`roomId: null`). */
   moveBoard(token: string, id: string, roomId: string | null): Promise<Board> {
     return this.request<Board>(token, 'PUT', `/boards/${id}/room`, { roomId });
+  }
+
+  /** The invitation links of a board (`scope` `boards`) or room (`rooms`) that still work. */
+  listInvitations(token: string, scope: 'boards' | 'rooms', id: string): Promise<Invitation[]> {
+    return this.request<Invitation[]>(token, 'GET', `/${scope}/${id}/invitations`);
+  }
+
+  createInvitation(
+    token: string,
+    scope: 'boards' | 'rooms',
+    id: string,
+    input: CreateInvitationInput,
+  ): Promise<CreatedInvitation> {
+    return this.request<CreatedInvitation>(token, 'POST', `/${scope}/${id}/invitations`, input);
+  }
+
+  revokeInvitation(
+    token: string,
+    scope: 'boards' | 'rooms',
+    id: string,
+    invitationId: string,
+  ): Promise<void> {
+    return this.request<void>(token, 'DELETE', `/${scope}/${id}/invitations/${invitationId}`);
+  }
+
+  /** Follows a link as the caller. The link's token is in the path and never in a log: the request line has the route pattern only. */
+  acceptInvitation(token: string, invitationToken: string): Promise<AcceptedInvitation> {
+    return this.request<AcceptedInvitation>(
+      token,
+      'POST',
+      `/invitations/${encodeURIComponent(invitationToken)}/accept`,
+    );
   }
 
   listRooms(token: string): Promise<Room[]> {
@@ -150,6 +320,33 @@ export class BusinessBackendClient {
 
   async removeRoomMember(token: string, roomId: string, userId: string): Promise<void> {
     await this.request<void>(token, 'DELETE', `/rooms/${roomId}/members/${userId}`);
+  }
+
+  /** The groups whose name contains `query` (at least two characters; the backend answers 400 otherwise). */
+  searchGroups(token: string, query: string): Promise<Group[]> {
+    return this.request<Group[]>(token, 'GET', `/groups?query=${encodeURIComponent(query)}`);
+  }
+
+  /** The groups the caller is in. */
+  listMyGroups(token: string): Promise<Group[]> {
+    return this.request<Group[]>(token, 'GET', '/me/groups');
+  }
+
+  listRoomGroups(token: string, roomId: string): Promise<RoomGroup[]> {
+    return this.request<RoomGroup[]>(token, 'GET', `/rooms/${roomId}/groups`);
+  }
+
+  setRoomGroupRole(
+    token: string,
+    roomId: string,
+    groupId: string,
+    role: string,
+  ): Promise<RoomGroup> {
+    return this.request<RoomGroup>(token, 'PUT', `/rooms/${roomId}/groups/${groupId}`, { role });
+  }
+
+  async removeRoomGroup(token: string, roomId: string, groupId: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/rooms/${roomId}/groups/${groupId}`);
   }
 
   listTemplates(token: string): Promise<TemplateSummary[]> {
@@ -218,13 +415,30 @@ export class BusinessBackendClient {
    * Streams a file to the backend without holding it: the request body is piped, so the BFF's memory does not grow
    * with the file. `length` is the request's own `Content-Length`; the backend refuses a body over its limit.
    */
-  async putFile(
+  putFile(
     token: string,
     boardId: string,
     fileId: string,
     file: { contentType: string; length: number; body: Readable },
   ): Promise<void> {
-    const response = await this.fetchBackend(`/boards/${boardId}/files/${fileId}`, {
+    return this.putStream(token, `/boards/${boardId}/files/${fileId}`, file);
+  }
+
+  /** The preview picture of a board (#729), streamed like a file. */
+  putThumbnail(
+    token: string,
+    boardId: string,
+    file: { contentType: string; length: number; body: Readable },
+  ): Promise<void> {
+    return this.putStream(token, `/boards/${boardId}/thumbnail`, file);
+  }
+
+  private async putStream(
+    token: string,
+    path: string,
+    file: { contentType: string; length: number; body: Readable },
+  ): Promise<void> {
+    const response = await this.fetchBackend(path, {
       method: 'PUT',
       headers: {
         ...this.headers(token),
@@ -241,6 +455,29 @@ export class BusinessBackendClient {
     await response.body?.cancel();
   }
 
+  /**
+   * The preview picture of a board, or `'not-modified'` when the caller's copy (`ifNoneMatch`, the ETag it has) is the current
+   * one: the backend answers 304 without reading the picture.
+   */
+  async getThumbnail(
+    token: string,
+    boardId: string,
+    ifNoneMatch?: string,
+  ): Promise<BackendFile | 'not-modified'> {
+    const response = await this.fetchBackend(`/boards/${boardId}/thumbnail`, {
+      method: 'GET',
+      headers: {
+        ...this.headers(token),
+        ...(ifNoneMatch === undefined ? {} : { 'if-none-match': ifNoneMatch }),
+      },
+      signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
+    });
+    if (response.status === 304) {
+      return 'not-modified';
+    }
+    return this.fileOf(response);
+  }
+
   /** A file of a board; the body is a stream, to be piped to the caller and not read into memory. */
   async getFile(token: string, boardId: string, fileId: string): Promise<BackendFile> {
     const response = await this.fetchBackend(`/boards/${boardId}/files/${fileId}`, {
@@ -248,6 +485,10 @@ export class BusinessBackendClient {
       headers: this.headers(token),
       signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
     });
+    return this.fileOf(response);
+  }
+
+  private async fileOf(response: Response): Promise<BackendFile> {
     if (!response.ok) {
       await this.fail(response);
     }
@@ -267,6 +508,66 @@ export class BusinessBackendClient {
 
   async deleteBoard(token: string, id: string): Promise<void> {
     await this.request<void>(token, 'DELETE', `/boards/${id}`);
+  }
+
+  // The administration area (ADR 0027, #656): one method per call, with a fixed path. The only variable parts are ids that passed
+  // the UUID check in the controller (and are encoded anyway) and a query string made from numbers and one short text.
+
+  adminStats(token: string): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', '/admin/stats');
+  }
+
+  adminListUsers(token: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/admin/users${adminQuery(list)}`);
+  }
+
+  adminGetUser(token: string, id: string): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/admin/users/${encodeURIComponent(id)}`);
+  }
+
+  adminListGroups(token: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/admin/groups${adminQuery(list)}`);
+  }
+
+  adminCreateGroup(token: string, name: string): Promise<unknown> {
+    return this.request<unknown>(token, 'POST', '/admin/groups', { name });
+  }
+
+  /** `externalId: null` unlinks the group, a string links it; a key that is left out is not sent. */
+  adminPatchGroup(token: string, id: string, patch: AdminGroupPatch): Promise<unknown> {
+    return this.request<unknown>(token, 'PATCH', `/admin/groups/${encodeURIComponent(id)}`, patch);
+  }
+
+  async adminDeleteGroup(token: string, id: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/admin/groups/${encodeURIComponent(id)}`);
+  }
+
+  adminListGroupMembers(token: string, id: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(
+      token,
+      'GET',
+      `/admin/groups/${encodeURIComponent(id)}/members${adminQuery(list)}`,
+    );
+  }
+
+  async adminAddGroupMember(token: string, id: string, userId: string): Promise<void> {
+    await this.request<void>(
+      token,
+      'PUT',
+      `/admin/groups/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`,
+    );
+  }
+
+  async adminRemoveGroupMember(token: string, id: string, userId: string): Promise<void> {
+    await this.request<void>(
+      token,
+      'DELETE',
+      `/admin/groups/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`,
+    );
+  }
+
+  adminListRooms(token: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/admin/rooms${adminQuery(list)}`);
   }
 
   /** The headers of every call: the caller's token and the id of the request being handled, so the backend's lines carry it (ADR 0025). */
@@ -323,6 +624,10 @@ export class BusinessBackendClient {
     if (response.status === 409) {
       throw new ConflictException(await problemDetail(response));
     }
+    if (response.status === 410) {
+      // An invitation link that expired, was revoked or is used up (#734).
+      throw new GoneException(await problemDetail(response));
+    }
     if (response.status === 413) {
       throw new PayloadTooLargeException(await problemDetail(response));
     }
@@ -367,4 +672,27 @@ async function validationMessage(response: Response): Promise<string> {
   } catch {
     return 'Invalid request.';
   }
+}
+
+/** What a list of the administration area is asked for: a search text and a page, all checked by the controller. */
+export interface AdminList {
+  query?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/** The change of a group (`PATCH /admin/groups/:id`): either key may be left out. */
+export interface AdminGroupPatch {
+  name?: string;
+  externalId?: string | null;
+}
+
+/** `?query=..&page=..&pageSize=..` from the three allowed values, encoded; empty when none is given. */
+function adminQuery(list: AdminList): string {
+  const params = new URLSearchParams();
+  if (list.query !== undefined) params.append('query', list.query);
+  if (list.page !== undefined) params.append('page', String(list.page));
+  if (list.pageSize !== undefined) params.append('pageSize', String(list.pageSize));
+  const text = params.toString();
+  return text === '' ? '' : `?${text}`;
 }

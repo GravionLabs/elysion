@@ -1,0 +1,82 @@
+{
+  "realm": "entra-stub",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "attributes": {
+    "frontendUrl": "http://localhost:8081"
+  },
+  "clients": [
+    {
+      "clientId": "elysion-broker",
+      "name": "Elysion (the broker of the elysion realm)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "elysion-broker-dev-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:8081/realms/elysion/broker/microsoft/endpoint",
+        "http://keycloak:8080/realms/elysion/broker/microsoft/endpoint"
+      ],
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "groups",
+            "claim.name": "groups",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "aggregate.attrs": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "erika",
+      "email": "erika@entra.local",
+      "emailVerified": true,
+      "firstName": "Erika",
+      "lastName": "Muster",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "erika",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "groups": ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"]
+      }
+    },
+    {
+      "username": "emil",
+      "email": "emil@entra.local",
+      "emailVerified": true,
+      "firstName": "Emil",
+      "lastName": "Beispiel",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "emil",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "groups": ["11111111-1111-4111-8111-111111111111"]
+      }
+    }
+  ]
+}

@@ -12,6 +12,8 @@ import type { ClientOptions, RawData } from 'ws';
 import { WebSocket } from 'ws';
 import { AppModule } from '../src/app.module.js';
 import { LOG_STREAM } from '../src/logging/logging.module.js';
+import { MembershipSource } from '../src/membership/membership-source.js';
+import { MEMBERSHIP_OPTIONS } from '../src/membership/membership-watcher.js';
 import { DocumentStore } from '../src/persistence/document-store.js';
 import { MESSAGE_SYNC } from '../src/yjs/protocol.js';
 import { PERSISTENCE_OPTIONS } from '../src/yjs/yjs-room-registry.js';
@@ -88,12 +90,18 @@ export async function startInstance(
   options: Record<string, number> = {},
   /** Where the JSON log lines go, for a test that reads them; stdout when unset. */
   logStream?: Writable,
+  /** Who still has a role on a board; the check is off (`intervalMs: 0`) unless a test turns it on. */
+  membership?: { source: MembershipSource; intervalMs: number },
 ): Promise<{ app: INestApplication; url: string }> {
   const moduleFixture = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(DocumentStore)
     .useValue(store)
     .overrideProvider(LOG_STREAM)
     .useValue(logStream)
+    .overrideProvider(MembershipSource)
+    .useValue(membership?.source ?? { roleOf: () => Promise.reject(new Error('not used')) })
+    .overrideProvider(MEMBERSHIP_OPTIONS)
+    .useValue({ intervalMs: membership?.intervalMs ?? 0 })
     .overrideProvider(PERSISTENCE_OPTIONS)
     .useValue({
       saveDebounceMs: 50,

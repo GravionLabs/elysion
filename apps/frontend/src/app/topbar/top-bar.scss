@@ -216,3 +216,15 @@
   color: var(--c-text-subtle);
   background: var(--c-border);
 }
+
+.favorite-button {
+  padding-inline: 6px;
+
+  &.on {
+    color: var(--c-node-amber);
+
+    svg {
+      fill: currentColor;
+    }
+  }
+}

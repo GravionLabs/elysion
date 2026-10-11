@@ -85,12 +85,12 @@ describe('SessionService', () => {
     expect(service.user()).toBeNull();
   });
 
-  it('logs out at the identity provider too', () => {
+  it('logs out at the identity provider too', async () => {
     const { service, oidc } = setup();
 
     service.logout();
 
-    expect(oidc.logoff).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(oidc.logoff).toHaveBeenCalledOnce());
   });
 
   it('restarts the login: forgets the local session first, then goes to the identity provider', () => {

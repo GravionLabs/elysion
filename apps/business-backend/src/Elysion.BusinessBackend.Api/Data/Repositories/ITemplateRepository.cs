@@ -14,6 +14,9 @@ public interface ITemplateRepository
     /// <summary>One template with its scene, or null when there is none or the user cannot see it.</summary>
     Task<Template?> FindVisibleAsync(Guid id, Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>How many templates a user has made and how many characters their scenes hold together.</summary>
+    Task<(int Count, long Characters)> OwnedUsageAsync(Guid userId, CancellationToken cancellationToken);
+
     void Add(Template template);
 
     void Remove(Template template);

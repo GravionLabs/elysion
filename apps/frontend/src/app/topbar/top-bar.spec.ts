@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { DEFAULT_EXPORT_SETTINGS } from './export-settings';
 import { TopBar } from './top-bar';
 
 describe('TopBar', () => {
@@ -56,6 +57,21 @@ describe('TopBar', () => {
     const chip = el().querySelector('[role="status"]') as HTMLElement;
     expect(chip.textContent).toContain(label);
     expect(chip.getAttribute('data-status')).toBe(status);
+  });
+
+  it('says Offline, not Connecting…, while it tries again after an outage, and explains the status in a tooltip', async () => {
+    fixture.componentRef.setInput('status', 'connecting');
+    fixture.componentRef.setInput('offline', true);
+    await fixture.whenStable();
+
+    const chip = el().querySelector('[role="status"]') as HTMLElement;
+    expect(chip.textContent).toContain('Offline');
+    expect(chip.title).toContain('kept on this device');
+
+    fixture.componentRef.setInput('status', 'connected');
+    await fixture.whenStable();
+    expect(chip.textContent).toContain('Connected');
+    expect(chip.title).toContain('reach everyone');
   });
 
   it('offers the theme to switch to, like ariadne', async () => {
@@ -140,7 +156,9 @@ describe('TopBar', () => {
     await fixture.whenStable();
     (el().querySelector('[role="menuitem"]') as HTMLButtonElement).click();
 
-    expect(requests).toEqual([{ format: 'png', selectionOnly: false }]);
+    expect(requests).toEqual([
+      { format: 'png', selectionOnly: false, settings: DEFAULT_EXPORT_SETTINGS },
+    ]);
     expect(
       (el().querySelector('input[type="checkbox"]') as HTMLInputElement | null)?.disabled,
     ).not.toBe(true);

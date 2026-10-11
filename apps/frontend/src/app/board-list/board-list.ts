@@ -27,7 +27,12 @@ import {
   canWriteInRoom,
 } from '../board/room-api';
 import { describeError, ShareDialog } from '../share/share-dialog';
+import { BoardThumbnail } from './board-thumbnail';
 import { RoomSidebar, RoomsState } from './room-sidebar';
+import { RoomPdfExporter } from './room-pdf-export';
+import { downloadBlob, exportFilename } from '../board/download';
+import { loadSettings } from '../topbar/export-settings';
+import { BOARD_SORTS, BoardSort, loadSort, saveSort } from './list-preferences';
 
 /** The design tokens the preview placeholders are tinted with; a board always gets the same one. */
 const PREVIEW_TINTS = [
@@ -57,9 +62,40 @@ export function boardTint(id: string): string {
   return `var(${PREVIEW_TINTS[hash % PREVIEW_TINTS.length]})`;
 }
 
+/** Newest first by default; `opened` puts the boards never opened last; in the all-boards view the starred ones come first. */
+export function sortBoards(
+  boards: readonly BoardInfo[],
+  sort: BoardSort,
+  favoritesFirst: boolean,
+): BoardInfo[] {
+  const byNewest = (a: BoardInfo, b: BoardInfo) => b.createdAt.localeCompare(a.createdAt);
+  const order: Record<BoardSort, (a: BoardInfo, b: BoardInfo) => number> = {
+    newest: byNewest,
+    name: (a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || byNewest(a, b),
+    opened: (a, b) => (b.lastOpenedAt ?? '').localeCompare(a.lastOpenedAt ?? '') || byNewest(a, b),
+  };
+  return [...boards].sort((a, b) => {
+    if (favoritesFirst && (a.isFavorite === true) !== (b.isFavorite === true)) {
+      return a.isFavorite === true ? -1 : 1;
+    }
+    return order[sort](a, b);
+  });
+}
+
 export const DEFAULT_NEW_BOARD_NAME = $localize`:@@boards.defaultName:Untitled board`;
 
 type ListState = 'loading' | 'ready' | 'error';
+
+/** A room with more boards than this asks before it is exported: each board takes a few seconds. */
+const LARGE_ROOM_BOARDS = 20;
+
+/** Where the export of a room is (#727). */
+export type RoomExportState =
+  | { phase: 'confirm'; room: RoomInfo; count: number; minutes: number }
+  | { phase: 'running'; room: RoomInfo; done: number; total: number; current: string }
+  | { phase: 'done'; room: RoomInfo; skipped: string[] }
+  | { phase: 'failed'; room: RoomInfo };
 type CreateState = 'closed' | 'editing' | 'saving';
 
 /** One way to move a board: into a room, or (`roomId` null) out of its room. */
@@ -73,7 +109,7 @@ export interface MoveOption {
  * route decides the view through `roomId`: no value is all boards, `none` the boards in no room, else one room.
  */
 @Component({
-  imports: [AppBrand, DatePipe, RouterLink, RoomSidebar, ShareDialog, UserMenu],
+  imports: [AppBrand, BoardThumbnail, DatePipe, RouterLink, RoomSidebar, ShareDialog, UserMenu],
   selector: 'app-board-list',
   styleUrls: ['./board-list.scss', './board-list-create.scss', './board-list-cards.scss'],
   templateUrl: './board-list.html',
@@ -87,9 +123,13 @@ export class BoardList {
   readonly #pageTitle = inject(Title);
   // Injected so the theme is applied to the page, which the board page does through its top bar.
   readonly #theme = inject(ThemeService);
+  readonly #roomExporter = inject(RoomPdfExporter);
 
-  /** The view, from the route: `undefined` for all boards, `none` for boards in no room, else a room's id. */
+  /** The view, from the route: `undefined` for all boards, `none` for boards in no room, `favorites` for the starred ones, else a room's id. */
   readonly roomId = input<string | undefined>();
+
+  /** The search, from `?q=` of the route (#730); typing in the field writes it back, so a search can be linked and reloaded. */
+  readonly q = input<string | undefined>();
 
   protected readonly canWriteRoom = canWriteInRoom;
   protected readonly canAdministerRoom = canAdministerRoom;
@@ -126,10 +166,16 @@ export class BoardList {
   protected readonly rooms = signal<RoomInfo[]>([]);
   protected readonly roomsState = signal<RoomsState>('loading');
 
-  protected readonly view = computed<'all' | 'none' | 'room'>(() => {
+  protected readonly view = computed<'all' | 'none' | 'favorites' | 'room'>(() => {
     const id = this.roomId();
-    return id === undefined ? 'all' : id === 'none' ? 'none' : 'room';
+    return id === undefined ? 'all' : id === 'none' || id === 'favorites' ? id : 'room';
   });
+
+  /** What the search field holds; boards whose name does not contain it (ignoring case) are hidden. */
+  protected readonly search = signal('');
+  protected readonly sort = signal<BoardSort>(loadSort());
+  protected readonly sortChoices = BOARD_SORTS;
+  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
 
   /** The room that is open, or `null` (another view, the rooms are not loaded yet, or there is no such room). */
   protected readonly currentRoom = computed(() =>
@@ -149,6 +195,8 @@ export class BoardList {
         return $localize`:@@boards.title.all:Boards`;
       case 'none':
         return $localize`:@@boards.sidebar.none:Not in a room`;
+      case 'favorites':
+        return $localize`:@@boards.sidebar.favorites:Favorites`;
       default:
         return (
           this.currentRoom()?.name ??
@@ -159,17 +207,35 @@ export class BoardList {
     }
   });
 
-  protected readonly visibleBoards = computed(() => {
+  /** The boards of the view, before the search narrows them. */
+  readonly #inView = computed(() => {
     const boards = this.boards();
     switch (this.view()) {
       case 'all':
         return boards;
       case 'none':
         return boards.filter((board) => board.roomId === null);
+      case 'favorites':
+        return boards.filter((board) => board.isFavorite === true);
       default:
         return boards.filter((board) => board.roomId === this.roomId());
     }
   });
+
+  protected readonly visibleBoards = computed(() => {
+    const needle = this.search().trim().toLowerCase();
+    const found = needle
+      ? this.#inView().filter((board) => board.name.toLowerCase().includes(needle))
+      : this.#inView();
+    return sortBoards(found, this.sort(), this.view() === 'all');
+  });
+
+  /** Whether a search is narrowing the view. */
+  protected readonly searching = computed(() => this.search().trim() !== '');
+
+  protected readonly favoriteCount = computed(
+    () => this.boards().filter((board) => board.isFavorite === true).length,
+  );
 
   protected readonly roomCounts = computed(() => {
     const counts: Record<string, number> = {};
@@ -201,6 +267,13 @@ export class BoardList {
   protected readonly renameDraft = signal('');
   protected readonly renameSaving = signal(false);
 
+  /**
+   * The export of a room as one PDF (#727): asking first when the room is large, then the progress with a way to cancel. `null`
+   * when nothing is going on.
+   */
+  protected readonly roomExport = signal<RoomExportState | null>(null);
+  #roomExportAbort: AbortController | null = null;
+
   protected readonly roomDeleteTarget = signal<RoomInfo | null>(null);
   protected readonly roomDeleting = signal(false);
   protected readonly roomDeleteError = signal<string | null>(null);
@@ -218,6 +291,15 @@ export class BoardList {
   constructor() {
     this.#pageTitle.setTitle($localize`:@@boards.pageTitle:Boards · Elysion`);
     this.load();
+    // The address holds the search: arriving with `?q=` (or the back button) fills the field.
+    // While the person types, the address trails behind the field: taking its (older) value back would eat characters.
+    effect(() => {
+      const fromAddress = this.q() ?? '';
+      untracked(() => {
+        const typing = document.activeElement === this.searchInput()?.nativeElement;
+        if (!typing && fromAddress.trim() !== this.search().trim()) this.search.set(fromAddress);
+      });
+    });
     // The room's name is selected when it is being renamed.
     effect(() => {
       const field = this.renameInput()?.nativeElement;
@@ -249,6 +331,88 @@ export class BoardList {
         });
       }
     });
+  }
+
+  protected updateSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.search.set(value);
+    void this.#router.navigate([], {
+      queryParams: { q: value.trim() || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  protected clearSearch(): void {
+    this.search.set('');
+    void this.#router.navigate([], {
+      queryParams: { q: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    this.searchInput()?.nativeElement.focus();
+  }
+
+  protected chooseSort(event: Event): void {
+    const sort = (event.target as HTMLSelectElement).value as BoardSort;
+    if (BOARD_SORTS.includes(sort)) {
+      this.sort.set(sort);
+      saveSort(sort);
+    }
+  }
+
+  protected sortLabel(sort: BoardSort): string {
+    switch (sort) {
+      case 'name':
+        return $localize`:@@boards.sort.name:Name`;
+      case 'opened':
+        return $localize`:@@boards.sort.opened:Last opened`;
+      default:
+        return $localize`:@@boards.sort.newest:Newest`;
+    }
+  }
+
+  /** `/` jumps to the search, unless the user is typing somewhere. */
+  @HostListener('document:keydown', ['$event'])
+  protected focusSearchOnSlash(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    const typing =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
+      target?.isContentEditable === true;
+    if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      const field = this.searchInput()?.nativeElement;
+      if (field) {
+        event.preventDefault();
+        field.focus();
+        field.select();
+      }
+    }
+  }
+
+  /** Stars the board, or takes the star away: shown at once, undone when saving fails. */
+  protected toggleFavorite(board: BoardInfo): void {
+    const favorite = board.isFavorite !== true;
+    const set = (value: boolean) =>
+      this.boards.update((boards) =>
+        boards.map((b) => (b.id === board.id ? { ...b, isFavorite: value } : b)),
+      );
+    set(favorite);
+    this.#api.setFavorite(board.id, favorite).subscribe({
+      error: () => {
+        set(!favorite);
+        this.roomError.set(
+          $localize`:@@boards.error.favorite:The star of the board “${board.name}:board:” could not be saved. Try again.`,
+        );
+      },
+    });
+  }
+
+  protected favoriteLabel(board: BoardInfo): string {
+    return board.isFavorite
+      ? $localize`:@@boards.card.unfavorite.aria:Remove the board ${board.name}:board: from the favorites`
+      : $localize`:@@boards.card.favorite.aria:Add the board ${board.name}:board: to the favorites`;
   }
 
   protected load(): void {
@@ -644,5 +808,56 @@ export class BoardList {
     if (board) {
       this.moveTo(board, roomId);
     }
+  }
+
+  /** The Export room button: a room of more than 20 boards asks first and says how long it may take. */
+  protected askExportRoom(room: RoomInfo): void {
+    const count = this.visibleBoards().length;
+    if (count > LARGE_ROOM_BOARDS) {
+      this.roomExport.set({ phase: 'confirm', room, count, minutes: Math.ceil((count * 5) / 60) });
+      return;
+    }
+    void this.startExportRoom(room);
+  }
+
+  protected async startExportRoom(room: RoomInfo): Promise<void> {
+    const boards = this.visibleBoards().map((board) => ({ id: board.id, name: board.name }));
+    const abort = new AbortController();
+    this.#roomExportAbort = abort;
+    this.roomExport.set({
+      phase: 'running',
+      room,
+      done: 0,
+      total: boards.length,
+      current: boards[0]?.name ?? '',
+    });
+    try {
+      const { pdf, skipped } = await this.#roomExporter.export(boards, loadSettings(), {
+        signal: abort.signal,
+        onProgress: ({ done, total, current }) =>
+          this.roomExport.set({ phase: 'running', room, done, total, current }),
+        texts: {
+          board: (index, total) =>
+            $localize`:@@boards.roomExport.board:Board ${index}:index: of ${total}:total:`,
+          unreadable: $localize`:@@boards.roomExport.unreadable:This board could not be loaded and is not in the PDF.`,
+          empty: $localize`:@@boards.roomExport.empty:This board is empty.`,
+        },
+      });
+      if (pdf === null) {
+        this.roomExport.set(null);
+        return;
+      }
+      downloadBlob(pdf, exportFilename(room.name, room.id, 'pdf', false));
+      this.roomExport.set(skipped.length > 0 ? { phase: 'done', room, skipped } : null);
+    } catch {
+      this.roomExport.set({ phase: 'failed', room });
+    } finally {
+      this.#roomExportAbort = null;
+    }
+  }
+
+  protected cancelExportRoom(): void {
+    this.#roomExportAbort?.abort();
+    this.roomExport.set(null);
   }
 }

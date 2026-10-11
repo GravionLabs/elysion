@@ -1,13 +1,18 @@
 import { type Root, createRoot } from 'react-dom/client';
 import { CanvasApp, type CanvasControls } from './CanvasApp';
 import type { TimerState } from './facilitation/timer';
-import type { StartOptions, VotingView } from './facilitation/voting';
+import type { StartOptions, VotingApi, VotingView } from './facilitation/voting';
 import type { ExportFormat, ExportOptions } from './board-io';
 import { parseTheme } from './useResolvedTheme';
 import { parseLocale, createI18n } from './i18n';
 import type { FileStore } from './yjs/files';
 
-export type { FileStore };
+import type { Person } from './comments/mentions';
+
+export type { FileStore, VotingApi, Person };
+
+/** The people `@` offers in a comment: asked each time the comments open. */
+export type MentionDirectory = () => Promise<readonly Person[]>;
 
 /** What the host gives the canvas to get a WS token. */
 export type TokenProvider = () => Promise<string | null>;
@@ -24,6 +29,8 @@ const OBSERVED_ATTRIBUTES = [
   'user-color',
   'readonly',
   'images-enabled',
+  'max-elements',
+  'can-moderate',
 ] as const;
 
 class ElysionCanvasElement extends HTMLElement {
@@ -35,6 +42,8 @@ class ElysionCanvasElement extends HTMLElement {
   #controls: CanvasControls | null = null;
   #tokenProvider: TokenProvider | undefined;
   #fileStore: FileStore | undefined;
+  #votingApi: VotingApi | undefined;
+  #mentionDirectory: MentionDirectory | undefined;
 
   /**
    * Asked before every connection to the board server for the board-scoped WS token (docs/specs/identity.md): it
@@ -66,25 +75,60 @@ class ElysionCanvasElement extends HTMLElement {
     this.#render();
   }
 
+  /**
+   * How the canvas reaches the board's voting on the server (ADR 0029): `get`, `start`, `vote`, `retract`, `close` and
+   * `clear`, backed by the host's API. A property, like `fileStore`, because it is an object with methods. Without one
+   * a voting cannot be started or voted in.
+   */
+  get votingApi(): VotingApi | undefined {
+    return this.#votingApi;
+  }
+
+  set votingApi(api: VotingApi | undefined) {
+    this.#votingApi = api;
+    this.#render();
+  }
+
+  /**
+   * The people `@` offers in a comment (#733): `{id, name}` with the identity provider's id, which is what a mention stores.
+   * A property, like `fileStore`, because it is a function. Without one only the authors of earlier comments are offered.
+   */
+  get mentionDirectory(): MentionDirectory | undefined {
+    return this.#mentionDirectory;
+  }
+
+  set mentionDirectory(directory: MentionDirectory | undefined) {
+    this.#mentionDirectory = directory;
+    this.#render();
+  }
+
   connectedCallback(): void {
     // A host may set properties on the element before it is upgraded (the script loads lazily, so on the first visit
     // the element can exist before this class does). That leaves an own property that hides the accessor above, and
     // the value would never arrive: move it onto the accessor.
     this.#adoptEarlyProperty('tokenProvider');
     this.#adoptEarlyProperty('fileStore');
+    this.#adoptEarlyProperty('votingApi');
+    this.#adoptEarlyProperty('mentionDirectory');
     this.#root = createRoot(this);
     this.#render();
     this.dispatchEvent(new CustomEvent('ready', { bubbles: true, composed: true }));
   }
 
-  #adoptEarlyProperty(name: 'tokenProvider' | 'fileStore'): void {
+  #adoptEarlyProperty(
+    name: 'tokenProvider' | 'fileStore' | 'votingApi' | 'mentionDirectory',
+  ): void {
     if (Object.prototype.hasOwnProperty.call(this, name)) {
       const value = (this as unknown as Record<string, unknown>)[name];
       delete (this as unknown as Record<string, unknown>)[name];
       if (name === 'tokenProvider') {
         this.tokenProvider = value as TokenProvider | undefined;
-      } else {
+      } else if (name === 'fileStore') {
         this.fileStore = value as FileStore | undefined;
+      } else if (name === 'votingApi') {
+        this.votingApi = value as VotingApi | undefined;
+      } else {
+        this.mentionDirectory = value as MentionDirectory | undefined;
       }
     }
   }
@@ -104,6 +148,22 @@ class ElysionCanvasElement extends HTMLElement {
     this.#controls?.toggleLibrary();
   }
 
+  /**
+   * The board as the picture of its card (#729): a 480 by 300 PNG in the light theme, or `null` when the board is empty or the
+   * canvas is not up. The shell uploads it when an editor leaves the board.
+   */
+  exportThumbnail(): Promise<Blob | null> {
+    return this.#controls ? this.#controls.exportThumbnail() : Promise.resolve(null);
+  }
+
+  /**
+   * Resolves when the images of the board are loaded (nothing is being fetched or uploaded any more) or after at most
+   * `timeoutMs` (20 seconds). A host that makes an export of a board it does not show waits for it after `synced`.
+   */
+  whenSettled(timeoutMs?: number): Promise<void> {
+    return this.#controls ? this.#controls.whenSettled(timeoutMs) : Promise.resolve();
+  }
+
   /** The board (or the selection) as a file, or `null` when there is nothing to export or the canvas is not up. */
   exportBoard(format: ExportFormat, options?: ExportOptions): Promise<Blob | null> {
     return this.#controls ? this.#controls.exportBoard(format, options) : Promise.resolve(null);
@@ -113,6 +173,17 @@ class ElysionCanvasElement extends HTMLElement {
   importFile(file: Blob): Promise<number> {
     return this.#controls
       ? this.#controls.importFile(file)
+      : Promise.reject(new Error(this.#notReady()));
+  }
+
+  /**
+   * Opens the PDF import (#725): a dialog with the pages of the PDF, then one picture in a frame per chosen page, in one undo
+   * step. Resolves with the number of pages put on the board, `0` when it was canceled; rejects on a read-only canvas, on a
+   * board that cannot take pictures and before the canvas is up.
+   */
+  importPdf(file: Blob): Promise<number> {
+    return this.#controls
+      ? this.#controls.importPdf(file)
       : Promise.reject(new Error(this.#notReady()));
   }
 
@@ -148,7 +219,7 @@ class ElysionCanvasElement extends HTMLElement {
     return this.#timer((controls) => controls.stopTimer());
   }
 
-  /** Opens a dot voting for everybody on the board; rejects while one is open, on a read-only canvas and before the canvas is up. */
+  /** Opens a dot voting for everybody on the board (`named` shows who voted for what in the result); rejects while one is open, on a read-only canvas, without a `votingApi` and before the canvas is up. */
   startVoting(options: StartOptions): Promise<void> {
     return this.#timer((controls) => controls.startVoting(options));
   }
@@ -191,12 +262,20 @@ class ElysionCanvasElement extends HTMLElement {
         onPresenceChange={(users) => this.#emit('presence', { users })}
         onTimerChange={(state: TimerState | null) => this.#emit('timer', { state })}
         onVotingChange={(session: VotingView | null) => this.#emit('voting', { session })}
+        onCommentsChange={(summary) => this.#emit('comments', summary)}
         onError={(error) => this.#emit('error', { message: error.message })}
+        onOfflineChange={(state) => this.#emit('offline', state)}
+        onNotice={(message) => this.#emit('notice', { message })}
         onFileError={(error) => this.#emit('fileerror', { message: error.message })}
+        onSynced={() => this.#emit('synced', {})}
         tokenProvider={this.#tokenProvider}
         fileStore={this.#fileStore}
+        votingApi={this.#votingApi}
+        mentionDirectory={this.#mentionDirectory}
+        canModerate={this.hasAttribute('can-moderate')}
         readOnly={this.hasAttribute('readonly')}
         imagesEnabled={this.hasAttribute('images-enabled')}
+        maxElements={positiveInteger(this.getAttribute('max-elements'))}
         userName={this.getAttribute('user-name') ?? undefined}
         userId={this.getAttribute('user-id') ?? undefined}
         userColor={this.getAttribute('user-color') ?? undefined}
@@ -207,6 +286,12 @@ class ElysionCanvasElement extends HTMLElement {
       />,
     );
   }
+}
+
+/** The attribute as a positive whole number, or `undefined` (use the default). */
+function positiveInteger(value: string | null): number | undefined {
+  const number = Number(value);
+  return value !== null && Number.isInteger(number) && number > 0 ? number : undefined;
 }
 
 export function registerElysionCanvasElement(): void {

@@ -11,6 +11,7 @@
     [boardName]="boardName()"
     [canRename]="boardName() !== null"
     [status]="syncStatus()"
+    [offline]="outage() !== null"
     [theme]="theme()"
     [libraryOpen]="libraryOpen()"
     [hasSelection]="selectionCount() > 0"
@@ -19,6 +20,9 @@
     [user]="session.user()"
     [canShare]="canShare()"
     [readOnly]="readOnly()"
+    [canFavorite]="canFavorite()"
+    [favorite]="isFavorite()"
+    (favoriteToggle)="toggleFavorite()"
     [timer]="timer()"
     [voting]="voting()"
     (renameRequested)="rename($event)"
@@ -39,6 +43,12 @@
     (votingEnd)="timerCommand((c) => c.endVoting?.())"
     (votingClear)="timerCommand((c) => c.clearVotingResults?.())"
     (votingFocus)="timerCommand((c) => c.scrollToElement?.($event))"
+  />
+  <app-offline-bar
+    [since]="outage()?.since ?? null"
+    [pending]="outage()?.pending ?? 0"
+    [backSent]="backSent()"
+    (downloadCopy)="downloadCopy()"
   />
   @if (pendingImport(); as file) {
     <div
@@ -157,6 +167,9 @@
       [attr.locale]="language.current"
       [tokenProvider]="wsTokenProvider"
       [fileStore]="fileStore"
+      [votingApi]="votingApi"
+      [mentionDirectory]="mentionDirectory"
+      [attr.can-moderate]="canShare() ? '' : null"
       [attr.images-enabled]="imagesEnabled() ? '' : null"
       [attr.readonly]="readOnly() ? '' : null"
       [attr.user-name]="session.user()?.name"
@@ -164,8 +177,10 @@
       [attr.user-color]="session.user()?.color"
       (ready)="onCanvasReady()"
       (error)="onCanvasError()"
+      (notice)="onCanvasNotice($event)"
       (fileerror)="onFileError($event)"
       (status)="onSyncStatus($event)"
+      (offline)="onOffline($event)"
       (themechange)="onCanvasThemeChange($event)"
       (librarychange)="onLibraryChange($event)"
       (selectioncount)="onSelectionCount($event)"
@@ -174,7 +189,10 @@
       (voting)="onVoting($event)"
     ></elysion-canvas>
   }
-  @if (shareOpen() && canShare()) {
-    <app-share-dialog [boardId]="boardId()" (closed)="closeShare()" />
+  <!-- Loaded the first time it is opened (#710): most visits never share. -->
+  @defer (when shareOpen() && canShare()) {
+    @if (shareOpen() && canShare()) {
+      <app-share-dialog [boardId]="boardId()" (closed)="closeShare()" />
+    }
   }
 }

@@ -8,21 +8,66 @@ export interface TallyEntry {
   count: number;
   /** The element's text (a sticky note's bound text), else its type. */
   label: string;
+  /** Who voted for it, only in a named voting. */
+  voters?: Array<{ id: string; name: string }>;
 }
 
 /**
  * The current dot voting as the canvas announces it in its `voting` event, for the caller: their own number of votes,
- * never the others', and the ranked `tally` only once it is closed (ADR 0020).
+ * never the others', and the ranked `tally` only once it is closed (ADR 0029).
  */
 export interface VotingSession {
   id: string;
   name: string;
   votesPerPerson: number;
   status: 'open' | 'closed';
+  /** A named voting shows who voted for what in the result. */
+  named: boolean;
   startedBy: { id: string; name: string };
   /** How many votes the caller has placed. */
   myVotes: number;
   tally?: TallyEntry[];
+}
+
+/** The voting as the BFF returns it to the caller (ADR 0029, `VotingView`); the canvas works from it. */
+export interface BoardVoting {
+  id: string;
+  name: string;
+  votesPerPerson: number;
+  status: 'open' | 'closed';
+  named: boolean;
+  startedBy: { id: string; name: string };
+  startedAt?: string | null;
+  closedAt?: string | null;
+  myVotes: number;
+  myElementVotes: Record<string, number>;
+  placed?: Record<string, number>;
+  result?: Array<{
+    elementId: string;
+    count: number;
+    voters?: Array<{ id: string; name: string }>;
+  }>;
+}
+
+/** What the canvas calls to reach the voting on the server (`votingApi` of `<elysion-canvas>`, ADR 0029). */
+export interface BoardVotingApi {
+  get(): Promise<BoardVoting | null>;
+  start(options: { name?: string; votesPerPerson: number; named?: boolean }): Promise<BoardVoting>;
+  vote(votingId: string, elementId: string): Promise<BoardVoting>;
+  retract(votingId: string, elementId: string): Promise<BoardVoting | null>;
+  close(votingId: string): Promise<BoardVoting>;
+  clear(): Promise<void>;
+}
+
+/** The `offline` event of the canvas (#735): the connection broke after the board was loaded, or is back. */
+export interface OfflineState {
+  offline: boolean;
+  /** When the outage began (epoch milliseconds), or `null` while online. */
+  since: number | null;
+  /** The changes made on this device during the outage. */
+  pending: number;
+  /** In the report that ends an outage: how many changes were pending when the connection came back. */
+  sent: number;
 }
 
 export interface TimerState {
@@ -45,8 +90,25 @@ export interface TimerState {
 export type CanvasElement = HTMLElement & {
   /** Opens the library sidebar, or closes it when it is open. */
   toggleLibrary?(): void;
+  /** The board as the picture of its card (#729): a 480 by 300 PNG in the light theme, or `null` for an empty board. */
+  exportThumbnail?(): Promise<Blob | null>;
+  /** Resolves when the images of the board are loaded, or after `timeoutMs`; an export of a board nobody shows waits for it (#727). */
+  whenSettled?(timeoutMs?: number): Promise<void>;
   /** The board (or the selection) as a file, or `null` when there is nothing to export. */
-  exportBoard?(format: ExportFormat, options?: { selectionOnly?: boolean }): Promise<Blob | null>;
+  exportBoard?(
+    format: ExportFormat,
+    options?: {
+      selectionOnly?: boolean;
+      background?: boolean;
+      theme?: 'current' | 'light' | 'dark';
+      scale?: 1 | 2 | 3;
+      pdfPages?: 'auto' | 'whole';
+      pageFormat?: 'fit' | 'a4' | 'letter';
+      orientation?: 'auto' | 'portrait' | 'landscape';
+      /** A PDF gets the board's comments as text pages at the end (#733). */
+      comments?: boolean;
+    },
+  ): Promise<Blob | null>;
   /**
    * Asked by the canvas before every connection to the board server for the board-scoped WS token: it resolves with
    * the token, or `null` when no connection is wanted (the shell has shown why); a rejection is retried with a
@@ -59,8 +121,17 @@ export type CanvasElement = HTMLElement & {
    * as an object with methods. The `images-enabled` attribute goes with it.
    */
   fileStore?: BoardFileStore;
+  /** How the canvas reaches the board's voting on the server (`GET/POST/DELETE` through the BFF, ADR 0029). A property, as an object with methods. */
+  votingApi?: BoardVotingApi;
+  /**
+   * The people `@` offers in a comment (#733), asked each time the comments open: `{id, name}`. A property, as a function.
+   * The `can-moderate` attribute (the board's owner may delete any comment) goes with the comments.
+   */
+  mentionDirectory?: () => Promise<Array<{ id: string; name: string }>>;
   /** Replaces the board with an .excalidraw file; resolves with the number of elements in it. */
   importFile?(file: Blob): Promise<number>;
+  /** Opens the PDF import (#725): a dialog with the pages, then a picture in a frame per chosen page; resolves with the number of pages put on the board (0: canceled). */
+  importPdf?(file: Blob): Promise<number>;
   /** Adds an .excalidraw file to the board around the view center, selected, as one undo step; resolves with the number of elements added. */
   insertFile?(file: Blob): Promise<number>;
   /**
@@ -77,7 +148,7 @@ export type CanvasElement = HTMLElement & {
    * `startVoting` rejects while a voting is open, `endVoting` and `clearVotingResults` are no-ops without one. The canvas
    * announces the state as the `voting` event.
    */
-  startVoting?(options: { name?: string; votesPerPerson: number }): Promise<void>;
+  startVoting?(options: { name?: string; votesPerPerson: number; named?: boolean }): Promise<void>;
   endVoting?(): Promise<void>;
   clearVotingResults?(): Promise<void>;
   /** Scrolls the view to an element (a result); rejects when it is not on the board. */

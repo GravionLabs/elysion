@@ -2,15 +2,21 @@ using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Endpoints;
+using Elysion.BusinessBackend.Api.Endpoints.Admin;
 using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
 using Elysion.BusinessBackend.Api.Logging;
 using Elysion.BusinessBackend.Api.Members;
 using Elysion.BusinessBackend.Api.Observability;
+using Elysion.BusinessBackend.Api.Quotas;
+using Elysion.BusinessBackend.Api.Invitations;
+using Elysion.BusinessBackend.Api.Voting;
 
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+// No `Server: Kestrel` banner (#781).
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 
 // Serilog, JSON lines on stdout, one line per request (ADR 0025).
 builder.AddElysionLogging();
@@ -25,6 +31,19 @@ builder.Services.AddBoardAuthorization();
 // The files of boards (images) live in an S3-compatible store, not in the shared document (#702).
 builder.Services.AddElysionFileStorage();
 
+// What one person may keep: templates and boards (#777).
+builder.Services.AddOptions<QuotaOptions>()
+    .Configure<IConfiguration>((options, configuration) =>
+    {
+        options.MaxTemplates =
+            configuration.GetValue(QuotaOptions.MaxTemplatesSetting, QuotaOptions.DefaultMaxTemplates);
+        options.MaxTemplateCharacters = configuration.GetValue(QuotaOptions.MaxTemplateCharactersSetting,
+            QuotaOptions.DefaultMaxTemplateCharacters);
+        options.MaxBoards = configuration.GetValue(QuotaOptions.MaxBoardsSetting, QuotaOptions.DefaultMaxBoards);
+    })
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 builder.Services.AddDbContext<ElysionDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Elysion"))
         .AddInterceptors(new CommandCountInterceptor()));
@@ -33,7 +52,14 @@ builder.Services.AddDbContext<ElysionDbContext>(options =>
 builder.Services.AddScoped<IUnitOfWork>(services => services.GetRequiredService<ElysionDbContext>());
 builder.Services.AddScoped<IBoardRepository, BoardRepository>();
 builder.Services.AddScoped<IBoardDocumentRepository, BoardDocumentRepository>();
+builder.Services.AddScoped<IBoardUserStateRepository, BoardUserStateRepository>();
+builder.Services.AddScoped<IVotingRepository, VotingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IGroupRepository, GroupRepository>();
+builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
+builder.Services.AddScoped<InvitationService>();
 builder.Services.AddScoped<IMembershipRepository, MembershipRepository>();
 builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IRoomMembershipRepository, RoomMembershipRepository>();
@@ -47,6 +73,12 @@ builder.Services.AddScoped<CurrentUserAccessor>();
 builder.Services.AddScoped<ICurrentUser>(services => services.GetRequiredService<CurrentUserAccessor>());
 
 builder.Services.AddSingleton(TimeProvider.System);
+
+// The realtime service is told about every change of a voting so the other clients see it at once (ADR 0029).
+builder.Services.AddOptions<RealtimeOptions>()
+    .Configure<IConfiguration>((options, configuration) =>
+        options.Url = configuration[RealtimeOptions.UrlSetting] ?? "");
+builder.Services.AddHttpClient<IVotingNotifier, HttpVotingNotifier>();
 
 var app = builder.Build();
 
@@ -92,8 +124,16 @@ app.MapBoardEndpoints();
 app.MapBoardMemberEndpoints();
 app.MapRoomEndpoints();
 app.MapRoomMemberEndpoints();
+app.MapRoomGroupEndpoints();
+app.MapGroupEndpoints();
+app.MapAdminEndpoints();
 app.MapBoardDocumentEndpoints();
+app.MapBoardAccessEndpoints();
 app.MapBoardFileEndpoints();
+app.MapBoardThumbnailEndpoints();
+app.MapBoardUserStateEndpoints();
+app.MapVotingEndpoints();
+app.MapInvitationEndpoints();
 app.MapTemplateEndpoints();
 
 app.Run();

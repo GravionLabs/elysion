@@ -6,6 +6,8 @@ using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Identity;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
@@ -32,13 +34,26 @@ public class UserProvisioningTests
     private static ClaimsPrincipal Principal(params (string Type, string Value)[] claims) =>
         new(new ClaimsIdentity(claims.Select(c => new Claim(c.Type, c.Value)), "test"));
 
+    /// <summary>The service as the app builds it, with the groups claim at its default and a cache of its own.</summary>
+    internal static UserProvisioningService Service(ElysionDbContext db,
+        IUserRepository users,
+        TimeProvider time,
+        IMemoryCache? cache = null,
+        string groupsClaim = "groups") =>
+        new(users,
+            new GroupRepository(db),
+            db,
+            cache ?? new MemoryCache(new MemoryCacheOptions()),
+            Options.Create(new OidcOptions { GroupsClaim = groupsClaim }),
+            time);
+
     private async Task<User?> ProvisionAsync(ClaimsPrincipal principal,
         Func<ElysionDbContext, IUserRepository>? repository = null)
     {
         await using var db = _database.NewContext();
         var time = Substitute.For<TimeProvider>();
         time.GetUtcNow().Returns(Now);
-        var service = new UserProvisioningService(repository?.Invoke(db) ?? new UserRepository(db), db, time);
+        var service = Service(db, repository?.Invoke(db) ?? new UserRepository(db), time);
         return await service.ProvisionAsync(principal, Ct);
     }
 
@@ -59,6 +74,7 @@ public class UserProvisioningTests
         stored.Id.ShouldBe(user!.Id);
         (stored.Subject, stored.Email, stored.DisplayName, stored.CreatedAt).ShouldBe(("kc-1", "ada@example.com", "ada",
             Now));
+        stored.LastSeenAt.ShouldBe(Now);
     }
 
     [Test]
@@ -83,13 +99,38 @@ public class UserProvisioningTests
     {
         var principal = Principal(("sub", "kc-1"), ("email", "ada@example.com"), ("preferred_username", "ada"));
         await ProvisionAsync(principal);
-        await using var db = _database.NewContext();
-        var unitOfWork = Substitute.For<IUnitOfWork>();
-        var service = new UserProvisioningService(new UserRepository(db), unitOfWork, TimeProvider.System);
-
-        await service.ProvisionAsync(principal, Ct);
+        var unitOfWork = await ProvisionAgainAsync(principal, Now.AddMinutes(4));
 
         await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task The_time_a_person_was_seen_is_written_when_the_last_one_is_five_minutes_old()
+    {
+        var principal = Principal(("sub", "kc-1"), ("email", "ada@example.com"), ("preferred_username", "ada"));
+        await ProvisionAsync(principal);
+
+        var unitOfWork = await ProvisionAgainAsync(principal, Now.AddMinutes(5));
+
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>A second request of the same person at <paramref name="at"/>, with a unit of work that only counts the saves.</summary>
+    private async Task<IUnitOfWork> ProvisionAgainAsync(ClaimsPrincipal principal, DateTimeOffset at)
+    {
+        await using var db = _database.NewContext();
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var time = Substitute.For<TimeProvider>();
+        time.GetUtcNow().Returns(at);
+        var service = new UserProvisioningService(new UserRepository(db),
+            new GroupRepository(db),
+            unitOfWork,
+            new MemoryCache(new MemoryCacheOptions()),
+            Options.Create(new OidcOptions()),
+            time);
+
+        await service.ProvisionAsync(principal, Ct);
+        return unitOfWork;
     }
 
     [TestCase("preferred_username", "ada", "ada")]
@@ -159,6 +200,9 @@ public class UserProvisioningTests
         public Task<User?> FindBySubjectForUpdateAsync(string subject, CancellationToken cancellationToken) =>
             Task.FromResult<User?>(null);
 
+        public Task<User?> FindBySubjectAsync(string subject, CancellationToken cancellationToken) =>
+            inner.FindBySubjectAsync(subject, cancellationToken);
+
         public Task<User?> FindAsync(Guid id, CancellationToken cancellationToken) =>
             inner.FindAsync(id, cancellationToken);
 
@@ -206,7 +250,7 @@ public class UserProvisioningTests
             await using var db = database.NewContext();
             var time = Substitute.For<TimeProvider>();
             time.GetUtcNow().Returns(Now);
-            return await new UserProvisioningService(new UserRepository(db), db, time)
+            return await Service(db, new UserRepository(db), time)
                 .ProvisionAsync(Principal(("sub", "kc-1"), ("preferred_username", "ada")), Ct);
         }
 

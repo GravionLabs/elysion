@@ -1,15 +1,14 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router, Routes, UrlMatcher } from '@angular/router';
+import { CanActivateFn, CanDeactivateFn, Router, Routes, UrlMatcher } from '@angular/router';
+import type { Board } from './board/board';
 import { autoLoginPartialRoutesGuard } from 'angular-auth-oidc-client';
-import { Board } from './board/board';
-import { BoardList } from './board-list/board-list';
 
 /** A board id becomes a Yjs room name, so an empty or whitespace-only one is never usable. */
 export const boardIdGuard: CanActivateFn = (route) =>
   route.paramMap.get('boardId')?.trim() ? true : inject(Router).createUrlTree(['/']);
 
 /**
- * The board list and its views: `/` (all boards), `/rooms/none` (boards that are in no room) and `/rooms/:roomId`.
+ * The board list and its views: `/` (all boards), `/favorites` (the starred ones; the view is `roomId` = `favorites`), `/rooms/none` (boards that are in no room) and `/rooms/:roomId`.
  * One route, so the same `BoardList` stays in place while the user moves between views (the list is not loaded
  * again); the matcher hands `roomId` to its input.
  */
@@ -17,11 +16,20 @@ export const boardListMatcher: UrlMatcher = (segments) => {
   if (segments.length === 0) {
     return { consumed: [] };
   }
+  if (segments.length === 1 && segments[0].path === 'favorites') {
+    return { consumed: segments, posParams: { roomId: segments[0] } };
+  }
   if (segments.length === 2 && segments[0].path === 'rooms') {
     return { consumed: segments, posParams: { roomId: segments[1] } };
   }
   return null;
 };
+
+/**
+ * Leaving a board draws the picture of its card first (#729): by the time the component is destroyed its canvas has already been
+ * taken out of the page and cannot draw any more.
+ */
+export const boardLeaveGuard: CanDeactivateFn<Board> = (board) => board.prepareToLeave();
 
 // The route param is called `boardId` so `withComponentInputBinding()` hands it to `Board.boardId`.
 /**
@@ -30,8 +38,24 @@ export const boardListMatcher: UrlMatcher = (segments) => {
  */
 export function buildRoutes(loginGuard: CanActivateFn): Routes {
   return [
-    { matcher: boardListMatcher, component: BoardList, canActivate: [loginGuard] },
-    { path: 'board/:boardId', component: Board, canActivate: [boardIdGuard, loginGuard] },
+    // Each page is a chunk of its own (#710): the first load holds the shell and the login, not the board and its dialogs.
+    {
+      matcher: boardListMatcher,
+      loadComponent: () => import('./board-list/board-list').then((m) => m.BoardList),
+      canActivate: [loginGuard],
+    },
+    {
+      path: 'board/:boardId',
+      loadComponent: () => import('./board/board').then((m) => m.Board),
+      canActivate: [boardIdGuard, loginGuard],
+      canDeactivate: [boardLeaveGuard],
+    },
+    // An invitation link (#734): the login guard first, so the link survives the round trip to the identity provider.
+    {
+      path: 'invite/:token',
+      loadComponent: () => import('./invite/invite').then((m) => m.Invite),
+      canActivate: [loginGuard],
+    },
     { path: '**', redirectTo: '' },
   ];
 }

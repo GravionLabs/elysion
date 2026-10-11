@@ -29,6 +29,7 @@ export type WsTokenRejection =
   | 'invalid_signature'
   | 'malformed'
   | 'missing_claim'
+  | 'replayed'
   | 'invalid';
 
 function rejectionOf(error: errors.JOSEError): WsTokenRejection {
@@ -44,6 +45,11 @@ function rejectionOf(error: errors.JOSEError): WsTokenRejection {
   return 'invalid';
 }
 
+/** Remembers which tokens were used. `claim` is true the first time a `jti` is seen and false after that. */
+export interface TokenReplayGuard {
+  claim(jti: string, ttlSeconds: number): Promise<boolean>;
+}
+
 /** Seconds of clock difference tolerated between the BFF and this service; the token lives for a minute. */
 const CLOCK_TOLERANCE_SECONDS = 5;
 
@@ -56,7 +62,14 @@ const CLOCK_TOLERANCE_SECONDS = 5;
 export class WsTokenVerifier {
   private readonly key: Uint8Array;
 
-  constructor(secret: string) {
+  /**
+   * @param replayGuard makes a token single-use: when given, a token with a `jti` opens one socket, ever. Without it
+   * (unit tests) nothing is remembered.
+   */
+  constructor(
+    secret: string,
+    private readonly replayGuard?: TokenReplayGuard,
+  ) {
     this.key = new TextEncoder().encode(secret);
   }
 
@@ -72,7 +85,8 @@ export class WsTokenVerifier {
         clockTolerance: CLOCK_TOLERANCE_SECONDS,
         requiredClaims: ['sub', 'exp', 'boardId', 'role'],
       });
-      const { sub, boardId, role } = payload as {
+      const { sub, boardId, role, jti } = payload as {
+        jti?: unknown;
         sub?: unknown;
         boardId?: unknown;
         role?: unknown;
@@ -84,6 +98,18 @@ export class WsTokenVerifier {
       }
       if (!isBoardRole(role)) {
         throw new InvalidWsTokenError('The token has no valid role.', { reason: 'missing_claim' });
+      }
+      // A token that was stolen (it travels in a URL) opens nothing a second time. A token without a `jti` comes from a BFF
+      // that predates this rule; it stays valid for its minute.
+      if (this.replayGuard && typeof jti === 'string' && jti !== '') {
+        const secondsLeft = (typeof payload.exp === 'number' ? payload.exp : 0) - Date.now() / 1000;
+        const fresh = await this.replayGuard.claim(
+          jti,
+          Math.ceil(Math.max(secondsLeft, 0)) + CLOCK_TOLERANCE_SECONDS + 1,
+        );
+        if (!fresh) {
+          throw new InvalidWsTokenError('The token was used before.', { reason: 'replayed' });
+        }
       }
       return { sub, boardId, role };
     } catch (error) {

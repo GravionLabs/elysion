@@ -187,4 +187,21 @@ describe('PresenceRelay', () => {
       expect(pub.hashes.get('elysion:presence:state:board-1')?.size).toBe(0);
     });
   });
+
+  it.each([
+    'not json',
+    'null',
+    '42',
+    JSON.stringify({ from: 'x' }),
+    JSON.stringify({ data: 'AQID' }),
+  ])('drops the malformed message %s without throwing (#775)', async (raw) => {
+    const bus = new FakeRedisBus();
+    const relay = createRelay(bus);
+    const received = vi.fn();
+    await relay.subscribe('board-1', received);
+
+    expect(() => new FakeRedisClient(bus).publish('elysion:presence:board-1', raw)).not.toThrow();
+
+    expect(received).not.toHaveBeenCalled();
+  });
 });

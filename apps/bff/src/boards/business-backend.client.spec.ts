@@ -1,4 +1,5 @@
 import {
+  GoneException,
   BadGatewayException,
   BadRequestException,
   ConflictException,
@@ -48,6 +49,109 @@ describe('BusinessBackendClient', () => {
     await expect(client.listBoards(TOKEN)).resolves.toEqual([board]);
     expect(lastCall().url).toBe('http://backend.test:5174/boards');
     expect(lastCall().init.method).toBe('GET');
+  });
+
+  it('passes a search on as an encoded query', async () => {
+    fetchMock.mockResolvedValue(respond(200, [board]));
+
+    await client.listBoards(TOKEN, 'Sprint & Retro');
+    expect(lastCall().url).toBe('http://backend.test:5174/boards?query=Sprint%20%26%20Retro');
+  });
+
+  it('records an opening and sets or removes a star', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+
+    await expect(client.openBoard(TOKEN, board.id)).resolves.toBeUndefined();
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/open`);
+    expect(lastCall().init.method).toBe('POST');
+    await client.setFavorite(TOKEN, board.id, true);
+    expect(lastCall().init.method).toBe('PUT');
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/favorite`);
+    await client.setFavorite(TOKEN, board.id, false);
+    expect(lastCall().init.method).toBe('DELETE');
+  });
+
+  it('makes, lists, revokes and follows invitation links', async () => {
+    fetchMock.mockResolvedValue(respond(201, { id: 'i1', token: 't' }));
+    await client.createInvitation(TOKEN, 'boards', board.id, { role: 'Viewer', expiresInHours: 2 });
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/invitations`);
+    expect(lastCall().init.method).toBe('POST');
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({ role: 'Viewer', expiresInHours: 2 });
+
+    fetchMock.mockResolvedValue(respond(200, []));
+    await client.listInvitations(TOKEN, 'rooms', 'r1');
+    expect(lastCall().url).toBe('http://backend.test:5174/rooms/r1/invitations');
+
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    await expect(client.revokeInvitation(TOKEN, 'rooms', 'r1', 'i1')).resolves.toBeUndefined();
+    expect(lastCall().init.method).toBe('DELETE');
+    expect(lastCall().url).toBe('http://backend.test:5174/rooms/r1/invitations/i1');
+
+    fetchMock.mockResolvedValue(respond(200, { kind: 'board', id: board.id, role: 'Viewer' }));
+    await client.acceptInvitation(TOKEN, 'abc-_');
+    expect(lastCall().url).toBe('http://backend.test:5174/invitations/abc-_/accept');
+  });
+
+  it('turns the 410 of a link that is no longer valid into a Gone', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 410 }));
+
+    await expect(client.acceptInvitation(TOKEN, 'abc')).rejects.toBeInstanceOf(GoneException);
+  });
+
+  it('reads, starts, votes, retracts, closes and clears a voting', async () => {
+    const voting = { id: 'v1', status: 'open' };
+    fetchMock.mockImplementation(async () => respond(200, voting));
+    await expect(client.getVoting(TOKEN, board.id)).resolves.toEqual(voting);
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/voting`);
+
+    fetchMock.mockImplementation(async () => new Response(null, { status: 204 }));
+    await expect(client.getVoting(TOKEN, board.id)).resolves.toBeNull();
+
+    fetchMock.mockImplementation(async () => respond(201, voting));
+    await client.startVoting(TOKEN, board.id, { votesPerPerson: 3 });
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/votings`);
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({ votesPerPerson: 3 });
+
+    fetchMock.mockImplementation(async () => respond(200, voting));
+    await client.castVote(TOKEN, board.id, 'v1', 'e 1');
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/votings/v1/votes`);
+    await client.retractVote(TOKEN, board.id, 'v1', 'e 1');
+    expect(lastCall().url).toBe(
+      `http://backend.test:5174/boards/${board.id}/votings/v1/votes/e%201`,
+    );
+    expect(lastCall().init.method).toBe('DELETE');
+    await client.closeVoting(TOKEN, board.id, 'v1');
+    expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/votings/v1/close`);
+
+    fetchMock.mockImplementation(async () => new Response(null, { status: 204 }));
+    await expect(client.retractVote(TOKEN, board.id, 'v1', 'e2')).resolves.toBeNull();
+    await expect(client.clearVotings(TOKEN, board.id)).resolves.toBeUndefined();
+    expect(lastCall().init.method).toBe('DELETE');
+  });
+
+  it('searches groups with an encoded query and lists the caller’s own', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(respond(200, [])));
+
+    await client.searchGroups(TOKEN, 'Design & Brand');
+    expect(lastCall().url).toBe('http://backend.test:5174/groups?query=Design%20%26%20Brand');
+    await client.listMyGroups(TOKEN);
+    expect(lastCall().url).toBe('http://backend.test:5174/me/groups');
+  });
+
+  it('gives a group a role in a room, lists the groups of the room and removes one', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(respond(200, { groupId: 'g1', name: 'G', role: 'Editor' })),
+    );
+
+    await client.setRoomGroupRole(TOKEN, ROOM, 'g1', 'Editor');
+    expect(lastCall().url).toBe(`http://backend.test:5174/rooms/${ROOM}/groups/g1`);
+    expect(lastCall().init.method).toBe('PUT');
+    expect(lastCall().init.body).toBe(JSON.stringify({ role: 'Editor' }));
+    await client.listRoomGroups(TOKEN, ROOM);
+    expect(lastCall().url).toBe(`http://backend.test:5174/rooms/${ROOM}/groups`);
+    fetchMock.mockImplementation(() => Promise.resolve(new Response(null, { status: 204 })));
+    await expect(client.removeRoomGroup(TOKEN, ROOM, 'g1')).resolves.toBeUndefined();
+    expect(lastCall().init.method).toBe('DELETE');
   });
 
   it('gets one board', async () => {

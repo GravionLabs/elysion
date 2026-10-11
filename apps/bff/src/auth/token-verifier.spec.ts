@@ -1,7 +1,7 @@
 import { SignJWT, generateKeyPair } from 'jose';
 import { describe, expect, it } from 'vitest';
 import { AUDIENCE, ISSUER, signToken, testVerifier } from '../../test/test-auth.js';
-import { InvalidTokenError } from './token-verifier.js';
+import { InvalidTokenError, realmRoles } from './token-verifier.js';
 
 describe('TokenVerifier', () => {
   const verifier = testVerifier();
@@ -10,11 +10,14 @@ describe('TokenVerifier', () => {
   it('accepts a valid token and returns its subject and email', async () => {
     const claims = await verifier.verify(await signToken());
 
-    expect(claims).toEqual({ sub: 'kc-sub-1', email: 'dev@elysion.local' });
+    expect(claims).toEqual({ sub: 'kc-sub-1', email: 'dev@elysion.local', roles: [] });
   });
 
   it('accepts a token without an email: it is optional', async () => {
-    expect(await verifier.verify(await signToken({ email: '' }))).toEqual({ sub: 'kc-sub-1' });
+    expect(await verifier.verify(await signToken({ email: '' }))).toEqual({
+      sub: 'kc-sub-1',
+      roles: [],
+    });
   });
 
   it('refuses a token signed with another key', async () => {
@@ -94,5 +97,28 @@ describe('TokenVerifier', () => {
     const error = await broken.verify(await signToken()).catch((e: unknown) => e);
 
     expect(error).not.toBeInstanceOf(InvalidTokenError);
+  });
+
+  it('reads the realm roles of the token, and none when there are none', async () => {
+    const withRoles = await verifier.verify(
+      await signToken({ realmRoles: ['offline_access', 'elysion-admin'] }),
+    );
+    const without = await verifier.verify(await signToken());
+
+    expect(withRoles.roles).toEqual(['offline_access', 'elysion-admin']);
+    expect(without.roles).toEqual([]);
+  });
+});
+
+describe('realmRoles', () => {
+  it.each([undefined, null, 'x', 5, [], {}, { roles: 'a' }, { roles: [1, null, ''] }])(
+    'gives no role for %j',
+    (value) => {
+      expect(realmRoles(value)).toEqual([]);
+    },
+  );
+
+  it('keeps the strings of the list', () => {
+    expect(realmRoles({ roles: ['a', 3, 'b'] })).toEqual(['a', 'b']);
   });
 });

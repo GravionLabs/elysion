@@ -9,6 +9,7 @@ import {
   deleteBoardsNamed,
   elementCount,
   emailOf,
+  expectAccessible,
   login,
   openBoard,
   waitForApi,
@@ -123,4 +124,84 @@ test('a token that has run out ends neither an open connection nor a reconnect',
   await bothSee(5);
   expect((await boardElements(a)).length).toBe(5);
   await expect(a.getByRole('alert')).toHaveCount(0);
+});
+
+/** The text of the board's text elements, as the canvas holds them. */
+const texts = async (page: Page) =>
+  (await boardElements(page)).filter((element) => element.type === 'text').map((e) => e.text);
+
+async function editText(page: Page, x: number, y: number, text: string) {
+  const box = (await page.locator('elysion-canvas').boundingBox())!;
+  await page.mouse.dblclick(box.x + x, box.y + y);
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type(text);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+}
+
+test('both people change the same text during an outage and have the same text when it is back (#735)', async () => {
+  const box = (await a.locator('elysion-canvas').boundingBox())!;
+  await a.getByTestId('elysion-tool-text').click();
+  await a.mouse.click(box.x + 420, box.y + 470);
+  await a.keyboard.type('Original');
+  await a.keyboard.press('Escape');
+  await a.keyboard.press('Escape');
+  await bothSee(6);
+
+  await outage(async () => {
+    await expect(b.getByText('Connected', { exact: true })).toHaveCount(0, { timeout: 30_000 });
+    await editText(a, 450, 485, 'Changed by A');
+    await editText(b, 450, 485, 'Changed by B');
+    expect(await texts(a)).toEqual(['Changed by A']);
+    expect(await texts(b)).toEqual(['Changed by B']);
+
+    // After 10 seconds the bar says that the work is kept on the device, with what is waiting to be sent.
+    await expect(
+      a.getByText(/Working offline\. Your changes are saved on this device/),
+    ).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(a.getByText(/changes? waiting/)).toBeVisible();
+    await expectAccessible(a, 'the offline bar');
+  });
+
+  await expect(a.getByText(/^\s*Back online/)).toBeVisible({ timeout: 30_000 });
+  let seen = '';
+  await expect
+    .poll(
+      async () => {
+        const [mine, theirs] = [await texts(a), await texts(b)];
+        seen = JSON.stringify({ a: mine, b: theirs });
+        return (
+          mine.length === 1 && mine[0] === theirs[0] && /^Changed by [AB]$/.test(mine[0] ?? '')
+        );
+      },
+      { timeout: 60_000 },
+    )
+    .toBe(true)
+    .catch((error: Error) => {
+      throw new Error(`${error.message}\nthe texts at the end: ${seen}`);
+    });
+});
+
+test('a tab that is reloaded during an outage keeps what was drawn, and sends it when the service is back (#735)', async () => {
+  await outage(async () => {
+    await drawRectangle(a, 620, 450);
+    expect(await elementCount(a)).toBe(7);
+    await a.waitForTimeout(1500); // the change is written to the device
+    await a.reload(); // the service is still down: the page comes up without the board
+  });
+
+  await bothSee(7);
+  // Nothing of it is left on the device once it was sent.
+  await expect
+    .poll(
+      () =>
+        a.evaluate(async () => {
+          const names = ((await indexedDB.databases?.()) ?? []).map((d) => d.name ?? '');
+          return names.filter((name) => name.startsWith('elysion-board:')).length;
+        }),
+      { timeout: 30_000 },
+    )
+    .toBe(0);
 });

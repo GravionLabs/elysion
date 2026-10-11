@@ -7,6 +7,9 @@ public interface IUserRepository
     /// <summary>The user of an identity-provider subject, or null; tracked, so a change is saved by the next commit.</summary>
     Task<User?> FindBySubjectForUpdateAsync(string subject, CancellationToken cancellationToken);
 
+    /// <summary>The user of an identity-provider subject, or null; an untracked copy that never creates the user.</summary>
+    Task<User?> FindBySubjectAsync(string subject, CancellationToken cancellationToken);
+
     /// <summary>A user by id, or null; an untracked copy.</summary>
     Task<User?> FindAsync(Guid id, CancellationToken cancellationToken);
 

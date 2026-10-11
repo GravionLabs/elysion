@@ -2,16 +2,19 @@
 
 Playwright tests with two browsers on one board (user A and user B). They are **not** part of `pnpm test`: they need the whole stack.
 
-| Suite                   | What it checks                                                                                                                   |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `collaboration.spec.ts` | a board from a template, sharing, the shared timer, the dot voting (ending by itself when both have voted), a viewer's limits    |
-| `files.spec.ts`         | images: the bytes in the object store, the other person sees them, they survive a reload                                         |
-| `rooms.spec.ts`         | a room, shared as editor, a board in it, moving it out, deleting the room (the boards stay)                                      |
-| `templates.spec.ts`     | the element count of each built-in template, adding one to a board, an own template (save, find, delete)                         |
-| `io.spec.ts`            | importing `fixtures/sample.excalidraw`; PNG, SVG, PDF and Excalidraw export as downloads; exporting the selection only           |
-| `drawing.spec.ts`       | rectangle, text, sticky note color, arrow, a connector from a connection point that follows its shape, undo and redo; B compares |
-| `language.spec.ts`      | German for `Accept-Language: de` ("Neues Board"), the user menu switch is remembered by cookie, English for other languages      |
-| `reconnect.spec.ts`     | the realtime service stopped and started (`compose` helper), drawing during the outage, a WS token of 5 seconds                  |
+| Suite                   | What it checks                                                                                                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `collaboration.spec.ts` | a board from a template, sharing, the shared timer, the dot voting (ending by itself when both have voted; a viewer votes too; a named voting shows the names), a viewer's limits |
+| `comments.spec.ts`      | a viewer comments (the one thing a viewer writes), the owner sees it at once, replies with a mention and resolves it, who may delete what, the comments survive a reload          |
+| `invitations.spec.ts`   | an invitation link: the owner makes one for a Viewer (shown once), the second person joins by it and is a viewer, the use is counted, revoking ends it                            |
+| `sso.spec.ts`           | signing in through the stand-in for Microsoft Entra ID (the realm `entra-stub`, ADR 0027): `erika` makes a board, signs out, signs in again and finds it (linked, not made twice) |
+| `files.spec.ts`         | images: the bytes in the object store, the other person sees them, they survive a reload                                                                                          |
+| `rooms.spec.ts`         | a room, shared as editor, a board in it, moving it out, deleting the room (the boards stay)                                                                                       |
+| `templates.spec.ts`     | the element count of each built-in template, adding one to a board, an own template (save, find, delete)                                                                          |
+| `io.spec.ts`            | importing `fixtures/sample.excalidraw`; PNG, SVG, PDF and Excalidraw export as downloads; exporting the selection only                                                            |
+| `drawing.spec.ts`       | rectangle, text, sticky note color, arrow, a connector from a connection point that follows its shape, undo and redo; B compares                                                  |
+| `language.spec.ts`      | German for `Accept-Language: de` ("Neues Board"), the user menu switch is remembered by cookie, English for other languages                                                       |
+| `reconnect.spec.ts`     | the realtime service stopped and started (`compose` helper), drawing during the outage, a WS token of 5 seconds                                                                   |
 
 ```sh
 pnpm demo                                   # or: docker compose up -d --build (the stack, on http://localhost)
@@ -21,6 +24,7 @@ pnpm test:browser
 
 - `E2E_USER_A` / `E2E_USER_B` (default `dev1` and `dev2`; the password is the username). A Keycloak database that was imported before `dev1`
   and `dev2` were in the realm has only `dev` and `guest`: `E2E_USER_A=guest E2E_USER_B=dev pnpm test:browser`.
+- `sso.spec.ts` needs a Keycloak that imported the realm `entra-stub` and the identity provider `microsoft` (a database from before ADR 0027 has neither: drop the `keycloak` database). The people of the stand-in are `erika` (in the groups Design and Admins) and `emil` (Design); the password is the username; `loginThroughMicrosoft` signs one in.
 - `E2E_BASE_URL` (default `http://localhost`), `E2E_CHROME_PATH` (a browser of the machine instead of Playwright's own).
 - The tests of a file run in order on one board that the first test makes and the last one deletes. The canvas is drawn on a `<canvas>`:
   check what shows in the page (the top bar, the results dialog), and click the notes by the coordinates of the Retrospective template in a

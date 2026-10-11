@@ -1,0 +1,11 @@
+{
+  "name": "smoke",
+  "description": "20 clients on 2 boards for one minute: the short check that runs weekly.",
+  "clients": 20,
+  "boards": 2,
+  "durationMs": 60000,
+  "rampMs": 5000,
+  "writeEveryMs": 500,
+  "events": [],
+  "maxP95Ms": 500
+}

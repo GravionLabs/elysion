@@ -1,9 +1,9 @@
 @if (showButton()) {
   @if (isOpen() && !canControl()) {
-    <!-- A viewer: the state, nothing to click while a voting is open. -->
+    <!-- A viewer votes on the canvas; the menu has nothing to start or end. -->
     <span
       class="chip viewer-chip"
-      title="A voting is open: collaborators vote by clicking elements"
+      title="A voting is open: click elements to vote"
       i18n-title="@@topbar.voting.viewer-title"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -13,7 +13,9 @@
         <circle cx="5" cy="18" r="2" />
         <circle cx="19" cy="18" r="2" />
       </svg>
-      <span i18n="@@topbar.voting.viewer-chip">Voting: {{ session()!.name }}</span>
+      <span i18n="@@topbar.voting.viewer-chip"
+        >Voting: {{ session()!.name }} · {{ left() }} left</span
+      >
     </span>
   } @else {
     <button
@@ -97,6 +99,10 @@
               (input)="updateVotes($event)"
             />
           </div>
+          <label class="named-choice">
+            <input type="checkbox" [checked]="named()" (change)="updateNamed($event)" />
+            <span i18n="@@topbar.voting.named">Show who voted for what in the result</span>
+          </label>
           @if (error(); as message) {
             <p class="error" role="alert">{{ message }}</p>
           }
@@ -166,6 +172,11 @@
                   <span class="label" [title]="entry.label">{{ entry.label }}</span>
                   <span class="count">{{ entry.count }}</span>
                 </button>
+                @if (entry.voters?.length) {
+                  <span class="voters" i18n="@@topbar.voting.voters"
+                    >Voted by {{ names(entry) }}</span
+                  >
+                }
               </li>
             }
           </ol>

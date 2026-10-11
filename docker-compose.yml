@@ -50,12 +50,15 @@ services:
   valkey:
     image: valkey/valkey:9.1.2-alpine
     restart: unless-stopped
+    # A password (#775): anything on the network that can reach Valkey could otherwise publish Yjs updates into any board. The
+    # development value is public, like every other one in this file; production sets its own in REDIS_URL (docs/self-hosting.md).
     environment:
-      ALLOW_EMPTY_PASSWORD: 'yes'
+      VALKEY_PASSWORD: ${VALKEY_PASSWORD:-dev-only-valkey-password}
+    command: ['sh', '-c', 'exec valkey-server --requirepass "$$VALKEY_PASSWORD"']
     volumes:
       - valkey-data:/data
     healthcheck:
-      test: ['CMD', 'valkey-cli', 'ping']
+      test: ['CMD-SHELL', 'valkey-cli --no-auth-warning -a "$$VALKEY_PASSWORD" ping | grep -q PONG']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -138,6 +141,18 @@ services:
       KC_DB_USERNAME: elysion
       KC_DB_PASSWORD: elysion
       KC_HTTP_PORT: '8080'
+      # Microsoft Entra ID as an identity provider of the realm (ADR 0027, docs/self-hosting.md): the realm file reads these when it is
+      # imported. The defaults are the stand-in, the realm `entra-stub` of this same Keycloak, so a clean checkout can sign in as `erika`
+      # (password `erika`) with no tenant. The browser follows the authorization URL (localhost:8081); Keycloak itself calls the token and
+      # key URLs inside the network (keycloak:8080). A tenant's values in `.env` replace all of them.
+      ENTRA_ENABLED: ${ENTRA_ENABLED:-true}
+      ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:-elysion-broker}
+      ENTRA_CLIENT_SECRET: ${ENTRA_CLIENT_SECRET:-elysion-broker-dev-secret}
+      ENTRA_ISSUER_URL: ${ENTRA_ISSUER_URL:-http://localhost:8081/realms/entra-stub}
+      ENTRA_AUTH_URL: ${ENTRA_AUTH_URL:-http://localhost:8081/realms/entra-stub/protocol/openid-connect/auth}
+      ENTRA_TOKEN_URL: ${ENTRA_TOKEN_URL:-http://keycloak:8080/realms/entra-stub/protocol/openid-connect/token}
+      ENTRA_JWKS_URL: ${ENTRA_JWKS_URL:-http://keycloak:8080/realms/entra-stub/protocol/openid-connect/certs}
+      ENTRA_ADMIN_GROUP_ID: ${ENTRA_ADMIN_GROUP_ID:-22222222-2222-4222-8222-222222222222}
     ports:
       # Loopback only: the admin console has the development password. Set KEYCLOAK_BIND=0.0.0.0 to reach it from elsewhere.
       - '${KEYCLOAK_BIND:-127.0.0.1}:${KEYCLOAK_PORT:-8081}:8080'
@@ -185,6 +200,10 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY:-elysion123}
       MAX_FILE_BYTES: ${MAX_FILE_BYTES:-10485760}
       MAX_FILES_PER_BOARD: ${MAX_FILES_PER_BOARD:-200}
+      # What one person may keep (docs/specs/business-backend.md, "Quotas"): a request over a quota is a 409.
+      MAX_TEMPLATES_PER_USER: ${MAX_TEMPLATES_PER_USER:-100}
+      MAX_TEMPLATE_CHARACTERS_PER_USER: ${MAX_TEMPLATE_CHARACTERS_PER_USER:-20000000}
+      MAX_BOARDS_PER_USER: ${MAX_BOARDS_PER_USER:-1000}
       # Access tokens come from Keycloak (docs/specs/identity.md). The issuer is the address the browser used;
       # the keys are fetched over the compose network.
       OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
@@ -192,6 +211,8 @@ services:
       OIDC_JWKS_URI: http://keycloak:8080/realms/elysion/protocol/openid-connect/certs
       # The realtime service's token for the internal document API is checked with this (ADR 0017). Development value only.
       INTERNAL_API_SECRET: dev-only-internal-api-secret-change-me-0123456789
+      # Where the realtime service takes the news of a voting (ADR 0029); Traefik does not route /internal, so only this network reaches it.
+      REALTIME_URL: http://realtime:3000
       # Also send every log line to the log viewer (the `logs` profile, `pnpm dev:logs`, ADR 0025); empty: nothing is sent.
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${LOGS_OTLP_ENDPOINT:-}
     depends_on:
@@ -266,7 +287,11 @@ services:
       context: .
       dockerfile: apps/realtime/Dockerfile
     environment:
-      REDIS_URL: redis://valkey:6379
+      REDIS_URL: redis://:${VALKEY_PASSWORD:-dev-only-valkey-password}@valkey:6379
+      # The limits of a board's document and when an idle one is rebuilt (ADR 0026, docs/specs/realtime.md).
+      MAX_UPDATE_BYTES: ${MAX_UPDATE_BYTES:-2097152}
+      MAX_DOCUMENT_BYTES: ${MAX_DOCUMENT_BYTES:-8388608}
+      COMPACT_THRESHOLD_BYTES: ${COMPACT_THRESHOLD_BYTES:-1048576}
       # Board documents are stored by the business backend (ADR 0011); without it no board opens.
       BUSINESS_BACKEND_URL: http://business-backend:8080
       # Verifies the WS tokens the BFF issues; the same value as the BFF's. Development value only.

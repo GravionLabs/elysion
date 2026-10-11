@@ -1,6 +1,6 @@
 # ADR 0027: How enterprise sign-in, group mapping and administration work
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-09
 - Issues: #638 (Feature #637, Epic #636); implemented in #639, #644, #647, #656 and the PBIs below them
 - Builds on: [ADR 0014](0014-keycloak-identity-provider.md) (Keycloak, services only validate tokens), [ADR 0019](0019-grouping-boards.md) (a role is the highest of the sources), [ADR 0017](0017-internal-api-authentication.md)
@@ -172,4 +172,4 @@ With option 1 and brokering the facts are these, and they are less comfortable t
 
 ## Decision
 
-_Proposed. The owner has confirmed the 8-hour window and that an administrator may delete a board without being a member. To be accepted by the product owner, who then removes `needs-decision` from #638._
+Accepted by the product owner on 2026-10-11, as proposed above (the 8-hour window and an administrator deleting a board without being a member were confirmed on 2026-10-09). `needs-decision` is removed from #638.

@@ -6,6 +6,7 @@ const OXLINT_APPS = [
   'apps/frontend',
   'apps/frontend-canvas',
   'apps/e2e',
+  'apps/load',
 ];
 
 export default {

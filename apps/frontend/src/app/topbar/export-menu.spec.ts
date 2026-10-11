@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ExportMenu, ExportRequest } from './export-menu';
+import { DEFAULT_EXPORT_SETTINGS } from './export-settings';
 
 describe('ExportMenu', () => {
   let fixture: ComponentFixture<ExportMenu>;
@@ -50,7 +51,7 @@ describe('ExportMenu', () => {
     items()[index].click();
     await fixture.whenStable();
 
-    expect(requests).toEqual([{ format, selectionOnly: false }]);
+    expect(requests).toEqual([{ format, selectionOnly: false, settings: DEFAULT_EXPORT_SETTINGS }]);
     expect(menu()).toBeNull();
   });
 
@@ -64,7 +65,9 @@ describe('ExportMenu', () => {
 
     checkbox().click();
     items()[0].click();
-    expect(requests).toEqual([{ format: 'png', selectionOnly: true }]);
+    expect(requests).toEqual([
+      { format: 'png', selectionOnly: true, settings: DEFAULT_EXPORT_SETTINGS },
+    ]);
   });
 
   it('does not export the selection once nothing is selected any more', async () => {
@@ -76,7 +79,9 @@ describe('ExportMenu', () => {
     await fixture.whenStable();
     items()[0].click();
 
-    expect(requests).toEqual([{ format: 'png', selectionOnly: false }]);
+    expect(requests).toEqual([
+      { format: 'png', selectionOnly: false, settings: DEFAULT_EXPORT_SETTINGS },
+    ]);
   });
 
   it('closes on Escape and on a click outside, but not on a click inside', async () => {
@@ -103,7 +108,24 @@ describe('ExportMenu', () => {
 
     items()[2].click();
 
-    expect(requests).toEqual([{ format: 'pdf', selectionOnly: true }]);
+    expect(requests).toEqual([
+      { format: 'pdf', selectionOnly: true, settings: DEFAULT_EXPORT_SETTINGS },
+    ]);
+  });
+
+  it('has a Comments in a PDF option that is off, remembered once it is switched on (#733)', async () => {
+    await open();
+    const option = [...el().querySelectorAll<HTMLInputElement>('.menu-settings input')].find(
+      (input) => input.parentElement?.textContent?.includes('Comments in a PDF'),
+    )!;
+    expect(option.checked).toBe(false);
+
+    option.click();
+    await fixture.whenStable();
+    items()[2].click();
+
+    expect(requests[0].settings.comments).toBe(true);
+    localStorage.clear(); // the menu remembers it; the other tests start from the defaults
   });
 
   describe('while a file is being prepared', () => {

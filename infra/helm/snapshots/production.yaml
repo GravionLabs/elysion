@@ -77,6 +77,10 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: monitoring
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: business-backend
+              app.kubernetes.io/instance: elysion
       ports:
         - { protocol: TCP, port: 3000 }
 ---
@@ -423,6 +427,8 @@ spec:
                 secretKeyRef:
                   key: INTERNAL_API_SECRET
                   name: elysion-secrets
+            - name: REALTIME_URL
+              value: http://elysion-realtime:3000
             - name: S3_ENDPOINT
               value: https://s3.example
             - name: S3_BUCKET
@@ -431,6 +437,12 @@ spec:
               value: "10485760"
             - name: MAX_FILES_PER_BOARD
               value: "200"
+            - name: MAX_TEMPLATES_PER_USER
+              value: "100"
+            - name: MAX_TEMPLATE_CHARACTERS_PER_USER
+              value: "20000000"
+            - name: MAX_BOARDS_PER_USER
+              value: "1000"
             - name: S3_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
@@ -528,7 +540,7 @@ spec:
             - name: CSP_MODE
               value: enforce
             - name: HSTS_MAX_AGE
-              value: "0"
+              value: "604800"
           # Readiness and liveness wait for the start-up probe: the business backend migrates the database at start.
           startupProbe:
             httpGet: { path: /, port: http }
@@ -617,6 +629,12 @@ spec:
               value: "3000"
             - name: BUSINESS_BACKEND_URL
               value: http://elysion-business-backend:8080
+            - name: MAX_UPDATE_BYTES
+              value: "2097152"
+            - name: MAX_DOCUMENT_BYTES
+              value: "8388608"
+            - name: COMPACT_THRESHOLD_BYTES
+              value: "1048576"
             - name: REDIS_URL
               valueFrom:
                 secretKeyRef:
@@ -650,8 +668,8 @@ spec:
             limits:
               memory: 512Mi
             requests:
-              cpu: 50m
-              memory: 128Mi
+              cpu: 250m
+              memory: 256Mi
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -705,7 +723,7 @@ metadata:
     helm.sh/chart: elysion-0.1.0
 spec:
   entryPoints:
-    - web
+    - websecure
   routes:
     # Where the browser reports a Content-Security-Policy violation: no token, so no forwardAuth; the rate limit applies.
     - kind: Rule
@@ -744,6 +762,28 @@ spec:
           port: 8080
   tls:
     secretName: elysion-tls
+---
+# Source: elysion/templates/edge.yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: elysion-redirect
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  entryPoints: [web]
+  routes:
+    - kind: Rule
+      match: Host(`elysion.example`)
+      middlewares:
+        - name: elysion-redirect-https
+      # Nothing is behind it: the middleware answers. Traefik needs a service, so the frontend's is named.
+      services:
+        - name: elysion-frontend
+          port: 8080
 ---
 # Source: elysion/templates/edge.yaml
 # Middlewares, in the order the routes use them (docs/specs/gateway.md): security-headers first, so that an answer the later ones give (401, 429) carries the headers, then cors, rate-limit, bff-auth.
@@ -819,9 +859,24 @@ spec:
     permissionsPolicy: camera=(), microphone=(), geolocation=()
     customResponseHeaders:
       Cross-Origin-Opener-Policy: same-origin
-    stsSeconds: 0
+    stsSeconds: 604800
     stsIncludeSubdomains: true
     forceSTSHeader: true
+---
+# Source: elysion/templates/edge.yaml
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: elysion-redirect-https
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
 ---
 # Source: elysion/templates/servicemonitor.yaml
 apiVersion: monitoring.coreos.com/v1

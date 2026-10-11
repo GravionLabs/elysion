@@ -16,15 +16,18 @@ helm lint infra/helm/elysion -f infra/helm/elysion/values-kind.yaml
 
 ## Values you have to set
 
-| Value                     | Meaning                                                                                              |
-| ------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `oidc.issuerUrl`          | The Keycloak realm URL **as it appears in the tokens** (what the browser logs in at). Required.      |
-| `oidc.jwksUri`            | Where the services fetch the realm's keys, when that differs from the issuer (cluster-internal URL). |
-| `objectStore.endpoint`    | The S3 API that keeps the files (images) of boards. Required; bucket and limits have defaults.       |
-| `images.*`                | Repository, tag and pull policy of the four images (built from the repository's Dockerfiles).        |
-| `edge.host`               | Host name the routes answer for (empty: any).                                                        |
-| `edge.corsAllowedOrigins` | Origins that get CORS headers on `/api` and `/yjs`.                                                  |
-| `secrets.existingSecret`  | Name of the Secret below (default `elysion-secrets`).                                                |
+| Value                                    | Meaning                                                                                                                                                                                           |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `oidc.issuerUrl`                         | The Keycloak realm URL **as it appears in the tokens** (what the browser logs in at). Required.                                                                                                   |
+| `oidc.jwksUri`                           | Where the services fetch the realm's keys, when that differs from the issuer (cluster-internal URL).                                                                                              |
+| `objectStore.endpoint`                   | The S3 API that keeps the files (images) of boards. Required; bucket and limits have defaults.                                                                                                    |
+| `images.*`                               | Repository, tag and pull policy of the four images (built from the repository's Dockerfiles).                                                                                                     |
+| `edge.host`                              | Host name the routes answer for (empty: any).                                                                                                                                                     |
+| `edge.entryPoints`, `edge.tlsSecretName` | The entry point of the routes (`[websecure]` in production) and the `kubernetes.io/tls` Secret that terminates TLS there (made by cert-manager or your PKI; the chart never does ACME, ADR 0028). |
+| `edge.redirectToHttps`                   | A second route on `web` that redirects to HTTPS permanently; needs `entryPoints` without `web` and a `tlsSecretName`. Off by default.                                                             |
+| `security.hstsMaxAge`                    | `Strict-Transport-Security` in seconds (frontend and API); start with `604800` (one week) and raise it to `31536000`: a browser keeps it.                                                         |
+| `edge.corsAllowedOrigins`                | Origins that get CORS headers on `/api` and `/yjs`.                                                                                                                                               |
+| `secrets.existingSecret`                 | Name of the Secret below (default `elysion-secrets`).                                                                                                                                             |
 
 | `replicas.*` | Replicas per component. With more than one, a PodDisruptionBudget (`minAvailable: 1`) and a spread over nodes are rendered. |
 | `migrateJob.enabled` | Migrate with a Helm hook job (`--migrate`) before install and upgrade; the replicas then do not migrate at start. Use it above one backend replica. |
@@ -33,7 +36,7 @@ helm lint infra/helm/elysion -f infra/helm/elysion/values-kind.yaml
 | `monitoring.serviceMonitor.*` | A Prometheus Operator `ServiceMonitor` for the BFF, the realtime service and the business backend. |
 
 Everything else (resources, rate limit, entry points, TLS secret) has a default in `values.yaml`. [`values-production.example.yaml`](values-production.example.yaml)
-puts the settings of a real cluster together (two replicas, the job, the autoscaler, the policies, a TLS Secret; every host is a `*.example` placeholder).
+puts the settings of a real cluster together (two replicas, the job, the autoscaler, the policies, a TLS Secret, the redirect and HSTS; every host is a `*.example` placeholder).
 
 ## Availability
 
@@ -56,13 +59,13 @@ kubectl -n elysion create secret generic elysion-secrets \
   --from-literal=WS_TOKEN_SECRET="$(openssl rand -hex 32)" \
   --from-literal=INTERNAL_API_SECRET="$(openssl rand -hex 32)" \
   --from-literal=POSTGRES_CONNECTION_STRING='Host=...;Port=5432;Database=elysion;Username=...;Password=...' \
-  --from-literal=REDIS_URL='redis://valkey.example:6379' \
+  --from-literal=REDIS_URL='redis://:<password>@valkey.example:6379' \
   --from-literal=S3_ACCESS_KEY='...' \
   --from-literal=S3_SECRET_KEY='...'
 ```
 
 `WS_TOKEN_SECRET` (BFF and realtime) and `INTERNAL_API_SECRET` (realtime and business backend) are different values of
-at least 32 characters. For a throwaway install `secrets.create=true` renders the Secret from `secrets.values`; those
+at least 32 characters. **Valkey must have a password** (or an ACL user) in `REDIS_URL`, and only the realtime pods and the Valkey's own tooling should be able to reach it (a NetworkPolicy of the namespace it runs in): the realtime instances trust every message on the relay channels, so whoever can publish there can write into any board. For a throwaway install `secrets.create=true` renders the Secret from `secrets.values`; those
 values then sit in the Helm release, so do not use it for anything that matters.
 
 ## Backup
@@ -83,3 +86,5 @@ compose stack's backup service (`infra/backup/backup.sh`, `pg_dump` of `elysion`
 - More than one realtime replica is fine: rooms are kept in step through Valkey, no sticky sessions needed.
 - `/metrics` of the BFF and realtime are on the services' ports inside the cluster and are not routed by the edge.
 - Try it locally with a `kind` cluster: [infra/kind](../../kind/README.md).
+
+`bash infra/helm/check-no-dev-values.sh` (run in CI) renders the chart with the production example and fails if a development value of the demo stack (`admin/admin`, `dev-only-`, `elysion123`, `elysion-bff-dev-secret`, `localhost`) is in it. The chart also refuses an empty `secrets.existingSecret`.

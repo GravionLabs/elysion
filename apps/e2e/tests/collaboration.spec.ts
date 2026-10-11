@@ -86,8 +86,11 @@ test('a timer started by one person counts down for the other', async () => {
 test('a dot voting ends by itself when both people have voted, and shows the same result to both', async () => {
   await a.getByRole('button', { name: /^Voting/ }).click();
   await a.getByRole('button', { name: '3', exact: true }).click();
-  await a.getByRole('textbox').last().fill('1');
+  await a.getByRole('textbox', { name: 'Votes per person' }).fill('1');
+  await expect(a.getByRole('textbox', { name: 'Votes per person' })).toHaveValue('1');
   await a.getByRole('button', { name: 'Start', exact: true }).click();
+  // Both canvases know the voting before a click can be a vote (otherwise the click only selects the note).
+  await expect(a.getByRole('button', { name: /^Voting/ })).toContainText('1 left');
   await expect(b.getByRole('button', { name: /^Voting/ })).toContainText('1 left');
 
   await a.mouse.click(FIRST_NOTE.x, FIRST_NOTE.y);
@@ -100,10 +103,14 @@ test('a dot voting ends by itself when both people have voted, and shows the sam
   }
 });
 
-test('a viewer sees the board but has no timer and no voting', async () => {
+test('a viewer sees the board but cannot start a timer or a voting', async () => {
   await a.getByRole('button', { name: /^Share/ }).click();
   // The first select is the form's role, then one per member: A (the owner) and B.
-  await a.getByRole('combobox').nth(2).selectOption('Viewer');
+  await a
+    .getByRole('region', { name: 'Members' })
+    .getByRole('combobox')
+    .nth(1)
+    .selectOption('Viewer');
   await a.keyboard.press('Escape');
 
   await b.reload();
@@ -112,4 +119,28 @@ test('a viewer sees the board but has no timer and no voting', async () => {
   await expect(b.getByRole('button', { name: /^Start|^Voting/ })).toHaveCount(0);
   // The results of the voting that ended are still there to read.
   await expect(b.getByRole('button', { name: /^Results/ })).toBeVisible();
+});
+
+test('a viewer votes too, and a named voting shows who voted for what', async () => {
+  // A starts another voting from the results of the last one, named, with one vote each.
+  const results = (page: Page) => page.getByRole('dialog', { name: /^Results/ });
+  if (!(await results(a).isVisible())) await a.getByRole('button', { name: /^Results/ }).click();
+  await a.getByRole('button', { name: /New voting/ }).click();
+  await a.getByRole('textbox', { name: 'Votes per person' }).fill('1');
+  await expect(a.getByRole('textbox', { name: 'Votes per person' })).toHaveValue('1');
+  await a.getByLabel(/Show who voted for what/).check();
+  await a.getByRole('button', { name: 'Start', exact: true }).click();
+
+  // B is a viewer: the top bar says so, and a click on the note is a vote all the same.
+  await expect(b.locator('.viewer-chip')).toContainText('1 left');
+  await b.mouse.click(FIRST_NOTE.x, FIRST_NOTE.y);
+  await expect(b.locator('.viewer-chip')).toContainText('0 left');
+  await a.mouse.click(FIRST_NOTE.x, FIRST_NOTE.y);
+
+  for (const page of [a, b]) {
+    // The two views are not the same size, so the clicks may land on different notes: what counts is the names.
+    await expect(results(page)).toContainText('2 votes in total');
+    await expect(results(page)).toContainText(`Voted by ${USER_A}`);
+    await expect(results(page)).toContainText(`Voted by ${USER_B}`);
+  }
 });

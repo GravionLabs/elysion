@@ -3,24 +3,55 @@ import * as encoding from 'lib0/encoding';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
-import { MESSAGE_AWARENESS, MESSAGE_SYNC } from './protocol.js';
+import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC, MESSAGE_VOTING } from './protocol.js';
 
 /** The longest wait between attempts to get a token. */
 const MAX_BACKOFF_MS = 30_000;
 
-/** The URL with `token` as a query parameter, replacing one that is there. */
-function withToken(url: string, token: string): string {
+/** The URL with `name` as a query parameter, replacing one that is there. */
+function withParam(url: string, name: string, value: string): string {
   try {
     const result = new URL(url);
-    result.searchParams.set('token', token);
+    result.searchParams.set(name, value);
     return result.toString();
   } catch {
-    return `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+    return `${url}${url.includes('?') ? '&' : '?'}${name}=${encodeURIComponent(value)}`;
   }
 }
 
 /** The code the gateway closes a socket with when it cannot load the board (apps/realtime). */
 const SERVER_ERROR_CLOSE_CODE = 1011;
+/** The gateway refused a message that was too big: an update over the size of one update (ADR 0026). */
+const MESSAGE_TOO_BIG_CLOSE_CODE = 1009;
+/** The document was rebuilt while this client was away (`WS_CLOSE_STALE_COPY` of @elysion/shared-types, ADR 0026). */
+const STALE_COPY_CLOSE_CODE = 4409;
+
+/** The key of the document's generation: `meta.generation` (apps/realtime `generation.ts`). */
+const META_MAP_KEY = 'meta';
+const GENERATION_KEY = 'generation';
+
+/**
+ * The JSON of a `voting` message, or `undefined` when it is not JSON. A length-prefixed string is what the realtime
+ * service writes; a payload without a prefix (the rest of the message) is accepted as well.
+ */
+function readVotingPayload(decoder: decoding.Decoder): unknown {
+  const start = decoder.pos;
+  const parse = (text: string): unknown => {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return undefined;
+    }
+  };
+  try {
+    const bytes = decoding.readVarUint8Array(decoder);
+    if (decoder.pos === decoder.arr.length) return parse(new TextDecoder().decode(bytes));
+  } catch {
+    // Not length-prefixed.
+  }
+  decoder.pos = start;
+  return parse(new TextDecoder().decode(decoder.arr.subarray(start)));
+}
 
 export type YjsConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
@@ -43,6 +74,23 @@ export interface YjsWebsocketClientOptions {
    * (the network, the BFF): it is reported once per outage and retried with a growing delay.
    */
   tokenProvider?: () => Promise<string | null | undefined>;
+  /**
+   * The server's state of the board has arrived (sync step 2 after a connect): from here on what the document holds is
+   * what the board holds, so a host may write what it has that the board lacks. Called after every (re)connect.
+   */
+  onSynced?: () => void;
+  /** The realtime service announced a change of the board's voting (message type 5): the parsed JSON payload (ADR 0029). */
+  onVoting?: (payload: unknown) => void;
+  /**
+   * The document was rebuilt while this client was away (close code 4409, ADR 0026): this client's `Y.Doc` must not be
+   * merged into the new one. The client does not reconnect; the host throws the document away, makes a new client and
+   * writes what its scene holds into the new document.
+   */
+  onStaleCopy?: () => void;
+  /** The server refused an update because the board is full (message type 4). */
+  onBoardFull?: () => void;
+  /** The server closed the connection because an update was larger than one update may be (1009). */
+  onUpdateTooLarge?: () => void;
   /**
    * Overrides the WebSocket constructor used to connect — the global
    * `WebSocket` by default. Mainly for tests: Node's native `WebSocket`
@@ -84,9 +132,13 @@ export class YjsWebsocketClient {
   #tokenProvider?: () => Promise<string | null | undefined>;
   #tokenFailures = 0;
   #WebSocketImpl: typeof WebSocket;
+  #options: YjsWebsocketClientOptions;
+  /** The generation of the document this copy comes from (`''`: it had none): sent on every reconnect, so a rebuilt document is noticed. */
+  #generation: string | undefined;
 
   constructor(url: string, doc: Y.Doc = new Y.Doc(), options: YjsWebsocketClientOptions = {}) {
     this.#url = url;
+    this.#options = options;
     this.doc = doc;
     this.#reconnectDelayMs = options.reconnectDelayMs ?? 1000;
     this.#onStatusChange = options.onStatusChange;
@@ -99,6 +151,11 @@ export class YjsWebsocketClient {
     this.doc.on('update', this.#handleLocalUpdate);
     this.awareness.on('update', this.#handleAwarenessUpdate);
     this.#connect();
+  }
+
+  /** The generation of the document this copy comes from (`''`: it has none), known once the server's state has arrived. */
+  get generation(): string | undefined {
+    return this.#generation;
   }
 
   destroy(): void {
@@ -154,7 +211,11 @@ export class YjsWebsocketClient {
       return;
     }
     this.#tokenFailures = 0;
-    this.#openSocket(token === undefined ? this.#url : withToken(this.#url, token));
+    let target = token === undefined ? this.#url : withParam(this.#url, 'token', token);
+    if (this.#generation !== undefined) {
+      target = withParam(target, 'generation', this.#generation);
+    }
+    this.#openSocket(target);
   }
 
   #openSocket(url: string): void {
@@ -182,6 +243,15 @@ export class YjsWebsocketClient {
     socket.addEventListener('close', (event) => {
       if (event.code === SERVER_ERROR_CLOSE_CODE) {
         this.#reportFailure('The server could not serve the board.');
+      }
+      if (event.code === MESSAGE_TOO_BIG_CLOSE_CODE) {
+        this.#options.onUpdateTooLarge?.();
+      }
+      if (event.code === STALE_COPY_CLOSE_CODE) {
+        // Not a failure and no reconnect: this copy is out of date. The host replaces the document.
+        this.#onStatusChange?.('disconnected');
+        this.#options.onStaleCopy?.();
+        return;
       }
       // Whoever was on the board is unknown until we are connected again.
       const others = [...this.awareness.getStates().keys()].filter(
@@ -242,16 +312,38 @@ export class YjsWebsocketClient {
       );
       return;
     }
+    if (messageType === MESSAGE_VOTING) {
+      const payload = readVotingPayload(decoder);
+      if (payload !== undefined) this.#options.onVoting?.(payload);
+      return;
+    }
+    if (messageType === MESSAGE_BOARD_FULL) {
+      this.#options.onBoardFull?.();
+      return;
+    }
     if (messageType !== MESSAGE_SYNC) {
       return;
     }
 
+    const isStep2 = decoding.peekVarUint(decoder) === syncProtocol.messageYjsSyncStep2;
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, MESSAGE_SYNC);
     syncProtocol.readSyncMessage(decoder, encoder, this.doc, this);
     if (encoding.length(encoder) > 1) {
       this.#send(encoding.toUint8Array(encoder));
     }
+    if (isStep2) {
+      this.#synced();
+    }
+  }
+
+  /** The server's state has arrived: remember which generation of the document this is, and tell the host. */
+  #synced(): void {
+    if (this.#generation === undefined) {
+      const value = this.doc.getMap<unknown>(META_MAP_KEY).get(GENERATION_KEY);
+      this.#generation = typeof value === 'string' ? value : '';
+    }
+    this.#options.onSynced?.();
   }
 
   #handleLocalUpdate = (update: Uint8Array, origin: unknown): void => {

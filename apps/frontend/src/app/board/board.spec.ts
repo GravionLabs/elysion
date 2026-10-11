@@ -1,7 +1,7 @@
 import { Location } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
 import { By, Title } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { TopBar } from '../topbar/top-bar';
@@ -9,6 +9,8 @@ import { ShareDialog } from '../share/share-dialog';
 import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
 import { SessionService } from '../auth/session.service';
 import { ThemeService } from '../theme/theme.service';
+import { DEFAULT_EXPORT_SETTINGS, toCanvasOptions } from '../topbar/export-settings';
+import { ThumbnailUploader } from './thumbnail-uploader';
 import { Board } from './board';
 import { CanvasElementLoader } from './canvas-element-loader';
 
@@ -119,6 +121,56 @@ describe('Board', () => {
     expect(chip()).toContain('Offline');
   });
 
+  describe('an outage (#735)', () => {
+    const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement;
+    const offline = (detail: object) =>
+      canvas().dispatchEvent(new CustomEvent('offline', { detail }));
+    const region = () => fixture.nativeElement.querySelector('app-offline-bar') as HTMLElement;
+    const text = () => region().textContent?.replace(/\s+/g, ' ').trim() ?? '';
+
+    it('shows the bar and Offline in the top bar, then how many changes were sent', async () => {
+      canvas().dispatchEvent(new CustomEvent('status', { detail: { status: 'connected' } }));
+      offline({ offline: true, since: Date.now() - 20_000, pending: 2, sent: 0 });
+      canvas().dispatchEvent(new CustomEvent('status', { detail: { status: 'connecting' } }));
+      await fixture.whenStable();
+
+      expect(text()).toContain('Working offline');
+      expect(text()).toContain('2 changes waiting.');
+      expect(fixture.nativeElement.querySelector('.status').textContent).toContain('Offline');
+
+      offline({ offline: false, since: null, pending: 0, sent: 2 });
+      canvas().dispatchEvent(new CustomEvent('status', { detail: { status: 'connected' } }));
+      await fixture.whenStable();
+
+      expect(text()).toBe('Back online, 2 changes sent.');
+      expect(fixture.nativeElement.querySelector('.status').textContent).toContain('Connected');
+    });
+
+    it('says nothing when the connection was back after a blink with nothing to send', async () => {
+      offline({ offline: true, since: Date.now() - 1000, pending: 0, sent: 0 });
+      offline({ offline: false, since: null, pending: 0, sent: 0 });
+      await fixture.whenStable();
+
+      expect(text()).toBe('');
+    });
+
+    it('downloads a copy of the board as an .excalidraw file when asked', async () => {
+      const exportBoard = vi.fn().mockResolvedValue(new Blob(['x']));
+      Object.assign(canvas(), { exportBoard });
+      const click = vi
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(() => undefined);
+      offline({ offline: true, since: Date.now() - 6 * 60_000, pending: 1, sent: 0 });
+      await fixture.whenStable();
+
+      (region().querySelector('button') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      expect(exportBoard).toHaveBeenCalledWith('excalidraw', expect.anything());
+      click.mockRestore();
+    });
+  });
+
   describe('library', () => {
     const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as HTMLElement;
     const button = () =>
@@ -180,9 +232,16 @@ describe('Board', () => {
       Object.assign(canvas(), { exportBoard });
       fixture.componentRef.setInput('boardId', 'team-retro');
 
-      await component.exportBoard({ format: 'svg', selectionOnly: false });
+      await component.exportBoard({
+        format: 'svg',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
 
-      expect(exportBoard).toHaveBeenCalledWith('svg', { selectionOnly: false });
+      expect(exportBoard).toHaveBeenCalledWith(
+        'svg',
+        toCanvasOptions(DEFAULT_EXPORT_SETTINGS, false),
+      );
       expect(downloads).toEqual([{ download: 'team-retro.svg' }]);
     });
 
@@ -191,9 +250,16 @@ describe('Board', () => {
       Object.assign(canvas(), { exportBoard });
       fixture.componentRef.setInput('boardId', 'team-retro');
 
-      await component.exportBoard({ format: 'png', selectionOnly: true });
+      await component.exportBoard({
+        format: 'png',
+        selectionOnly: true,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
 
-      expect(exportBoard).toHaveBeenCalledWith('png', { selectionOnly: true });
+      expect(exportBoard).toHaveBeenCalledWith(
+        'png',
+        toCanvasOptions(DEFAULT_EXPORT_SETTINGS, true),
+      );
       expect(downloads[0].download).toBe('team-retro-selection.png');
     });
 
@@ -204,12 +270,20 @@ describe('Board', () => {
       Object.assign(canvas(), { exportBoard });
       fixture.componentRef.setInput('boardId', 'team-retro');
 
-      await component.exportBoard({ format: 'pdf', selectionOnly: false });
-      await component.exportBoard({ format: 'pdf', selectionOnly: true });
+      await component.exportBoard({
+        format: 'pdf',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
+      await component.exportBoard({
+        format: 'pdf',
+        selectionOnly: true,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
 
       expect(exportBoard.mock.calls).toEqual([
-        ['pdf', { selectionOnly: false }],
-        ['pdf', { selectionOnly: true }],
+        ['pdf', toCanvasOptions(DEFAULT_EXPORT_SETTINGS, false)],
+        ['pdf', toCanvasOptions(DEFAULT_EXPORT_SETTINGS, true)],
       ]);
       expect(downloads.map((d) => d.download)).toEqual([
         'team-retro.pdf',
@@ -225,7 +299,11 @@ describe('Board', () => {
       const button = () =>
         fixture.nativeElement.querySelector('app-export-menu button') as HTMLButtonElement;
 
-      const done = component.exportBoard({ format: 'pdf', selectionOnly: false });
+      const done = component.exportBoard({
+        format: 'pdf',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
       expect(button().textContent).toContain('Preparing PDF…');
       expect(downloads).toEqual([]);
@@ -241,7 +319,11 @@ describe('Board', () => {
     it('says the export failed and stops showing "Preparing" when the PDF cannot be made', async () => {
       Object.assign(canvas(), { exportBoard: vi.fn().mockRejectedValue(new Error('boom')) });
 
-      await component.exportBoard({ format: 'pdf', selectionOnly: false });
+      await component.exportBoard({
+        format: 'pdf',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
 
       expect(banner()?.textContent).toContain('export failed');
@@ -253,7 +335,11 @@ describe('Board', () => {
     it('says so instead of downloading when there is nothing to export', async () => {
       Object.assign(canvas(), { exportBoard: vi.fn().mockResolvedValue(null) });
 
-      await component.exportBoard({ format: 'png', selectionOnly: false });
+      await component.exportBoard({
+        format: 'png',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
 
       expect(downloads).toEqual([]);
@@ -263,19 +349,31 @@ describe('Board', () => {
     it('says when nothing is selected for a selection export', async () => {
       Object.assign(canvas(), { exportBoard: vi.fn().mockResolvedValue(null) });
 
-      await component.exportBoard({ format: 'png', selectionOnly: true });
+      await component.exportBoard({
+        format: 'png',
+        selectionOnly: true,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
 
       expect(banner()?.textContent).toContain('Nothing is selected');
     });
 
     it('reports a failing export and one before the canvas is ready', async () => {
-      await component.exportBoard({ format: 'png', selectionOnly: false });
+      await component.exportBoard({
+        format: 'png',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
       expect(banner()?.textContent).toContain('not ready');
 
       Object.assign(canvas(), { exportBoard: vi.fn().mockRejectedValue(new Error('boom')) });
-      await component.exportBoard({ format: 'png', selectionOnly: false });
+      await component.exportBoard({
+        format: 'png',
+        selectionOnly: false,
+        settings: DEFAULT_EXPORT_SETTINGS,
+      });
       await settle();
       expect(banner()?.textContent).toContain('export failed');
     });
@@ -577,6 +675,20 @@ describe('Board', () => {
     el.dispatchEvent(new CustomEvent('error'));
 
     expect(component.status()).toBe('error');
+  });
+
+  it('shows what the canvas wants the person to know in the banner, without moving to error status', () => {
+    const el: HTMLElement = fixture.nativeElement.querySelector('elysion-canvas');
+    el.dispatchEvent(new CustomEvent('ready'));
+    el.dispatchEvent(
+      new CustomEvent('notice', { detail: { message: 'This board is full: 20,000 elements.' } }),
+    );
+    fixture.detectChanges();
+
+    expect(component.status()).toBe('ready');
+    expect(fixture.nativeElement.querySelector('.board-banner')?.textContent).toContain(
+      'This board is full',
+    );
   });
 
   it('moves to error status when the canvas script fails to load', async () => {
@@ -895,6 +1007,7 @@ describe('Board', () => {
       name: 'Best idea',
       votesPerPerson: 5,
       status: 'open',
+      named: false,
       startedBy: { id: 'kc-1', name: 'Ada' },
       myVotes: 1,
     };
@@ -927,7 +1040,11 @@ describe('Board', () => {
       fixture.detectChanges();
       (menu().querySelector('button[type="submit"]') as HTMLElement).click();
 
-      expect(canvas().startVoting).toHaveBeenCalledWith({ name: 'Voting', votesPerPerson: 3 });
+      expect(canvas().startVoting).toHaveBeenCalledWith({
+        name: 'Voting',
+        votesPerPerson: 3,
+        named: false,
+      });
     });
 
     it('ends the voting and clears the results through the canvas', () => {
@@ -1009,9 +1126,13 @@ describe('Board', () => {
       await openAs('owner');
       expect(bar().querySelector('.share-button')).toBeTruthy();
       expect(fixture.nativeElement.querySelector('app-share-dialog')).toBeNull();
+      // The dialog's code is a deferred block (#710): it has not been loaded until the button is pressed.
+      expect(await fixture.getDeferBlocks()).toHaveLength(1);
 
       (bar().querySelector('.share-button') as HTMLButtonElement).click();
       await fixture.whenStable();
+      fixture.detectChanges();
+      await (await fixture.getDeferBlocks())[0]?.render(DeferBlockState.Complete);
       fixture.detectChanges();
 
       expect(fixture.nativeElement.querySelector('app-share-dialog')).toBeTruthy();
@@ -1020,6 +1141,32 @@ describe('Board', () => {
       fixture.debugElement.query(By.directive(ShareDialog)).componentInstance.closed.emit();
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('app-share-dialog')).toBeNull();
+    });
+
+    type Directory = () => Promise<Array<{ id: string; name: string }>>;
+
+    it('lets an owner moderate the comments and offers the members for @ (#733)', async () => {
+      await openAs('owner');
+      expect(canvas()!.hasAttribute('can-moderate')).toBe(true);
+
+      const asked = (canvas() as unknown as { mentionDirectory: Directory }).mentionDirectory();
+      http
+        .expectOne(`/api/boards/${uuid}/members`)
+        .flush([{ userId: 'm1', displayName: 'Bob', email: null, role: 'Editor' }]);
+
+      expect(await asked).toEqual([{ id: 'm1', name: 'Bob' }]);
+    });
+
+    it('offers no member list to an editor or a viewer, and no moderation (#733)', async () => {
+      await openAs('viewer');
+      expect(canvas()!.hasAttribute('can-moderate')).toBe(false);
+
+      const people = await (
+        canvas() as unknown as { mentionDirectory: Directory }
+      ).mentionDirectory();
+
+      expect(people).toEqual([]);
+      http.expectNone(`/api/boards/${uuid}/members`);
     });
 
     it('gives an editor no Share button and a canvas that is not read-only', async () => {
@@ -1079,10 +1226,11 @@ describe('Board', () => {
         name: 'Pick',
         votesPerPerson: 3,
         status: 'open',
+        named: false,
         startedBy: { id: 'someone', name: 'Bea' },
         myVotes: 0,
       });
-      expect(menu().querySelector('.chip')?.textContent).toContain('Voting: Pick');
+      expect(menu().querySelector('.chip')?.textContent).toContain('Voting: Pick · 3 left');
       expect(menu().querySelector('.menu-button')).toBeNull();
 
       announce({
@@ -1090,6 +1238,7 @@ describe('Board', () => {
         name: 'Pick',
         votesPerPerson: 3,
         status: 'closed',
+        named: false,
         startedBy: { id: 'someone', name: 'Bea' },
         myVotes: 0,
         tally: [{ elementId: 'e1', count: 2, label: 'Ship it' }],
@@ -1122,6 +1271,82 @@ describe('Board', () => {
       await fixture.whenStable();
       fixture.detectChanges();
       expect(canvas()!.hasAttribute('readonly')).toBe(true);
+    });
+
+    describe('the picture of the card (#729)', () => {
+      let start: ReturnType<typeof vi.spyOn>;
+      const ready = () => canvas()!.dispatchEvent(new CustomEvent('ready'));
+
+      beforeEach(() => {
+        start = vi
+          .spyOn(TestBed.inject(ThumbnailUploader), 'start')
+          .mockReturnValue({ rendered: Promise.resolve(), done: Promise.resolve(true) });
+      });
+
+      it('is drawn when the router asks to leave, which it may do', async () => {
+        await openAs('editor');
+        ready();
+
+        expect(await component.prepareToLeave()).toBe(true);
+
+        expect(start).toHaveBeenCalledOnce();
+        expect(start.mock.calls[0]![0]).toBe(uuid);
+      });
+
+      it('lets the person leave even when the canvas does not answer', async () => {
+        start.mockReturnValue({
+          rendered: new Promise(() => undefined),
+          done: new Promise(() => undefined),
+        });
+        await openAs('editor');
+        ready();
+
+        expect(await component.prepareToLeave(20)).toBe(true);
+      });
+
+      it('is drawn when the tab is hidden or closed, and not when it is shown', async () => {
+        await openAs('owner');
+        ready();
+
+        Object.defineProperty(document, 'visibilityState', {
+          configurable: true,
+          value: 'visible',
+        });
+        document.dispatchEvent(new Event('visibilitychange'));
+        expect(start).not.toHaveBeenCalled();
+        Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+        document.dispatchEvent(new Event('visibilitychange'));
+        expect(start).toHaveBeenCalledTimes(1);
+        window.dispatchEvent(new Event('pagehide'));
+        expect(start).toHaveBeenCalledTimes(2);
+        Object.defineProperty(document, 'visibilityState', {
+          configurable: true,
+          value: 'visible',
+        });
+      });
+
+      it('is never drawn for a viewer', async () => {
+        await openAs('viewer');
+        ready();
+
+        expect(await component.prepareToLeave()).toBe(true);
+
+        expect(start).not.toHaveBeenCalled();
+      });
+
+      it('is not drawn before the canvas is ready, and not for a room that is no stored board', async () => {
+        await openAs('editor');
+        expect(await component.prepareToLeave()).toBe(true);
+        expect(start).not.toHaveBeenCalled();
+
+        fixture = TestBed.createComponent(Board);
+        fixture.componentRef.setInput('boardId', 'default');
+        fixture.detectChanges();
+        await fixture.whenStable();
+        canvas()!.dispatchEvent(new CustomEvent('ready'));
+        expect(await fixture.componentInstance.prepareToLeave()).toBe(true);
+        expect(start).not.toHaveBeenCalled();
+      });
     });
 
     it('treats a user without a role like an editor in the interface: the backend refuses what they may not do', async () => {

@@ -14,6 +14,9 @@ public interface IBoardRepository
     /// </summary>
     Task<IReadOnlyList<Board>> ListVisibleToAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>The same, only boards whose name contains <paramref name="query"/> (compared without regard to case); no query is all of them.</summary>
+    Task<IReadOnlyList<Board>> ListVisibleToAsync(Guid userId, string? query, CancellationToken cancellationToken);
+
     /// <summary>
     /// The user's role on a board, or null when they have none (not a member, or no such board). The board's
     /// owner is an Owner even without a membership row, so a board is usable before anybody was invited. When
@@ -23,6 +26,12 @@ public interface IBoardRepository
 
     /// <summary>One board, or null. A copy that is not tracked: changes to it are not saved.</summary>
     Task<Board?> FindAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>How many boards a user owns (boards shared with them do not count).</summary>
+    Task<int> CountOwnedAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>Whether a board with this id exists.</summary>
+    Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>One board, or null, tracked: a change to it is saved by the next commit.</summary>
     Task<Board?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken);

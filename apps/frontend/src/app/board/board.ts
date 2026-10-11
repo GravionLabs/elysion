@@ -2,6 +2,7 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   Component,
   ElementRef,
+  HostListener,
   computed,
   effect,
   inject,
@@ -21,15 +22,20 @@ import { RouterLink } from '@angular/router';
 import { AppBrand } from '../shared/app-brand';
 import { BoardApi, BoardLookup, BoardRole, isStoredBoardId } from './board-api';
 import { FilesApi } from './files-api';
+import { VotingApi } from './voting-api';
+import { ThumbnailUploader } from './thumbnail-uploader';
 import { ShareDialog } from '../share/share-dialog';
+import { MembersApi } from '../share/members-api';
 import { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename, type ExportFormat } from './download';
 import { ExportRequest } from '../topbar/export-menu';
+import { loadSettings, toCanvasOptions } from '../topbar/export-settings';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
 import { SessionService } from '../auth/session.service';
 import { LanguageService } from '../shared/language';
 import { PresenceStore } from './presence-store';
-import type { TimerState, VotingSession } from './canvas-element';
+import type { OfflineState, TimerState, VotingSession } from './canvas-element';
+import { OFFLINE_BAR_AFTER_MS, OfflineBar } from './offline-bar';
 import { TEMPLATE_STATE_KEY, TemplateApi } from './template-api';
 
 /** What the user is typing into the Save as template form. */
@@ -55,8 +61,11 @@ const PENDING: BoardLookup | { status: 'pending' } = { status: 'pending' };
 const ROLE_PENDING = 'pending';
 
 /** The board page: the top bar and the canvas element below it. */
+/** The longest the router waits for the picture of the card to be drawn when the board is left (#729). */
+const LEAVE_WAIT_MS = 1000;
+
 @Component({
-  imports: [AppBrand, RouterLink, ShareDialog, TopBar],
+  imports: [AppBrand, OfflineBar, RouterLink, ShareDialog, TopBar],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [PresenceStore],
   selector: 'app-board',
@@ -69,6 +78,9 @@ export class Board {
   readonly #themeService = inject(ThemeService);
   readonly #api = inject(BoardApi);
   readonly #files = inject(FilesApi);
+  readonly #votings = inject(VotingApi);
+  readonly #members = inject(MembersApi);
+  readonly #thumbnails = inject(ThumbnailUploader);
   readonly #pageTitle = inject(Title);
   readonly #templates = inject(TemplateApi);
   readonly #location = inject(Location);
@@ -103,7 +115,7 @@ export class Board {
   /** The board's shared timer from the canvas's `timer` event (ADR 0020), or `null`. */
   readonly timer = signal<TimerState | null>(null);
 
-  /** The board's current dot voting from the canvas's `voting` event (ADR 0020), or `null`. */
+  /** The board's current dot voting from the canvas's `voting` event (ADR 0029), or `null`. */
   readonly voting = signal<VotingSession | null>(null);
 
   /** An export is being prepared: a PDF of a large board takes seconds, so the Export menu says so. */
@@ -120,11 +132,39 @@ export class Board {
   /** The Yjs connection, from the element's `status` event. */
   readonly syncStatus = signal<SyncStatus>('connecting');
 
+  /** The outage the board is in (#735), from the element's `offline` event; `null` while connected or before the board was loaded. */
+  readonly outage = signal<{ since: number; pending: number } | null>(null);
+
+  /** After an outage: how many changes were sent when the connection came back; shown for a few seconds. */
+  readonly backSent = signal<number | null>(null);
+  #backTimer: ReturnType<typeof setTimeout> | null = null;
+
   /** What the BFF says about the board id; `pending` until it answers. */
   readonly #lookup = toSignal(
     toObservable(this.boardId).pipe(switchMap((id) => this.#api.find(id).pipe(startWith(PENDING)))),
     { initialValue: PENDING },
   );
+
+  /** Whether the user starred the board (#730); the top bar shows the star and flips it. Optimistic, undone when saving fails. */
+  readonly #starred = signal<boolean | null>(null);
+  readonly isFavorite = computed(() => {
+    const lookup = this.#lookup();
+    return this.#starred() ?? (lookup.status === 'found' && lookup.board.isFavorite === true);
+  });
+
+  /** Whether the board has a record the user can star (a room without a record has none). */
+  readonly canFavorite = computed(() => this.#lookup().status === 'found');
+
+  toggleFavorite(): void {
+    const favorite = !this.isFavorite();
+    this.#starred.set(favorite);
+    this.#api.setFavorite(this.boardId(), favorite).subscribe({
+      error: () => {
+        this.#starred.set(!favorite);
+        this.notice.set($localize`:@@board.error.favoriteFailed:The star could not be saved.`);
+      },
+    });
+  }
 
   /** The user's role on this board, as the BFF says; `pending` until it answers. */
   readonly #roleLookup = toSignal(
@@ -195,7 +235,17 @@ export class Board {
     // Another board in the same page starts without the previous one's new name.
     effect(() => {
       this.boardId();
-      untracked(() => this.#renamedTo.set(null));
+      untracked(() => {
+        this.#renamedTo.set(null);
+        this.#starred.set(null);
+      });
+    });
+    // Opening a stored board is written down for the "Last opened" order of the overview (#730), once per board shown.
+    effect(() => {
+      if (this.canFavorite()) {
+        const id = this.boardId();
+        untracked(() => this.#api.recordOpened(id).subscribe());
+      }
     });
     // Apply the template once the canvas is connected; the creator is an owner, so a viewer never gets here.
     effect(() => {
@@ -287,6 +337,23 @@ export class Board {
 
   /** The images of this board are kept by the BFF (#702); the canvas uploads and loads through this. */
   protected readonly fileStore = this.#files.storeFor(() => this.boardId());
+  /** The voting of this board on the server; the canvas votes through it (ADR 0029). */
+  protected readonly votingApi = this.#votings.forBoard(() => this.boardId());
+
+  /**
+   * The people `@` offers in a comment (#733). Only an owner may list the members, so everybody else is offered the people who
+   * commented before (the canvas adds those itself); a failure is an empty list, never an error on the page. The ids are the
+   * business backend's user ids, which is what a mention stores until the notifications (a later PBI) resolve them.
+   */
+  protected readonly mentionDirectory = async (): Promise<Array<{ id: string; name: string }>> => {
+    if (!this.canShare() || !isStoredBoardId(this.boardId())) return [];
+    try {
+      const members = await firstValueFrom(this.#members.list(this.boardId()));
+      return members.map((member) => ({ id: member.userId, name: member.displayName }));
+    } catch {
+      return [];
+    }
+  };
 
   /**
    * Whether images may be inserted: only on a stored board, because the files belong to a board record (the room
@@ -299,8 +366,60 @@ export class Board {
     this.notice.set((event as CustomEvent<{ message: string }>).detail.message);
   }
 
+  /**
+   * Something the canvas wants the person to know that is not a failure of the board: it is full, a change was too
+   * large to send, a library was refused. The banner says it; the board stays as it is.
+   */
+  onCanvasNotice(event: Event): void {
+    this.notice.set((event as CustomEvent<{ message: string }>).detail.message);
+  }
+
   onCanvasReady(): void {
     this.status.set('ready');
+    this.#canvasElement = this.canvas()?.nativeElement ?? null;
+  }
+
+  /** The canvas element, kept from the moment it was ready: when the page is torn down the query no longer finds it (#729). */
+  #canvasElement: CanvasElement | null = null;
+
+  /**
+   * The picture of the board's card (#729) is made when an editor leaves: the route changes (this component is destroyed) or the
+   * tab is hidden. A viewer never makes one, nor does a board that is not stored (the room `default`).
+   */
+  #saveThumbnail(): Promise<void> | null {
+    if (this.readOnly() || !isStoredBoardId(this.boardId()) || this.status() !== 'ready') {
+      return null;
+    }
+    return this.#thumbnails.start(this.boardId(), this.#canvasElement)?.rendered ?? null;
+  }
+
+  /**
+   * Called by the router before the board is left (`canDeactivate`): the picture is drawn now, while the canvas still exists
+   * (Angular takes the element out of the page before it destroys the component), and stored in the background. A canvas that
+   * does not answer within a second does not hold the person back.
+   */
+  prepareToLeave(waitMs = LEAVE_WAIT_MS): Promise<boolean> {
+    const rendered = this.#saveThumbnail();
+    if (rendered === null) {
+      return Promise.resolve(true);
+    }
+    return Promise.race([
+      rendered.then(() => true),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(true), waitMs)),
+    ]);
+  }
+
+  /** The tab closes with the board open: the route does not change, so the router does not ask. */
+  @HostListener('window:pagehide')
+  protected onPageHide(): void {
+    void this.#saveThumbnail();
+  }
+
+  @HostListener('document:visibilitychange')
+  protected onVisibilityChange(): void {
+    if (document.visibilityState === 'hidden') {
+      this.#saveThumbnail();
+    }
   }
 
   onCanvasError(): void {
@@ -314,6 +433,35 @@ export class Board {
       // The canvas reports connection failures as `error` and keeps retrying: once it is connected again it is fine.
       this.status.set('ready');
     }
+  }
+
+  /** The canvas reports an outage and the changes made during it, and the way back. */
+  onOffline(event: Event): void {
+    const state = (event as CustomEvent<OfflineState>).detail;
+    if (this.#backTimer !== null) clearTimeout(this.#backTimer);
+    this.#backTimer = null;
+    if (state.offline && state.since !== null) {
+      this.backSent.set(null);
+      this.outage.set({ since: state.since, pending: state.pending });
+      return;
+    }
+    const outage = this.outage();
+    this.outage.set(null);
+    // Something to say only when the bar was there or changes were sent: a blip of a second is not worth a message.
+    const long = outage !== null && Date.now() - outage.since >= OFFLINE_BAR_AFTER_MS;
+    if (long || state.sent > 0) {
+      this.backSent.set(state.sent);
+      this.#backTimer = setTimeout(() => this.backSent.set(null), 6000);
+    }
+  }
+
+  /** "Download a copy" in the offline bar: the board as an .excalidraw file, like the Export menu makes it. */
+  downloadCopy(): Promise<void> {
+    return this.exportBoard({
+      format: 'excalidraw',
+      selectionOnly: false,
+      settings: loadSettings(),
+    });
   }
 
   onVoting(event: Event): void {
@@ -364,9 +512,10 @@ export class Board {
     }
     this.exporting.set(request.format);
     try {
-      const blob = await canvas.exportBoard(request.format, {
-        selectionOnly: request.selectionOnly,
-      });
+      const blob = await canvas.exportBoard(
+        request.format,
+        toCanvasOptions(request.settings, request.selectionOnly),
+      );
       if (!blob) {
         this.notice.set(
           request.selectionOnly
@@ -387,10 +536,34 @@ export class Board {
     }
   }
 
-  /** A file was picked: ask first, because an import replaces what is on the board. */
+  /**
+   * A file was picked. A PDF is added to the board (the canvas shows its pages to choose from, #725), so nothing is asked here;
+   * anything else is an .excalidraw file, which replaces what is on the board, so the person is asked first.
+   */
   chooseImport(file: File): void {
     this.notice.set(null);
+    if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+      void this.importPdf(file);
+      return;
+    }
     this.pendingImport.set(file);
+  }
+
+  private async importPdf(file: File): Promise<void> {
+    const canvas = this.canvas()?.nativeElement;
+    if (!canvas?.importPdf) {
+      this.notice.set(CANVAS_NOT_READY);
+      return;
+    }
+    try {
+      await canvas.importPdf(file);
+    } catch (error) {
+      this.notice.set(
+        error instanceof Error
+          ? error.message
+          : $localize`:@@board.error.importFailed:The import failed.`,
+      );
+    }
   }
 
   cancelImport(): void {

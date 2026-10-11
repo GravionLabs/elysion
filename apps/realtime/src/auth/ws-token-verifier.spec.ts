@@ -80,4 +80,49 @@ describe('WsTokenVerifier', () => {
       expect(await refused(token)).toBeInstanceOf(InvalidWsTokenError);
     }
   });
+
+  describe('single use', () => {
+    const used = new Set<string>();
+    const guarded = new WsTokenVerifier(TEST_WS_TOKEN_SECRET, {
+      claim: (jti) => Promise.resolve(!used.has(jti) && !!used.add(jti)),
+    });
+
+    it('accepts a token with an id once and refuses it the second time', async () => {
+      const token = signWsToken(BOARD, { jti: 'abc' });
+
+      await guarded.verify(token);
+      const error = await guarded.verify(token).catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(InvalidWsTokenError);
+      expect((error as InvalidWsTokenError).reason).toBe('replayed');
+    });
+
+    it('remembers an id for as long as the token could still be accepted', async () => {
+      const ttls: number[] = [];
+      const verifier = new WsTokenVerifier(TEST_WS_TOKEN_SECRET, {
+        claim: (_jti, ttl) => Promise.resolve(!!ttls.push(ttl)),
+      });
+
+      await verifier.verify(signWsToken(BOARD, { jti: 'x', expiresIn: 60 }));
+
+      expect(ttls[0]).toBeGreaterThanOrEqual(60);
+      expect(ttls[0]).toBeLessThanOrEqual(70);
+    });
+
+    it('does not ask about a token without an id', async () => {
+      await guarded.verify(signWsToken(BOARD));
+      await guarded.verify(signWsToken(BOARD));
+    });
+
+    it('does not use up the id of a token it refuses for another reason', async () => {
+      const token = signWsToken(BOARD, {
+        jti: 'bad',
+        secret: 'another-secret-that-is-at-least-32-characters',
+      });
+
+      await guarded.verify(token).catch(() => undefined);
+
+      expect(used.has('bad')).toBe(false);
+    });
+  });
 });

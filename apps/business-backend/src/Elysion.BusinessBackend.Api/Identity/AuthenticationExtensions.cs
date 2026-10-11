@@ -2,6 +2,7 @@ using System.Text;
 
 using Elysion.BusinessBackend.Api.Logging;
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
@@ -26,6 +27,9 @@ public static class AuthenticationExtensions
                 options.IssuerUrl = configuration[OidcOptions.IssuerSetting] ?? "";
                 options.Audience = configuration[OidcOptions.AudienceSetting] ?? "";
                 options.JwksUri = configuration[OidcOptions.JwksUriSetting];
+                // Not set: the default. Set to an empty value: the sync of groups is off.
+                options.GroupsClaim = configuration[OidcOptions.GroupsClaimSetting] ?? OidcOptions.DefaultGroupsClaim;
+                options.AdminRole = configuration[OidcOptions.AdminRoleSetting] ?? OidcOptions.DefaultAdminRole;
             })
             .ValidateDataAnnotations()
             .ValidateOnStart();
@@ -114,6 +118,7 @@ public static class AuthenticationExtensions
                 };
             });
         services.AddHttpClient(nameof(JwksConfigurationManager));
+        services.AddSingleton<IClaimsTransformation, RealmRolesClaimsTransformation>();
 
         services.AddAuthorizationBuilder()
             .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
