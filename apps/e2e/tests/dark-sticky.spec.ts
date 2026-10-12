@@ -39,7 +39,21 @@ async function paperPixel(page: Page): Promise<string> {
     const zoomed = 1;
     const x = Math.round((box.width / 2 - 60 * zoomed) * scale);
     const y = Math.round((box.height / 2 - 50 * zoomed) * scale);
-    const [red, green, blue] = canvas.getContext('2d')!.getImageData(x, y, 1, 1).data;
+    // In the dark theme the page's CSS filter darkens the canvas as it is shown (the pixels of the canvas itself are before it):
+    // the pixel is put through the same filter, on a canvas of its own, to get what the person sees.
+    const pixel = canvas.getContext('2d')!.getImageData(x, y, 1, 1);
+    const filter = getComputedStyle(canvas).filter;
+    const probe = document.createElement('canvas');
+    probe.width = 1;
+    probe.height = 1;
+    const context = probe.getContext('2d')!;
+    if (filter && filter !== 'none') context.filter = filter;
+    const source = document.createElement('canvas');
+    source.width = 1;
+    source.height = 1;
+    source.getContext('2d')!.putImageData(pixel, 0, 0);
+    context.drawImage(source, 0, 0);
+    const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
     return `#${[red, green, blue].map((value) => value!.toString(16).padStart(2, '0')).join('')}`;
   });
 }
@@ -75,10 +89,8 @@ test.afterAll(async () => {
 });
 
 test('a yellow note drawn in the dark theme shows the dark palette, and the other person sees the stored paper', async () => {
-  await a
-    .getByRole('button', { name: /dark|Dark/ })
-    .first()
-    .click();
+  // By its whole name: the board's own name ("E2E dark sticky") is on a button too.
+  await a.getByRole('button', { name: 'Switch to the dark theme' }).click();
   await expect(a.locator('elysion-canvas')).toHaveAttribute('theme', 'dark');
 
   await a.getByTestId('elysion-tool-sticky').click();
