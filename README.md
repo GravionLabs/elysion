@@ -152,6 +152,11 @@ docs/
 
 The repository is a pnpm workspace (`apps/*`, `packages/*`); the root scripts run across all of it. The .NET backend is not part of the workspace and builds with `dotnet`.
 
+## Agent skills
+
+Run `apm install` in the repo root before working with an AI agent here. The stack skills (.NET, Angular, TypeScript) are declared in `apm.yml` and deployed to the git-ignored `.agents/skills/` and `.claude/skills/`, so a fresh clone has none until you run it.
+It needs [apm](https://github.com/microsoft/apm).
+
 ## Pre-commit hook
 
 `pnpm install` installs a git pre-commit hook (`simple-git-hooks`, configured in the root `package.json`) that runs [lint-staged](lint-staged.config.mjs) on the staged files only: Prettier rewrites them, and oxlint with the app's own `oxlint.json` checks staged TypeScript files and blocks the commit on any finding. It takes a second or two. C# files are not checked in the hook, because the JetBrains formatter needs about 40 seconds for the solution; `pnpm lint` and CI cover them.

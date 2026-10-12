@@ -51,3 +51,7 @@ apps/site/public/
 # Playwright (apps/e2e)
 test-results/
 playwright-report/
+# APM dependencies and the skills apm deploys (run `apm install`)
+apm_modules/
+.agents/skills/
+.claude/skills/
