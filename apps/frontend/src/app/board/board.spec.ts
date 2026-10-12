@@ -1169,6 +1169,34 @@ describe('Board', () => {
       http.expectNone(`/api/boards/${uuid}/members`);
     });
 
+    type Search = (query: string) => Promise<Array<{ id: string; name: string }>>;
+
+    it('lets even a viewer find people for @ through the people search (#733)', async () => {
+      await openAs('viewer');
+      const search = (canvas() as unknown as { mentionSearch: Search }).mentionSearch;
+
+      const asked = search(' no ');
+      const request = http.expectOne((r) => r.url === '/api/users');
+      expect(request.request.params.get('query')).toBe('no');
+      request.flush([{ id: 'u9', displayName: 'Nora', email: 'nora@example.com' }]);
+
+      expect(await asked).toEqual([{ id: 'u9', name: 'Nora' }]);
+    });
+
+    it('does not search for one character, and an error is an empty list (#733)', async () => {
+      await openAs('editor');
+      const search = (canvas() as unknown as { mentionSearch: Search }).mentionSearch;
+
+      expect(await search('n')).toEqual([]);
+      http.expectNone((r) => r.url === '/api/users');
+
+      const asked = search('no');
+      http
+        .expectOne((r) => r.url === '/api/users')
+        .flush(null, { status: 500, statusText: 'Error' });
+      expect(await asked).toEqual([]);
+    });
+
     it('gives an editor no Share button and a canvas that is not read-only', async () => {
       await openAs('editor');
 

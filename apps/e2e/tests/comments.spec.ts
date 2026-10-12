@@ -70,6 +70,20 @@ test('a viewer comments on a point of the board and the owner sees it at once', 
   await expect(markers(a).first()).toHaveAttribute('aria-label', '1 comment');
 });
 
+test('a viewer can mention a person who has not commented, found through the people search', async () => {
+  // Nobody but B has written on this board yet: the owner is found by the search, not by the comments.
+  await markers(b).first().click();
+  const reply = panel(b).getByPlaceholder('Reply…');
+  await reply.fill('Ask @dev');
+
+  await expect(b.getByRole('option', { name: USER_A, exact: true })).toBeVisible();
+  await expect(panel(b).getByRole('status').filter({ hasText: /found/ })).toBeAttached();
+  await expectAccessible(b, 'the people offered for a mention');
+
+  await reply.fill(''); // nothing is sent: the next test counts the messages
+  await expect(b.getByRole('option')).toHaveCount(0);
+});
+
 test('the owner replies with a mention, resolves the thread and the viewer sees that', async () => {
   await markers(a).first().click();
   await expect(panel(a).getByText('Is this the right order?')).toBeVisible();

@@ -11,7 +11,15 @@ import {
   type CommentThread,
   type MentionNames,
 } from './comments';
-import { activeMention, applyMention, suggestions, type Person } from './mentions';
+import {
+  MIN_SEARCH_LENGTH,
+  SEARCH_DELAY_MS,
+  activeMention,
+  applyMention,
+  mergePeople,
+  type MentionSearch,
+  type Person,
+} from './mentions';
 
 export interface CommentPanelProps {
   threads: readonly CommentThread[];
@@ -24,6 +32,8 @@ export interface CommentPanelProps {
   activeId: string | null;
   /** The people `@` offers. */
   directory: readonly Person[];
+  /** The host's search for people, asked once two characters are typed after `@`; without one only the directory is offered. */
+  search?: MentionSearch;
   /** The names of every id the texts mention. */
   names: ReadonlyMap<string, string>;
   /** What a thread hangs on, in words ("Sticky note: Ship it"), or `null` when the element is gone. */
@@ -54,6 +64,7 @@ interface ComposerProps {
   placeholder: string;
   sendLabel: string;
   directory: readonly Person[];
+  search?: MentionSearch;
   autoFocus?: boolean;
   onSubmit: (stored: string, mentionNames: MentionNames) => void;
   onCancel?: () => void;
@@ -64,6 +75,7 @@ function Composer({
   placeholder,
   sendLabel,
   directory,
+  search,
   autoFocus,
   onSubmit,
   onCancel,
@@ -79,9 +91,35 @@ function Composer({
   const listId = useId();
 
   const mention = useMemo(() => activeMention(text, caret), [text, caret]);
+  // What the host's search found for the typed part; the last answer wins and an error leaves the local list as it is.
+  const [found, setFound] = useState<{ query: string; people: readonly Person[] }>({
+    query: '',
+    people: [],
+  });
+  const query = mention && !dismissed ? mention.query.trim() : '';
+  useEffect(() => {
+    if (!search || query.length < MIN_SEARCH_LENGTH) return;
+    let current = true;
+    const timer = setTimeout(() => {
+      Promise.resolve(search(query))
+        .then((people) => {
+          if (current) setFound({ query, people: people ?? [] });
+        })
+        .catch(() => {
+          if (current) setFound({ query, people: [] });
+        });
+    }, SEARCH_DELAY_MS);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [search, query]);
   const options = useMemo(
-    () => (mention && !dismissed ? suggestions(directory, mention.query) : []),
-    [mention, dismissed, directory],
+    () =>
+      mention && !dismissed
+        ? mergePeople(directory, found.query === query ? found.people : [], mention.query)
+        : [],
+    [mention, dismissed, directory, found, query],
   );
   const open = options.length > 0;
 
@@ -164,6 +202,11 @@ function Composer({
           }
         }}
       />
+      {open && (
+        <p className="elysion-visually-hidden" role="status">
+          {t.commentMentionsFound(options.length)}
+        </p>
+      )}
       {open && (
         <ul
           id={listId}
@@ -282,6 +325,7 @@ function ThreadCard({ thread, props }: { thread: CommentThread; props: CommentPa
           placeholder={t.replyPlaceholder}
           sendLabel={t.replySend}
           directory={props.directory}
+          search={props.search}
           onSubmit={(text, mentioned) => props.onReply(thread.id, text, mentioned)}
         />
       )}
@@ -351,6 +395,7 @@ export function CommentPanel(props: CommentPanelProps) {
               placeholder={t.commentPlaceholder}
               sendLabel={t.commentSend}
               directory={props.directory}
+              search={props.search}
               onSubmit={props.onStart}
               onCancel={props.onCancelNew}
             />
