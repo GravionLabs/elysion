@@ -275,7 +275,7 @@ jobs:
       pull-requests: read
     steps:
       # Tags the commit and creates the GitHub release; it is marked as a pre-release when the version has a label.
-      - uses: GravionLabs/ci/versioning/gh-release@f2bce90da1f215b8da4da9fba22881e9255921d2 # main
+      - uses: GravionLabs/ci/versioning/gh-release@14e0aba1da6026fb43a6851f4e65b2f83c846797 # main
         with:
           version: ${{ needs.version.outputs.semver }}
           cliff-config: cliff.toml
