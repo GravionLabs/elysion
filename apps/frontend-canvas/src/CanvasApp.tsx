@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import {
   exportBoard,
   exportThumbnail,
@@ -219,6 +219,12 @@ export interface CanvasAppProps {
    * Asked each time the comments open. Without one only the authors of earlier comments are offered.
    */
   mentionDirectory?: () => Promise<readonly Person[]>;
+  /**
+   * The people matching what is typed after `@` (at least two characters, asked after a short rest): `{id, name}` as in
+   * {@link mentionDirectory}. The host's own people search (the one of its Share dialog). Optional; without it only the
+   * directory is offered. A failure leaves the directory's list as it is.
+   */
+  mentionSearch?: (query: string) => Promise<readonly Person[]>;
   /** The board's owner: may delete any comment. Everybody else deletes their own (a rule of the interface, not of the server). */
   canModerate?: boolean;
   /** An image could not be stored (the element is taken off the board again) or loaded; `message` says why. */
@@ -287,6 +293,7 @@ export function CanvasApp({
   fileStore,
   votingApi,
   mentionDirectory,
+  mentionSearch,
   canModerate = false,
   onFileError,
   onSynced: onSyncedProp,
@@ -337,6 +344,13 @@ export function CanvasApp({
   commentsCallback.current = onCommentsChange;
   const mentionDirectoryRef = useRef(mentionDirectory);
   mentionDirectoryRef.current = mentionDirectory;
+  const mentionSearchRef = useRef(mentionSearch);
+  mentionSearchRef.current = mentionSearch;
+  // One function for the life of the canvas, so that the composer's search does not start again on every render.
+  const searchPeople = useCallback(
+    (query: string) => Promise.resolve(mentionSearchRef.current?.(query) ?? []),
+    [],
+  );
   const errorCallback = useRef(onError);
   presenceCallback.current = onPresenceChange;
   errorCallback.current = onError;
@@ -1297,6 +1311,7 @@ export function CanvasApp({
             pending={pendingAnchor}
             activeId={activeThread}
             directory={commentPeople}
+            search={mentionSearch ? searchPeople : undefined}
             names={commentNames}
             describeAnchor={describeAnchor}
             placing={placing}

@@ -128,6 +128,11 @@ export type CanvasElement = HTMLElement & {
    * The `can-moderate` attribute (the board's owner may delete any comment) goes with the comments.
    */
   mentionDirectory?: () => Promise<Array<{ id: string; name: string }>>;
+  /**
+   * The people `@` finds by what is typed (at least two characters, after a short rest): `{id, name}` with the same ids as
+   * `mentionDirectory`. A property, as a function.
+   */
+  mentionSearch?: (query: string) => Promise<Array<{ id: string; name: string }>>;
   /** Replaces the board with an .excalidraw file; resolves with the number of elements in it. */
   importFile?(file: Blob): Promise<number>;
   /** Opens the PDF import (#725): a dialog with the pages, then a picture in a frame per chosen page; resolves with the number of pages put on the board (0: canceled). */

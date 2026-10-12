@@ -14,6 +14,9 @@ export type { FileStore, VotingApi, Person };
 /** The people `@` offers in a comment: asked each time the comments open. */
 export type MentionDirectory = () => Promise<readonly Person[]>;
 
+/** The host's search for people by what was typed after `@` (#733). */
+export type MentionSearch = (query: string) => Promise<readonly Person[]>;
+
 /** What the host gives the canvas to get a WS token. */
 export type TokenProvider = () => Promise<string | null>;
 
@@ -44,6 +47,7 @@ class ElysionCanvasElement extends HTMLElement {
   #fileStore: FileStore | undefined;
   #votingApi: VotingApi | undefined;
   #mentionDirectory: MentionDirectory | undefined;
+  #mentionSearch: MentionSearch | undefined;
 
   /**
    * Asked before every connection to the board server for the board-scoped WS token (docs/specs/identity.md): it
@@ -102,6 +106,20 @@ class ElysionCanvasElement extends HTMLElement {
     this.#render();
   }
 
+  /**
+   * The host's search for people, used for `@` once two characters are typed (after a short rest): `search(query)` resolves with
+   * `{id, name}` entries, the same ids as {@link mentionDirectory}. A property because it is a function. Without one only the
+   * directory is offered; a rejection leaves the directory's list as it is.
+   */
+  get mentionSearch(): MentionSearch | undefined {
+    return this.#mentionSearch;
+  }
+
+  set mentionSearch(search: MentionSearch | undefined) {
+    this.#mentionSearch = search;
+    this.#render();
+  }
+
   connectedCallback(): void {
     // A host may set properties on the element before it is upgraded (the script loads lazily, so on the first visit
     // the element can exist before this class does). That leaves an own property that hides the accessor above, and
@@ -110,13 +128,14 @@ class ElysionCanvasElement extends HTMLElement {
     this.#adoptEarlyProperty('fileStore');
     this.#adoptEarlyProperty('votingApi');
     this.#adoptEarlyProperty('mentionDirectory');
+    this.#adoptEarlyProperty('mentionSearch');
     this.#root = createRoot(this);
     this.#render();
     this.dispatchEvent(new CustomEvent('ready', { bubbles: true, composed: true }));
   }
 
   #adoptEarlyProperty(
-    name: 'tokenProvider' | 'fileStore' | 'votingApi' | 'mentionDirectory',
+    name: 'tokenProvider' | 'fileStore' | 'votingApi' | 'mentionDirectory' | 'mentionSearch',
   ): void {
     if (Object.prototype.hasOwnProperty.call(this, name)) {
       const value = (this as unknown as Record<string, unknown>)[name];
@@ -127,8 +146,10 @@ class ElysionCanvasElement extends HTMLElement {
         this.fileStore = value as FileStore | undefined;
       } else if (name === 'votingApi') {
         this.votingApi = value as VotingApi | undefined;
-      } else {
+      } else if (name === 'mentionDirectory') {
         this.mentionDirectory = value as MentionDirectory | undefined;
+      } else {
+        this.mentionSearch = value as MentionSearch | undefined;
       }
     }
   }
@@ -272,6 +293,7 @@ class ElysionCanvasElement extends HTMLElement {
         fileStore={this.#fileStore}
         votingApi={this.#votingApi}
         mentionDirectory={this.#mentionDirectory}
+        mentionSearch={this.#mentionSearch}
         canModerate={this.hasAttribute('can-moderate')}
         readOnly={this.hasAttribute('readonly')}
         imagesEnabled={this.hasAttribute('images-enabled')}

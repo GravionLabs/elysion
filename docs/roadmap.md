@@ -79,6 +79,5 @@ The gaps users noticed first (Epic #722):
 - **Agent skills per project** (#824): `apm install` before working, the skill folders are not committed.
 - **Checks by hand that CI cannot do:** a screen reader pass ([#739](https://github.com/GravionLabs/elysion/issues/739)), a real Entra
   tenant (the stand-in does not show Entra's own claim shapes), the Helm chart on a managed cluster, and the weekly load workflow.
-- **Known limits:** the votes of one person can exceed their limit by one when two requests arrive at the same moment
-  ([docs/specs/business-backend.md](specs/business-backend.md)); the people offered for an `@` mention are those who commented before
-  unless the person is an owner.
+- **Known limit:** the votes of one person can exceed their limit by one when two requests arrive at the same moment
+  ([docs/specs/business-backend.md](specs/business-backend.md)).

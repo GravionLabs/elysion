@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import * as Y from 'yjs';
 import { describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '../i18n';
@@ -114,6 +114,87 @@ describe('CommentPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reply' }));
     expect(props.onReply).toHaveBeenCalledWith(expect.any(String), 'ask @{u-cy} ', {
       'u-cy': 'Cy Young',
+    });
+  });
+
+  describe('the host search for @', () => {
+    const type = (value: string) => {
+      const box = screen.getByPlaceholderText('Reply…') as HTMLTextAreaElement;
+      fireEvent.change(box, { target: { value, selectionStart: value.length } });
+      box.setSelectionRange(value.length, value.length);
+      fireEvent.change(box, { target: { value } });
+      return box;
+    };
+    const rest = async (ms = 250) => {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ms);
+      });
+    };
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('asks after a rest and only from two characters on, and offers what it found next to the directory', async () => {
+      const search = vi.fn(async () => [{ id: 'u-new', name: 'Nora New' }]);
+      setup({ search });
+
+      type('hi @c');
+      await rest();
+      expect(search).not.toHaveBeenCalled();
+
+      type('hi @cy');
+      type('hi @cyn'); // typing on restarts the rest
+      await rest(100);
+      expect(search).not.toHaveBeenCalled();
+      await rest(150);
+      expect(search).toHaveBeenCalledTimes(1);
+      expect(search).toHaveBeenCalledWith('cyn');
+    });
+
+    it('lists the found people, announces the count and stores the id of the one picked', async () => {
+      const search = vi.fn(async () => [{ id: 'u-new', name: 'Nora Newman' }]);
+      const props = setup({ search });
+
+      const box = type('ask @no');
+      await rest();
+
+      expect(screen.getByRole('status', { name: '' }).textContent).toBe('1 person found');
+      fireEvent.mouseDown(screen.getByRole('option', { name: 'Nora Newman' }));
+      expect(box.value).toBe('ask @Nora Newman ');
+      fireEvent.click(screen.getByRole('button', { name: 'Reply' }));
+      expect(props.onReply).toHaveBeenCalledWith(expect.any(String), 'ask @{u-new} ', {
+        'u-new': 'Nora Newman',
+      });
+    });
+
+    it('keeps the local list when the search fails, and the last answer wins', async () => {
+      let first: (people: { id: string; name: string }[]) => void = () => undefined;
+      const search = vi
+        .fn()
+        .mockImplementationOnce(() => new Promise((resolve) => (first = resolve)))
+        .mockResolvedValueOnce([{ id: 'u-two', name: 'Cyril Two' }])
+        .mockRejectedValue(new Error('down'));
+      setup({ search });
+
+      type('@cy');
+      await rest();
+      type('@cyr');
+      await rest();
+      await act(async () => first([{ id: 'u-old', name: 'Cyd Old' }])); // arrives late
+      expect(screen.queryByRole('option', { name: 'Cyd Old' })).toBeNull();
+      expect(screen.getByRole('option', { name: 'Cyril Two' })).toBeTruthy();
+
+      type('@cyx');
+      await rest();
+      expect(screen.queryByRole('option', { name: 'Cyril Two' })).toBeNull();
+    });
+
+    it('does not ask when the host has no search, and the directory still works', async () => {
+      setup();
+      type('ask @cy');
+      await rest();
+
+      expect(screen.getByRole('option', { name: 'Cy Young' })).toBeTruthy();
     });
   });
 

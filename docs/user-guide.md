@@ -220,7 +220,7 @@ The **Comments** button in the toolbar (or the key **C**, when two elements are 
 
 1. Click an **element** or an empty spot of the board: the comment is attached to it. A comment on an element follows the element when it moves; a comment on a spot stays where it is.
 2. Write the comment (up to 2,000 characters) and press **Comment**. Ctrl+Enter sends too. Type **@** to mention someone: the list offers the members of the board
-   (the owner of the board sees all of them; everybody else is offered the people who commented before). A mention is shown as the person's name. Nobody is notified yet.
+   (the owner of the board sees all of them first, and everybody gets the people who commented before; after two letters the list also finds anybody who has signed in to Elysion by name or email). A mention is shown as the person's name. Nobody is notified yet.
 3. A small marker with the number of messages sits on the element. Click it to open the thread, **reply**, and **Resolve** it when it is settled (**Reopen** brings it back).
    Open threads are listed first, resolved ones after them.
 4. **Delete** removes one of your own messages; the owner of the board can delete any. A thread goes with its last message.
