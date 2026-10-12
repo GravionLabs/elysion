@@ -4,6 +4,9 @@ export interface Person {
   name: string;
 }
 
+/** The host's search for people by what was typed (name or email), at least {@link MIN_SEARCH_LENGTH} characters. */
+export type MentionSearch = (query: string) => Promise<readonly Person[]>;
+
 /** The longest name part the list is filtered by: a name has a space or two, a sentence has no business in the list. */
 const MAX_QUERY = 30;
 
@@ -53,3 +56,35 @@ export function applyMention(
     caret: mention.start + inserted.length,
   };
 }
+
+/**
+ * The people `@` offers: the local list filtered by what was typed, then what the host's search found (not filtered again: the
+ * search may match an email address, and the name need not contain the query). A person listed twice, by id or by name, is
+ * offered once. At most `max`.
+ */
+export function mergePeople(
+  local: readonly Person[],
+  found: readonly Person[],
+  query: string,
+  max = 8,
+): Person[] {
+  const result: Person[] = [];
+  const ids = new Set<string>();
+  const names = new Set<string>();
+  const add = (person: Person) => {
+    const name = person.name.trim().toLowerCase();
+    if (!name || ids.has(person.id) || names.has(name)) return;
+    ids.add(person.id);
+    names.add(name);
+    result.push(person);
+  };
+  suggestions(local, query, max).forEach(add);
+  found.forEach(add);
+  return result.slice(0, max);
+}
+
+/** The shortest typed part that is searched for: as in the Share dialog, one letter would list half the directory. */
+export const MIN_SEARCH_LENGTH = 2;
+
+/** How long the typing rests before the host is asked. */
+export const SEARCH_DELAY_MS = 200;

@@ -26,6 +26,7 @@ import { VotingApi } from './voting-api';
 import { ThumbnailUploader } from './thumbnail-uploader';
 import { ShareDialog } from '../share/share-dialog';
 import { MembersApi } from '../share/members-api';
+import { MIN_USER_QUERY, UsersApi } from '../share/users-api';
 import { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename, type ExportFormat } from './download';
 import { ExportRequest } from '../topbar/export-menu';
@@ -80,6 +81,7 @@ export class Board {
   readonly #files = inject(FilesApi);
   readonly #votings = inject(VotingApi);
   readonly #members = inject(MembersApi);
+  readonly #users = inject(UsersApi);
   readonly #thumbnails = inject(ThumbnailUploader);
   readonly #pageTitle = inject(Title);
   readonly #templates = inject(TemplateApi);
@@ -356,6 +358,24 @@ export class Board {
     try {
       const members = await firstValueFrom(this.#members.list(this.boardId()));
       return members.map((member) => ({ id: member.userId, name: member.displayName }));
+    } catch {
+      return [];
+    }
+  };
+
+  /**
+   * The people `@` finds by what is typed (#733): the people search of the Share dialog (`GET /api/users?query=`), open to every
+   * signed-in person and answering at most ten, so an editor or a viewer can mention somebody who has not commented yet. The same
+   * ids as {@link mentionDirectory}. A failure is an empty list: the directory's list is still there.
+   */
+  protected readonly mentionSearch = async (
+    query: string,
+  ): Promise<Array<{ id: string; name: string }>> => {
+    const text = query.trim();
+    if (text.length < MIN_USER_QUERY || !isStoredBoardId(this.boardId())) return [];
+    try {
+      const users = await firstValueFrom(this.#users.search(text));
+      return users.map((user) => ({ id: user.id, name: user.displayName }));
     } catch {
       return [];
     }

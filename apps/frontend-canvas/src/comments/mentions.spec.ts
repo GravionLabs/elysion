@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activeMention, applyMention, suggestions } from './mentions';
+import { activeMention, applyMention, mergePeople, suggestions } from './mentions';
 
 const people = [
   { id: '1', name: 'Ann Lee' },
@@ -40,5 +40,36 @@ describe('applyMention', () => {
       text: 'see @Ann Lee  please',
       caret: 13,
     });
+  });
+});
+
+describe('mergePeople', () => {
+  it('lists the local people that match, then what the search found, without repeating anybody', () => {
+    const found = [
+      { id: '2', name: 'Anton' }, // the same id as a local person
+      { id: '9', name: 'ann lee' }, // the same name as a local person, another id
+      { id: '7', name: 'Zed' }, // matched by an email address, the name does not contain the query
+    ];
+
+    expect(mergePeople(people, found, 'an').map((person) => person.name)).toEqual([
+      'Ann Lee',
+      'Anton',
+      'Bob Annis',
+      'Zed',
+    ]);
+  });
+
+  it('offers what was found alone when nothing local matches, and at most `max`', () => {
+    const many = Array.from({ length: 12 }, (_, index) => ({
+      id: `f${index}`,
+      name: `Found ${index}`,
+    }));
+
+    expect(mergePeople([], many, 'zz')).toHaveLength(8);
+    expect(mergePeople([], many, 'zz', 3).map((person) => person.id)).toEqual(['f0', 'f1', 'f2']);
+  });
+
+  it('leaves out people without a name', () => {
+    expect(mergePeople([], [{ id: '1', name: '  ' }], 'x')).toEqual([]);
   });
 });

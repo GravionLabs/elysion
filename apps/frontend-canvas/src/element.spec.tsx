@@ -149,6 +149,25 @@ describe('elysion-canvas custom element', () => {
     document.body.removeChild(el);
   });
 
+  it('has a mentionSearch property, also when it was set early (#733)', () => {
+    const search = vi.fn(async () => [{ id: 'u1', name: 'Ann' }]);
+    const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
+      mentionSearch?: typeof search;
+    };
+    Object.defineProperty(el, 'mentionSearch', {
+      value: search,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+
+    document.body.appendChild(el);
+
+    expect(Object.getOwnPropertyDescriptor(el, 'mentionSearch')).toBeUndefined();
+    expect(el.mentionSearch).toBe(search);
+    document.body.removeChild(el);
+  });
+
   it('has a comments button that opens the panel inside the element (#733)', async () => {
     const el = document.createElement(ELEMENT_TAG_NAME);
     el.setAttribute('board-id', `comments-${crypto.randomUUID()}`);
