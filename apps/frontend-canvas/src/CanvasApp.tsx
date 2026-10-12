@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import {
   exportBoard,
   exportThumbnail,
@@ -219,6 +219,12 @@ export interface CanvasAppProps {
    * Asked each time the comments open. Without one only the authors of earlier comments are offered.
    */
   mentionDirectory?: () => Promise<readonly Person[]>;
+  /**
+   * The people matching what is typed after `@` (at least two characters, asked after a short rest): `{id, name}` as in
+   * {@link mentionDirectory}. The host's own people search (the one of its Share dialog). Optional; without it only the
+   * directory is offered. A failure leaves the directory's list as it is.
+   */
+  mentionSearch?: (query: string) => Promise<readonly Person[]>;
   /** The board's owner: may delete any comment. Everybody else deletes their own (a rule of the interface, not of the server). */
   canModerate?: boolean;
   /** An image could not be stored (the element is taken off the board again) or loaded; `message` says why. */
@@ -287,6 +293,7 @@ export function CanvasApp({
   fileStore,
   votingApi,
   mentionDirectory,
+  mentionSearch,
   canModerate = false,
   onFileError,
   onSynced: onSyncedProp,
@@ -306,6 +313,9 @@ export function CanvasApp({
   // attribute or system preference (which wins over an earlier toggle).
   const [activeTheme, setActiveTheme] = useState<CanvasTheme>(resolvedTheme);
   useEffect(() => setActiveTheme(resolvedTheme), [resolvedTheme]);
+  // The binding draws the sticky notes in the colors of the theme (#737): it needs the theme at its start and at every switch.
+  const activeThemeRef = useRef(activeTheme);
+  activeThemeRef.current = activeTheme;
   // The theme Excalidraw last reported. It lags behind `activeTheme` for a moment after the host
   // changed the attribute, so a mismatch alone does not mean the user switched it: only a change of
   // Excalidraw's own value does.
@@ -334,6 +344,13 @@ export function CanvasApp({
   commentsCallback.current = onCommentsChange;
   const mentionDirectoryRef = useRef(mentionDirectory);
   mentionDirectoryRef.current = mentionDirectory;
+  const mentionSearchRef = useRef(mentionSearch);
+  mentionSearchRef.current = mentionSearch;
+  // One function for the life of the canvas, so that the composer's search does not start again on every render.
+  const searchPeople = useCallback(
+    (query: string) => Promise.resolve(mentionSearchRef.current?.(query) ?? []),
+    [],
+  );
   const errorCallback = useRef(onError);
   presenceCallback.current = onPresenceChange;
   errorCallback.current = onError;
@@ -573,6 +590,7 @@ export function CanvasApp({
       onLimit: () => noticeCallback.current?.(tRef.current.boardFull),
     });
     bindingRef.current = binding;
+    binding.setTheme(activeThemeRef.current);
     if (apiRef.current) {
       binding.attach(apiRef.current);
     }
@@ -690,6 +708,11 @@ export function CanvasApp({
     allVotedRef.current?.check();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, readOnly, voting]);
+
+  // A switch of the theme (the host's attribute, the system, Excalidraw's own toggle) maps the sticky notes of the scene again.
+  useEffect(() => {
+    bindingRef.current?.setTheme(activeTheme);
+  }, [activeTheme]);
 
   // The host changed the name or color after the canvas started.
   useEffect(() => {
@@ -1288,6 +1311,7 @@ export function CanvasApp({
             pending={pendingAnchor}
             activeId={activeThread}
             directory={commentPeople}
+            search={mentionSearch ? searchPeople : undefined}
             names={commentNames}
             describeAnchor={describeAnchor}
             placing={placing}

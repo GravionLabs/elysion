@@ -113,6 +113,8 @@ export const en = {
     `${count === 1 ? '1 comment' : `${count} comments`}${resolved ? ', resolved' : ''}`,
   commentCharactersLeft: (left: number) => `${left} characters left`,
   commentMentions: 'People',
+  commentMentionsFound: (count: number) =>
+    count === 1 ? '1 person found' : `${count} people found`,
   commentTooLong: (max: number) => `A comment can have up to ${max} characters.`,
   commentTooMany: 'There are too many comments on this board or in this thread.',
   commentFailed: 'The comment could not be saved.',
@@ -263,6 +265,8 @@ export const de: Messages = {
     `${count === 1 ? '1 Kommentar' : `${count} Kommentare`}${resolved ? ', erledigt' : ''}`,
   commentCharactersLeft: (left: number) => `Noch ${left} Zeichen`,
   commentMentions: 'Personen',
+  commentMentionsFound: (count: number) =>
+    count === 1 ? '1 Person gefunden' : `${count} Personen gefunden`,
   commentTooLong: (max: number) => `Ein Kommentar darf bis zu ${max} Zeichen haben.`,
   commentTooMany: 'Auf diesem Board oder in diesem Thread gibt es zu viele Kommentare.',
   commentFailed: 'Der Kommentar konnte nicht gespeichert werden.',

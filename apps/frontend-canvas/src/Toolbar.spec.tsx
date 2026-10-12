@@ -2,7 +2,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { CanvasApp } from './CanvasApp';
 import { Toolbar } from './Toolbar';
-import { STICKY_COLORS, paperColor, seenColor } from './sticky-note';
+import { STICKY_COLORS, paperColor } from './sticky-note';
+import { seenColor } from './sticky-dark';
 import { excalidrawReady } from './test-utils';
 
 describe('Toolbar', () => {
@@ -223,7 +224,7 @@ describe('the sticky note colors in the toolbar', () => {
     fireEvent.click(screen.getByTestId('elysion-sticky-color'));
 
     expect(fills()).toEqual(STICKY_COLORS.map((color) => seenColor(paperColor(color), 'dark')));
-    expect(fills()[0]).toBe('#503700'); // yellow: dark amber on the dark canvas, not the pale paper
+    expect(fills()[0]).toBe('#5f4e09'); // yellow: a deep yellow of the dark palette on the dark canvas, not the pale paper
     expect(fills()).not.toEqual(STICKY_COLORS.map((color) => paperColor(color)));
   });
 

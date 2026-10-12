@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearScene,
   cloneForInsertion,
+  colorsForExport,
   elementsToExport,
   exportBoard,
   exportThumbnail,
@@ -14,7 +15,8 @@ import {
   replaceScene,
 } from './board-io';
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from './board-io';
-import { createStickyNote, STICKY_COLORS } from './sticky-note';
+import { borderColor, createStickyNote, paperColor, STICKY_COLORS } from './sticky-note';
+import { storedToScene } from './sticky-dark';
 
 // convertToExcalidrawElements ignores a given `id` and makes up its own, so ids are set afterwards.
 function rect(id: string, x = 0, y = 0, size = 10): ExcalidrawElement {
@@ -150,6 +152,56 @@ describe('exportBoard', () => {
     const json = JSON.parse(await blob.text());
     expect(json.type).toBe('excalidraw');
     expect(json.elements.map((e: ExcalidrawElement) => e.id)).toEqual(['a', 'b']);
+  });
+
+  describe('with the sticky notes of a dark scene (#737)', () => {
+    const paper = paperColor(STICKY_COLORS[0]);
+    const darkPaper = storedToScene(paper);
+    const darkNote = () =>
+      createStickyNote(STICKY_COLORS[0], { x: 0, y: 0 }).map((element) => ({
+        ...element,
+        backgroundColor: storedToScene(element.backgroundColor),
+        strokeColor: storedToScene(element.strokeColor),
+      })) as unknown as ExcalidrawElement[];
+
+    it('writes the stored colors into an .excalidraw file, whatever the screen shows', async () => {
+      const blob = (await exportBoard(fakeApi(darkNote()).api, 'excalidraw', { theme: 'dark' }))!;
+
+      const json = JSON.parse(await blob.text());
+      expect(json.elements[0].backgroundColor).toBe(paper);
+      expect(json.elements[0].strokeColor).toBe(borderColor(STICKY_COLORS[0]));
+    });
+
+    it('draws a light export with the stored colors', async () => {
+      const svg = await (await exportBoard(fakeApi(darkNote()).api, 'svg', {
+        theme: 'light',
+      }))!.text();
+
+      expect(svg.toLowerCase()).toContain(paper);
+      expect(svg.toLowerCase()).not.toContain(darkPaper);
+    });
+
+    it('draws a dark export with the colors the filter turns into the dark palette', async () => {
+      const svg = await (await exportBoard(fakeApi(darkNote()).api, 'svg', {
+        theme: 'dark',
+      }))!.text();
+
+      expect(svg.toLowerCase()).toContain(darkPaper);
+      expect(svg.toLowerCase()).not.toContain(paper);
+    });
+
+    it('also makes a dark export from a light screen, whose scene holds the stored colors', async () => {
+      const light = createStickyNote(STICKY_COLORS[0], { x: 0, y: 0 }) as ExcalidrawElement[];
+      const svg = await (await exportBoard(fakeApi(light).api, 'svg', { theme: 'dark' }))!.text();
+
+      expect(svg.toLowerCase()).toContain(darkPaper);
+    });
+
+    it('hands the preview picture the stored colors (colorsForExport in the light theme)', () => {
+      const [rectangle] = colorsForExport(darkNote(), false);
+      expect(rectangle.backgroundColor).toBe(paper);
+      expect(colorsForExport([rect('x')], true)[0].strokeColor).toBe(rect('x').strokeColor);
+    });
   });
 
   it('exports only the selection when asked, and nothing when nothing is selected', async () => {

@@ -62,14 +62,6 @@ export function darkThemeColor(hex: string): string {
   return `#${out.join('')}`;
 }
 
-/**
- * The color as it is seen on the canvas in a theme: what the toolbar's note icon and color swatches show, so that
- * the menu and the note that is drawn look the same. The same in the light theme, filtered in the dark one.
- */
-export function seenColor(hex: string, theme: 'light' | 'dark'): string {
-  return theme === 'dark' ? darkThemeColor(hex) : hex;
-}
-
 /** The paper of a note: its background, the color as a note on a wall (the text stays dark and readable). */
 export function paperColor(color: StickyColor): string {
   return tint(color.hex, 0.55);

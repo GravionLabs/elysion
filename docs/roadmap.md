@@ -6,7 +6,7 @@ milestone. The backlog and its order are on the project board
 ([GravionLabs project 7](https://github.com/users/GravionLabs/projects/7)). When the plan changes, update this file and the
 board together.
 
-Last refreshed on 2026-10-09. **Phases M1 to M11 are done**; structured logs with a request id and a log viewer in the dev stack are done (#625); M13 to M15 are planned (Epics #636, #670 and #722).
+Last refreshed on 2026-10-12. **Phases M1 to M15 are done** (released as 0.1 and 0.2); what is left is in [What is next](#what-is-next).
 
 ## Done
 
@@ -37,37 +37,47 @@ documentation site.
 - **Documentation site** on GitHub Pages, built from `docs/` and the README.
 - **A container check on pull requests:** the images build and the demo stack starts.
 
-## M13 Enterprise identity
+## M13 Enterprise identity (done, released in 0.1 and 0.2)
 
-A company runs Elysion with its own identity (Epic #636; the ADR of #638 decides the details):
+A company runs Elysion with its own identity (Epic #636, [ADR 0027](adr/0027-enterprise-sign-in-groups-and-administration.md)):
 
-- **Sign in with Microsoft Entra ID** through Keycloak identity brokering, with a second realm as a stand-in for development
-  and the browser tests, and the shell going straight to the company's login (#637).
+- **Sign in with Microsoft Entra ID** through Keycloak identity brokering, with a second realm (`entra-stub`) as a stand-in for
+  development and the browser tests, and the shell going straight to the company's login (#637).
 - **User groups** from the token's `groups` claim or made locally, with a role on a room; the highest of board, room and
   group role wins, and the realtime handshake does not change (#646).
 - **Administration and a user directory:** the realm role `elysion-admin`, admin pages for users, groups and rooms, and
   finding people by name in the Share dialog (#655).
-- **Later:** group members from Microsoft Graph before they sign in, deactivation and hand-over, an audit log (#666).
+- **Directory sync and the account lifecycle:** group members from Microsoft Graph before they sign in (off unless configured),
+  deactivation and hand-over, and an audit log with retention (#666).
 
-## M14 Production readiness
+## M14 Production readiness (done, released in 0.1)
 
-What has to be true before anything real depends on Elysion (Epic #670):
+What had to be true before anything real depends on Elysion (Epic #670, decisions in [ADR 0026](adr/0026-board-document-compaction-and-limits.md) and [ADR 0028](adr/0028-production-topology-tls-and-keycloak.md)):
 
-- **Production configuration and security** (#671): the topology decision (#672), a production overlay with TLS and
-  Keycloak in production mode, a security review with scanning in CI, security headers and a CSP.
-- **Backups, alerting and a hardened Helm chart** (#683): a rehearsed restore, alert rules on the metrics, probes,
-  security contexts, PDBs and an HPA, an upgrade test from the last pre-release.
-- **Board documents, images and limits** (#696): compaction and a size limit (decision #697), images in the object
-  store (today an image is visible to its author only and gone after a reload, #702), a load test, the bundle budget.
+- **Production configuration and security** (#671): production on Kubernetes through the Helm chart with TLS and Keycloak run by the
+  operator, a production realm, a security review with scanning in CI ([docs/security.md](security.md)), security headers and a CSP.
+- **Backups, alerting and a hardened Helm chart** (#683): a rehearsed restore, alert rules on the metrics, probes, security
+  contexts, PDBs and an HPA, an upgrade test from the last pre-release.
+- **Board documents, images and limits** (#696): compaction with a document generation, limits on updates, documents and
+  elements, images in the object store, a load test with two replicas and the sizing ([docs/performance.md](performance.md)).
 - **Browser tests** (#713): rooms, templates, import and export, the drawing tools, reconnect.
 
-## M15 Product gaps
+## M15 Product gaps (done)
 
-The gaps users notice first (Epic #722; PBIs written, tasks when scheduled): PDF and image import and a better export
-(#723), thumbnails, search, sorting and favorites (#728), secret votes, comments, invitation links and working through
-an outage (#731), dark theme colors, a German interface and accessibility (#736).
+The gaps users noticed first (Epic #722):
 
-## After the pre-release
+- **Import and export** (#723): several images at once, SVG to PNG, PDF import, PDF export with one page per frame and options,
+  a whole room as one PDF.
+- **Finding a board** (#728): a picture on the card, search, sorting, favorites, last opened.
+- **Collaboration** (#731, [ADR 0029](adr/0029-dot-voting-on-the-server.md)): secret dot voting on the server and viewers can vote,
+  comments with mentions, invitation links, working through an outage with a copy on the device.
+- **Dark theme colors, a German interface and accessibility** (#736): sticky notes read as the dark palette's colors in the dark
+  theme (#737), everything else of the dark theme is Excalidraw's own filter.
 
-Nothing is left over: everything of the earlier list is in M14 and M15. Structured logs with a request id and a log
-viewer in the dev stack are done ([ADR 0025](adr/0025-structured-logging-and-log-viewer.md), #625).
+## What is next
+
+- **Agent skills per project** (#824): `apm install` before working, the skill folders are not committed.
+- **Checks by hand that CI cannot do:** a screen reader pass ([#739](https://github.com/GravionLabs/elysion/issues/739)), a real Entra
+  tenant (the stand-in does not show Entra's own claim shapes), the Helm chart on a managed cluster, and the weekly load workflow.
+- **Known limit:** the votes of one person can exceed their limit by one when two requests arrive at the same moment
+  ([docs/specs/business-backend.md](specs/business-backend.md)).

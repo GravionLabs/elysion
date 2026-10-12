@@ -50,7 +50,7 @@ Der Knopf **Kommentare** in der Werkzeugleiste (oder die Taste **C**, wenn nicht
 
 1. Klicke ein **Element** oder eine leere Stelle des Boards: Der Kommentar hängt daran. Ein Kommentar an einem Element wandert mit; ein Kommentar an einer Stelle bleibt dort.
 2. Schreibe den Kommentar (bis zu 2.000 Zeichen) und drücke **Kommentieren**; Strg+Enter sendet ebenfalls. Mit **@** erwähnst du jemanden: Die Liste bietet die Mitglieder des Boards an
-   (die Eigentümerin sieht alle; alle anderen sehen die, die schon kommentiert haben). Eine Erwähnung erscheint als Name. Benachrichtigt wird noch niemand.
+   (Eigentümer sehen zuerst alle, alle bekommen die, die schon kommentiert haben; ab zwei Buchstaben findet die Liste auch jeden, der sich bei Elysion angemeldet hat, nach Name oder E-Mail). Eine Erwähnung erscheint als Name. Benachrichtigt wird noch niemand.
 3. Eine kleine Markierung mit der Zahl der Nachrichten sitzt am Element. Ein Klick öffnet den Thread, dort kannst du **antworten** und ihn **erledigen**
    (**Wieder öffnen** holt ihn zurück). Offene Threads stehen zuerst, erledigte danach.
 4. **Löschen** entfernt eine eigene Nachricht; die Eigentümerin des Boards kann jede löschen. Mit der letzten Nachricht verschwindet der Thread.

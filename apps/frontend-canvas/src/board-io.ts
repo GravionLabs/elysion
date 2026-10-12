@@ -15,6 +15,7 @@ import type {
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { VIEW_BACKGROUND_COLOR } from './element-style';
 import { framesInOrder, type ExportOptions } from './export-options';
+import { recolor, sceneToStored, storedToScene } from './sticky-dark';
 import { svgsToPdf, type PdfAppendix } from './pdf';
 
 export type ExportFormat = 'png' | 'svg' | 'excalidraw' | 'pdf';
@@ -43,10 +44,10 @@ export function fitInto(
  * board's color (whatever the screen shows), or `null` for an empty board. The grid is not in it: the canvas does not draw it.
  */
 export async function exportThumbnail(api: ExcalidrawImperativeAPI): Promise<Blob | null> {
-  const elements = api.getSceneElements();
-  if (elements.length === 0) return null;
+  const scene = api.getSceneElements();
+  if (scene.length === 0) return null;
   const rendered = await exportToCanvas({
-    elements,
+    elements: colorsForExport(scene, false),
     appState: {
       ...api.getAppState(),
       viewBackgroundColor: VIEW_BACKGROUND_COLOR,
@@ -69,6 +70,18 @@ export async function exportThumbnail(api: ExcalidrawImperativeAPI): Promise<Blo
   const place = fitInto({ width: rendered.width, height: rendered.height });
   context.drawImage(rendered, place.x, place.y, place.width, place.height);
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+}
+
+/**
+ * The elements as an export needs them (#737). The scene of a dark screen carries the sticky notes in the dark colors; a file, a
+ * thumbnail and a light export want the stored ones, and only a dark export (the filter is applied to it) wants the dark ones, also
+ * from a light screen.
+ */
+export function colorsForExport<T extends { backgroundColor?: string; strokeColor?: string }>(
+  elements: readonly T[],
+  dark: boolean,
+): T[] {
+  return recolor(elements, dark ? (color) => storedToScene(sceneToStored(color)) : sceneToStored);
 }
 
 /** The elements to export: everything, or the selected ones plus the text inside selected shapes. */
@@ -151,9 +164,6 @@ export async function exportBoard(
   const appState = api.getAppState();
   const scene = api.getSceneElements();
   const selected = selectionOnly ? appState.selectedElementIds : null;
-  const elements = elementsToExport(scene, selected);
-  if (elements.length === 0) return null;
-
   const files = api.getFiles();
   // What you see, on its background: the current theme and view background are kept.
   const exportState = {
@@ -164,6 +174,11 @@ export async function exportBoard(
     exportScale: scale,
     ...(theme === 'current' ? {} : { exportWithDarkMode: theme === 'dark' }),
   };
+  // The notes in the colors of the export's theme, not of the screen's (a file always has the stored ones).
+  const darkExport = format !== 'excalidraw' && exportState.exportWithDarkMode === true;
+  const elements = colorsForExport(elementsToExport(scene, selected), darkExport);
+  if (elements.length === 0) return null;
+  const sceneForExport = colorsForExport(scene, darkExport);
 
   switch (format) {
     case 'png':
@@ -176,7 +191,7 @@ export async function exportBoard(
       const layout = { format: options.pageFormat, orientation: options.orientation };
       // A board with frames is a document: one page per frame, in the order of their names or their places, each with its
       // name as a title. A selection that holds frames makes pages of those; anything else is one page, as before.
-      const frames = options.pdfPages === 'whole' ? [] : framesToExport(scene, selected);
+      const frames = options.pdfPages === 'whole' ? [] : framesToExport(sceneForExport, selected);
       if (frames.length === 0) {
         return svgsToPdf(
           [{ svg: await exportToSvg({ elements, appState: exportState, files }) }],
@@ -189,7 +204,7 @@ export async function exportBoard(
         pages.push({
           title: frame.name?.trim() || `${index + 1}`,
           svg: await exportToSvg({
-            elements: scene,
+            elements: sceneForExport,
             appState: exportState,
             files,
             exportingFrame: frame,

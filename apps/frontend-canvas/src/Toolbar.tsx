@@ -2,7 +2,8 @@ import { useState, type ReactNode } from 'react';
 import type { ToolType } from '@excalidraw/excalidraw/types';
 import { colorName, useI18n } from './i18n';
 import { CanvasMenu, type CanvasMenuItem } from './CanvasMenu';
-import { STICKY_COLORS, borderColor, paperColor, seenColor, type StickyColor } from './sticky-note';
+import { STICKY_COLORS, borderColor, paperColor, type StickyColor } from './sticky-note';
+import { seenColor } from './sticky-dark';
 
 export type ToolbarTool = Extract<
   ToolType,

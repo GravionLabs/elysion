@@ -8,10 +8,10 @@ import {
   createStickyNote,
   darkThemeColor,
   paperColor,
-  seenColor,
   shade,
   tint,
 } from './sticky-note';
+import { seenColor } from './sticky-dark';
 
 describe('tint', () => {
   it('mixes a color into white', () => {
@@ -109,7 +109,7 @@ describe('the colors as they are seen on the canvas', () => {
   it('is what the dark theme filter makes of it: light colors turn dark, the hue stays', () => {
     // invert(93%) hue-rotate(180deg) of the yellow paper, worked out by hand.
     expect(darkThemeColor('#f3d577')).toBe('#503700');
-    expect(seenColor('#f3d577', 'dark')).toBe('#503700');
+    expect(seenColor('#f3d578', 'dark')).toBe(darkThemeColor('#f3d578')); // not a note color: the filter alone
     expect(darkThemeColor('#ffffff')).toBe('#121212'); // white becomes the near-black of the dark canvas
     expect(darkThemeColor('#000000')).toBe('#ededed');
   });

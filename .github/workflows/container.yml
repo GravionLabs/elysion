@@ -4,7 +4,7 @@ name: Container
 # demo stack, has to prove that the four images build and that the whole demo stack starts and works.
 on:
   pull_request:
-    branches: [main]
+    branches: [main, 'release/**']
     paths:
       - apps/**
       - packages/**
