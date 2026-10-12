@@ -84,7 +84,7 @@ is removed when you log out; on a shared computer, log out when you are done.
 ![The dark theme](images/16-dark.png)
 
 **Dark** / **Light** in the top bar switches the theme. Without a choice Elysion follows your system setting. The choice is kept in your browser.
-In the dark theme Excalidraw darkens the whole canvas, so notes look darker than in the light theme; what everybody else sees is unchanged.
+In the dark theme the canvas is darkened and sticky notes are drawn in the colors of the dark palette (a yellow note stays a yellow note, in a deep shade). The color a note has in the board does not change: everybody else sees it in their own theme.
 
 ### The shape library
 

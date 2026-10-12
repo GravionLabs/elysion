@@ -8,6 +8,7 @@ import type {
   ExcalidrawImperativeAPI,
 } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
+import { sceneToStored, storedToScene, recolor, wouldRecolor } from '../sticky-dark.js';
 import { type FileReference, type FileStore, blobToDataUrl, dataUrlToBlob } from './files.js';
 
 const ELEMENTS_MAP_KEY = 'elements';
@@ -56,6 +57,11 @@ function beats(
  * Objects never cross the boundary by reference in either direction: writes
  * store a clone, and elements handed to the scene are clones of what the map
  * holds. Excalidraw mutates scene elements in place.
+ *
+ * The colors of sticky notes cross the boundary changed (#737): the document holds the stored, light colors that everybody shares;
+ * in the dark theme the scene holds the colors that Excalidraw's filter turns into the dark palette (`sticky-dark.ts`). Everything
+ * that comes in is mapped to the scene's colors for the theme, everything that is written is mapped back, and a switch of the theme
+ * maps the scene again without writing anything (the version of an element is not changed by a color mapping).
  */
 export class ExcalidrawYjsBinding {
   readonly #doc: Y.Doc;
@@ -69,6 +75,8 @@ export class ExcalidrawYjsBinding {
   /** Ids the limit refused: whatever the scene does with them later (their deletion) is not written either. */
   readonly #refused = new Set<string>();
   #destroyed = false;
+  #theme: 'light' | 'dark' = 'light';
+  #canonicalizing = false;
 
   constructor(doc: Y.Doc, options: BindingOptions = {}) {
     this.#doc = doc;
@@ -78,6 +86,38 @@ export class ExcalidrawYjsBinding {
     this.#elements.observe(this.#handleRemoteChange);
     // A file that arrives after the element that shows it (the upload takes a moment): load it now.
     this.#files.observe(this.#loadMissingFiles);
+  }
+
+  /** The theme the scene is drawn in: the colors of the sticky notes in the scene follow it, the document does not. */
+  setTheme(theme: 'light' | 'dark'): void {
+    if (this.#theme === theme) return;
+    this.#theme = theme;
+    this.#canonicalize();
+  }
+
+  /** What a color of the stored document is in the scene, in this theme. */
+  #sceneColor = (color: string): string =>
+    this.#theme === 'dark' ? storedToScene(color) : sceneToStored(color);
+
+  /**
+   * Puts the colors of the scene into the form of the theme: the note colors as the dark theme wants them in the dark theme, the
+   * stored ones in the light theme (also what was pasted from the other theme or undone across a switch). Only the colors change:
+   * the elements keep their version, nothing is written to the document and nothing is an undo step.
+   */
+  #canonicalize(): void {
+    const api = this.#api;
+    if (!api || this.#canonicalizing) return;
+    const elements = api.getSceneElementsIncludingDeleted();
+    if (!wouldRecolor(elements, this.#sceneColor)) return;
+    this.#canonicalizing = true;
+    try {
+      api.updateScene({
+        elements: recolor(elements, this.#sceneColor),
+        captureUpdate: CaptureUpdateAction.NEVER,
+      });
+    } finally {
+      this.#canonicalizing = false;
+    }
   }
 
   attach(api: ExcalidrawImperativeAPI): void {
@@ -125,10 +165,15 @@ export class ExcalidrawYjsBinding {
           // always read as "equal" (both sides mutate together) after the
           // first write, silently dropping every later update. Clone to
           // freeze a snapshot of this version.
-          this.#elements.set(element.id, structuredClone(element));
+          this.#elements.set(element.id, structuredClone(recolor([element], sceneToStored)[0]));
         }
       }
     });
+    // A note that arrives in the other theme's colors (drawn just now, pasted, undone across a switch) is put right after this
+    // change, not in the middle of it.
+    if (wouldRecolor(elements, this.#sceneColor)) {
+      queueMicrotask(() => this.#canonicalize());
+    }
     if (refused.length > 0) {
       this.#takeOffScene(refused);
       this.#options.onLimit?.();
@@ -215,9 +260,12 @@ export class ExcalidrawYjsBinding {
     // happens on the writer too, because Y.Map observers also fire for local
     // writes.
     const storedObjects = new Set<unknown>(stored);
-    const detached = reconciled.map((element) =>
-      storedObjects.has(element) ? structuredClone(element) : element,
-    );
+    const isLight = this.#theme === 'light';
+    const detached = reconciled.map((element) => {
+      if (!storedObjects.has(element)) return element;
+      const copy = structuredClone(element);
+      return isLight ? copy : recolor([copy], storedToScene)[0];
+    });
 
     // Our own write comes back through the observer with nothing new in it: leave the scene alone then. Replacing the
     // scene's elements while Excalidraw is in the middle of something with one of them (an image that is still
@@ -236,7 +284,7 @@ export class ExcalidrawYjsBinding {
         if (storedObjects.has(element)) continue;
         const existing = this.#elements.get(element.id);
         if (existing && beats(element, existing)) {
-          this.#elements.set(element.id, structuredClone(element));
+          this.#elements.set(element.id, structuredClone(recolor([element], sceneToStored)[0]));
         }
       }
     });

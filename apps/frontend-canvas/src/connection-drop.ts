@@ -1,3 +1,4 @@
+import { sceneToStored } from './sticky-dark';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import {
   HOVER_MARGIN,
@@ -59,8 +60,9 @@ export function dropSide(
  * Anything else gets the default, yellow.
  */
 export function stickyColorOf(element: ExcalidrawElement): StickyColor {
-  const background = element.backgroundColor.toLowerCase();
-  const stroke = element.strokeColor.toLowerCase();
+  // In the dark theme the scene carries the dark colors of the notes (#737): the stored ones are what the palette knows.
+  const background = sceneToStored(element.backgroundColor).toLowerCase();
+  const stroke = sceneToStored(element.strokeColor).toLowerCase();
   return (
     STICKY_COLORS.find((color) => paperColor(color) === background) ??
     STICKY_COLORS.find((color) => color.hex === stroke || borderColor(color) === stroke) ??

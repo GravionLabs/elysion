@@ -306,6 +306,9 @@ export function CanvasApp({
   // attribute or system preference (which wins over an earlier toggle).
   const [activeTheme, setActiveTheme] = useState<CanvasTheme>(resolvedTheme);
   useEffect(() => setActiveTheme(resolvedTheme), [resolvedTheme]);
+  // The binding draws the sticky notes in the colors of the theme (#737): it needs the theme at its start and at every switch.
+  const activeThemeRef = useRef(activeTheme);
+  activeThemeRef.current = activeTheme;
   // The theme Excalidraw last reported. It lags behind `activeTheme` for a moment after the host
   // changed the attribute, so a mismatch alone does not mean the user switched it: only a change of
   // Excalidraw's own value does.
@@ -573,6 +576,7 @@ export function CanvasApp({
       onLimit: () => noticeCallback.current?.(tRef.current.boardFull),
     });
     bindingRef.current = binding;
+    binding.setTheme(activeThemeRef.current);
     if (apiRef.current) {
       binding.attach(apiRef.current);
     }
@@ -690,6 +694,11 @@ export function CanvasApp({
     allVotedRef.current?.check();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, readOnly, voting]);
+
+  // A switch of the theme (the host's attribute, the system, Excalidraw's own toggle) maps the sticky notes of the scene again.
+  useEffect(() => {
+    bindingRef.current?.setTheme(activeTheme);
+  }, [activeTheme]);
 
   // The host changed the name or color after the canvas started.
   useEffect(() => {
