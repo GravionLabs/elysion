@@ -8,6 +8,8 @@ import type {
 import * as Y from 'yjs';
 import { describe, expect, it, vi } from 'vitest';
 import { ExcalidrawYjsBinding } from './excalidraw-binding.js';
+import { sceneToStored, storedToScene } from '../sticky-dark.js';
+import { STICKY_COLORS, borderColor, createStickyNote, paperColor } from '../sticky-note.js';
 import type { FileStore } from './files.js';
 
 function rectangle() {
@@ -137,6 +139,134 @@ describe('ExcalidrawYjsBinding ties (#735)', () => {
 
     expect((doc.getMap('elements').get(base.id) as { versionNonce: number }).versionNonce).toBe(50);
     expect(elements()[0].versionNonce).toBe(50);
+  });
+});
+
+describe('ExcalidrawYjsBinding sticky note colors in the dark theme (#737)', () => {
+  const stickyPaper = paperColor(STICKY_COLORS[0]);
+  const stickyBorder = borderColor(STICKY_COLORS[0]);
+  const note = () =>
+    createStickyNote(STICKY_COLORS[0], { x: 0, y: 0 })[0] as OrderedExcalidrawElement;
+  const stored = (doc: Y.Doc, id: string) =>
+    doc.getMap('elements').get(id) as {
+      backgroundColor: string;
+      strokeColor: string;
+      version: number;
+    };
+
+  it('brings a note into the dark scene in the dark colors and leaves the document as it is', () => {
+    const doc = new Y.Doc();
+    const binding = new ExcalidrawYjsBinding(doc);
+    binding.setTheme('dark');
+    const sticky = note();
+    doc.getMap('elements').set(sticky.id, sticky);
+    const { api, elements } = createMockApi([]);
+
+    binding.attach(api);
+
+    const shown = elements().find((element) => element.id === sticky.id)!;
+    expect(shown.backgroundColor).toBe(storedToScene(stickyPaper));
+    expect(shown.strokeColor).toBe(storedToScene(stickyBorder));
+    expect(shown.version).toBe(sticky.version);
+    expect(stored(doc, sticky.id).backgroundColor).toBe(stickyPaper);
+  });
+
+  it('shows the stored colors in the light theme', () => {
+    const doc = new Y.Doc();
+    const binding = new ExcalidrawYjsBinding(doc);
+    const sticky = note();
+    doc.getMap('elements').set(sticky.id, sticky);
+    const { api, elements } = createMockApi([]);
+
+    binding.attach(api);
+
+    expect(elements().find((element) => element.id === sticky.id)!.backgroundColor).toBe(
+      stickyPaper,
+    );
+  });
+
+  it('writes the stored colors when a note of the dark scene is written', () => {
+    const doc = new Y.Doc();
+    const binding = new ExcalidrawYjsBinding(doc);
+    binding.setTheme('dark');
+    const sticky = note();
+    const drawn = {
+      ...sticky,
+      backgroundColor: storedToScene(stickyPaper),
+      strokeColor: storedToScene(stickyBorder),
+    } as OrderedExcalidrawElement;
+
+    binding.onLocalChange([drawn]);
+
+    const written = stored(doc, sticky.id);
+    expect(written.backgroundColor).toBe(stickyPaper);
+    expect(written.strokeColor).toBe(stickyBorder);
+    expect(drawn.backgroundColor).toBe(storedToScene(stickyPaper)); // the scene's element is not changed
+  });
+
+  it('maps the scene on a switch of the theme without writing to the document or changing a version', () => {
+    const doc = new Y.Doc();
+    const binding = new ExcalidrawYjsBinding(doc);
+    const sticky = note();
+    doc.getMap('elements').set(sticky.id, sticky);
+    const { api, elements } = createMockApi([]);
+    binding.attach(api);
+    const setSpy = vi.spyOn(doc.getMap('elements'), 'set');
+
+    binding.setTheme('dark');
+    expect(elements()[0].backgroundColor).toBe(storedToScene(stickyPaper));
+    binding.setTheme('light');
+    expect(elements()[0].backgroundColor).toBe(stickyPaper);
+
+    expect(setSpy).not.toHaveBeenCalled();
+    expect(elements()[0].version).toBe(sticky.version);
+  });
+
+  it('puts a note that was drawn in the stored colors into the dark ones, after the change', async () => {
+    const doc = new Y.Doc();
+    const binding = new ExcalidrawYjsBinding(doc);
+    binding.setTheme('dark');
+    const sticky = note();
+    const { api, elements } = createMockApi([sticky]);
+    binding.attach(api);
+
+    binding.onLocalChange(elements());
+    await Promise.resolve();
+
+    expect(elements()[0].backgroundColor).toBe(storedToScene(stickyPaper));
+    expect(stored(doc, sticky.id).backgroundColor).toBe(stickyPaper);
+  });
+
+  it('puts a note with the dark colors, pasted into a light scene, back to the stored ones', async () => {
+    const doc = new Y.Doc();
+    const binding = new ExcalidrawYjsBinding(doc);
+    const sticky = {
+      ...note(),
+      backgroundColor: storedToScene(stickyPaper),
+      strokeColor: storedToScene(stickyBorder),
+    } as OrderedExcalidrawElement;
+    const { api, elements } = createMockApi([sticky]);
+    binding.attach(api);
+
+    binding.onLocalChange(elements());
+    await Promise.resolve();
+
+    expect(elements()[0].backgroundColor).toBe(sceneToStored(storedToScene(stickyPaper)));
+    expect(stored(doc, sticky.id).backgroundColor).toBe(stickyPaper);
+  });
+
+  it('never touches the colors of anything else', () => {
+    const doc = new Y.Doc();
+    const binding = new ExcalidrawYjsBinding(doc);
+    binding.setTheme('dark');
+    const rect = rectangle();
+    doc.getMap('elements').set(rect.id, rect);
+    const { api, elements } = createMockApi([]);
+
+    binding.attach(api);
+
+    expect(elements()[0].strokeColor).toBe(rect.strokeColor);
+    expect(elements()[0].backgroundColor).toBe(rect.backgroundColor);
   });
 });
 

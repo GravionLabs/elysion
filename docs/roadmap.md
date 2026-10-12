@@ -62,7 +62,7 @@ What had to be true before anything real depends on Elysion (Epic #670, decision
   elements, images in the object store, a load test with two replicas and the sizing ([docs/performance.md](performance.md)).
 - **Browser tests** (#713): rooms, templates, import and export, the drawing tools, reconnect.
 
-## M15 Product gaps (done except one fix)
+## M15 Product gaps (done)
 
 The gaps users noticed first (Epic #722):
 
@@ -71,13 +71,11 @@ The gaps users noticed first (Epic #722):
 - **Finding a board** (#728): a picture on the card, search, sorting, favorites, last opened.
 - **Collaboration** (#731, [ADR 0029](adr/0029-dot-voting-on-the-server.md)): secret dot voting on the server and viewers can vote,
   comments with mentions, invitation links, working through an outage with a copy on the device.
-- **Dark theme colors, a German interface and accessibility** (#736): done except the colors of sticky notes in the dark theme
-  (#737, see below).
+- **Dark theme colors, a German interface and accessibility** (#736): sticky notes read as the dark palette's colors in the dark
+  theme (#737), everything else of the dark theme is Excalidraw's own filter.
 
 ## What is next
 
-- **Sticky notes in the dark theme** (#737): the canvas draws their color from Excalidraw's renderer; it needs a patch there, which
-  is why it was postponed. It keeps Feature #736 and Epic #722 open.
 - **Agent skills per project** (#824): `apm install` before working, the skill folders are not committed.
 - **Checks by hand that CI cannot do:** a screen reader pass ([#739](https://github.com/GravionLabs/elysion/issues/739)), a real Entra
   tenant (the stand-in does not show Entra's own claim shapes), the Helm chart on a managed cluster, and the weekly load workflow.

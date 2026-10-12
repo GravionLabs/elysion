@@ -33,7 +33,7 @@ The dot grid is CSS behind a **transparent** static canvas (`grid-dots.ts`, `sty
 
 ## Look and feel
 
-The canvas follows ariadne's design: the tokens come from `packages/design-tokens` (shared with the Angular shell), `src/styles/` has the Excalidraw variable mapping and the toolbar, `Toolbar.tsx`, `element-style.ts`, `sticky-note.ts` — see "Theming", "Bottom toolbar" and "Canvas element style" in `docs/specs/frontend.md`. The dev entry accepts `?theme=light|dark` for checking both themes.
+The canvas follows ariadne's design: the tokens come from `packages/design-tokens` (shared with the Angular shell), `src/styles/` has the Excalidraw variable mapping and the toolbar, `Toolbar.tsx`, `element-style.ts`, `sticky-note.ts`, `sticky-dark.ts` (the dark-theme colors of sticky notes: the document keeps the stored light colors, the binding maps at the boundary and exports go through `colorsForExport`, #737) — see "Theming", "Bottom toolbar" and "Canvas element style" in `docs/specs/frontend.md`. The dev entry accepts `?theme=light|dark` for checking both themes.
 
 ## The library
 
