@@ -6,7 +6,7 @@ milestone. The backlog and its order are on the project board
 ([GravionLabs project 7](https://github.com/users/GravionLabs/projects/7)). When the plan changes, update this file and the
 board together.
 
-Last refreshed on 2026-10-12. **Phases M1 to M15 are done** (released as 0.1 and 0.2); what is left is in [What is next](#what-is-next).
+Last refreshed on 2026-10-16. **Phases M1 to M15 are done** (released as 0.1, 0.2 and 0.3); M16 is planned (Epic #842), and the rest is in [What is next](#what-is-next).
 
 ## Done
 
@@ -73,6 +73,17 @@ The gaps users noticed first (Epic #722):
   comments with mentions, invitation links, working through an outage with a copy on the device.
 - **Dark theme colors, a German interface and accessibility** (#736): sticky notes read as the dark palette's colors in the dark
   theme (#737), everything else of the dark theme is Excalidraw's own filter.
+
+## M16 Workshops and integrations
+
+Running a whole workshop in Elysion and connecting it to other tools (Epic #842; PBIs written, tasks when scheduled, each feature starts
+with a decision):
+
+- **Running a workshop** (#843): snapshots of a board, named and automatic, with a History panel (decision #845, #846), restoring one
+  or opening it as a new board (#847), following a person and presenting (#848), and an agenda whose items start the timer and move
+  everybody to their frame (#849).
+- **Integrations** (#844): the decision on the public API, its tokens and webhooks (#850), personal access tokens with scopes (#851),
+  a public REST API v1 with an OpenAPI description (#852), and signed webhooks for board and membership events (#853).
 
 ## What is next
 
