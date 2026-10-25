@@ -11,7 +11,7 @@ WebSocket gateway for Yjs CRDT sync, Redis-backed presence service, JWT validati
 ## Protocol
 
 - `YjsGateway` (`src/yjs/`) speaks the standard Yjs sync sub-protocol (`y-protocols/sync`) over a raw WebSocket at a fixed path, `/yjs`. The board id is **not** a path segment — `@nestjs/platform-ws`'s `WsAdapter` routes an upgrade to a gateway by exact pathname match, with no wildcard/pattern support, so a dynamic per-board path isn't possible without a custom adapter. Instead, the board id travels as a query parameter: `ws://<host>/yjs?board=<board-id>`.
-- One `Y.Doc` per board id, held in memory (`YjsRoomRegistry`) and persisted through the business backend (see Persistence); document updates are relayed between instances through Valkey (see Document relay). Horizontal scaling for doc updates (Redis-backed doc broadcast across instances) is a follow-up, not yet scoped to an issue — presence (below) already solves the analogous problem for awareness state.
+- One `Y.Doc` per board id, held in memory (`YjsRoomRegistry`) and persisted through the business backend (see Persistence); document updates are relayed between instances through Valkey (see Document relay).
 - WS handshake auth: every connection needs a WS token for its board (see Authentication below).
 
 ## Authentication to the business backend
