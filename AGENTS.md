@@ -61,7 +61,7 @@ These apply to every issue, including issues created with `gh` or the API (which
 
 **Definition of ready:** a PBI or task can be started when it has no `needs-refinement` or `needs-decision` label and nothing it is blocked by is still open.
 
-**Enforcement:** the `Issue conventions` workflow (`.github/workflows/issue-conventions.yml`) fixes the title prefix and labels PBIs and tasks that miss required sections with `needs-refinement` (with a comment naming them). The `PR readiness` workflow (`.github/workflows/pr-ready.yml`) fails a pull request whose `Closes #n` issue is not ready; after a decision is accepted or a blocker is closed, re-run it. The rules live in `.github/scripts/` and are tested by `pnpm test:repo`.
+**Enforcement:** the `Issues` workflow (`.github/workflows/issues.yml`, the shared `issues.yml` of GravionLabs/ci) fixes the title prefix and labels PBIs and tasks that miss required sections with `needs-refinement` (with a comment naming them). The `PR readiness` workflow (`.github/workflows/pr-ready.yml`) fails a pull request whose `Closes #n` issue is not ready; after a decision is accepted or a blocker is closed, re-run it. The required sections are set in `.github/workflows/issues.yml`; the readiness rules live in `.github/scripts/` and are tested by `pnpm test:repo`.
 
 ## Releases
 
