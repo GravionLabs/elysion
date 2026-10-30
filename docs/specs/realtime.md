@@ -114,3 +114,11 @@ Cursor/avatar presence (Yjs awareness, message type 1) is broadcast cross-instan
 ## Open questions
 
 None at the moment. The WS-token issuance question is settled: the BFF issues it ([identity.md](identity.md)).
+
+## Snapshots
+
+Not built yet: [ADR 0030](../adr/0030-board-snapshots.md) (#847). A restore comes from the business backend as
+`POST /internal/boards/{id}/restore` with the snapshot id: the service loads the board if nobody has it open, writes the snapshot's
+elements and files forward with higher versions (live elements missing from it become `isDeleted`), leaves `session` alone, saves
+and tells every client who restored which version. A save made for a compaction carries `X-Elysion-Save-Reason: compaction`, so the
+backend snapshots the previous state first.
