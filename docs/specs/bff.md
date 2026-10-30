@@ -130,3 +130,16 @@ Read once at startup by `src/config/` (`@nestjs/config`, validated by `validateE
 `AdminController` (`src/admin/`) has one handler for each call of the business backend's `/admin` ([business-backend.md](business-backend.md), "Administration"): `GET stats`, `users`, `users/:id`, `groups`, `groups/:id/members`, `groups/:id/pending` (the people the Graph sync found who have not signed in yet, #667), `graph` (the state of that sync), `rooms`, `POST groups`, `POST users/:id/deactivate`, `POST users/:id/reactivate`, `POST boards/transfer` (#668: `{ fromUserId, toUserId }`, both UUIDs, else `400` without a backend call), `PATCH` and `DELETE groups/:id`, `PUT` and `DELETE groups/:id/members/:userId`, all under `/api/admin`. Each is passed on with the caller's own token and `BusinessBackendClient` builds the backend address from a fixed path, ids that passed the UUID check (a non-UUID is `404` without a call, and the id is encoded anyway) and a query made by `URLSearchParams` from three values only: `query` (one text, at most 100 characters), `page` and `pageSize` (whole numbers); anything else in the query is dropped, a repeated or malformed value is `400`. No method, path or address is ever taken from the request (CodeQL's `js/request-forgery`). A group change takes only `name` (text) and `externalId` (text or `null`). The BFF holds no rule of its own: the backend checks the administrator role on every call and its status and body come back as they are (`201` for a made group, `204` for member changes and deletes, `403` for a caller without the role, `404`, `409`, `400`).
 
 A `403` of the business backend that carries the problem `code` `account-deactivated` (the person was deactivated, #668) comes back as a `403` whose body has `code: "account-deactivated"` (`ACCOUNT_DEACTIVATED` in `business-backend.client.ts`), so that the shell can tell it from any other `403` and show its page; every other `403` stays an empty `ForbiddenException`. `POST /api/realtime/token` gets the same `403` for such a person, because it asks the backend for the caller's role as the caller.
+
+## Public API
+
+Not built yet: [ADR 0031](../adr/0031-public-api-tokens-and-webhooks.md) (#852). Routes under `/public/v1` on a Traefik router of
+their own (no CORS, no `forwardAuth`, a rate limit per token, 1 MiB bodies). The guard accepts personal access tokens and
+integration tokens only there; tokens and scopes are checked by the business backend. Problem details for errors, cursor
+pagination, the OpenAPI 3.1 document committed as `docs/api/openapi.v1.json` and compared in CI; the elements of a board are read
+from the stored document with `yjs`.
+
+## Webhooks
+
+Not built yet: [ADR 0031](../adr/0031-public-api-tokens-and-webhooks.md) (#853). Registered by board owners and admins through
+the shell and the public API; delivered by the business backend.

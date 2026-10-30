@@ -332,3 +332,10 @@ Viewers vote (the read policy); a voting of another board is a `404`. **What the
 ## Board thumbnails
 
 The picture on a board's card (#729). `PUT /boards/{id}/thumbnail` (the board's write role) takes a PNG of at most 512 KiB (`415` for another type, `400` for bytes that are no PNG, `413` over the limit), keeps it in the object store under `thumbnails/{boardId}.png` (outside the board's file prefix on purpose: the files of a board are counted and copied by that prefix) and sets `Board.ThumbnailUpdatedAt`, the version of the picture. `GET /boards/{id}/thumbnail` (the read role) answers the PNG with an `ETag` made of that timestamp (`304` for a browser that has it, without reading the store), `private, no-cache`, `nosniff` and a sandboxing CSP, or `404` when there is none. The board list and a board carry `thumbnailUpdatedAt` and `hasThumbnail`. Duplicating a board copies the picture; deleting a board deletes it.
+
+## Public API and webhooks
+
+Not built yet: [ADR 0031](../adr/0031-public-api-tokens-and-webhooks.md) (#851, #853). A third authentication scheme accepts
+personal access tokens (`elp_`, looked up by hash, cached 30 s) and acts as their owner with the token's scopes; Keycloak service
+accounts with the role `elysion-integration` become integration users with the access of a member. Webhooks are delivered from an
+outbox written in the same transaction as the change, signed with HMAC-SHA256 (`Elysion-Signature`).
