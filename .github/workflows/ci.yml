@@ -41,6 +41,10 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       # The Helm chart (ADR 0018) renders and lints with the kind values; the deploy script parses.
+      # Pinned: the snapshots below are byte-for-byte renderings, and Helm 4 lays them out differently from Helm 3.
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v4.3.1
       - run: helm lint infra/helm/elysion -f infra/helm/elysion/values-kind.yaml
       - run: helm template elysion infra/helm/elysion -f infra/helm/elysion/values-kind.yaml > /dev/null
       - run: bash -n infra/kind/deploy.sh

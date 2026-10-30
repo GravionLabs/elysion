@@ -23,6 +23,7 @@ spec:
               kubernetes.io/metadata.name: traefik
       ports:
         - { protocol: TCP, port: 8080 }
+
 ---
 # Source: elysion/templates/networkpolicy.yaml
 apiVersion: networking.k8s.io/v1
@@ -51,6 +52,7 @@ spec:
               kubernetes.io/metadata.name: monitoring
       ports:
         - { protocol: TCP, port: 3000 }
+
 ---
 # Source: elysion/templates/networkpolicy.yaml
 apiVersion: networking.k8s.io/v1
@@ -83,6 +85,7 @@ spec:
               app.kubernetes.io/instance: elysion
       ports:
         - { protocol: TCP, port: 3000 }
+
 ---
 # Source: elysion/templates/networkpolicy.yaml
 apiVersion: networking.k8s.io/v1
@@ -116,6 +119,7 @@ spec:
               kubernetes.io/metadata.name: monitoring
       ports:
         - { protocol: TCP, port: 8080 }
+
 ---
 # Source: elysion/templates/pdb.yaml
 apiVersion: policy/v1
@@ -134,6 +138,7 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: elysion
       app.kubernetes.io/component: bff
+
 ---
 # Source: elysion/templates/pdb.yaml
 apiVersion: policy/v1
@@ -152,6 +157,7 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: elysion
       app.kubernetes.io/component: business-backend
+
 ---
 # Source: elysion/templates/pdb.yaml
 apiVersion: policy/v1
@@ -170,6 +176,7 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: elysion
       app.kubernetes.io/component: frontend
+
 ---
 # Source: elysion/templates/pdb.yaml
 apiVersion: policy/v1
@@ -188,6 +195,7 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: elysion
       app.kubernetes.io/component: realtime
+
 ---
 # Source: elysion/templates/bff.yaml
 apiVersion: v1
@@ -208,6 +216,7 @@ spec:
     - name: http
       port: 3000
       targetPort: http
+
 ---
 # Source: elysion/templates/business-backend.yaml
 apiVersion: v1
@@ -228,6 +237,7 @@ spec:
     - name: http
       port: 8080
       targetPort: http
+
 ---
 # Source: elysion/templates/frontend.yaml
 apiVersion: v1
@@ -248,6 +258,7 @@ spec:
     - name: http
       port: 8080
       targetPort: http
+
 ---
 # Source: elysion/templates/realtime.yaml
 apiVersion: v1
@@ -268,6 +279,7 @@ spec:
     - name: http
       port: 3000
       targetPort: http
+
 ---
 # Source: elysion/templates/bff.yaml
 apiVersion: apps/v1
@@ -361,6 +373,7 @@ spec:
       volumes:
         - name: tmp
           emptyDir: { sizeLimit: 64Mi }
+
 ---
 # Source: elysion/templates/business-backend.yaml
 apiVersion: apps/v1
@@ -485,6 +498,7 @@ spec:
       volumes:
         - name: tmp
           emptyDir: { sizeLimit: 64Mi }
+
 ---
 # Source: elysion/templates/frontend.yaml
 apiVersion: apps/v1
@@ -578,6 +592,7 @@ spec:
           emptyDir: { sizeLimit: 64Mi }
         - name: etc-nginx-conf-d
           emptyDir: { sizeLimit: 16Mi }
+
 ---
 # Source: elysion/templates/realtime.yaml
 apiVersion: apps/v1
@@ -684,6 +699,7 @@ spec:
       volumes:
         - name: tmp
           emptyDir: { sizeLimit: 64Mi }
+
 ---
 # Source: elysion/templates/hpa.yaml
 apiVersion: autoscaling/v2
@@ -714,6 +730,7 @@ spec:
       stabilizationWindowSeconds: 600
       policies:
         - { type: Pods, value: 1, periodSeconds: 120 }
+
 ---
 # Source: elysion/templates/edge.yaml
 apiVersion: traefik.io/v1alpha1
@@ -766,6 +783,7 @@ spec:
           port: 8080
   tls:
     secretName: elysion-tls
+
 ---
 # Source: elysion/templates/edge.yaml
 apiVersion: traefik.io/v1alpha1
@@ -788,6 +806,7 @@ spec:
       services:
         - name: elysion-frontend
           port: 8080
+
 ---
 # Source: elysion/templates/edge.yaml
 # Middlewares, in the order the routes use them (docs/specs/gateway.md): security-headers first, so that an answer the later ones give (401, 429) carries the headers, then cors, rate-limit, bff-auth.
@@ -807,6 +826,7 @@ spec:
     address: http://elysion-bff.elysion.svc:3000/api/auth/verify
     authResponseHeaders: [X-Auth-User-Id, X-Auth-User-Email]
     trustForwardHeader: false
+
 ---
 # Source: elysion/templates/edge.yaml
 apiVersion: traefik.io/v1alpha1
@@ -827,6 +847,7 @@ spec:
     accessControlExposeHeaders: [X-Request-Id]
     accessControlMaxAge: 600
     addVaryHeader: true
+
 ---
 # Source: elysion/templates/edge.yaml
 apiVersion: traefik.io/v1alpha1
@@ -843,6 +864,7 @@ spec:
     average: 50
     burst: 100
     period: 1s
+
 ---
 # Source: elysion/templates/edge.yaml
 apiVersion: traefik.io/v1alpha1
@@ -866,6 +888,7 @@ spec:
     stsSeconds: 604800
     stsIncludeSubdomains: true
     forceSTSHeader: true
+
 ---
 # Source: elysion/templates/edge.yaml
 apiVersion: traefik.io/v1alpha1
@@ -881,6 +904,7 @@ spec:
   redirectScheme:
     scheme: https
     permanent: true
+
 ---
 # Source: elysion/templates/servicemonitor.yaml
 apiVersion: monitoring.coreos.com/v1
@@ -986,3 +1010,4 @@ spec:
       volumes:
         - name: tmp
           emptyDir: { sizeLimit: 64Mi }
+

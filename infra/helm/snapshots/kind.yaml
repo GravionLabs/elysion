@@ -18,6 +18,7 @@ spec:
     - name: http
       port: 3000
       targetPort: http
+
 ---
 # Source: elysion/templates/business-backend.yaml
 apiVersion: v1
@@ -38,6 +39,7 @@ spec:
     - name: http
       port: 8080
       targetPort: http
+
 ---
 # Source: elysion/templates/frontend.yaml
 apiVersion: v1
@@ -58,6 +60,7 @@ spec:
     - name: http
       port: 8080
       targetPort: http
+
 ---
 # Source: elysion/templates/realtime.yaml
 apiVersion: v1
@@ -78,6 +81,7 @@ spec:
     - name: http
       port: 3000
       targetPort: http
+
 ---
 # Source: elysion/templates/bff.yaml
 apiVersion: apps/v1
@@ -162,6 +166,7 @@ spec:
       volumes:
         - name: tmp
           emptyDir: { sizeLimit: 64Mi }
+
 ---
 # Source: elysion/templates/business-backend.yaml
 apiVersion: apps/v1
@@ -277,6 +282,7 @@ spec:
       volumes:
         - name: tmp
           emptyDir: { sizeLimit: 64Mi }
+
 ---
 # Source: elysion/templates/frontend.yaml
 apiVersion: apps/v1
@@ -361,6 +367,7 @@ spec:
           emptyDir: { sizeLimit: 64Mi }
         - name: etc-nginx-conf-d
           emptyDir: { sizeLimit: 16Mi }
+
 ---
 # Source: elysion/templates/realtime.yaml
 apiVersion: apps/v1
@@ -459,6 +466,7 @@ spec:
       volumes:
         - name: tmp
           emptyDir: { sizeLimit: 64Mi }
+
 ---
 # Source: elysion/templates/edge.yaml
 apiVersion: traefik.io/v1alpha1
@@ -509,6 +517,7 @@ spec:
       services:
         - name: elysion-frontend
           port: 8080
+
 ---
 # Source: elysion/templates/edge.yaml
 # Middlewares, in the order the routes use them (docs/specs/gateway.md): security-headers first, so that an answer the later ones give (401, 429) carries the headers, then cors, rate-limit, bff-auth.
@@ -528,6 +537,7 @@ spec:
     address: http://elysion-bff.elysion.svc:3000/api/auth/verify
     authResponseHeaders: [X-Auth-User-Id, X-Auth-User-Email]
     trustForwardHeader: false
+
 ---
 # Source: elysion/templates/edge.yaml
 apiVersion: traefik.io/v1alpha1
@@ -548,6 +558,7 @@ spec:
     accessControlExposeHeaders: [X-Request-Id]
     accessControlMaxAge: 600
     addVaryHeader: true
+
 ---
 # Source: elysion/templates/edge.yaml
 apiVersion: traefik.io/v1alpha1
@@ -564,6 +575,7 @@ spec:
     average: 50
     burst: 100
     period: 1s
+
 ---
 # Source: elysion/templates/edge.yaml
 apiVersion: traefik.io/v1alpha1
