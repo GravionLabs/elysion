@@ -83,7 +83,8 @@ curl -s -H "Authorization: Bearer $TOKEN" https://elysion.example.com/public/v1/
 - To stop it, deactivate it in Administration, **Users** (its next call is refused), or disable the client in Keycloak.
 
 The development realm (`infra/keycloak`) has an example: the client `elysion-integration-example` with the secret
-`elysion-integration-example-dev-secret` and the five scopes as optional scopes.
+`elysion-integration-example-dev-secret` and the five scopes as optional scopes. It is for development only: the production realm
+(`realm-elysion.production.json`, built by `scripts/build-realm.mjs`) leaves out every client whose id ends in `-example`, so create your own client there.
 
 ```sh
 curl -s http://localhost:8081/realms/elysion/protocol/openid-connect/token \

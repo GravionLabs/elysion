@@ -29,10 +29,10 @@ describe('the production realm', () => {
     assert.equal(production.clients.find((c) => c.clientId === 'elysion-bff').secret, BFF_SECRET);
   });
 
-  it('keeps every client, role and mapper of the development realm', () => {
+  it('keeps every client of the development realm except the example ones, and every role and mapper', () => {
     assert.deepEqual(
       production.clients.map((c) => c.clientId),
-      dev.clients.map((c) => c.clientId),
+      ['elysion-frontend', 'elysion-bff'],
     );
     assert.deepEqual(production.roles, dev.roles);
     assert.deepEqual(production.clients[0].protocolMappers, dev.clients[0].protocolMappers);
@@ -50,8 +50,32 @@ describe('the production realm', () => {
     assert.equal(production.ssoSessionMaxLifespan, 28800);
   });
 
+  it('leaves out the example integration client, which is demo-only and shares no secret with the BFF', () => {
+    assert.ok(dev.clients.some((c) => c.clientId === 'elysion-integration-example'));
+    assert.equal(
+      production.clients.find((c) => c.clientId === 'elysion-integration-example'),
+      undefined,
+    );
+    assert.doesNotMatch(text, /integration-example/);
+  });
+
+  it('drops any client whose clientId ends in -example and keeps one that only contains it', () => {
+    const realm = {
+      clients: [
+        { clientId: 'acme-example' },
+        { clientId: 'example-sync' },
+        { clientId: 'elysion-bff', secret: 'x' },
+      ],
+    };
+    assert.deepEqual(
+      buildProductionRealm(realm).clients.map((c) => c.clientId),
+      ['example-sync', 'elysion-bff'],
+    );
+  });
+
   it('does not change the development realm', () => {
     assert.ok(dev.users.length > 0);
+    assert.ok(dev.clients.some((c) => c.clientId === 'elysion-integration-example'));
     assert.equal(dev.sslRequired, 'none');
   });
 });
