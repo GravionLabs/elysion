@@ -144,6 +144,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // No file watchers on appsettings.json: the suite makes hundreds of hosts, and on macOS the watchers run out (the
+        // reload callback then fires in a loop and a later host never finishes starting). The tests never change the files.
+        builder.UseSetting("hostBuilder:reloadConfigOnChange", "false");
         builder.UseSetting(OidcOptions.IssuerSetting, Issuer);
         builder.UseSetting(OidcOptions.AudienceSetting, Audience);
         builder.UseSetting(InternalApiOptions.SecretSetting, InternalSecret);
