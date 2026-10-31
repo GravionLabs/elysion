@@ -8,6 +8,7 @@ using System.Text.Json;
 using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Data;
+using Elysion.BusinessBackend.Api.Endpoints;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Snapshots;
@@ -573,6 +574,201 @@ public class BoardSnapshotsApiTests
             .ShouldBe(TimeSpan.FromMinutes(41));
         SnapshotCleanupService.UntilNextRun(new DateTimeOffset(2026, 10, 5, 4, 41, 0, TimeSpan.Zero))
             .ShouldBe(TimeSpan.FromHours(23));
+    }
+
+    // --- Restore and "open as new board" (#847) ---
+
+    private async Task<byte[]> ObjectOfAsync(Guid snapshotId)
+    {
+        await using var stored = await _factory.Files.GetAsync(FileTypes.SnapshotKey(_board.Id, snapshotId),
+            CancellationToken.None);
+        using var buffer = new MemoryStream();
+        await stored!.Content.CopyToAsync(buffer);
+        return await UngzipAsync(buffer.ToArray());
+    }
+
+    [Test]
+    public async Task Restore_keeps_the_current_state_as_before_restore_then_has_the_realtime_service_restore()
+    {
+        await SaveDocumentAsync([1, 1]);
+        var version = await SaveVersionAsync("good state");
+        _factory.RealtimeSaves.OnSave = async _ =>
+            (await SaveDocumentAsync([9, 9, 9], version: 1)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        _time.Advance(TimeSpan.FromMinutes(5));
+        using var owner = As("owner");
+
+        var response = await owner.PostAsync(Url($"/{version.Id}/restore"), null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var before = (await response.Content.ReadFromJsonAsync<RestoreSnapshotResponse>())!.Before!;
+        before.Kind.ShouldBe("BeforeRestore");
+        before.Name.ShouldBe("Before restore");
+        var asked = _factory.RealtimeRestores.Asked.Single();
+        asked.BoardId.ShouldBe(_board.Id);
+        asked.SnapshotId.ShouldBe(version.Id);
+        asked.By.ShouldBe("owner");
+        asked.At.ShouldBe(version.CreatedAt);
+        // The state the board had when the person pressed restore is the one that was kept (the save came first).
+        (await ObjectOfAsync(before.Id)).ShouldBe([9, 9, 9]);
+        (await ListAsync()).Select(s => s.Kind).ShouldBe(["BeforeRestore", "Manual"], true);
+    }
+
+    [Test]
+    public async Task Restore_is_in_the_audit_log_with_the_board_the_version_and_the_person()
+    {
+        await SaveDocumentAsync([1]);
+        var version = await SaveVersionAsync();
+        using var owner = As("owner");
+
+        (await owner.PostAsync(Url($"/{version.Id}/restore"), null)).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var entry = (await Query(db => db.AuditEntries.Where(e => e.Action == AuditActions.SnapshotRestored)
+            .ToListAsync())).Single();
+        entry.SubjectType.ShouldBe(AuditActions.Board);
+        entry.SubjectId.ShouldBe(_board.Id);
+        entry.ActorUserId.ShouldBe(_users["owner"].Id);
+        entry.Details!.ShouldContain(version.Id.ToString());
+    }
+
+    [Test]
+    public async Task Restore_needs_an_owner_and_a_version_of_this_board()
+    {
+        await SaveDocumentAsync([1]);
+        var version = await SaveVersionAsync();
+
+        using (var editor = As("editor"))
+            (await editor.PostAsync(Url($"/{version.Id}/restore"), null)).StatusCode.ShouldBe(
+                HttpStatusCode.Forbidden);
+        using (var viewer = As("viewer"))
+            (await viewer.PostAsync(Url($"/{version.Id}/restore"), null)).StatusCode.ShouldBe(
+                HttpStatusCode.Forbidden);
+        using (var stranger = As("stranger"))
+            (await stranger.PostAsync(Url($"/{version.Id}/restore"), null)).StatusCode.ShouldBe(
+                HttpStatusCode.NotFound);
+        using (var owner = As("owner"))
+            (await owner.PostAsync(Url($"/{Guid.NewGuid()}/restore"), null)).StatusCode.ShouldBe(
+                HttpStatusCode.NotFound);
+
+        _factory.RealtimeRestores.Asked.ShouldBeEmpty();
+        (await Query(db => db.AuditEntries.CountAsync(e => e.Action == AuditActions.SnapshotRestored))).ShouldBe(0);
+    }
+
+    [Test]
+    public async Task Restore_answers_503_and_writes_no_audit_entry_when_the_realtime_service_does_not_restore()
+    {
+        await SaveDocumentAsync([1]);
+        var version = await SaveVersionAsync();
+        _factory.RealtimeRestores.Answer = RealtimeRestoreStatus.Unavailable;
+        using var owner = As("owner");
+
+        (await owner.PostAsync(Url($"/{version.Id}/restore"), null)).StatusCode.ShouldBe(
+            HttpStatusCode.ServiceUnavailable);
+
+        (await Query(db => db.AuditEntries.CountAsync(e => e.Action == AuditActions.SnapshotRestored))).ShouldBe(0);
+    }
+
+    [Test]
+    public async Task Restore_answers_410_when_the_object_of_the_version_is_gone()
+    {
+        await SaveDocumentAsync([1]);
+        var version = await SaveVersionAsync();
+        await _factory.Files.DeleteAsync(FileTypes.SnapshotKey(_board.Id, version.Id), CancellationToken.None);
+        using var owner = As("owner");
+
+        (await owner.PostAsync(Url($"/{version.Id}/restore"), null)).StatusCode.ShouldBe(HttpStatusCode.Gone);
+
+        _factory.RealtimeRestores.Asked.ShouldBeEmpty();
+    }
+
+    [Test]
+    public async Task Open_as_new_board_makes_a_board_of_the_callers_with_the_state_of_the_version()
+    {
+        await SaveDocumentAsync([1, 2, 3]);
+        var version = await SaveVersionAsync("Kickoff");
+        await SaveDocumentAsync([7, 7], version: 1);
+        await _factory.Files.PutAsync($"boards/{_board.Id}/img", new MemoryStream([5]), "image/png", default);
+        using var viewer = As("viewer");
+
+        var response = await viewer.PostAsync(Url($"/{version.Id}/copy"), null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var copy = (await response.Content.ReadFromJsonAsync<BoardDto>())!;
+        copy.Name.ShouldBe("Retro (Kickoff)");
+        copy.Id.ShouldNotBe(_board.Id);
+        var document = await Query(db => db.BoardDocuments.SingleAsync(d => d.BoardId == copy.Id.ToString()));
+        document.State.ShouldBe([1, 2, 3]);
+        var membership = await Query(db => db.BoardMemberships.SingleAsync(m => m.BoardId == copy.Id));
+        membership.UserId.ShouldBe(_users["viewer"].Id);
+        membership.Role.ShouldBe(BoardRole.Owner);
+        _factory.Files.Keys.ShouldContain($"boards/{copy.Id}/img");
+        (await Query(db => db.BoardSnapshots.CountAsync(s => s.BoardId == copy.Id))).ShouldBe(0);
+        // The source keeps its own state.
+        (await Query(db => db.BoardDocuments.SingleAsync(d => d.BoardId == _board.Id.ToString()))).State.ShouldBe(
+            [7, 7]);
+    }
+
+    [Test]
+    public async Task Open_as_new_board_names_an_automatic_version_by_its_time()
+    {
+        await SaveDocumentAsync([1]);
+        _time.Advance(TimeSpan.FromHours(2));
+        await SaveDocumentAsync([2], version: 1);
+        var automatic = (await ListAsync()).Single(s => s.Kind == "Auto");
+        using var owner = As("owner");
+
+        var copy = (await (await owner.PostAsync(Url($"/{automatic.Id}/copy"), null)).Content
+            .ReadFromJsonAsync<BoardDto>())!;
+
+        copy.Name.ShouldBe($"Retro ({automatic.CreatedAt.UtcDateTime:yyyy-MM-dd HH:mm} UTC)");
+    }
+
+    [Test]
+    public void The_name_of_a_copy_is_cut_to_fit_the_limit_of_a_board_name()
+    {
+        var snapshot = new BoardSnapshot { Name = new string('v', 100) };
+
+        var name = BoardSnapshotEndpoints.CopyName(new string('b', Board.MaxNameLength), snapshot);
+
+        name.Length.ShouldBeLessThanOrEqualTo(Board.MaxNameLength);
+        name.ShouldEndWith($" ({new string('v', 60)})");
+    }
+
+    [Test]
+    public async Task Open_as_new_board_needs_a_role_on_the_board()
+    {
+        await SaveDocumentAsync([1]);
+        var version = await SaveVersionAsync();
+
+        using (var stranger = As("stranger"))
+            (await stranger.PostAsync(Url($"/{version.Id}/copy"), null)).StatusCode.ShouldBe(
+                HttpStatusCode.NotFound);
+        using (var owner = As("owner"))
+            (await owner.PostAsync(Url($"/{Guid.NewGuid()}/copy"), null)).StatusCode.ShouldBe(
+                HttpStatusCode.NotFound);
+
+        (await Query(db => db.Boards.CountAsync())).ShouldBe(1);
+    }
+
+    [Test]
+    public async Task The_realtime_service_reads_a_version_with_its_service_token_only()
+    {
+        await SaveDocumentAsync([4, 5, 6]);
+        var version = await SaveVersionAsync();
+        var path = $"/internal/boards/{_board.Id}/snapshots/{version.Id}/document";
+
+        using (var realtime = _factory.CreateInternalClient())
+        {
+            var response = await realtime.GetAsync(path);
+            response.StatusCode.ShouldBe(HttpStatusCode.OK);
+            (await response.Content.ReadAsByteArrayAsync()).ShouldBe([4, 5, 6]);
+            (await realtime.GetAsync($"/internal/boards/{_board.Id}/snapshots/{Guid.NewGuid()}/document"))
+                .StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        }
+
+        using (var anonymous = _factory.CreateClient())
+            (await anonymous.GetAsync(path)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        using (var person = As("owner"))
+            (await person.GetAsync(path)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
     private sealed class MutableTime(DateTimeOffset now) : TimeProvider

@@ -35,6 +35,7 @@ public sealed partial class BoardSnapshotService(
     TimeProvider time,
     ILogger<BoardSnapshotService> logger)
 {
+    public const string BeforeRestoreName = "Before restore";
     public const int MaxManualPerBoard = 100;
     public const int MaxAutomaticPerBoard = 50;
     public static readonly TimeSpan AutomaticRetention = TimeSpan.FromDays(30);
@@ -75,22 +76,36 @@ public sealed partial class BoardSnapshotService(
     /// Keeps <paramref name="state"/> (the state that is about to be overwritten) as an automatic snapshot, then drops the
     /// automatic ones beyond the cap.
     /// </summary>
-    public async Task CreateAutomaticAsync(
+    public async Task<BoardSnapshot> CreateAutomaticAsync(
         Guid boardId,
         byte[] state,
         SnapshotKind kind,
         int? elementCount,
         CancellationToken cancellationToken)
     {
-        await StoreAsync(boardId,
+        var snapshot = await StoreAsync(boardId,
             state,
             kind,
-            kind == SnapshotKind.BeforeRestore ? "Before restore" : null,
+            kind == SnapshotKind.BeforeRestore ? BeforeRestoreName : null,
             null,
             elementCount,
             cancellationToken);
         var surplus = await snapshots.AutomaticBeyondAsync(boardId, MaxAutomaticPerBoard, cancellationToken);
         await RemoveAsync(surplus, cancellationToken);
+        return snapshot;
+    }
+
+    /// <summary>
+    /// Before a restore (ADR 0032, #847): asks the realtime service to store the open board, then keeps the stored state as
+    /// "Before restore", so the restore can always be undone by restoring that one. Null when the board has no stored state.
+    /// </summary>
+    public async Task<BoardSnapshot?> CreateBeforeRestoreAsync(Guid boardId, CancellationToken cancellationToken)
+    {
+        await realtime.SaveNowAsync(boardId, cancellationToken);
+        var document = await documents.FindAsync(boardId.ToString(), cancellationToken);
+        return document is null
+            ? null
+            : await CreateAutomaticAsync(boardId, document.State, SnapshotKind.BeforeRestore, null, cancellationToken);
     }
 
     /// <summary>
