@@ -264,6 +264,24 @@ describe('HistoryPanel', () => {
       expect((await screen.findAllByText('Before restore')).length).toBeGreaterThan(0);
     });
 
+    it('keeps the focus in the panel after a restore and after Cancel, so that Escape still closes it', async () => {
+      const { onClose } = setup({ canRestore: true });
+      await loaded();
+      const panel = screen.getByRole('complementary');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Restore Kickoff' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(panel.contains(document.activeElement)).toBe(true));
+
+      fireEvent.click(screen.getByRole('button', { name: 'Restore Kickoff' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Restore version' }));
+      await screen.findByText(/The version is restored\./);
+      await waitFor(() => expect(panel.contains(document.activeElement)).toBe(true));
+
+      fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
     it('does not restore when the question is declined, and says why a restore failed', async () => {
       const restore = vi.fn(async () =>
         Promise.reject(Object.assign(new Error('x'), { status: 503 })),

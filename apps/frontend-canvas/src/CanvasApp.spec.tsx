@@ -329,6 +329,20 @@ describe('the canvas menu', () => {
       expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
     });
 
+    it('opens with Alt+H while the focus is on the canvas, after drawing, where Excalidraw handles the keys first', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi()} />);
+      await excalidrawReady(container);
+
+      // A shape just drawn leaves the focus on Excalidraw's container, whose own key handler stops the key from bubbling.
+      fireEvent.keyDown(container.querySelector('.excalidraw') as HTMLElement, {
+        key: 'h',
+        code: 'KeyH',
+        altKey: true,
+      });
+
+      expect(await screen.findByRole('complementary', { name: 'History' })).toBeTruthy();
+    });
+
     it('ignores H without Alt, Alt+Ctrl+H, and a key typed into another field', async () => {
       const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi()} />);
       await excalidrawReady(container);

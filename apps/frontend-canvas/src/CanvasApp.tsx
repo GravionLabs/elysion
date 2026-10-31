@@ -921,7 +921,8 @@ export function CanvasApp({
   const toggleHistoryRef = useRef(toggleHistory);
   toggleHistoryRef.current = toggleHistory;
   // Alt+H opens the history. `code`, not `key`: with Option held a Mac types another character. Like the grid shortcut it is
-  // the canvas's only when the focus is on the page body or inside the canvas.
+  // the canvas's only when the focus is on the page body or inside the canvas, and like it it is caught in the capture
+  // phase: once a shape was drawn the focus is on Excalidraw's container, whose key handler stops the key from bubbling.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.code !== 'KeyH' || !event.altKey || event.ctrlKey || event.metaKey) return;
@@ -929,10 +930,11 @@ export function CanvasApp({
       const target = event.target as Node | null;
       if (target !== document.body && !rootRef.current?.contains(target)) return;
       event.preventDefault();
+      event.stopPropagation();
       toggleHistoryRef.current();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, []);
   const describeAnchorRef = useRef(describeAnchor);
   describeAnchorRef.current = describeAnchor;

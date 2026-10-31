@@ -216,6 +216,8 @@ export function HistoryPanel({
       if (before) setItems((list) => [before, ...(list ?? [])]);
       setRestoring(null);
       setRestored(true);
+      // The question and its buttons are gone: the focus stays in the panel, so that Esc still closes it.
+      queueMicrotask(() => closeButton.current?.focus());
     } catch (error) {
       if (!gone.current) setProblem(problemText(error, t.historyRestoreFailed, t));
     } finally {
@@ -384,7 +386,13 @@ export function HistoryPanel({
                           >
                             {t.historyRestoreConfirm}
                           </button>
-                          <button type="button" onClick={() => setRestoring(null)}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRestoring(null);
+                              queueMicrotask(() => closeButton.current?.focus());
+                            }}
+                          >
                             {t.historyCancel}
                           </button>
                         </div>
