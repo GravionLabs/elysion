@@ -1,5 +1,6 @@
 using System.Net.Mime;
 
+using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
@@ -46,7 +47,23 @@ public static class BoardDocumentEndpoints
             .Accepts<byte[]>(OctetStream)
             .WithMetadata(new RequestSizeLimitAttribute(MaxStateBytes));
         group.MapDelete("", Delete).WithName("DeleteBoardDocument");
+
+        // The public API reads the elements of a board from its stored state (ADR 0033, #852): anybody who may read the board,
+        // as themselves; the BFF decodes the Yjs state. Read-only: writes go through the realtime service.
+        routes.MapGet("/boards/{id:guid}/document", ReadForMember)
+            .WithTags("Board documents")
+            .WithName("ReadBoardDocument")
+            .RequireAuthorization(BoardPolicies.Read);
         return routes;
+    }
+
+    /// <summary>The stored state of a board the caller may read: <c>200</c> with the bytes, or <c>204</c> when it was never saved.</summary>
+    private static async Task<IResult> ReadForMember(Guid id,
+        IBoardDocumentRepository documents,
+        CancellationToken cancellationToken)
+    {
+        var document = await documents.FindAsync(id.ToString(), cancellationToken);
+        return document is null ? TypedResults.NoContent() : new StateResult(document, StatusCodes.Status200OK);
     }
 
     private static async Task<IResult> Get(string boardId,

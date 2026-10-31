@@ -1,4 +1,6 @@
-import { SetMetadata } from '@nestjs/common';
+import { SetMetadata, UseGuards, applyDecorators } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { PublicApiRateLimitGuard } from '../public-api/rate-limit.js';
 
 /**
  * The scopes of the public API (ADR 0033), the same words as the business backend's `AccessTokenScopes`. A personal access token
@@ -25,9 +27,16 @@ export const REQUIRED_SCOPE = 'requiredScope';
 
 /**
  * Marks a controller as part of the public API (`/public/v1`, ADR 0033): its routes accept personal access tokens and integrations
- * besides a person's Keycloak token, and every other route refuses them. Put it on every controller under `/public/v1`.
+ * besides a person's Keycloak token, and every other route refuses them. Put it on every controller under `/public/v1`. It also
+ * puts the rate limit per credential on the routes (`PublicApiRateLimitGuard`, after the global guard) and says in the OpenAPI
+ * document that they take a bearer token.
  */
-export const PublicApi = () => SetMetadata(IS_PUBLIC_API, true);
+export const PublicApi = () =>
+  applyDecorators(
+    SetMetadata(IS_PUBLIC_API, true),
+    UseGuards(PublicApiRateLimitGuard),
+    ApiBearerAuth(),
+  );
 
 /** The scope a public route needs; without it the caller gets `403`. A public route without it needs only a valid credential. */
 export const RequireScope = (scope: ApiScope) => SetMetadata(REQUIRED_SCOPE, scope);

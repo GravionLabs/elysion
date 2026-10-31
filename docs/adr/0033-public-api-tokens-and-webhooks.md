@@ -52,12 +52,18 @@ accounts for integrations, both in v1; and an outbox in the business backend.**
 - Traefik gets a router `public` for `PathPrefix(/public/v1)` → BFF, with **no CORS middleware** (the API is not for browsers), a
   rate limit keyed by the `Authorization` header (`sourceCriterion.requestHeaderName`; proposal 600 a minute, burst 60), a body
   limit of 1 MiB (`buffering.maxRequestBodyBytes`) and **no `forwardAuth`**: the BFF's guard checks every request itself.
+  _Changed in #852:_ the limit per token (600 a minute) is counted by the BFF, keyed by the token the backend resolved, because only
+  the BFF can answer the `RateLimit-*` headers, and a key on the raw `Authorization` header gave every made-up token a bucket of its
+  own. The edge limits per client address instead (1200 a minute, burst 120): a flood guard that also bounds the lookups of made-up
+  tokens. Both count in memory per instance, so with several BFF replicas a token can make up to that many times 600 a minute.
 - The BFF's guard accepts a token with the prefix `elp_` **only** on `/public/v1` routes and refuses it (`401`) everywhere else; a
   Keycloak token is accepted on `/public/v1` too, so a person can try the API with the browser's token.
 - The BFF forwards the token unchanged to the business backend, which gets a third authentication scheme `AccessToken`, chosen by
   the prefix: it hashes the token (SHA-256; the token has 256 random bits, so no slow hash is needed), looks it up, refuses it when
   expired, revoked or its owner deactivated, and sets the owner as the principal with the token's **scopes** as claims. The lookup
-  is cached in memory for 30 s, so a revoke takes effect within that time. Every existing policy keeps working (a token acts as its
+  is cached in memory for 30 s, so a revoke takes effect within that time. The BFF's guard caches its own lookup for 30 s as well;
+  that adds nothing on top only because **every public route forwards the token to the backend**, which resolves it again on that
+  call (an invariant #852 keeps and tests). Every existing policy keeps working (a token acts as its
   owner and never sees more); each public route also requires its scope.
 - **Scopes**: `boards:read`, `boards:write`, `members:write`, `snapshots:write`, `webhooks:write`. A token has at least one and
   expires after at most one year. Creating and revoking are in the audit log (`token.created`, `token.revoked`); `last used` is
@@ -79,20 +85,25 @@ accounts for integrations, both in v1; and an outbox in the business backend.**
 ### What v1 covers
 
 Boards (list, read, create, rename, delete, duplicate), rooms (list, read), members of boards and rooms (list, add, change the
-role, remove), snapshots (list, create, read as JSON, from ADR 0032) and **the elements of a board, read-only**, as Excalidraw JSON
-with files as links. The BFF decodes the stored document with `yjs` (a new dependency there); it is the state of the last save, at
+role, remove), snapshots (list, create, read as JSON, from ADR 0032: the backend serves a version's Yjs state and the BFF decodes it like the
+elements; renaming, deleting and restoring a version and opening one as a new board stay in the browser) and **the elements of a board, read-only**, as Excalidraw JSON
+with files as links. The BFF decodes the stored document with `yjs` (a new dependency there), which the backend serves to anybody who
+may read the board (`GET /boards/{id}/document`, #852); it is the state of the last save, at
 most about 10 s behind an open board. **Writing elements is not in v1**: a write must go through the realtime service to reach the
 people on the board and pass its limits and the viewer rule; that is a later version with its own decision.
 
 ### Contract
 
-- The public controllers carry `@nestjs/swagger` decorators; an **OpenAPI 3.1** document is generated at build time, committed as
+- The public controllers carry `@nestjs/swagger` decorators; an **OpenAPI 3.1** document is generated from them, committed as
   `docs/api/openapi.v1.json`, compared in CI (a change of the contract shows in the diff) and rendered on the documentation site.
+  (#852: `pnpm --filter @elysion/bff openapi` writes it; a unit test of `pnpm test` makes it again and fails when it differs.)
 - Versioning in the path. A breaking change is a `/public/v2`; v1 is kept for at least six months after v2 ships and answers with
   `Deprecation` and `Sunset` headers in that time.
 - Lists use **cursor pagination** (`?cursor=&limit=`, at most 200, `next` in the body). Errors on the public routes are **problem
   details** (RFC 9457, `application/problem+json`) through an exception filter on those controllers only; the browser's routes
-  keep their format. Rename uses `ETag` and `If-Match`.
+  keep their format. (#852: one global filter that answers problem details for every request under `/public/`, so the guard's
+  refusals and an unknown path are covered too, and hands everything else to Nest's own filter. The backend still answers whole
+  lists; the BFF orders them by a unique key and the cursor is the key of the last item.) Rename uses `ETag` and `If-Match`.
 - Logs carry the token id (never the token) and the request id (ADR 0025).
 
 ### Webhooks

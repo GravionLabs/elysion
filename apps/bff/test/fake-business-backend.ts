@@ -116,6 +116,13 @@ export class FakeBusinessBackend {
    */
   readonly credentials = new Map<string, { status: number; body?: unknown }>();
   credentialCalls = 0;
+  /**
+   * Tokens the backend refuses (`401`) on every route but `/me/credential`: a revoke the BFF's 30-second cache has not seen yet,
+   * which the backend's own lookup sees (ADR 0033, #852).
+   */
+  readonly revoked = new Set<string>();
+  /** The stored Yjs state per board id, served by `GET /boards/:id/document` (#852); a known board without one answers 204. */
+  readonly documents = new Map<string, Uint8Array>();
   /** The last `/access-tokens` request (#851): method, path and parsed body; and what the fake answers with. */
   lastAccessTokenRequest: { method: string; path: string; body: unknown } | null = null;
   accessTokenAnswer: { status: number; body?: unknown } = { status: 200, body: [] };
@@ -182,6 +189,22 @@ export class FakeBusinessBackend {
         );
       const template = this.templates.find((t) => t.id === id);
       return template ? send(200, template) : send(404);
+    }
+    const bearerToken = /^Bearer (\S+)$/.exec(req.headers.authorization ?? '')?.[1];
+    if (
+      bearerToken !== undefined &&
+      this.revoked.has(bearerToken) &&
+      req.url !== '/me/credential'
+    ) {
+      return send(401);
+    }
+    const documentRoute = /^\/boards\/([^/]+)\/document$/.exec(req.url ?? '');
+    if (documentRoute && req.method === 'GET') {
+      if (!this.boards.has(documentRoute[1]!)) return send(404);
+      const state = this.documents.get(documentRoute[1]!);
+      if (state === undefined) return send(204);
+      res.writeHead(200, { 'content-type': 'application/octet-stream', etag: '"1"' });
+      return void res.end(Buffer.from(state));
     }
     if (req.url === '/me/credential' && req.method === 'GET') {
       this.credentialCalls += 1;

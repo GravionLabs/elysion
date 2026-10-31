@@ -48,20 +48,19 @@ spec:
     burst: {{ .Values.edge.rateLimit.burst }}
     period: 1s
 ---
-# The public API (ADR 0033): a rate limit per token rather than per address, and a body limit.
+# The public API (ADR 0033): a flood guard per client address (it also bounds made-up tokens, each of which costs the BFF a
+# lookup) and a body limit. The limit per token, with its RateLimit-* headers, is the BFF's.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: {{ $full }}-public-api-rate-limit
+  name: {{ $full }}-public-api-ip-rate-limit
   labels:
     {{- include "elysion.labels" . | nindent 4 }}
 spec:
   rateLimit:
-    average: {{ .Values.edge.publicApi.rateLimit.average }}
-    burst: {{ .Values.edge.publicApi.rateLimit.burst }}
+    average: {{ .Values.edge.publicApi.ipRateLimit.average }}
+    burst: {{ .Values.edge.publicApi.ipRateLimit.burst }}
     period: 1m
-    sourceCriterion:
-      requestHeaderName: Authorization
 ---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
@@ -127,7 +126,7 @@ spec:
       match: {{ $host }}PathPrefix(`/public/v1`)
       middlewares:
         - name: {{ $full }}-security-headers
-        - name: {{ $full }}-public-api-rate-limit
+        - name: {{ $full }}-public-api-ip-rate-limit
         - name: {{ $full }}-public-api-body-limit
       services:
         - name: {{ $full }}-bff

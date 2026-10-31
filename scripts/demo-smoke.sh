@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Checks that a running Elysion stack (the demo, `pnpm demo`, or the development stack) works end to end: the app is
 # served, the identity provider is up, the three demo users can log in, the API answers for a signed-in user and
-# refuses an anonymous one, a board can be made and a realtime token for it issued. Used by the container workflow;
+# refuses an anonymous one, a board can be made and a realtime token for it issued, and the public API reads it with a personal
+# access token. Used by the container workflow;
 # run it by hand with `bash scripts/demo-smoke.sh [http://localhost] [http://localhost:8081]`.
 set -euo pipefail
 
@@ -74,5 +75,19 @@ id="$(printf '%s' "$board" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)"
 echo "ok  dev1 made a board ($id)"
 expect 200 "a realtime token is issued for it" -H "Authorization: Bearer $t" -H 'Content-Type: application/json' \
   -d "{\"boardId\":\"$id\"}" "$APP/api/realtime/token"
+# The public API (ADR 0033, #852) with a personal access token; the upgrade test turns it off for the version it starts from
+# (SMOKE_PUBLIC_API=0), which has none. The token is never printed.
+if [ "${SMOKE_PUBLIC_API:-1}" = 1 ]; then
+  created="$(curl -s -H "Authorization: Bearer $t" -H 'Content-Type: application/json' \
+    -d '{"name":"Smoke test","scopes":["boards:read"],"expiresInDays":1}' "$APP/api/access-tokens")"
+  pat="$(printf '%s' "$created" | grep -o '"token":"elp_[^"]*"' | cut -d'"' -f4)"
+  pat_id="$(printf '%s' "$created" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)"
+  if [ -z "$pat" ] || [ -z "$pat_id" ]; then fail "a personal access token could not be made"; fi
+  echo "ok  dev1 made a personal access token"
+  expect 200 "the public API reads the board with it" -H "Authorization: Bearer $pat" "$APP/public/v1/boards/$id"
+  expect 403 "the public API refuses a change outside its scope" -X DELETE -H "Authorization: Bearer $pat" \
+    "$APP/public/v1/boards/$id"
+  expect 204 "the token can be revoked" -X DELETE -H "Authorization: Bearer $t" "$APP/api/access-tokens/$pat_id"
+fi
 expect 204 "the board can be deleted" -X DELETE -H "Authorization: Bearer $t" "$APP/api/boards/$id"
 echo "The stack works."

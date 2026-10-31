@@ -113,6 +113,7 @@ Read once at startup by `src/config/` (`@nestjs/config`, validated by `validateE
 | `OIDC_JWKS_URI`                    | none (derived from the issuer)         | where to fetch Keycloak's keys when that is not the issuer's address (inside compose)            |
 | `WS_TOKEN_SECRET`                  | **none, required**                     | HS256 secret of the WS token, at least 32 characters, the same as in the realtime service        |
 | `WS_TOKEN_TTL_SECONDS`             | `60`                                   | lifetime of a WS token                                                                           |
+| `PUBLIC_API_RATE_LIMIT_PER_MINUTE` | `600`                                  | requests a minute per credential on the public API (ADR 0033), per BFF instance                  |
 | `LOG_LEVEL`                        | `info`                                 | `trace`, `debug`, `info`, `warn`, `error` or `fatal` (see "Logging")                             |
 | `LOG_FORMAT`                       | none: text in a terminal, else `json`  | `json` or `text`                                                                                 |
 | `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` | none (off)                             | also send every log line to this OTLP/HTTP logs endpoint, the dev stack's viewer (see "Logging") |
@@ -136,21 +137,61 @@ A `403` of the business backend that carries the problem `code` `account-deactiv
 
 ## Public API
 
-[ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md), [api.md](../api.md). Routes under `/public/v1` on a Traefik router of their own
-(`public-api`: no CORS, no `forwardAuth`, a rate limit per `Authorization` header, 1 MiB bodies; [gateway.md](gateway.md)). Their
-controllers say `@PublicApi()` and each route the scope it needs (`@RequireScope`, see "Authentication"); the guard accepts personal
-access tokens and integration tokens there only. The token is forwarded unchanged to the business backend, which authorizes as for the
-browser.
+[ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md), [api.md](../api.md), the [reference](../api/reference.md). Routes under
+`/public/v1` on a Traefik router of their own (`public-api`: no CORS, no `forwardAuth`, a rate limit per client address, 1 MiB bodies;
+[gateway.md](gateway.md)). Their controllers (`src/public-api/`) say `@PublicApi()` and each route `@PublicRoute({ scope, ... })`,
+which sets the scope the guard checks (`@RequireScope`, see "Authentication") and the route's OpenAPI description; the guard accepts
+personal access tokens and integration tokens there only.
 
-- **Built (#851):** the authentication above and `GET /public/v1/me` (`src/public-api/`), which needs no scope and answers
-  `{ id, name, kind, tokenId, scopes }`, asked of the backend afresh (not from the guard's cache), so it refuses a revoked token at once.
+- **Routes** (`PublicMeController`, `PublicBoardsController`, `PublicBoardMembersController`, `PublicRoomsController`,
+  `PublicRoomMembersController`, `PublicSnapshotsController`): `GET /me` (no scope); boards `GET`, `POST /boards`, `GET`, `PATCH`,
+  `DELETE /boards/:id`, `POST /boards/:id/duplicate`, `GET /boards/:id/elements`, `GET /boards/:id/files/:fileId`; rooms `GET /rooms`,
+  `GET /rooms/:id`; members `GET`, `POST /boards/:id/members`, `PATCH`, `DELETE /boards/:id/members/:userId`, the same under
+  `/rooms/:id/members`; snapshots `GET`, `POST /boards/:id/snapshots`, `GET /boards/:id/snapshots/:snapshotId`. Scopes: `boards:read`
+  to read, `boards:write` for boards, `members:write` for members, `snapshots:write` to save a version. Snapshot rename, delete,
+  restore and copy are not in v1 (browser only).
+- **Authorization is the backend's.** Every route passes the caller's token on to the business backend, which decides as for the
+  browser; the BFF only checks the shape (a non-UUID id is `404`, a body of the wrong type `400`, both without a call). **Invariant:**
+  every public route calls the backend with the token, so a revoke the guard's 30-second cache has not seen yet is refused by the
+  backend's own lookup on that call (`test/public-api-v1.e2e-spec.ts`, "every route"). A new public route must keep it.
+- **Shapes.** A board is `{ id, name, createdAt, roomId }` (not the caller's favorite or last opened), a room `{ id, name, createdAt,
+role }`, a member `{ userId, displayName, email, role }`, a version the backend's fields. `GET /rooms/:id` and
+  `GET /boards/:id/snapshots/:snapshotId` find the item in the caller's list (a missing one is `404`).
+- **Elements** (`scene.ts`): `GET /boards/:id/elements` reads the stored Yjs state from the backend (`GET /boards/{id}/document`,
+  `204` for a board never saved: an empty scene) and decodes it with `yjs`: the live elements of the `elements` map in Excalidraw's
+  order (the fractional `index`, compared as plain text), and for each `fileId` of a live element a link
+  `/public/v1/boards/:id/files/:fileId` with the `mimeType` and `created` of the `files` map, never the bytes. The answer is an
+  Excalidraw scene (`type: "excalidraw"`, `version: 2`, `source: "elysion"`, `appState: {}`). A version (`GET .../snapshots/:id`)
+  is decoded the same way from the backend's snapshot document route and answered with its fields and `scene`. A file id that is
+  not `[A-Za-z0-9_-]{1,128}` is `404` without a call.
+- **Rename** (`PATCH /boards/:id`): `ETag` is the first 27 characters of the base64url SHA-256 of `[id, name, roomId]`, answered by
+  `GET`, `POST`, `PATCH` and duplicate. `If-Match` is required (`428` without), `*` or a list that names the current `ETag`; the BFF
+  reads the board, compares, then renames (`412` for an old one). The check and the rename are two backend calls, not one transaction.
+- **Pagination** (`pagination.ts`): `?limit=` (1 to 200, default 50) and `?cursor=`. The backend answers the whole list; the BFF
+  orders it by a unique key (boards, rooms and versions newest first by `createdAt`, then id; members by user id) and the cursor is
+  the base64url JSON of the last item's key, so the next page starts after it. A bad `limit` or a cursor that is not one is `400`.
+- **Errors** (`problem-details.ts`): `ProblemDetailsFilter` is a global filter that answers every exception of a request under
+  `/public/` as `application/problem+json` `{ type: "about:blank", title, status, detail?, code? }` (the guard's `401` and `403`,
+  `404` for an unknown path, the backend's errors with their message), and hands every other request to Nest's own filter. A
+  malformed body (`400`) and one over 1 MiB (`413`) come from the public JSON parser (`applyHttpLimits`: `/public/` bodies are read
+  by their own parser, `application/json` and `+json`, at most 1 MiB) and are answered the same way by `publicBodyErrors`.
+- **Rate limit** (`rate-limit.ts`): `PublicApiRateLimitGuard` (part of `@PublicApi()`, after the global guard) counts the requests
+  of each credential in a fixed window of a minute (`PublicRateLimiter`, in memory, at most 50 000 credentials): the key is the
+  token's id for a personal access token, the user's id for a Keycloak token. `PUBLIC_API_RATE_LIMIT_PER_MINUTE` (600) requests;
+  every answer has `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` (seconds) and `RateLimit-Policy` (`600;w=60`), one
+  over the limit is `429` with `Retry-After`. Per BFF instance: with several replicas a token gets up to that many times the limit.
+- **Logs and metrics:** the guard binds `tokenId` (never the token) to the request's log lines next to `userId` and `requestId`; the
+  request metrics carry the route pattern and status (`/public/v1/boards/:id`) like every route.
+- **The OpenAPI document** (`openapi.ts`): `@nestjs/swagger` builds it from the public controllers only (a module with stand-ins,
+  in preview mode: nothing runs), as OpenAPI 3.1 (`nullable` becomes `type: [..., "null"]`). `pnpm --filter @elysion/bff openapi`
+  writes it to `docs/api/openapi.v1.json`; `openapi.spec.ts` (part of `pnpm test`, so CI) makes it again and fails when it differs,
+  and checks that every route has a scope, examples, problem details for its errors and the rate limit headers. The e2e tests check
+  every answer against it (`test/openapi-contract.ts`, Ajv with JSON Schema 2020-12). The documentation site renders it
+  ([reference](../api/reference.md)).
 - **`/api/access-tokens`** (`AccessTokensController`, a browser route): `GET` (the caller's tokens), `POST { name, scopes, expiresInDays }`
   (`201` with the secret, once; a body of the wrong shape is `400` without a call, the rules are the backend's) and `DELETE :id` (`204`; a
   non-UUID is `404` without a call). `GET /api/admin/access-tokens?query=&page=&pageSize=` and `DELETE /api/admin/access-tokens/:id` pass
   the administration's list and revoke on; `GET /api/admin/users` takes `kind=person|integration` (anything else `400`).
-- **Not built yet (#852):** the routes of boards, rooms, members, snapshots and elements, problem details for errors, cursor pagination,
-  the OpenAPI 3.1 document committed as `docs/api/openapi.v1.json` and compared in CI; the elements of a board read from the stored
-  document with `yjs`.
 
 ## Webhooks
 

@@ -12,6 +12,8 @@ allowBuilds:
   '@parcel/watcher': true
   # jspdf's optional dependency; its postinstall only prints a funding message
   core-js: false
+  # @nestjs/swagger's swagger-ui-dist pulls it in; its postinstall only sends usage analytics. The BFF serves no Swagger UI.
+  '@scarf/scarf': false
   esbuild: true
   lmdb: true
   msgpackr-extract: true

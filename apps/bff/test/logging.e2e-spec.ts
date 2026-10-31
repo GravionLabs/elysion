@@ -199,4 +199,30 @@ describe('Logging (e2e, ADR 0025)', () => {
 
     expect(lines().filter((line) => line.http?.route === '/health')).toEqual([]);
   });
+  it('says on a public API line which token it was (its id, never the token) and the request id', async () => {
+    const token = `elp_${'L'.repeat(43)}`;
+    upstream.credentials.set(token, {
+      status: 200,
+      body: {
+        userId: '11111111-1111-4111-8111-111111111111',
+        displayName: 'Ada',
+        kind: 'person',
+        tokenId: '33333333-3333-4333-8333-333333333333',
+        scopes: ['boards:read'],
+      },
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/public/v1/boards')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(requestLine('/public/v1/boards')).toMatchObject({
+      userId: '11111111-1111-4111-8111-111111111111',
+      tokenId: '33333333-3333-4333-8333-333333333333',
+      requestId: response.headers['x-request-id'],
+      http: { method: 'GET', route: '/public/v1/boards', status: 200 },
+    });
+    expect(raw.join('')).not.toContain(token);
+  });
 });

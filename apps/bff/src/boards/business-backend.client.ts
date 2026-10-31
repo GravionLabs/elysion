@@ -613,6 +613,35 @@ export class BusinessBackendClient {
     return this.fileOf(response);
   }
 
+  /**
+   * The stored Yjs state of a board the caller may read (the public API's elements, ADR 0033), or `null` when the board was never
+   * saved (`204`). A board the caller cannot see is a 404, like every board route.
+   */
+  async getBoardDocument(token: string, boardId: string): Promise<Uint8Array | null> {
+    const response = await this.fetchBackend(`/boards/${boardId}/document`, {
+      method: 'GET',
+      headers: this.headers(token),
+      signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
+    });
+    if (response.status === 204) return null;
+    if (!response.ok) return this.fail(response);
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
+  /** The Yjs state of a version (ADR 0032), read whole: the public API decodes it. */
+  async readSnapshotDocument(
+    token: string,
+    boardId: string,
+    snapshotId: string,
+  ): Promise<Uint8Array> {
+    const response = await this.fetchBackend(
+      `/boards/${boardId}/snapshots/${snapshotId}/document`,
+      { method: 'GET', headers: this.headers(token), signal: AbortSignal.timeout(FILE_TIMEOUT_MS) },
+    );
+    if (!response.ok) return this.fail(response);
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
   async deleteBoard(token: string, id: string): Promise<void> {
     await this.request<void>(token, 'DELETE', `/boards/${id}`);
   }

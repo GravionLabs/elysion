@@ -106,7 +106,7 @@ describe('the public API and its credentials (e2e, ADR 0033, #851)', () => {
       upstream.credentials.set(other, credential(['boards:read', 'boards:write']));
 
       const refused = await get('/public/v1/test-scoped', PAT).expect(403);
-      expect(refused.body.message).toBe('This needs a token with the scope "boards:write".');
+      expect(refused.body.detail).toBe('This needs a token with the scope "boards:write".');
       await get('/public/v1/test-scoped', other).expect(200, { ok: true });
     });
 
