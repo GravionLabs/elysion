@@ -108,7 +108,7 @@ GROUP BY 1 ORDER BY 2 DESC;`.
 3. Is it real traffic? Every change of a board with webhooks is an event per webhook (content changes at most once a minute per board). A
    busy instance with many webhooks may need a higher threshold: change it here and in `alerts.test.yml`.
 4. To stop a receiver at once, switch its webhook off in the board's Share dialog or the administration (or delete it): what waits for it is
-   given up.
+   given up at once, so the gauge drops on the worker's next pass. Switching it on again does not send those deliveries again.
 
 ### CertificateExpiresSoon
 

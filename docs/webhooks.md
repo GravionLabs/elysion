@@ -87,7 +87,9 @@ no change without its event. A worker in the business backend sends it within a 
   hours** from the event. Then it is given up (`failed`).
 - **Switched off:** when no delivery to a webhook has succeeded for **24 hours**, Elysion switches the webhook off, gives up what still
   waits for it, and shows the owners why (the reason with the last error, in the Webhooks section and as `disabledReason` in the API).
-  Switch it on again when the receiver works; nothing is sent while it is off.
+  Switch it on again when the receiver works; nothing is sent while it is off. Switching a webhook off by hand also gives up what
+  still waits for it (`failed`, "Not sent: the endpoint was switched off."), and switching it on does not send those again: use "Send
+  again" for one you still need. While it is off, **Send test event** and "Send again" are refused (`409`).
 - Events can arrive **more than once** (a retry after an answer that got lost, a "Send again") and **out of order** (a retry of an
   older event after a newer one). Use the event `id` to ignore repeats, and `occurredAt` to order them.
 - The **last 50 deliveries** of each webhook are kept with their status, attempts, the HTTP status of the last answer, how long it

@@ -218,7 +218,7 @@ const docs = (owner: Owner) => {
       PublicRoute({
         scope: SCOPE,
         summary: `Change a webhook ${of}`,
-        description: `${WHO[owner]} Its URL, its events, or \`enabled\` (\`true\` switches one that was switched off after a day of failures on again).`,
+        description: `${WHO[owner]} Its URL, its events, or \`enabled\` (\`false\` switches it off and gives up the deliveries that still wait; \`true\` switches it on again, also one that was switched off after a day of failures).`,
         status: 200,
         type: Webhook,
         example: WEBHOOK_EXAMPLE,
@@ -246,11 +246,11 @@ const docs = (owner: Owner) => {
       PublicRoute({
         scope: SCOPE,
         summary: 'Send a test event',
-        description: `${WHO[owner]} Puts a \`webhook.test\` event for this webhook in the outbox; it is sent within seconds, signed like every other.`,
+        description: `${WHO[owner]} Puts a \`webhook.test\` event for this webhook in the outbox; it is sent within seconds, signed like every other. \`409\` while the webhook is switched off.`,
         status: 202,
         type: WebhookDelivery,
         example: PENDING_EXAMPLE,
-        errors: [404],
+        errors: [404, 409],
       }),
       ...params,
       webhookParam,
@@ -273,7 +273,7 @@ const docs = (owner: Owner) => {
       PublicRoute({
         scope: SCOPE,
         summary: 'Send a delivery again',
-        description: `${WHO[owner]} The same event (same \`eventId\` and body) as a new delivery; \`409\` while the delivery is still being sent.`,
+        description: `${WHO[owner]} The same event (same \`eventId\` and body) as a new delivery; \`409\` while the delivery is still being sent or the webhook is switched off.`,
         status: 202,
         type: WebhookDelivery,
         example: { ...PENDING_EXAMPLE, eventType: 'board.renamed' },

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -5,6 +6,7 @@ using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Webhooks;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 using Shouldly;
 
@@ -144,6 +146,121 @@ public class WebhookDeliveryTests : WebhookTestBase
         var waiting = await Reload(second.Id);
         waiting.Status.ShouldBe(WebhookDeliveryStatus.Failed);
         waiting.Error.ShouldBe("Not sent: the endpoint was switched off.");
+    }
+
+    private async Task SwitchAsync(bool enabled)
+    {
+        using var owner = As("owner");
+        (await owner.PatchAsync($"/boards/{Board.Id}/webhooks/{_webhook}", Json(new { enabled })))
+            .EnsureSuccessStatusCode();
+    }
+
+    private async Task<string> MetricsAsync()
+    {
+        using var client = Factory.CreateClient();
+        return await client.GetStringAsync("/metrics");
+    }
+
+    [Test]
+    public async Task Switching_off_by_hand_gives_up_what_waits_and_the_outbox_drains()
+    {
+        ReceiverFails();
+        var retried = await StageTestAsync();
+        await RunWorkerAsync();
+        var waiting = await StageTestAsync();
+        (await MetricsAsync()).ShouldContain("elysion_webhook_outbox_pending 1");
+        await RunWorkerAsync();
+        (await MetricsAsync()).ShouldContain("elysion_webhook_outbox_pending 2");
+
+        await SwitchAsync(false);
+
+        foreach (var id in new[] { retried.Id, waiting.Id })
+        {
+            var row = await Reload(id);
+            row.Status.ShouldBe(WebhookDeliveryStatus.Failed);
+            row.Error.ShouldBe("Not sent: the endpoint was switched off.");
+            row.LeaseUntil.ShouldBeNull();
+        }
+
+        (await RunWorkerAsync()).ShouldBe(0);
+        (await MetricsAsync()).ShouldContain("elysion_webhook_outbox_pending 0");
+    }
+
+    [Test]
+    public async Task Switching_on_again_does_not_send_what_was_given_up()
+    {
+        ReceiverFails();
+        var delivery = await StageTestAsync();
+        await RunWorkerAsync();
+        await SwitchAsync(false);
+        Factory.WebhookSender.Answer = _ => new WebhookAttempt(true, 204, 5, null);
+
+        await SwitchAsync(true);
+        Time.Advance(TimeSpan.FromHours(1));
+
+        (await RunWorkerAsync()).ShouldBe(0);
+        (await Reload(delivery.Id)).Status.ShouldBe(WebhookDeliveryStatus.Failed);
+        Factory.WebhookSender.Sent.Count.ShouldBe(1);
+        using var owner = As("owner");
+        (await owner.PostAsync($"/boards/{Board.Id}/webhooks/{_webhook}/deliveries/{delivery.Id}/redeliver", null))
+            .StatusCode.ShouldBe(HttpStatusCode.Accepted);
+        (await RunWorkerAsync()).ShouldBe(1);
+    }
+
+    [Test]
+    public async Task A_row_being_sent_while_the_endpoint_is_switched_off_stays_given_up()
+    {
+        ReceiverFails();
+        var delivery = await StageTestAsync();
+        Factory.WebhookSender.Answer = _ =>
+        {
+            // The owner switches the webhook off while the worker is sending.
+            SwitchAsync(false).GetAwaiter().GetResult();
+            return new WebhookAttempt(false, 500, 40, "HTTP 500.");
+        };
+
+        await RunWorkerAsync();
+
+        var row = await Reload(delivery.Id);
+        row.Status.ShouldBe(WebhookDeliveryStatus.Failed);
+        row.Error.ShouldBe("Not sent: the endpoint was switched off.");
+    }
+
+    [TestCase("test")]
+    [TestCase("redeliver")]
+    public async Task A_switched_off_webhook_refuses_a_test_event_and_send_again(string action)
+    {
+        var sent = await StageTestAsync();
+        await RunWorkerAsync();
+        await SwitchAsync(false);
+        using var owner = As("owner");
+        var path = action == "test"
+            ? $"/boards/{Board.Id}/webhooks/{_webhook}/test"
+            : $"/boards/{Board.Id}/webhooks/{_webhook}/deliveries/{sent.Id}/redeliver";
+
+        var response = await owner.PostAsync(path, null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(Web);
+        problem.GetProperty("detail")
+            .GetString()
+            .ShouldBe("This webhook is switched off. Switch it on to send to it.");
+        (await Deliveries()).ShouldHaveSingleItem().Id.ShouldBe(sent.Id);
+    }
+
+    [Test]
+    public async Task The_switched_off_webhook_of_a_deleted_board_is_removed()
+    {
+        ReceiverFails();
+        await StageTestAsync();
+        await RunWorkerAsync();
+        await SwitchAsync(false);
+        using var owner = As("owner");
+
+        (await owner.DeleteAsync($"/boards/{Board.Id}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        (await Factory.Services.GetRequiredService<WebhookDeliveryService>().RemoveOrphansAsync(Ct)).ShouldBe(1);
+        (await Query(db => db.WebhookEndpoints.AnyAsync(e => e.Id == _webhook))).ShouldBeFalse();
     }
 
     [Test]

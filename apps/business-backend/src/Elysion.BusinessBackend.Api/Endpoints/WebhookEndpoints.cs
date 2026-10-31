@@ -229,9 +229,20 @@ public static class WebhookEndpoints
                 endpoint.DisabledReason = null;
                 endpoint.FailingSince = null;
                 break;
-            case false when endpoint.DisabledAt is null:
-                endpoint.DisabledAt = services.Time.GetUtcNow();
-                endpoint.DisabledReason = "Switched off by a person.";
+            case false:
+                if (endpoint.DisabledAt is null)
+                {
+                    endpoint.DisabledAt = services.Time.GetUtcNow();
+                    endpoint.DisabledReason = "Switched off by a person.";
+                }
+
+                // Nothing is sent while it is off: what still waits for it is given up, in this transaction (as the worker does).
+                foreach (var delivery in await services.Webhooks.ListPendingForUpdateAsync(endpoint.Id,
+                             cancellationToken))
+                {
+                    delivery.GiveUpSwitchedOff();
+                }
+
                 break;
         }
 
@@ -259,7 +270,7 @@ public static class WebhookEndpoints
         return TypedResults.NoContent();
     }
 
-    /// <summary>"Send test event": a <c>webhook.test</c> for this endpoint only, also when it is switched off (it then waits).</summary>
+    /// <summary>"Send test event": a <c>webhook.test</c> for this endpoint only; refused (409) while it is switched off.</summary>
     private static async Task<IResult> TestAsync(Guid? boardId,
         Guid webhookId,
         Services services,
@@ -269,6 +280,11 @@ public static class WebhookEndpoints
         if (endpoint is null)
         {
             return NoSuchWebhook();
+        }
+
+        if (endpoint.DisabledAt is not null)
+        {
+            return SwitchedOff();
         }
 
         var delivery = services.Events.StageTest(endpoint);
@@ -298,7 +314,8 @@ public static class WebhookEndpoints
         Services services,
         CancellationToken cancellationToken)
     {
-        if (await services.Webhooks.FindForUpdateAsync(boardId, webhookId, cancellationToken) is null)
+        var endpoint = await services.Webhooks.FindForUpdateAsync(boardId, webhookId, cancellationToken);
+        if (endpoint is null)
         {
             return NoSuchWebhook();
         }
@@ -313,6 +330,11 @@ public static class WebhookEndpoints
         {
             return TypedResults.Problem("This delivery is still being sent.",
                 statusCode: StatusCodes.Status409Conflict);
+        }
+
+        if (endpoint.DisabledAt is not null)
+        {
+            return SwitchedOff();
         }
 
         var again = services.Events.StageRedelivery(delivery);
@@ -331,6 +353,11 @@ public static class WebhookEndpoints
 
     private static ProblemHttpResult NoSuchWebhook() =>
         TypedResults.Problem("There is no such webhook.", statusCode: StatusCodes.Status404NotFound);
+
+    /// <summary>A switched-off webhook sends nothing, so nothing is put in its outbox: it would only wait.</summary>
+    private static ProblemHttpResult SwitchedOff() =>
+        TypedResults.Problem("This webhook is switched off. Switch it on to send to it.",
+            statusCode: StatusCodes.Status409Conflict);
 
     internal static WebhookDto ToDto(WebhookEndpoint endpoint) =>
         new(endpoint.Id,

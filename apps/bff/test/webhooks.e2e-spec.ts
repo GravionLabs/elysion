@@ -271,6 +271,21 @@ describe('webhooks in the shell and on the public API (e2e, #853)', () => {
       expectContract('get', '/public/v1/boards/{id}/webhooks/{webhookId}/deliveries', deliveries);
     });
 
+    it('answers a test event for a switched-off webhook 409, as documented', async () => {
+      const { body: webhook } = await call('post', `/public/v1/boards/${boardId}/webhooks`, HOOKS)
+        .send({ url: 'https://hooks.example.com/elysion' })
+        .expect(201);
+      const base = `/public/v1/boards/${boardId}/webhooks/${webhook.id}`;
+      await call('patch', base, HOOKS).send({ enabled: false }).expect(200);
+
+      const refused = await call('post', `${base}/test`, HOOKS).expect(409);
+
+      expect(refused.headers['content-type']).toMatch(PROBLEM);
+      expect(refused.body.detail).toBe('This webhook is switched off. Switch it on to send to it.');
+      expectContract('post', '/public/v1/boards/{id}/webhooks/{webhookId}/test', refused);
+      expect(upstream.webhookDeliveries.get(webhook.id)).toEqual([]);
+    });
+
     it('needs the scope webhooks:write on every webhook route, before the backend is asked', async () => {
       const id = randomUUID();
       const b = `/public/v1/boards/${boardId}/webhooks`;

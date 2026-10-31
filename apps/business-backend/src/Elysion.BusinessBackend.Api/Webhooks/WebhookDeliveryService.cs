@@ -230,9 +230,7 @@ public sealed partial class WebhookDeliveryService(
         var pending = await webhooks.ListPendingForUpdateAsync(endpoint.Id, cancellationToken);
         foreach (var delivery in pending)
         {
-            delivery.Status = WebhookDeliveryStatus.Failed;
-            delivery.Error = "Not sent: the endpoint was switched off.";
-            delivery.LeaseUntil = null;
+            delivery.GiveUpSwitchedOff();
         }
 
         if (pending.Count > 0)

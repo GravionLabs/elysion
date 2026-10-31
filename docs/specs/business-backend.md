@@ -430,7 +430,9 @@ actorId, data }`; `data` holds names, roles, ids and a version, never content.
 `LeaseToken` saved at once; an instance that saw the same row gets a concurrency conflict and leaves it), sends them in parallel
 (`IWebhookSender`), then writes the outcomes: `2xx` is `Succeeded` and ends the endpoint's failing period; anything else is tried again
 after `Backoff` (30 s, doubling, at most an hour) until the delivery is 24 hours old (`Failed`), and when the endpoint has failed for 24
-hours it is switched off with the reason and the last error, and what still waits for it fails. A row whose instance died is taken
+hours it is switched off with the reason and the last error, and what still waits for it fails. Switching an endpoint off by hand
+(`PATCH` with `enabled: false`) fails what waits for it in the same transaction, with a new `LeaseToken` so that an instance sending one
+right now cannot save its outcome over it; a test event or a "send again" for a switched-off endpoint is refused (`409`). A row whose instance died is taken
 again when its lease ends. After a pass each touched endpoint keeps its newest 50 deliveries (pending ones are never removed), and
 `elysion_webhook_outbox_pending` (gauge) and `elysion_webhook_delivery_attempts_total{outcome}` are updated (alert `WebhookOutboxGrowing`).
 

@@ -4424,7 +4424,7 @@
         "x-required-scope": "webhooks:write"
       },
       "patch": {
-        "description": "Owners of the board only. Its URL, its events, or `enabled` (`true` switches one that was switched off after a day of failures on again).\n\nNeeds the scope `webhooks:write`.",
+        "description": "Owners of the board only. Its URL, its events, or `enabled` (`false` switches it off and gives up the deliveries that still wait; `true` switches it on again, also one that was switched off after a day of failures).\n\nNeeds the scope `webhooks:write`.",
         "operationId": "BoardWebhooks_update",
         "parameters": [
           {
@@ -4766,7 +4766,7 @@
     },
     "/public/v1/boards/{id}/webhooks/{webhookId}/test": {
       "post": {
-        "description": "Owners of the board only. Puts a `webhook.test` event for this webhook in the outbox; it is sent within seconds, signed like every other.\n\nNeeds the scope `webhooks:write`.",
+        "description": "Owners of the board only. Puts a `webhook.test` event for this webhook in the outbox; it is sent within seconds, signed like every other. `409` while the webhook is switched off.\n\nNeeds the scope `webhooks:write`.",
         "operationId": "BoardWebhooks_test",
         "parameters": [
           {
@@ -4875,6 +4875,21 @@
                   "type": "about:blank",
                   "title": "Not Found",
                   "status": 404
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The change breaks a rule: of the member list (already a member, the last owner), or of webhooks (at most ten, a delivery still being sent).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Conflict",
+                  "status": 409
                 }
               }
             }
@@ -5123,7 +5138,7 @@
     },
     "/public/v1/boards/{id}/webhooks/{webhookId}/deliveries/{deliveryId}/redeliver": {
       "post": {
-        "description": "Owners of the board only. The same event (same `eventId` and body) as a new delivery; `409` while the delivery is still being sent.\n\nNeeds the scope `webhooks:write`.",
+        "description": "Owners of the board only. The same event (same `eventId` and body) as a new delivery; `409` while the delivery is still being sent or the webhook is switched off.\n\nNeeds the scope `webhooks:write`.",
         "operationId": "BoardWebhooks_redeliver",
         "parameters": [
           {
@@ -5816,7 +5831,7 @@
         "x-required-scope": "webhooks:write"
       },
       "patch": {
-        "description": "Administrators only (a person signed in with the realm role of an administrator, with their own Keycloak token). Its URL, its events, or `enabled` (`true` switches one that was switched off after a day of failures on again).\n\nNeeds the scope `webhooks:write`.",
+        "description": "Administrators only (a person signed in with the realm role of an administrator, with their own Keycloak token). Its URL, its events, or `enabled` (`false` switches it off and gives up the deliveries that still wait; `true` switches it on again, also one that was switched off after a day of failures).\n\nNeeds the scope `webhooks:write`.",
         "operationId": "InstanceWebhooks_update",
         "parameters": [
           {
@@ -6138,7 +6153,7 @@
     },
     "/public/v1/webhooks/{webhookId}/test": {
       "post": {
-        "description": "Administrators only (a person signed in with the realm role of an administrator, with their own Keycloak token). Puts a `webhook.test` event for this webhook in the outbox; it is sent within seconds, signed like every other.\n\nNeeds the scope `webhooks:write`.",
+        "description": "Administrators only (a person signed in with the realm role of an administrator, with their own Keycloak token). Puts a `webhook.test` event for this webhook in the outbox; it is sent within seconds, signed like every other. `409` while the webhook is switched off.\n\nNeeds the scope `webhooks:write`.",
         "operationId": "InstanceWebhooks_test",
         "parameters": [
           {
@@ -6237,6 +6252,21 @@
                   "type": "about:blank",
                   "title": "Not Found",
                   "status": 404
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The change breaks a rule: of the member list (already a member, the last owner), or of webhooks (at most ten, a delivery still being sent).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Conflict",
+                  "status": 409
                 }
               }
             }
@@ -6475,7 +6505,7 @@
     },
     "/public/v1/webhooks/{webhookId}/deliveries/{deliveryId}/redeliver": {
       "post": {
-        "description": "Administrators only (a person signed in with the realm role of an administrator, with their own Keycloak token). The same event (same `eventId` and body) as a new delivery; `409` while the delivery is still being sent.\n\nNeeds the scope `webhooks:write`.",
+        "description": "Administrators only (a person signed in with the realm role of an administrator, with their own Keycloak token). The same event (same `eventId` and body) as a new delivery; `409` while the delivery is still being sent or the webhook is switched off.\n\nNeeds the scope `webhooks:write`.",
         "operationId": "InstanceWebhooks_redeliver",
         "parameters": [
           {

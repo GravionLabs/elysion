@@ -55,4 +55,19 @@ public class WebhookDelivery
     public DateTimeOffset? LeaseUntil { get; set; }
 
     public Guid LeaseToken { get; set; }
+
+    /// <summary>The error of a delivery that was given up because its endpoint was switched off.</summary>
+    public const string SwitchedOffError = "Not sent: the endpoint was switched off.";
+
+    /// <summary>
+    /// Gives up a pending delivery because its endpoint was switched off (by the worker after a day of failures, or by a person). A new
+    /// <see cref="LeaseToken"/> makes an instance that is sending it right now fail to save its outcome, so the row stays given up.
+    /// </summary>
+    public void GiveUpSwitchedOff()
+    {
+        Status = WebhookDeliveryStatus.Failed;
+        Error = SwitchedOffError;
+        LeaseUntil = null;
+        LeaseToken = Guid.NewGuid();
+    }
 }

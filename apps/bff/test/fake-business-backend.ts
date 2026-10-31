@@ -243,7 +243,13 @@ export class FakeBusinessBackend {
       lastAttemptAt: null,
       nextAttemptAt: new Date().toISOString(),
     });
+    const switchedOff = () =>
+      send(409, {
+        status: 409,
+        detail: 'This webhook is switched off. Switch it on to send to it.',
+      });
     if (action === 'test') {
+      if (!webhook.enabled) return switchedOff();
       const made = delivery('webhook.test');
       deliveries.unshift(made);
       return send(202, made);
@@ -255,6 +261,7 @@ export class FakeBusinessBackend {
       if (original.status === 'pending') {
         return send(409, { status: 409, detail: 'This delivery is still being sent.' });
       }
+      if (!webhook.enabled) return switchedOff();
       const again = delivery(original.eventType, original.eventId);
       deliveries.unshift(again);
       return send(202, again);
