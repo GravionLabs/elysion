@@ -1,6 +1,6 @@
 # apps/apphost — Agent Instructions
 
-The Aspire AppHost of the development stack ([ADR 0030](../../docs/adr/0030-aspire-apphost-for-local-development.md), Proposed). One file, `apphost.cs`, a file-based .NET 10 app: its `#:sdk` and `#:package` lines are the dependencies (no project file, no `Directory.Packages.props`). `apphost.run.json` is its launch profile (the dashboard and its OTLP ports).
+The Aspire AppHost of the development stack ([ADR 0031](../../docs/adr/0031-aspire-apphost-for-local-development.md), Proposed). One file, `apphost.cs`, a file-based .NET 10 app: its `#:sdk` and `#:package` lines are the dependencies (no project file, no `Directory.Packages.props`). `apphost.run.json` is its launch profile (the dashboard and its OTLP ports).
 
 ## Commands
 

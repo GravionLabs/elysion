@@ -1,4 +1,4 @@
-# ADR 0030: An Aspire AppHost for local development, next to compose
+# ADR 0031: An Aspire AppHost for local development, next to compose
 
 - Status: Proposed
 - Date: 2026-10-31
