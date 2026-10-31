@@ -1,6 +1,6 @@
 # ADR 0021: Versioning and releases: GitVersion, GHCR images, a pre-release first
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0030](0030-rolling-release-branch.md) (the rolling release branch `release/next`, `next-version: 0.5.0`)
 - Date: 2026-10-07
 - Builds on: [ADR 0018](0018-kubernetes-packaging.md), the release setup of [ariadne](https://github.com/GravionLabs/ariadne) and `GravionLabs/ci`
 
