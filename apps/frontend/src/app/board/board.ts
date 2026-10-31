@@ -22,6 +22,7 @@ import { RouterLink } from '@angular/router';
 import { AppBrand } from '../shared/app-brand';
 import { BoardApi, BoardLookup, BoardRole, isStoredBoardId } from './board-api';
 import { FilesApi } from './files-api';
+import { SnapshotApi } from './snapshot-api';
 import { VotingApi } from './voting-api';
 import { ThumbnailUploader } from './thumbnail-uploader';
 import { ShareDialog } from '../share/share-dialog';
@@ -80,6 +81,7 @@ export class Board {
   readonly #api = inject(BoardApi);
   readonly #files = inject(FilesApi);
   readonly #votings = inject(VotingApi);
+  readonly #snapshots = inject(SnapshotApi);
   readonly #members = inject(MembersApi);
   readonly #users = inject(UsersApi);
   readonly #thumbnails = inject(ThumbnailUploader);
@@ -350,6 +352,8 @@ export class Board {
   protected readonly fileStore = this.#files.storeFor(() => this.boardId());
   /** The voting of this board on the server; the canvas votes through it (ADR 0029). */
   protected readonly votingApi = this.#votings.forBoard(() => this.boardId());
+  /** The versions of this board (the History panel of the canvas, ADR 0032). */
+  protected readonly snapshotApi = this.#snapshots.forBoard(() => this.boardId());
 
   /**
    * The people `@` offers in a comment (#733). Only an owner may list the members, so everybody else is offered the people who

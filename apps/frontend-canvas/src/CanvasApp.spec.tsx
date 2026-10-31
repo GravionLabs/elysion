@@ -292,6 +292,80 @@ describe('the canvas menu', () => {
     await waitFor(async () => expect(await live()).toBe(1));
   });
 
+  describe('the history (#846)', () => {
+    const snapshotApi = () => ({
+      list: vi.fn(async () => []),
+      create: vi.fn(),
+      rename: vi.fn(),
+      remove: vi.fn(),
+      document: vi.fn(),
+    });
+
+    it('opens from the canvas menu and closes with its close button', async () => {
+      const api = snapshotApi();
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={api} />);
+      await excalidrawReady(container);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Canvas menu' }));
+      expect(screen.getByRole('menuitem', { name: /History/ }).textContent).toContain('Alt+H');
+      fireEvent.click(screen.getByRole('menuitem', { name: /History/ }));
+
+      expect(await screen.findByRole('complementary', { name: 'History' })).toBeTruthy();
+      expect(api.list).toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'Close the history' }));
+      expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
+    });
+
+    it('opens and closes with Alt+H, also on a Mac where Option+H types another character', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi()} />);
+      await excalidrawReady(container);
+
+      fireEvent.keyDown(document.body, { key: '˙', code: 'KeyH', altKey: true });
+      expect(await screen.findByRole('complementary', { name: 'History' })).toBeTruthy();
+
+      fireEvent.keyDown(document.body, { key: '˙', code: 'KeyH', altKey: true });
+      expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
+    });
+
+    it('ignores H without Alt, Alt+Ctrl+H, and a key typed into another field', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi()} />);
+      await excalidrawReady(container);
+      const outside = document.createElement('input');
+      document.body.append(outside);
+
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH' });
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true, ctrlKey: true });
+      fireEvent.keyDown(outside, { key: 'h', code: 'KeyH', altKey: true });
+
+      expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
+      outside.remove();
+    });
+
+    it('is unavailable without a snapshotApi: the menu item is disabled and Alt+H does nothing', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" />);
+      await excalidrawReady(container);
+
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true });
+      expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Canvas menu' }));
+      expect(screen.getByRole('menuitem', { name: /History/ }).getAttribute('aria-disabled')).toBe(
+        'true',
+      );
+    });
+
+    it('gives a viewer the list without Save version', async () => {
+      const { container } = render(
+        <CanvasApp boardId="test-board" readOnly snapshotApi={snapshotApi()} />,
+      );
+      await excalidrawReady(container);
+
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true });
+
+      expect(await screen.findByRole('complementary', { name: 'History' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    });
+  });
+
   it('gives a viewer Help but no Clear canvas', async () => {
     const { container } = render(<CanvasApp boardId="test-board" readOnly />);
     await excalidrawReady(container);

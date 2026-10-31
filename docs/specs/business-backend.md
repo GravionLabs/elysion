@@ -268,6 +268,7 @@ Who gave or took away access (#669). `AuditEntry` (`Id`, `At`, `ActorUserId`, `A
 | `group.member_added`, `group.member_removed`                                        | `group`           | `userId`                                                                                                                               |
 | `groups.synced`                                                                     | `user`            | `added`, `removed`: one entry per **changed** set of linked memberships at sign-in ("+2 −1"), not per request; the person is the actor |
 | `invitation.created`, `invitation.revoked`, `invitation.accepted`                   | `board` or `room` | `invitationId`, `role`, `expiresAt`, `maxUses`; the acceptor is the actor                                                              |
+| `snapshot.deleted`, `snapshot.restored`                                             | `board`           | `snapshotId`, `kind` (ADR 0032; the restore writes its entry in #847)                                                                  |
 
 Details hold ids, roles, counts and the names of groups, **never** a token (an invitation's token is not in its entries), an email address, or what is on a board. Actions of an administrator on people (deactivating, handing over, #668) will write through the same service.
 
@@ -335,7 +336,27 @@ The picture on a board's card (#729). `PUT /boards/{id}/thumbnail` (the board's 
 
 ## Snapshots
 
-Not built yet: [ADR 0032](../adr/0032-board-snapshots.md) (#846, #847). A snapshot is the board's stored Yjs state, gzipped in the
-object store at `snapshots/{boardId}/{id}.yjs.gz`, with a row in `BoardSnapshots`; automatic ones are made on a save at most once an
-hour, before a compaction and before a restore, kept 30 days (at most 50 per board), named ones until deleted (at most 100). A
-restore asks the realtime service to merge the snapshot forward onto the live board.
+Built in #846 as decided in [ADR 0032](../adr/0032-board-snapshots.md); the restore is #847. A snapshot is the board's stored Yjs
+state, gzipped in the object store at `snapshots/{boardId}/{id}.yjs.gz` (outside the files prefix), with a row in `BoardSnapshots`
+(`Id`, `BoardId` with cascade, `Name` up to 120 characters or null, `Kind` `Manual`, `Auto` or `BeforeRestore`, `CreatedBy` the
+subject, `CreatedAt`, `SizeBytes` gzipped, `ElementCount` or null). The object is written first, the row second (`BoardSnapshotService`).
+
+| Route                                           | Role               | Answer                                                                                                                                                                                                                           |
+| ----------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /boards/{id}/snapshots`                    | read               | the versions newest first: `id`, `kind`, `name`, `author` (display name, null for an automatic one), `createdAt`, `sizeBytes`, `elementCount`                                                                                    |
+| `POST /boards/{id}/snapshots` `{ name? }`       | write              | `201` with the version; the bytes are the stored `BoardDocuments.State`, never the request; `400` for a name over 120 characters, `409` with no stored document or 100 saved versions already, `503` when the object store fails |
+| `PATCH /boards/{id}/snapshots/{sid}` `{ name }` | write              | `200`; `400` for an empty name, `409` for an automatic version (only saved versions have names)                                                                                                                                  |
+| `DELETE /boards/{id}/snapshots/{sid}`           | administer (owner) | `204`; the row and the object go, `snapshot.deleted` is in the audit log in the same transaction                                                                                                                                 |
+| `GET /boards/{id}/snapshots/{sid}/document`     | read               | the ungzipped Yjs state (`application/octet-stream`), for the preview picture and for opening a version as a new board; `410` when the object is missing                                                                         |
+
+**Automatic versions** are made by the backend when the realtime service saves (`PUT /internal/boards/{id}/document`, no new call
+from the realtime service): the state that is about to be overwritten is kept when the board's newest snapshot is an hour old (or
+there is none) and the incoming state differs from the stored one, and always when the save carries `X-Elysion-Save-Reason:
+compaction`. The save may carry `X-Elysion-Element-Count` (the backend cannot decode Yjs), which is stored as `ElementCount`. A
+save with a stale version, or of a board id that is no UUID, makes none, and a failure to make one is logged and never fails the
+save. Automatic and `BeforeRestore` snapshots are kept 30 days and at most 50 per board (the oldest go first); saved ones until
+deleted, at most 100 per board. `SnapshotCleanupService` runs at 03:41 UTC: it removes the expired ones and the objects under
+`snapshots/` that have no row. Deleting a board deletes its rows (cascade) and `snapshots/{boardId}/`. There is no byte quota
+(#777 counts boards): the caps and the 8 MiB document limit bound a board. Not built yet: the call that makes the realtime service
+save an open board before "Save version" (the snapshot holds the state of the last save, at most 10 seconds old), the restore and
+"open as new board" (#847).

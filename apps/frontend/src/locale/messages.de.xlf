@@ -1942,6 +1942,24 @@
         <target><ph id="0" equiv="actor" disp="actor"/> ist mit einem Einladungslink als <ph id="1" equiv="role" disp="role"/> beigetreten</target>
       </segment>
     </unit>
+    <unit id="audit.snapshot.deleted">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:75</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> deleted a saved version of the board</source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat eine gespeicherte Version des Boards gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="audit.snapshot.restored">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:77</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> restored a version of the board</source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat eine Version des Boards wiederhergestellt</target>
+      </segment>
+    </unit>
     <unit id="boards.new.aria">
       <notes>
         <note category="location">src/app/board-list/board-list.html:9,10</note>

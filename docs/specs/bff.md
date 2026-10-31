@@ -46,6 +46,8 @@ Errors: an id that is not a UUID is a `404` without a call to the backend; a bod
 
 **Board files** (#702): `src/boards/files.controller.ts` pipes the request body to the business backend and the answer back, so a file is never held in memory (`test/files.e2e-spec.ts` shows the backend receiving bytes while the client is still sending). `Content-Type` and `Content-Length` are required (`400`, `411`); a body that announces more than 64 MiB is a `413` without a call; the type, size and count limits are the backend's, whose `413`, `415` and `409` stay as they are. Of the backend's answer only the content type, length, cache and ETag headers and the `nosniff` and CSP headers are passed on.
 
+**Board snapshots** (#846, ADR 0032): `GET/POST /api/boards/:id/snapshots`, `PATCH/DELETE /api/boards/:id/snapshots/:sid` and `GET /api/boards/:id/snapshots/:sid/document` (the ungzipped Yjs state, piped through, `private, no-store`) forward to the business backend with the caller's token; the backend decides by the board's role (viewers list and read, editors save and rename, owners delete) and takes the bytes from the stored document, so the BFF only passes `name` on. Ids that are no UUID are a `404`, a non-text `name` a `400`, a backend `503` (no object store) stays `503`.
+
 JSON bodies up to 6 MB are accepted (`src/http-limits.ts`), so a template's scene gets through; the backend limits the scene itself.
 
 No caching, on purpose (#351): measured through the edge (Traefik, forwardAuth, BFF, business backend, Postgres) on the dev stack, sequential requests with a token, 60 each:

@@ -59,6 +59,27 @@ export interface BoardVotingApi {
   clear(): Promise<void>;
 }
 
+/** A version of a board in its history (ADR 0032, #846); `author` is null for an automatic one. */
+export interface BoardSnapshotInfo {
+  id: string;
+  kind: 'Manual' | 'Auto' | 'BeforeRestore';
+  name: string | null;
+  author: string | null;
+  createdAt: string;
+  sizeBytes: number;
+  elementCount: number | null;
+}
+
+/** What the canvas calls to reach the versions of a board (`snapshotApi` of `<elysion-canvas>`, #846). A rejection carries the HTTP `status`. */
+export interface BoardSnapshotApi {
+  list(): Promise<BoardSnapshotInfo[]>;
+  create(name?: string): Promise<BoardSnapshotInfo>;
+  rename(id: string, name: string): Promise<BoardSnapshotInfo>;
+  remove(id: string): Promise<void>;
+  /** The Yjs state of a version, for its preview picture. */
+  document(id: string): Promise<Uint8Array>;
+}
+
 /** The `offline` event of the canvas (#735): the connection broke after the board was loaded, or is back. */
 export interface OfflineState {
   offline: boolean;
@@ -133,6 +154,8 @@ export type CanvasElement = HTMLElement & {
   fileStore?: BoardFileStore;
   /** How the canvas reaches the board's voting on the server (`GET/POST/DELETE` through the BFF, ADR 0029). A property, as an object with methods. */
   votingApi?: BoardVotingApi;
+  /** How the canvas reaches the versions of the board (`GET/POST/PATCH/DELETE` through the BFF, ADR 0032). A property, as an object with methods. */
+  snapshotApi?: BoardSnapshotApi;
   /**
    * The people `@` offers in a comment (#733), asked each time the comments open: `{id, name}`. A property, as a function.
    * The `can-moderate` attribute (the board's owner may delete any comment) goes with the comments.
