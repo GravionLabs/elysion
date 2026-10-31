@@ -786,6 +786,67 @@ export class BusinessBackendClient {
     return this.request<unknown>(token, 'GET', `/rooms/${encodeURIComponent(id)}/history`);
   }
 
+  // Webhooks (ADR 0033, #853): a board's under `/boards/{id}/webhooks` (its owners), the instance-wide ones under `/admin/webhooks`
+  // (administrators). `boardId` null is the admin's; every id passed the UUID check of the controller and is encoded anyway.
+
+  listWebhooks(token: string, boardId: string | null): Promise<Webhook[]> {
+    return this.request<Webhook[]>(token, 'GET', webhookPath(boardId));
+  }
+
+  /** Registers a webhook: the one answer that carries its secret. */
+  createWebhook(
+    token: string,
+    boardId: string | null,
+    input: WebhookInput,
+  ): Promise<CreatedWebhook> {
+    return this.request<CreatedWebhook>(token, 'POST', webhookPath(boardId), input);
+  }
+
+  getWebhook(token: string, boardId: string | null, id: string): Promise<Webhook> {
+    return this.request<Webhook>(token, 'GET', webhookPath(boardId, id));
+  }
+
+  updateWebhook(
+    token: string,
+    boardId: string | null,
+    id: string,
+    patch: WebhookPatch,
+  ): Promise<Webhook> {
+    return this.request<Webhook>(token, 'PATCH', webhookPath(boardId, id), patch);
+  }
+
+  async deleteWebhook(token: string, boardId: string | null, id: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', webhookPath(boardId, id));
+  }
+
+  /** "Send test event": a `webhook.test` delivery for this endpoint, sent by the backend's worker. */
+  testWebhook(token: string, boardId: string | null, id: string): Promise<WebhookDelivery> {
+    return this.request<WebhookDelivery>(token, 'POST', `${webhookPath(boardId, id)}/test`);
+  }
+
+  /** The last 50 deliveries of an endpoint, newest first. */
+  listWebhookDeliveries(
+    token: string,
+    boardId: string | null,
+    id: string,
+  ): Promise<WebhookDelivery[]> {
+    return this.request<WebhookDelivery[]>(token, 'GET', `${webhookPath(boardId, id)}/deliveries`);
+  }
+
+  /** "Send again": the same event once more, as a new delivery. */
+  redeliverWebhook(
+    token: string,
+    boardId: string | null,
+    id: string,
+    deliveryId: string,
+  ): Promise<WebhookDelivery> {
+    return this.request<WebhookDelivery>(
+      token,
+      'POST',
+      `${webhookPath(boardId, id)}/deliveries/${encodeURIComponent(deliveryId)}/redeliver`,
+    );
+  }
+
   /** The headers of every call: the caller's token and the id of the request being handled, so the backend's lines carry it (ADR 0025). */
   private headers(token: string): Record<string, string> {
     const requestId = currentRequestId();
@@ -963,6 +1024,13 @@ export interface AdminGroupPatch {
   externalId?: string | null;
 }
 
+/** The path of a board's webhooks (or one of them), or of the instance-wide ones for `boardId` null. */
+function webhookPath(boardId: string | null, id?: string): string {
+  const base =
+    boardId === null ? '/admin/webhooks' : `/boards/${encodeURIComponent(boardId)}/webhooks`;
+  return id === undefined ? base : `${base}/${encodeURIComponent(id)}`;
+}
+
 /** `?query=..&page=..&pageSize=..` from the three allowed values, encoded; empty when none is given. */
 function adminQuery(list: AdminList): string {
   const params = new URLSearchParams();
@@ -972,4 +1040,63 @@ function adminQuery(list: AdminList): string {
   if (list.pageSize !== undefined) params.append('pageSize', String(list.pageSize));
   const text = params.toString();
   return text === '' ? '' : `?${text}`;
+}
+
+/** The events a webhook can subscribe to (ADR 0033, #853); an empty list is all of them. */
+export const WEBHOOK_EVENTS = [
+  'board.created',
+  'board.renamed',
+  'board.deleted',
+  'board.content.changed',
+  'member.added',
+  'member.removed',
+  'member.role_changed',
+  'snapshot.created',
+] as const;
+
+/** A webhook endpoint as its owners see it (#853): never its secret, only the secret's first characters. */
+export interface Webhook {
+  id: string;
+  /** The board whose events it receives, or null for every board (an administrator's). */
+  boardId: string | null;
+  url: string;
+  events: string[];
+  enabled: boolean;
+  disabledAt: string | null;
+  disabledReason: string | null;
+  createdAt: string;
+  secretPrefix: string;
+}
+
+/** The answer to registering a webhook: the one time its `secret` is shown. */
+export interface CreatedWebhook extends Webhook {
+  secret: string;
+}
+
+/** One delivery of a webhook: its event and how it went; never the body or the receiver's answer. */
+export interface WebhookDelivery {
+  id: string;
+  eventId: string;
+  eventType: string;
+  status: 'pending' | 'succeeded' | 'failed';
+  attempts: number;
+  responseStatus: number | null;
+  durationMs: number | null;
+  error: string | null;
+  createdAt: string;
+  lastAttemptAt: string | null;
+  nextAttemptAt: string | null;
+}
+
+/** What a new webhook is: a URL and the events (none: all). The backend checks both (400). */
+export interface WebhookInput {
+  url: string;
+  events: string[];
+}
+
+/** A change of a webhook: a key that is left out stays as it is. */
+export interface WebhookPatch {
+  url?: string;
+  events?: string[];
+  enabled?: boolean;
 }

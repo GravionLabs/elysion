@@ -8,8 +8,19 @@ const BOARD_ID = '0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f';
 const ROOM_ID = '0192f7a4-7a11-7d42-8e60-3b5c7d9e1f20';
 const USER_ID = '0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31';
 const SNAPSHOT_ID = '0192f7a5-0c3d-7f64-a082-5d7e9f1a3b42';
+const WEBHOOK_ID = '0192f7a6-2e5f-7186-c2a4-7f9b1c3d5e64';
+const DELIVERY_ID = '0192f7a6-3f60-7297-d3b5-8a0c2d4e6f75';
+const EVENT_ID = '0192f7a6-4071-73a8-e4c6-9b1d3e5f7086';
 
-export const EXAMPLE_IDS = { BOARD_ID, ROOM_ID, USER_ID, SNAPSHOT_ID };
+export const EXAMPLE_IDS = {
+  BOARD_ID,
+  ROOM_ID,
+  USER_ID,
+  SNAPSHOT_ID,
+  WEBHOOK_ID,
+  DELIVERY_ID,
+  EVENT_ID,
+};
 
 const ROLES = ['Owner', 'Editor', 'Viewer'];
 
@@ -233,4 +244,149 @@ export class Scene {
 export class SnapshotWithScene extends Snapshot {
   @ApiProperty({ type: Scene })
   scene: Scene;
+}
+
+const WEBHOOK_EVENT_NAMES = [
+  'board.created',
+  'board.renamed',
+  'board.deleted',
+  'board.content.changed',
+  'member.added',
+  'member.removed',
+  'member.role_changed',
+  'snapshot.created',
+];
+
+export class Webhook {
+  @ApiProperty({ format: 'uuid', example: WEBHOOK_ID })
+  id: string;
+  @ApiProperty({
+    type: 'string',
+    format: 'uuid',
+    nullable: true,
+    example: BOARD_ID,
+    description: "The board whose events it receives; null for every board (an administrator's).",
+  })
+  boardId: string | null;
+  @ApiProperty({ example: 'https://hooks.example.com/elysion' })
+  url: string;
+  @ApiProperty({
+    type: [String],
+    enum: WEBHOOK_EVENT_NAMES,
+    example: ['board.renamed', 'member.added'],
+    description: 'The events it receives; an empty list is all of them.',
+  })
+  events: string[];
+  @ApiProperty({
+    example: true,
+    description: 'False after a day of failed deliveries, or when switched off.',
+  })
+  enabled: boolean;
+  @ApiProperty({ type: 'string', format: 'date-time', nullable: true, example: null })
+  disabledAt: string | null;
+  @ApiProperty({
+    type: 'string',
+    nullable: true,
+    example: null,
+    description: 'Why it is switched off.',
+  })
+  disabledReason: string | null;
+  @ApiProperty({ format: 'date-time', example: '2026-10-31T09:15:00Z' })
+  createdAt: string;
+  @ApiProperty({
+    example: 'whsec_k3Tq',
+    description: 'The first characters of the secret, to tell endpoints apart.',
+  })
+  secretPrefix: string;
+}
+
+export class CreatedWebhook extends Webhook {
+  @ApiProperty({
+    example: 'whsec_k3TqW8xZ1mN5pR2vY7bC4dF9gH6jL0sA3eU8iO1tQ5w',
+    description:
+      'The secret that signs every delivery (`Elysion-Signature`). Shown in this answer only: keep it in your receiver.',
+  })
+  secret: string;
+}
+
+export class WebhookPage {
+  @ApiProperty({ type: [Webhook] })
+  items: Webhook[];
+  @ApiProperty({ type: 'string', nullable: true, example: null })
+  next: string | null;
+}
+
+export class CreateWebhook {
+  @ApiProperty({
+    example: 'https://hooks.example.com/elysion',
+    maxLength: 2000,
+    description: 'An `https` URL on a public address.',
+  })
+  url: string;
+  @ApiPropertyOptional({
+    type: [String],
+    enum: WEBHOOK_EVENT_NAMES,
+    example: ['board.renamed'],
+    description: 'The events to receive; none or left out: all of them.',
+  })
+  events?: string[];
+}
+
+export class UpdateWebhook {
+  @ApiPropertyOptional({ example: 'https://hooks.example.com/elysion-v2' })
+  url?: string;
+  @ApiPropertyOptional({ type: [String], enum: WEBHOOK_EVENT_NAMES, example: [] })
+  events?: string[];
+  @ApiPropertyOptional({
+    example: true,
+    description: '`true` switches a disabled endpoint on again, `false` off.',
+  })
+  enabled?: boolean;
+}
+
+export class WebhookDelivery {
+  @ApiProperty({ format: 'uuid', example: DELIVERY_ID })
+  id: string;
+  @ApiProperty({
+    format: 'uuid',
+    example: EVENT_ID,
+    description: 'The `id` of the event; the same in every delivery of it, also one sent again.',
+  })
+  eventId: string;
+  @ApiProperty({ example: 'board.renamed' })
+  eventType: string;
+  @ApiProperty({ enum: ['pending', 'succeeded', 'failed'], example: 'succeeded' })
+  status: string;
+  @ApiProperty({ example: 1 })
+  attempts: number;
+  @ApiProperty({ type: 'integer', nullable: true, example: 200 })
+  responseStatus: number | null;
+  @ApiProperty({ type: 'integer', nullable: true, example: 143 })
+  durationMs: number | null;
+  @ApiProperty({ type: 'string', nullable: true, example: null })
+  error: string | null;
+  @ApiProperty({ format: 'date-time', example: '2026-10-31T09:20:00Z' })
+  createdAt: string;
+  @ApiProperty({
+    type: 'string',
+    format: 'date-time',
+    nullable: true,
+    example: '2026-10-31T09:20:01Z',
+  })
+  lastAttemptAt: string | null;
+  @ApiProperty({
+    type: 'string',
+    format: 'date-time',
+    nullable: true,
+    example: null,
+    description: 'When a pending delivery is tried next.',
+  })
+  nextAttemptAt: string | null;
+}
+
+export class WebhookDeliveryPage {
+  @ApiProperty({ type: [WebhookDelivery] })
+  items: WebhookDelivery[];
+  @ApiProperty({ type: 'string', nullable: true, example: null })
+  next: string | null;
 }

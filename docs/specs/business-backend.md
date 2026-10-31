@@ -217,6 +217,7 @@ At start the service creates the bucket if it is missing and checks that it can 
 - `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` (required), `S3_BUCKET` (default `elysion-files`) — the object store of board files. `MAX_FILE_BYTES` (default 10485760) and `MAX_FILES_PER_BOARD` (default 200) — the limits. The dev stack's values are in `docker-compose.yml` and `appsettings.Development.json`.
 - `ConnectionStrings:Elysion` — the Postgres connection string.
 - `Database:MigrateOnStartup` (default `false`) — when `true`, the app applies pending EF Core migrations at startup. The dev stack's container sets it, because it starts against an empty database; local runs use `dotnet ef database update`.
+- `WEBHOOKS_ALLOW_HTTP` and `WEBHOOKS_ALLOW_PRIVATE_NETWORKS` (default `false`, **development only**) — accept plain `http` webhook URLs, and let the worker connect to private and loopback addresses (see "Webhooks"). `WEBHOOKS_WORKER_ENABLED` (default `true`) — `false` stops this instance from sending webhooks (another instance does; the tests switch it off and run passes themselves).
 - `--migrate` (command-line argument) — applies the pending migrations and exits without serving. The Helm chart runs it as a hook job before an install or upgrade (`migrateJob.enabled`), so that replicas never migrate at the same time; the replicas then keep `MigrateOnStartup` off.
 
 ## Quotas
@@ -263,16 +264,17 @@ All lists are paged: `?page=` (from 1) and `?pageSize=` (default 25, at most 100
 
 Who gave or took away access (#669). `AuditEntry` (`Id`, `At`, `ActorUserId`, `Action`, `SubjectType`, `SubjectId`, `Details` as a small JSON object, `RequestId`) is **append-only** and has no foreign keys on purpose, so it outlives the person, group, room or board it is about. Services and endpoints write it through `IAuditLog.Record`, which only **stages** the entry on the request's unit of work: it is saved in the same transaction as the change it records, so there is no entry without the change and no change without the entry. A refused or unchanged request (the same name, a person already in the group) writes nothing. `RequestId` is the `X-Request-Id` of the request ([ADR 0025](../adr/0025-structured-logging-and-log-viewer.md)), so a log line and an entry find each other.
 
-| Action                                                                              | Subject           | Details                                                                                                                                                |
-| ----------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `member.added`, `member.role_changed`, `member.removed`                             | `board` or `room` | `userId`, `role` (or `from` and `to`)                                                                                                                  |
-| `room.group_role_set`, `room.group_role_removed`                                    | `room`            | `groupId`, `groupName`, `role`                                                                                                                         |
-| `group.created`, `group.renamed`, `group.linked`, `group.unlinked`, `group.deleted` | `group`           | `name`, `from`/`to`, `externalId`                                                                                                                      |
-| `group.member_added`, `group.member_removed`                                        | `group`           | `userId`                                                                                                                                               |
-| `groups.synced`                                                                     | `user`            | `added`, `removed`: one entry per **changed** set of linked memberships at sign-in ("+2 −1"), not per request; the person is the actor                 |
-| `invitation.created`, `invitation.revoked`, `invitation.accepted`                   | `board` or `room` | `invitationId`, `role`, `expiresAt`, `maxUses`; the acceptor is the actor                                                                              |
-| `snapshot.deleted`, `snapshot.restored`                                             | `board`           | `snapshotId`, `kind` (ADR 0032; the restore writes its entry in #847)                                                                                  |
-| `token.created`, `token.revoked`                                                    | `user` (owner)    | `tokenId`, `name`, and for a new one `scopes` and `expiresAt` (#851); never the token or its prefix. A revoke's actor is the owner or an administrator |
+| Action                                                                              | Subject                                 | Details                                                                                                                                                |
+| ----------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `member.added`, `member.role_changed`, `member.removed`                             | `board` or `room`                       | `userId`, `role` (or `from` and `to`)                                                                                                                  |
+| `room.group_role_set`, `room.group_role_removed`                                    | `room`                                  | `groupId`, `groupName`, `role`                                                                                                                         |
+| `group.created`, `group.renamed`, `group.linked`, `group.unlinked`, `group.deleted` | `group`                                 | `name`, `from`/`to`, `externalId`                                                                                                                      |
+| `group.member_added`, `group.member_removed`                                        | `group`                                 | `userId`                                                                                                                                               |
+| `groups.synced`                                                                     | `user`                                  | `added`, `removed`: one entry per **changed** set of linked memberships at sign-in ("+2 −1"), not per request; the person is the actor                 |
+| `invitation.created`, `invitation.revoked`, `invitation.accepted`                   | `board` or `room`                       | `invitationId`, `role`, `expiresAt`, `maxUses`; the acceptor is the actor                                                                              |
+| `snapshot.deleted`, `snapshot.restored`                                             | `board`                                 | `snapshotId`, `kind` (ADR 0032; the restore writes its entry in #847)                                                                                  |
+| `token.created`, `token.revoked`                                                    | `user` (owner)                          | `tokenId`, `name`, and for a new one `scopes` and `expiresAt` (#851); never the token or its prefix. A revoke's actor is the owner or an administrator |
+| `webhook.created`, `webhook.deleted`                                                | `board` (none for an instance-wide one) | `webhookId`, `host` (#853); never the path or query of the URL, never the secret                                                                       |
 
 Details hold ids, roles, counts and the names of groups, **never** a token (an invitation's token is not in its entries), an email address, or what is on a board. Actions of an administrator on people (deactivating, handing over, #668) will write through the same service.
 
@@ -380,8 +382,7 @@ empty and the restore proceeds with no "Before restore". Not built yet: the rest
 endpoints of this service as the caller, so a token never sees more than its owner. One endpoint is there for them (#852):
 `GET /boards/{id}/document` (`BoardDocumentEndpoints.ReadForMember`, `BoardPolicies.Read`) answers the stored Yjs state of the board
 (`application/octet-stream`, the version as `ETag`), `204` for a board that was never saved and `404` without a role, so that the BFF
-can decode the elements; it is read-only, saves stay with the realtime service's internal route. Webhooks are not built yet (#853): delivered from an outbox written in the same transaction as the
-change, signed with HMAC-SHA256 (`Elysion-Signature`).
+can decode the elements; it is read-only, saves stay with the realtime service's internal route. Webhooks (#853) are in "Webhooks" below.
 
 **Personal access tokens** (`AccessToken`, migration `AddAccessTokens`, which also adds `Users.IsIntegration`; `AccessTokenEndpoints`):
 `Id`, `OwnerId` (cascade with the person), `Name` (1 to 100 characters), `Prefix` (the first 12 characters of the secret: `elp_` and
@@ -400,3 +401,55 @@ nowhere else.
 
 The token routes need a **person signed in with Keycloak**: a request made with a personal access token or by an integration is `403`,
 so a leaked token cannot make its own successor. Making and revoking a token are in the audit log.
+
+## Webhooks
+
+[ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md), [webhooks.md](../webhooks.md) (#853): the events, the payload and the signature
+as a receiver sees them.
+
+**Data** (migration `AddWebhooks`). `WebhookEndpoint`: `Id`, `BoardId` (null: every board), `Url` (at most 2000), `Events` (space-separated,
+the order of `WebhookEventTypes.All`; empty: all), `Secret` (`whsec_` and 43 characters, kept as it is: signing needs it), `CreatedById`,
+`CreatedAt`, `DisabledAt`, `DisabledReason`, `FailingSince` (the first failure since the last success). It has **no foreign key to the board**:
+a board's endpoints outlive it until its `board.deleted` is delivered; the worker then removes them (`RemoveOrphansAsync`, every ten
+minutes). `WebhookDelivery` is the **outbox**: `EndpointId` (cascade), `EventId`, `EventType`, `BoardId`, `Payload` (the JSON body as it is
+posted), `Status` (`Pending`, `Succeeded`, `Failed`), `Attempts`, `CreatedAt`, `NextAttemptAt`, `LastAttemptAt`, `ResponseStatus`,
+`DurationMs`, `Error` (a few words, never the URL), `LeaseUntil` and `LeaseToken` (a concurrency token).
+
+**Events** (`IWebhookEvents`, `WebhookEvents`). Like the audit log it only **stages** the deliveries (one per switched-on endpoint of the
+board or of the instance that subscribed to the event) on the request's unit of work, so they are committed with the change; a refused
+or failed change stages nothing that is saved. Raised by `BoardEndpoints` (created, renamed when the name changes, duplicated as
+created, deleted), `BoardSnapshotEndpoints` (a version opened as a new board is created), `BoardMemberService` (added, role changed when
+it changes, removed), `InvitationService` (a board link accepted: added, or role changed, with the person who joined as the actor),
+`BoardSnapshotService.StoreAsync` (`snapshot.created` for a `Manual` version only) and `PUT /internal/boards/{id}/document`
+(`board.content.changed`: staged before `SaveAsync`, which commits it with the document; not for a compaction save, not when one was
+staged for the board in the last minute, `actorId` null; a refused save clears it). The payload is `{ id, type, occurredAt, boardId,
+actorId, data }`; `data` holds names, roles, ids and a version, never content.
+
+**Delivery** (`WebhookDeliveryService`, a hosted service on every instance, every 2 s). A pass lists up to 20 due rows (`Pending`,
+`NextAttemptAt` reached, no live lease, a switched-on endpoint), takes each with a lease of two minutes (`TryLeaseAsync`: a new
+`LeaseToken` saved at once; an instance that saw the same row gets a concurrency conflict and leaves it), sends them in parallel
+(`IWebhookSender`), then writes the outcomes: `2xx` is `Succeeded` and ends the endpoint's failing period; anything else is tried again
+after `Backoff` (30 s, doubling, at most an hour) until the delivery is 24 hours old (`Failed`), and when the endpoint has failed for 24
+hours it is switched off with the reason and the last error, and what still waits for it fails. Switching an endpoint off by hand
+(`PATCH` with `enabled: false`) fails what waits for it in the same transaction, with a new `LeaseToken` so that an instance sending one
+right now cannot save its outcome over it; a test event or a "send again" for a switched-off endpoint is refused (`409`). A row whose instance died is taken
+again when its lease ends. After a pass each touched endpoint keeps its newest 50 deliveries (pending ones are never removed), and
+`elysion_webhook_outbox_pending` (gauge) and `elysion_webhook_delivery_attempts_total{outcome}` are updated (alert `WebhookOutboxGrowing`).
+
+**Sending** (`WebhookSender`, a typed `HttpClient` on `WebhookHttpHandler`): `POST` with the payload, `Elysion-Event`, `Elysion-Event-Id`,
+`Elysion-Delivery` and `Elysion-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256 of "<t>.<body>">` (`WebhookSecrets.Sign`), a timeout of
+10 s, the answer's body unread. The handler's `ConnectCallback` resolves the host (`IWebhookHostResolver`), keeps the addresses
+`WebhookAddressPolicy` allows (unless `WEBHOOKS_ALLOW_PRIVATE_NETWORKS`) and connects to one of them; no redirects, no proxy, no cookies.
+Logs name the endpoint id and the host, never the path, the query, a header or the secret.
+
+| Call                                                                                   | Answer                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /boards/{id}/webhooks`                                                            | `BoardPolicies.Administer`: the board's endpoints, oldest first, `{ id, boardId, url, events, enabled, disabledAt, disabledReason, createdAt, secretPrefix }`                                                                      |
+| `POST /boards/{id}/webhooks` `{ url, events }`                                         | `201` with the same and `secret`, once; `400` (`errors.url`: not absolute `https`, a user name or fragment, a refused address literal or `localhost`; `errors.events`: an unknown event); `409` with ten endpoints (`MaxPerBoard`) |
+| `GET`, `PATCH { url?, events?, enabled? }`, `DELETE /boards/{id}/webhooks/{webhookId}` | the endpoint, changed (`enabled: true` clears the switch-off and the failing period; `false` switches it off "by a person"), `204`; `404` for an endpoint of another board                                                         |
+| `POST /boards/{id}/webhooks/{webhookId}/test`                                          | `202` with a pending `webhook.test` delivery to this endpoint                                                                                                                                                                      |
+| `GET /boards/{id}/webhooks/{webhookId}/deliveries`                                     | the last 50, newest first, `{ id, eventId, eventType, status, attempts, responseStatus, durationMs, error, createdAt, lastAttemptAt, nextAttemptAt }` (never the body)                                                             |
+| `POST /boards/{id}/webhooks/{webhookId}/deliveries/{deliveryId}/redeliver`             | `202` with a new delivery of the same event (same `eventId` and body); `409` while the delivery is pending; `404`                                                                                                                  |
+| `/admin/webhooks...`                                                                   | the same for the instance-wide endpoints (`BoardId` null), `AdminPolicies.InstanceAdminister`                                                                                                                                      |
+
+Creating and deleting an endpoint are in the audit log (`webhook.created`, `webhook.deleted`, with the host).

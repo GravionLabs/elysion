@@ -61,12 +61,12 @@ What follows judges the **design** and the **code**, and says "demo only" where 
 4. **The service to service tokens.** Each service checks the token it acts on: the business backend validates the Keycloak JWT itself and
    authorizes by membership; `/internal` accepts only the realtime service's token (another authentication scheme, another issuer and audience).
 5. **Scripts and integrations on the Internet** ([ADR 0033](adr/0033-public-api-tokens-and-webhooks.md), tokens since #851, the routes
-   since #852; webhooks come with #853). The public API at `/public/v1` has its own router without CORS and `forwardAuth`, with a rate
+   since #852, webhooks since #853). The public API at `/public/v1` has its own router without CORS and `forwardAuth`, with a rate
    limit per client address at the edge, a rate limit per token in the BFF (keyed by the token the backend resolved, so made-up tokens
    get no buckets of their own) and a body limit of 1 MiB at both. Every route passes the token on to the business backend, which
    authorizes as for the browser and sees a revoke on that call. Personal access tokens (`elp_`, stored as a hash, with an expiry and scopes) and Keycloak service
    accounts (role `elysion-integration`) are accepted there only (`401` and `403` on `/api`) and act as their person or integration; a token
-   cannot make, list or revoke tokens. Webhooks are the way out: signed, `https` only, never to a private address.
+   cannot make, list or revoke tokens. Webhooks are the way out: signed, `https` only, never to a private address (see "Webhooks" below).
 
 ### Attacker positions and what each can do
 
@@ -183,6 +183,31 @@ repository, a log or a paste can be recognised with the pattern
 and its first twelve characters (`elp_` and eight more), which the person's list and the administration show: search the administration's
 "Access tokens" for the start of a leaked token to find its owner, and revoke it there. Every token expires (at most one year), making and
 revoking one is in the audit log (`token.created`, `token.revoked`), and the logs carry the token's id, never the token.
+
+## Webhooks
+
+Webhooks (#853, [webhooks.md](webhooks.md), [ADR 0033](adr/0033-public-api-tokens-and-webhooks.md)) make the business backend send requests to
+URLs that board owners and administrators choose: the one place where Elysion connects to an address a user gives it.
+
+- **SSRF.** A URL must be `https` (plain `http` only with `WEBHOOKS_ALLOW_HTTP`, for development), without a user name or password, and not
+  an address literal of a refused range or `localhost` (a first answer at registration, `WebhookUrl`). The real check is made by the worker
+  when it connects (`WebhookHttpHandler`): it resolves the host itself, keeps only public unicast addresses (`WebhookAddressPolicy`: not
+  private, loopback, link-local with `169.254.169.254`, shared, unique-local, multicast, documentation or reserved, in IPv4 and IPv6, and
+  an IPv4 address inside an IPv6 one, mapped, compatible, NAT64 or 6to4, is judged as that IPv4 address) and connects the socket to an
+  address it checked, so a second resolution cannot point it elsewhere (DNS rebinding). No redirect is followed, no proxy is used, no
+  cookie kept, the answer's body is not read; each attempt has 10 seconds. `WEBHOOKS_ALLOW_PRIVATE_NETWORKS` lifts the address check for
+  a receiver on a developer's machine and must never be set in production.
+- **Secrets.** Each webhook has its own secret (`whsec_` and 43 random characters), shown once. Unlike a personal access token it is kept
+  as it is, not as a hash, because the backend needs it to sign (HMAC-SHA256 over `<t>.<body>`, `Elysion-Signature`); a copy of the
+  database therefore lets its holder forge deliveries to that webhook's receiver, which has to check the signature anyway. It is never
+  returned again (lists show `whsec_` and four characters), never logged; receivers refuse a timestamp older than five minutes.
+- **What leaves.** A payload has ids, names, roles and a version number, never the content of a board. The URL's path and query (which may
+  carry the receiver's own secret) are not logged, only the host; adding and deleting a webhook are in the audit log with the host.
+- **Who.** Only owners of a board register webhooks for it (the board's administer policy; `404` for a non-member), and only
+  administrators for every board. A webhook ends when it is deleted, when its board is deleted (after `board.deleted` was delivered), or
+  after a day of failures (switched off).
+- **Load.** At most ten webhooks per board and ten for the instance; a delivery is tried for at most 24 hours; `board.content.changed` at most
+  once a minute per board. The outbox has an alert (`WebhookOutboxGrowing`, [operations](operations.md#webhookoutboxgrowing)).
 
 ## Accepted advisories
 

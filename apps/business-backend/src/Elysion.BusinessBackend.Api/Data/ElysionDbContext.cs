@@ -1,5 +1,6 @@
 using Elysion.BusinessBackend.Api.AccessTokens;
 using Elysion.BusinessBackend.Api.Entities;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -22,6 +23,8 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
     public DbSet<Invitation> Invitations => Set<Invitation>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
     public DbSet<AccessToken> AccessTokens => Set<AccessToken>();
+    public DbSet<WebhookEndpoint> WebhookEndpoints => Set<WebhookEndpoint>();
+    public DbSet<WebhookDelivery> WebhookDeliveries => Set<WebhookDelivery>();
 
     public void DiscardChanges() => ChangeTracker.Clear();
     public DbSet<Vote> Votes => Set<Vote>();
@@ -243,6 +246,34 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
             token.HasIndex(t => t.OwnerId);
             token.HasOne(t => t.Owner).WithMany().HasForeignKey(t => t.OwnerId).OnDelete(DeleteBehavior.Cascade);
             token.Ignore(t => t.ScopeList);
+        });
+
+        modelBuilder.Entity<WebhookEndpoint>(endpoint =>
+        {
+            endpoint.Property(e => e.Url).HasMaxLength(WebhookEndpoint.MaxUrlLength);
+            endpoint.Property(e => e.Events).HasMaxLength(400);
+            endpoint.Property(e => e.Secret).HasMaxLength(WebhookSecrets.Length);
+            endpoint.Property(e => e.DisabledReason).HasMaxLength(WebhookEndpoint.MaxReasonLength);
+            // No foreign key to the board (see WebhookEndpoint): "who hears about this board" starts from the board.
+            endpoint.HasIndex(e => e.BoardId);
+            endpoint.Ignore(e => e.EventList);
+        });
+
+        modelBuilder.Entity<WebhookDelivery>(delivery =>
+        {
+            delivery.Property(d => d.EventType).HasMaxLength(WebhookDelivery.MaxEventTypeLength);
+            delivery.Property(d => d.Status).HasConversion<string>().HasMaxLength(16);
+            delivery.Property(d => d.Error).HasMaxLength(WebhookDelivery.MaxErrorLength);
+            // Two instances that take the same row: the second UPDATE finds another token and fails.
+            delivery.Property(d => d.LeaseToken).IsConcurrencyToken();
+            delivery.HasOne(d => d.Endpoint)
+                .WithMany()
+                .HasForeignKey(d => d.EndpointId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // The worker's question ("what is due?"), the list of an endpoint, and the once-a-minute check of a board.
+            delivery.HasIndex(d => new { d.Status, d.NextAttemptAt });
+            delivery.HasIndex(d => new { d.EndpointId, d.CreatedAt });
+            delivery.HasIndex(d => new { d.BoardId, d.EventType, d.CreatedAt });
         });
 
         // "Which boards are in this room?" starts from the room.

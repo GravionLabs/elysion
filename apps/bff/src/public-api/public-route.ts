@@ -20,7 +20,7 @@ const ERROR_TEXT: Record<number, string> = {
   401: 'No credential, or one that is unknown, expired or revoked.',
   403: 'The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).',
   404: 'No such board, room, member or version, or one the caller may not see (the two are not told apart).',
-  409: 'The change breaks a rule of the member list (already a member, the last owner).',
+  409: 'The change breaks a rule: of the member list (already a member, the last owner), or of webhooks (at most ten, a delivery still being sent).',
   410: 'The stored version is gone.',
   412: 'The board changed since it was read: `If-Match` names an old `ETag`.',
   413: 'The body is larger than 1 MiB.',
@@ -51,7 +51,7 @@ export interface PublicRouteOptions {
   summary: string;
   description?: string;
   /** The answer on success: its status, its schema (none for `204`) and an example. */
-  status: 200 | 201 | 204;
+  status: 200 | 201 | 202 | 204;
   type?: Type<unknown>;
   example?: unknown;
   /** A success whose body is bytes (a file): its media type range. */

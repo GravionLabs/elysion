@@ -90,4 +90,15 @@ describe('describeAuditEntry', () => {
       'Ada revoked the access token “CI sync” of Bob',
     );
   });
+
+  it('names the host of a webhook that was added or deleted, never its path (#853)', () => {
+    const details = { webhookId: 'w1', host: 'hooks.example.com' };
+
+    expect(describeAuditEntry(entry('webhook.created', details))).toBe(
+      'Ada added a webhook to hooks.example.com',
+    );
+    expect(describeAuditEntry(entry('webhook.deleted', details))).toBe(
+      'Ada deleted the webhook to hooks.example.com',
+    );
+  });
 });

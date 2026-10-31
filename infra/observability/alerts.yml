@@ -80,6 +80,17 @@ groups:
           summary: 'The business backend gets errors from Postgres'
           runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#databaseerrors
 
+      - alert: WebhookOutboxGrowing
+        expr: |
+          max(elysion_webhook_outbox_pending) > 100
+            and max(delta(elysion_webhook_outbox_pending[30m])) > 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'More than 100 webhook deliveries wait, and the outbox keeps growing'
+          runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#webhookoutboxgrowing
+
       - alert: CertificateExpiresSoon
         expr: (traefik_tls_certs_not_after - time()) < 14 * 86400
         labels:

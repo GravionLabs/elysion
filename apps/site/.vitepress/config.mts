@@ -77,6 +77,7 @@ export default defineConfig({
           { text: 'Self-hosting', link: '/self-hosting' },
           { text: 'Public API', link: '/api' },
           { text: 'Public API reference', link: '/api/reference' },
+          { text: 'Webhooks', link: '/webhooks' },
           { text: 'Roadmap', link: '/roadmap' },
         ],
       },

@@ -69,6 +69,10 @@ export function describeAuditEntry(entry: AuditEntry): string {
       return $localize`:@@audit.token.created:${actor}:actor: made the access token “${text(entry, 'name')}:name:”`;
     case 'token.revoked':
       return $localize`:@@audit.token.revoked:${actor}:actor: revoked the access token “${text(entry, 'name')}:name:” of ${entry.subjectName ?? target}:person:`;
+    case 'webhook.created':
+      return $localize`:@@audit.webhook.created:${actor}:actor: added a webhook to ${text(entry, 'host')}:host:`;
+    case 'webhook.deleted':
+      return $localize`:@@audit.webhook.deleted:${actor}:actor: deleted the webhook to ${text(entry, 'host')}:host:`;
     case 'invitation.created':
       return $localize`:@@audit.invitation.created:${actor}:actor: made an invitation link for the role ${role}:role:`;
     case 'invitation.revoked':

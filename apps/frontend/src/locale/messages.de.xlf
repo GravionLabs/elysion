@@ -1915,6 +1915,24 @@
         <target><ph id="0" equiv="actor" disp="actor"/> hat den Besitz an <ph id="1" equiv="target" disp="target"/> übergeben</target>
       </segment>
     </unit>
+    <unit id="audit.webhook.created">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:73</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> added a webhook to <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat einen Webhook an <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/> hinzugefügt</target>
+      </segment>
+    </unit>
+    <unit id="audit.webhook.deleted">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:75</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> deleted the webhook to <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat den Webhook an <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/> gelöscht</target>
+      </segment>
+    </unit>
     <unit id="audit.invitation.created">
       <notes>
         <note category="location">src/app/audit/audit.ts:69</note>
@@ -6370,6 +6388,538 @@
       <segment>
         <source> Access tokens </source>
         <target> Zugriffstokens </target>
+      </segment>
+    </unit>
+    <unit id="admin.nav.webhooks">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:76,78</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+        <target>Webhooks</target>
+      </segment>
+    </unit>
+    <unit id="admin.webhooks.title">
+      <notes>
+        <note category="location">src/app/admin/admin-webhooks.ts:15,16</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+        <target>Webhooks</target>
+      </segment>
+    </unit>
+    <unit id="admin.webhooks.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-webhooks.ts:17,20</note>
+      </notes>
+      <segment>
+        <source> These webhooks receive the events of every board of this instance. Board owners add webhooks for their own boards in the board&apos;s Share dialog. </source>
+        <target> Diese Webhooks erhalten die Ereignisse aller Boards dieser Instanz. Besitzer von Boards fügen Webhooks für ihre eigenen Boards im Teilen-Dialog des Boards hinzu. </target>
+      </segment>
+    </unit>
+    <unit id="admin.webhooks.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-webhooks.ts:28</note>
+      </notes>
+      <segment>
+        <source>Webhooks · Administration · Elysion</source>
+        <target>Webhooks · Administration · Elysion</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.title">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:11,12</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+        <target>Webhooks</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.listTitle">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:16,19</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+        <target>Webhooks</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.lead">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:21,25</note>
+      </notes>
+      <segment>
+        <source> Elysion posts a signed JSON message to each URL when something happens: never the content of a board. Only https URLs are accepted. </source>
+        <target> Elysion sendet an jede URL eine signierte JSON-Nachricht, wenn etwas passiert: nie den Inhalt eines Boards. Nur https-URLs sind erlaubt. </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.title">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:28,30</note>
+      </notes>
+      <segment>
+        <source> The signing secret of <ph id="0" equiv="INTERPOLATION" disp="{{ webhook.url }}"/> </source>
+        <target> Das Signatur-Geheimnis von <ph id="0" equiv="INTERPOLATION" disp="{{ webhook.url }}"/> </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.once">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:31,34</note>
+      </notes>
+      <segment>
+        <source> Copy it now. It is shown only this once; the receiver needs it to check the Elysion-Signature header. </source>
+        <target> Kopiere es jetzt. Es wird nur dieses eine Mal gezeigt; der Empfänger braucht es, um den Header Elysion-Signature zu prüfen. </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.label">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:39,40</note>
+      </notes>
+      <segment>
+        <source>Signing secret</source>
+        <target>Signatur-Geheimnis</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.copied">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:46,47</note>
+      </notes>
+      <segment>
+        <source>Copied</source>
+        <target>Kopiert</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.copy">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:48,50</note>
+      </notes>
+      <segment>
+        <source>Copy</source>
+        <target>Kopieren</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.done">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:53,55</note>
+      </notes>
+      <segment>
+        <source> I have copied it </source>
+        <target> Ich habe es kopiert </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.url">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:60,62</note>
+      </notes>
+      <segment>
+        <source>URL</source>
+        <target>URL</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.urlPlaceholder">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:65,66</note>
+      </notes>
+      <segment>
+        <source>https://example.com/elysion</source>
+        <target>https://example.com/elysion</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.events">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:74,76</note>
+      </notes>
+      <segment>
+        <source> Events (none ticked: all of them) </source>
+        <target> Ereignisse (keines angekreuzt: alle) </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.button">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:94,98</note>
+      </notes>
+      <segment>
+        <source> Add webhook </source>
+        <target> Webhook hinzufügen </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.loading">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:107,109</note>
+      </notes>
+      <segment>
+        <source>Loading the webhooks…</source>
+        <target>Webhooks werden geladen…</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.list.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:112,114</note>
+      </notes>
+      <segment>
+        <source>The webhooks could not be loaded.</source>
+        <target>Die Webhooks konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.retry">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:115,116</note>
+        <note category="location">src/app/share/webhooks.html:215,216</note>
+      </notes>
+      <segment>
+        <source> Try again </source>
+        <target> Erneut versuchen </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.list.empty">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:121,123</note>
+      </notes>
+      <segment>
+        <source>No webhooks yet.</source>
+        <target>Noch keine Webhooks.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.state.on">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:129,130</note>
+      </notes>
+      <segment>
+        <source>active</source>
+        <target>aktiv</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.state.off">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:131,133</note>
+      </notes>
+      <segment>
+        <source>off</source>
+        <target>aus</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.disabledReason">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:139,140</note>
+      </notes>
+      <segment>
+        <source>Turned off:</source>
+        <target>Ausgeschaltet:</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.test">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:154,155</note>
+      </notes>
+      <segment>
+        <source> Send test event </source>
+        <target> Testereignis senden </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.disable">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:164,165</note>
+      </notes>
+      <segment>
+        <source> Turn off </source>
+        <target> Ausschalten </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.enable">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:174,175</note>
+      </notes>
+      <segment>
+        <source> Turn on </source>
+        <target> Einschalten </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.toggle">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:184,185</note>
+      </notes>
+      <segment>
+        <source> Deliveries </source>
+        <target> Zustellungen </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.remove">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:193,194</note>
+      </notes>
+      <segment>
+        <source> Delete </source>
+        <target> Löschen </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.loading">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:201,202</note>
+      </notes>
+      <segment>
+        <source> Loading the deliveries… </source>
+        <target> Zustellungen werden geladen… </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:207,208</note>
+      </notes>
+      <segment>
+        <source>The deliveries could not be loaded.</source>
+        <target>Die Zustellungen konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.empty">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:221,223</note>
+      </notes>
+      <segment>
+        <source>Nothing was sent yet.</source>
+        <target>Noch nichts gesendet.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.event">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:227,228</note>
+      </notes>
+      <segment>
+        <source>Event</source>
+        <target>Ereignis</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.status">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:228,229</note>
+      </notes>
+      <segment>
+        <source>Status</source>
+        <target>Status</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.response">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:229,230</note>
+      </notes>
+      <segment>
+        <source>Response</source>
+        <target>Antwort</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.duration">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:230,231</note>
+      </notes>
+      <segment>
+        <source>Duration</source>
+        <target>Dauer</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.attempts">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:231,232</note>
+      </notes>
+      <segment>
+        <source>Attempts</source>
+        <target>Versuche</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.time">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:232,233</note>
+      </notes>
+      <segment>
+        <source>Time</source>
+        <target>Zeit</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.actions">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:235,236</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.redeliver">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:278</note>
+      </notes>
+      <segment>
+        <source> Send again </source>
+        <target> Erneut senden </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:120</note>
+      </notes>
+      <segment>
+        <source>The webhook could not be added.</source>
+        <target>Der Webhook konnte nicht hinzugefügt werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.update.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:151</note>
+      </notes>
+      <segment>
+        <source>The webhook could not be changed.</source>
+        <target>Der Webhook konnte nicht geändert werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.remove.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:162</note>
+      </notes>
+      <segment>
+        <source>The webhook could not be deleted.</source>
+        <target>Der Webhook konnte nicht gelöscht werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.test.sent">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:171</note>
+      </notes>
+      <segment>
+        <source>A test event is on its way. Its delivery shows in the list below.</source>
+        <target>Ein Testereignis ist unterwegs. Seine Zustellung erscheint in der Liste unten.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.test.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:175</note>
+      </notes>
+      <segment>
+        <source>The test event could not be sent.</source>
+        <target>Das Testereignis konnte nicht gesendet werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.redeliver.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:199</note>
+      </notes>
+      <segment>
+        <source>The delivery could not be sent again.</source>
+        <target>Die Zustellung konnte nicht erneut gesendet werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.events.all">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:205</note>
+      </notes>
+      <segment>
+        <source>all events</source>
+        <target>alle Ereignisse</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.status.succeeded">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:212</note>
+      </notes>
+      <segment>
+        <source>delivered</source>
+        <target>zugestellt</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.status.failed">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:214</note>
+      </notes>
+      <segment>
+        <source>failed</source>
+        <target>fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.status.pending">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:216</note>
+      </notes>
+      <segment>
+        <source>pending</source>
+        <target>ausstehend</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.boardCreated">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:223</note>
+      </notes>
+      <segment>
+        <source>A board was created</source>
+        <target>Ein Board wurde erstellt</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.boardRenamed">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:225</note>
+      </notes>
+      <segment>
+        <source>The board was renamed</source>
+        <target>Das Board wurde umbenannt</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.boardDeleted">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:227</note>
+      </notes>
+      <segment>
+        <source>The board was deleted</source>
+        <target>Das Board wurde gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.contentChanged">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:229</note>
+      </notes>
+      <segment>
+        <source>The content changed (at most once a minute)</source>
+        <target>Der Inhalt hat sich geändert (höchstens einmal pro Minute)</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.memberAdded">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:231</note>
+      </notes>
+      <segment>
+        <source>A member was added</source>
+        <target>Ein Mitglied wurde hinzugefügt</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.memberRemoved">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:233</note>
+      </notes>
+      <segment>
+        <source>A member was removed</source>
+        <target>Ein Mitglied wurde entfernt</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.memberRoleChanged">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:235</note>
+      </notes>
+      <segment>
+        <source>The role of a member changed</source>
+        <target>Die Rolle eines Mitglieds hat sich geändert</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.snapshotCreated">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:237</note>
+      </notes>
+      <segment>
+        <source>A version was saved</source>
+        <target>Eine Version wurde gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.aria">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:244</note>
+      </notes>
+      <segment>
+        <source>Last deliveries to <ph id="0" equiv="url" disp="webhook.url"/></source>
+        <target>Letzte Zustellungen an <ph id="0" equiv="url" disp="webhook.url"/></target>
       </segment>
     </unit>
   </file>

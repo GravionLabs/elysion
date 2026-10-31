@@ -31,6 +31,10 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./admin-tokens').then((m) => m.AdminTokens),
       },
       {
+        path: 'webhooks',
+        loadComponent: () => import('./admin-webhooks').then((m) => m.AdminWebhooks),
+      },
+      {
         path: 'audit',
         loadComponent: () => import('./admin-audit').then((m) => m.AdminAudit),
       },

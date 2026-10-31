@@ -6,6 +6,7 @@ using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Identity;
 using Elysion.BusinessBackend.Api.Snapshots;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -82,6 +83,8 @@ public static class BoardDocumentEndpoints
         IBoardDocumentRepository documents,
         IBoardRepository boards,
         BoardSnapshotService snapshots,
+        IWebhookEvents webhooks,
+        IUnitOfWork unitOfWork,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -145,11 +148,23 @@ public static class BoardDocumentEndpoints
             }
         }
 
+        // board.content.changed (#853), at most once a minute per board: staged now, so that the save commits it (a refused save
+        // drops it). A compaction rebuild changes nothing a person made, and an id that is no UUID has no board.
+        if (!compaction && Guid.TryParse(boardId, out var changedBoard))
+        {
+            await webhooks.RaiseContentChangedAsync(changedBoard, create ? 1 : expected + 1, cancellationToken);
+        }
+
         var result = await documents.SaveAsync(boardId,
             state,
             create ? null : expected,
             time.GetUtcNow(),
             cancellationToken);
+        if (result.Status == DocumentSaveStatus.NotFound)
+        {
+            unitOfWork.DiscardChanges();
+        }
+
         if (result.Status == DocumentSaveStatus.Saved && previous is not null)
         {
             int? elements = int.TryParse(request.Headers[ElementCountHeader].ToString(), out var count) && count >= 0

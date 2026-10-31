@@ -9,6 +9,7 @@ using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
 using Elysion.BusinessBackend.Api.Snapshots;
 using Elysion.BusinessBackend.Api.Voting;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
@@ -55,6 +56,14 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     /// <summary>The restores the endpoints asked the realtime service for; nothing is sent anywhere.</summary>
     public RecordingRealtimeBoardRestorer RealtimeRestores { get; } = new();
+
+    /// <summary>What the webhook worker posted; nothing is sent anywhere unless <see cref="RealWebhooks"/> is set.</summary>
+    public RecordingWebhookSender WebhookSender { get; } = new();
+
+    /// <summary>
+    /// The real webhook sender, with plain http and the loopback address allowed, for a test with a receiver on this machine.
+    /// </summary>
+    public bool RealWebhooks { get; init; }
 
     private readonly string _databaseName = Guid.NewGuid().ToString();
     private readonly TimeProvider? _time;
@@ -150,6 +159,14 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting(OidcOptions.IssuerSetting, Issuer);
         builder.UseSetting(OidcOptions.AudienceSetting, Audience);
         builder.UseSetting(InternalApiOptions.SecretSetting, InternalSecret);
+        // The webhook worker does not poll in the tests: a test runs its passes itself (WebhookDeliveryService.RunOnceAsync).
+        builder.UseSetting(Api.Webhooks.WebhookOptions.WorkerEnabledSetting, "false");
+        if (RealWebhooks)
+        {
+            builder.UseSetting(Api.Webhooks.WebhookOptions.AllowHttpSetting, "true");
+            builder.UseSetting(Api.Webhooks.WebhookOptions.AllowPrivateNetworksSetting, "true");
+        }
+
         builder.UseSetting(Api.Files.FileOptions.EndpointSetting, "http://s3.test");
         builder.UseSetting(Api.Files.FileOptions.AccessKeySetting, "test");
         builder.UseSetting(Api.Files.FileOptions.SecretKeySetting, "test-secret");
@@ -187,6 +204,12 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<IRealtimeBoardRestorer>();
             services.AddSingleton<IRealtimeBoardRestorer>(RealtimeRestores);
+
+            if (!RealWebhooks)
+            {
+                services.RemoveAll<IWebhookSender>();
+                services.AddSingleton<IWebhookSender>(WebhookSender);
+            }
 
             services.RemoveAll<IFileStore>();
             services.AddSingleton<IFileStore>(Files);
@@ -264,5 +287,23 @@ public sealed class RecordingRealtimeBoardSaver : IRealtimeBoardSaver
         }
 
         return Answer;
+    }
+}
+
+/// <summary>Remembers the webhooks the worker posted and answers with <see cref="Answer"/> (a success by default).</summary>
+public sealed class RecordingWebhookSender : IWebhookSender
+{
+    public List<WebhookMessage> Sent { get; } = [];
+
+    public Func<WebhookMessage, WebhookAttempt> Answer { get; set; } = _ => new WebhookAttempt(true, 200, 12, null);
+
+    public Task<WebhookAttempt> SendAsync(WebhookMessage message, CancellationToken cancellationToken)
+    {
+        lock (Sent)
+        {
+            Sent.Add(message);
+        }
+
+        return Task.FromResult(Answer(message));
     }
 }
