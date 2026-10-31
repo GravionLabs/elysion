@@ -18,6 +18,7 @@
     "format:check": "prettier --check .",
     "setup:env": "node scripts/setup-dev-env.mjs",
     "dev:infra": "node scripts/setup-dev-env.mjs && docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d traefik postgres keycloak valkey rustfs",
+    "dev:aspire": "node scripts/setup-dev-env.mjs && dotnet run apps/apphost/apphost.cs",
     "dev:infra:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down",
     "dev:stack": "node scripts/dev-stack.mjs up",
     "dev:logs": "node scripts/dev-stack.mjs logs",
