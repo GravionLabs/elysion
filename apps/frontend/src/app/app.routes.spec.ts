@@ -101,6 +101,19 @@ describe('routes', () => {
     expect(harness.routeNativeElement?.querySelector('app-admin-users')).toBeTruthy();
   });
 
+  it('opens the webhooks of every board in the administration (#853)', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    await harness.navigateByUrl('/admin/webhooks', AdminLayout);
+
+    http.expectOne('/api/auth/me').flush({ id: 'u', isAdministrator: true });
+    await harness.fixture.whenStable();
+    http.expectOne('/api/admin/webhooks').flush([]);
+    await harness.fixture.whenStable();
+
+    expect(harness.routeNativeElement?.querySelector('app-admin-webhooks')).toBeTruthy();
+    expect(harness.routeNativeElement?.textContent).toContain('No webhooks yet.');
+  });
+
   it('shows no page of the administration to somebody who is not an administrator', async () => {
     const http = TestBed.inject(HttpTestingController);
     await harness.navigateByUrl('/admin/groups', AdminLayout);

@@ -18,6 +18,8 @@ import { InviteLinks } from './invite-links';
 import { RoomAccess } from './room-access';
 import { RoomGroups } from './room-groups';
 import { Typeahead, type TypeaheadOption } from './typeahead';
+import { Webhooks } from './webhooks';
+import { boardWebhooksBase } from './webhooks-api';
 import { type DirectoryUser, UsersApi } from './users-api';
 import {
   MEMBER_ROLES,
@@ -36,7 +38,7 @@ export { describeError };
  * shown inline, next to what caused them.
  */
 @Component({
-  imports: [InviteLinks, RoomAccess, RoomGroups, ShareHistory, Typeahead],
+  imports: [InviteLinks, RoomAccess, RoomGroups, ShareHistory, Typeahead, Webhooks],
   selector: 'app-share-dialog',
   styleUrl: './share-dialog.scss',
   templateUrl: './share-dialog.html',
@@ -52,6 +54,9 @@ export class ShareDialog {
   /** For a board: the room it is in, whose people and groups also have access (shown, not changed here). */
   readonly roomId = input<string | null>(null);
   readonly closed = output<void>();
+
+  /** Where the board's webhooks are (#853): its owners manage them in this dialog. */
+  protected readonly webhooksBase = computed(() => boardWebhooksBase(this.boardId()));
 
   protected readonly roles = MEMBER_ROLES;
   protected readonly members = signal<Member[]>([]);
