@@ -1,0 +1,128 @@
+// The "Access tokens" page: the frame of the administration pages (header, page) and its shared tables and buttons
+// (admin-shared.scss, listed first in the component), with a narrower column.
+:host {
+  display: block;
+  min-height: 100%;
+  color: var(--c-text);
+  background: var(--c-bg);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 52px;
+  padding: 0 14px;
+  background: var(--c-surface-1);
+  border-bottom: 1px solid var(--c-border);
+  box-shadow: var(--shadow);
+}
+
+.back {
+  color: var(--c-text);
+  font-size: 14px;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 2px;
+  }
+}
+
+.header-title {
+  color: var(--c-text-subtle);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.page-actions {
+  margin-left: auto;
+}
+
+.page {
+  box-sizing: border-box;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 28px 24px 48px;
+}
+
+h2 {
+  margin: 24px 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.create form {
+  display: grid;
+  gap: 12px;
+  max-width: 560px;
+}
+
+.scopes {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+}
+
+.scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+}
+
+code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 13px;
+}
+
+.secret {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-primary);
+  border-radius: var(--radius-md);
+
+  h2 {
+    margin-top: 0;
+  }
+}
+
+.secret-line {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.secret-value {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+@media (max-width: 719px) {
+  .page {
+    padding: 16px 16px 40px;
+  }
+
+  .header-title {
+    display: none;
+  }
+
+  .secret-line {
+    flex-direction: column;
+  }
+}

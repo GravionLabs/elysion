@@ -390,6 +390,20 @@ describe('ShareDialog finding people', () => {
     expect(field().value).toBe('');
   });
 
+  it('shows an integration as "Integration" instead of an email (#851)', async () => {
+    await type('ci');
+    http
+      .expectOne((r) => r.url === '/api/users')
+      .flush([{ id: 'i1', displayName: 'ci-sync', email: null, isIntegration: true }]);
+    await settle();
+
+    const option = el().querySelector('[role="option"]') as HTMLElement;
+    expect([...option.querySelectorAll('span')].map((x) => x.textContent)).toEqual([
+      'ci-sync',
+      'Integration',
+    ]);
+  });
+
   it('says nobody was found, and a full email address still works', async () => {
     await type('nobody@example.com');
     http.expectOne((r) => r.url === '/api/users').flush([]);

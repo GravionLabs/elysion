@@ -18,6 +18,17 @@
     [value]="search()"
     (input)="updateSearch($event)"
   />
+  <select
+    name="kind"
+    aria-label="Show"
+    i18n-aria-label="@@admin.users.kind"
+    [value]="kind()"
+    (change)="updateKind($event)"
+  >
+    <option value="all" i18n="@@admin.users.kind.all">People and integrations</option>
+    <option value="person" i18n="@@admin.users.kind.person">People</option>
+    <option value="integration" i18n="@@admin.users.kind.integration">Integrations</option>
+  </select>
   <button type="submit" class="button" i18n="@@admin.search">Search</button>
 </form>
 
@@ -63,6 +74,9 @@
                   >
                     {{ user.displayName }}
                   </button>
+                  @if (user.isIntegration) {
+                    <span class="chip" i18n="@@admin.users.integration">Integration</span>
+                  }
                   @if (user.deactivatedAt) {
                     <span class="chip" i18n="@@admin.deactivated">deactivated</span>
                   }
@@ -107,6 +121,12 @@
     } @else if (detail(); as person) {
       @if (person.email) {
         <p class="note">{{ person.email }}</p>
+      }
+      @if (person.isIntegration) {
+        <p class="note" i18n="@@admin.users.integration.note">
+          An integration: a client of the identity provider that uses the API with the access it was
+          given on boards and rooms. Deactivating it refuses its next call.
+        </p>
       }
       @if (actionError(); as message) {
         <p class="error" role="alert">{{ message }}</p>

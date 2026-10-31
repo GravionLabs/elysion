@@ -47,6 +47,11 @@ public sealed class UserProvisioningService(
     public const string PreferredUsernameClaim = "preferred_username";
     public const string NameClaim = "name";
 
+    /// <summary>The client a Keycloak token was issued to; for a service account, the integration's client id.</summary>
+    public const string AuthorizedPartyClaim = "azp";
+
+    public const string ClientIdClaim = "client_id";
+
     /// <summary>The local user of the principal, or null when it has no <c>sub</c> claim.</summary>
     public async Task<User?> ProvisionAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
     {
@@ -57,11 +62,22 @@ public sealed class UserProvisioningService(
             return null;
         }
 
-        var email = Claim(principal, EmailClaim);
-        var displayName = DisplayNameOf(Claim(principal, PreferredUsernameClaim),
-            Claim(principal, NameClaim),
-            email,
-            subject);
+        // A personal access token acts as its owner (ADR 0033): it carries no name or email to keep in step, and it never creates
+        // anybody (the token's row points at an existing person).
+        if (CallerCredential.IsAccessToken(principal))
+        {
+            return await users.FindBySubjectAsync(subject, cancellationToken);
+        }
+
+        // An integration (a Keycloak service account, ADR 0033) has no email; its name is its client id.
+        var isIntegration = CallerCredential.IsIntegration(principal);
+        var email = isIntegration ? null : Claim(principal, EmailClaim);
+        var displayName = isIntegration
+            ? Claim(principal, AuthorizedPartyClaim) ?? Claim(principal, ClientIdClaim) ?? subject
+            : DisplayNameOf(Claim(principal, PreferredUsernameClaim),
+                Claim(principal, NameClaim),
+                email,
+                subject);
         displayName = Truncate(displayName, User.MaxDisplayNameLength);
         email = email is null ? null : Truncate(email, User.MaxEmailLength);
 
@@ -76,6 +92,7 @@ public sealed class UserProvisioningService(
 
             var created = User.Create(Guid.CreateVersion7(), subject, displayName, email, time.GetUtcNow());
             created.LastSeenAt = created.CreatedAt;
+            created.IsIntegration = isIntegration;
             // Another request may have created the same person since the lookup: the repository returns its row.
             user = await users.GetOrAddAsync(created, cancellationToken);
             if (!ReferenceEquals(user, created))
@@ -93,7 +110,8 @@ public sealed class UserProvisioningService(
             await UpdateAsync(user, email, displayName, cancellationToken);
         }
 
-        if (!user.IsDeactivated)
+        // An integration is in no group of the identity provider.
+        if (!user.IsDeactivated && !user.IsIntegration)
         {
             await SyncGroupsAsync(user, principal, cancellationToken);
         }

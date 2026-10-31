@@ -33,6 +33,24 @@ export interface AdminUser {
   groups: GroupRef[];
   /** When an administrator deactivated the person (#668), or `null`/absent. */
   deactivatedAt?: string | null;
+  /** An integration (a Keycloak service account, #851), not a person. */
+  isIntegration?: boolean;
+}
+
+/** Which users a list shows: everybody, people only or integrations only (#851). */
+export type UserKind = 'all' | 'person' | 'integration';
+
+/** A personal access token of somebody (#851): its name, start, scopes, owner and dates; never the secret. */
+export interface AdminAccessToken {
+  id: string;
+  name: string;
+  prefix: string;
+  scopes: string[];
+  owner: { id: string; displayName: string };
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string;
+  revokedAt: string | null;
 }
 
 /** A room or a board the person has a role on directly: names and roles, never content. */
@@ -132,10 +150,28 @@ export class AdminApi {
     return this.#http.get<AdminStats>('/api/admin/stats');
   }
 
-  users(query: string, page: number, pageSize: number): Observable<Page<AdminUser>> {
+  users(
+    query: string,
+    page: number,
+    pageSize: number,
+    kind: UserKind = 'all',
+  ): Observable<Page<AdminUser>> {
+    const params = this.#params(query, page, pageSize);
     return this.#http.get<Page<AdminUser>>('/api/admin/users', {
+      params: kind === 'all' ? params : params.set('kind', kind),
+    });
+  }
+
+  /** Every personal access token of the instance (#851), newest first, searched by name, start or owner. */
+  accessTokens(query: string, page: number, pageSize: number): Observable<Page<AdminAccessToken>> {
+    return this.#http.get<Page<AdminAccessToken>>('/api/admin/access-tokens', {
       params: this.#params(query, page, pageSize),
     });
+  }
+
+  /** Revokes anybody's token: scripts that use it are refused within half a minute. */
+  revokeAccessToken(id: string): Observable<void> {
+    return this.#http.delete<void>(`/api/admin/access-tokens/${encodeURIComponent(id)}`);
   }
 
   user(id: string): Observable<AdminUserDetail> {

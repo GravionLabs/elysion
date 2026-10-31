@@ -1,7 +1,13 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
-import { AdminApi, type AdminUser, type AdminUserDetail, type TransferResult } from './admin-api';
+import {
+  AdminApi,
+  type AdminUser,
+  type AdminUserDetail,
+  type TransferResult,
+  type UserKind,
+} from './admin-api';
 import { AdminDialog } from './admin-dialog';
 import { AdminPager } from './admin-pager';
 import { PagedList, describeAdminError } from './paged-list';
@@ -16,8 +22,10 @@ import { PagedList, describeAdminError } from './paged-list';
 export class AdminUsers {
   readonly #api = inject(AdminApi);
 
+  /** People, integrations (#851) or both. */
+  protected readonly kind = signal<UserKind>('all');
   protected readonly list = new PagedList<AdminUser>((query, page, size) =>
-    this.#api.users(query, page, size),
+    this.#api.users(query, page, size, this.kind()),
   );
   protected readonly search = signal('');
 
@@ -55,6 +63,11 @@ export class AdminUsers {
   }
 
   protected submit(): void {
+    this.list.search(this.search());
+  }
+
+  protected updateKind(event: Event): void {
+    this.kind.set((event.target as HTMLSelectElement).value as UserKind);
     this.list.search(this.search());
   }
 

@@ -84,14 +84,22 @@ public static class AdminEndpoints
         CancellationToken cancellationToken) =>
         TypedResults.Ok(await admin.GetStatsAsync(time.GetUtcNow(), cancellationToken));
 
+    /// <summary>The people and integrations; <c>?kind=person</c> or <c>?kind=integration</c> keeps one of them (#851), anything else both.</summary>
     private static async Task<Ok<PagedResult<AdminUserDto>>> ListUsers(string? query,
+        string? kind,
         int? page,
         int? pageSize,
         IAdminRepository admin,
         CancellationToken cancellationToken)
     {
         var (p, size) = Paging(page, pageSize);
-        return TypedResults.Ok(await admin.ListUsersAsync(Query(query), p, size, cancellationToken));
+        bool? integrations = kind switch
+        {
+            "integration" => true,
+            "person" => false,
+            _ => null,
+        };
+        return TypedResults.Ok(await admin.ListUsersAsync(Query(query), integrations, p, size, cancellationToken));
     }
 
     private static async Task<IResult> GetUser(Guid id, IAdminRepository admin, CancellationToken cancellationToken)

@@ -137,6 +137,12 @@ edge:
   rateLimit:
     average: 50
     burst: 100
+  # The public API (/public/v1, ADR 0033): requests a minute per token (the Authorization header), its burst, and the largest body.
+  publicApi:
+    rateLimit:
+      average: 600
+      burst: 60
+    maxRequestBodyBytes: 1048576
   # A Secret of type kubernetes.io/tls to terminate TLS at the entry point; empty: none. cert-manager (or your PKI) makes it; the
   # chart never talks to an ACME server (ADR 0028). One wildcard certificate can serve the application and the identity host.
   tlsSecretName: ''

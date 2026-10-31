@@ -16,7 +16,7 @@ public sealed record MemberDto(Guid UserId, string DisplayName, string? Email, s
 public sealed record AddMemberRequest(string? Email, string? Role, Guid? UserId = null);
 
 /// <summary>A person found by <c>GET /users?query=</c>: enough to recognise them and to add them as a member.</summary>
-public sealed record UserDto(Guid Id, string DisplayName, string? Email);
+public sealed record UserDto(Guid Id, string DisplayName, string? Email, bool IsIntegration = false);
 
 /// <summary>Body for changing a member's role.</summary>
 public sealed record ChangeRoleRequest(string? Role);

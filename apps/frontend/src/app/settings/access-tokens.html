@@ -1,0 +1,226 @@
+<header class="page-header">
+  <app-brand />
+  <a class="back" routerLink="/" i18n="@@tokens.back">All boards</a>
+  <span class="header-title" i18n="@@tokens.headerTitle">Settings</span>
+  @if (session.user(); as user) {
+    <div class="page-actions">
+      <app-user-menu [user]="user" (logoutRequested)="session.logout()" />
+    </div>
+  }
+</header>
+
+<main class="page">
+  <h1 i18n="@@tokens.title">Access tokens</h1>
+  <p class="lead" i18n="@@tokens.lead">
+    A token lets a script use the Elysion API as you: it sees what you see and can do what you can,
+    within the scopes you give it. Keep it secret, give it only the scopes it needs and revoke it
+    when it is no longer used.
+  </p>
+
+  @if (created(); as token) {
+    <section class="secret" aria-labelledby="secret-title">
+      <h2 id="secret-title" i18n="@@tokens.secret.title">Your new token “{{ token.name }}”</h2>
+      <p class="warning" role="status" i18n="@@tokens.secret.once">
+        Copy it now. It is shown only this once: Elysion does not keep it.
+      </p>
+      <div class="secret-line">
+        <input
+          class="secret-value"
+          type="text"
+          readonly
+          aria-label="New access token"
+          i18n-aria-label="@@tokens.secret.label"
+          [value]="token.token"
+          (focus)="selectAll($event)"
+        />
+        <button type="button" class="button primary" (click)="copy(token.token)">
+          @if (copied()) {
+            <ng-container i18n="@@tokens.secret.copied">Copied</ng-container>
+          } @else {
+            <ng-container i18n="@@tokens.secret.copy">Copy</ng-container>
+          }
+        </button>
+      </div>
+      <button type="button" class="link" (click)="dismissCreated()" i18n="@@tokens.secret.done">
+        I have copied it
+      </button>
+    </section>
+  }
+
+  <section class="create" aria-labelledby="create-title">
+    <h2 id="create-title" i18n="@@tokens.create.title">New token</h2>
+    <form (submit)="$event.preventDefault(); create()">
+      <label class="field">
+        <span class="field-label" i18n="@@tokens.create.name">Name</span>
+        <input
+          type="text"
+          name="name"
+          autocomplete="off"
+          data-1p-ignore
+          data-lpignore="true"
+          placeholder="What it is for, e.g. Sprint boards script"
+          i18n-placeholder="@@tokens.create.namePlaceholder"
+          [attr.maxlength]="maxName"
+          [value]="name()"
+          (input)="updateName($event)"
+        />
+      </label>
+      <fieldset class="scopes">
+        <legend class="field-label" i18n="@@tokens.create.scopes">Scopes</legend>
+        @for (scope of scopes; track scope) {
+          <label class="scope">
+            <input
+              type="checkbox"
+              [checked]="chosen().has(scope)"
+              (change)="toggleScope(scope, $event)"
+            />
+            <code>{{ scope }}</code>
+            <span class="subtle">{{ describeScope(scope) }}</span>
+          </label>
+        }
+      </fieldset>
+      <label class="field">
+        <span class="field-label" i18n="@@tokens.create.expiry">Expires after</span>
+        <select name="expiry" (change)="updateExpiry($event)">
+          @for (days of expiries; track days) {
+            <option [value]="days" [selected]="days === expiresInDays()">
+              {{ expiryLabel(days) }}
+            </option>
+          }
+        </select>
+      </label>
+      @if (createError(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+      <div class="dialog-actions">
+        <button
+          type="submit"
+          class="button primary"
+          [disabled]="!canCreate()"
+          i18n="@@tokens.create.button"
+        >
+          Create token
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section aria-labelledby="list-title">
+    <h2 id="list-title" i18n="@@tokens.list.title">Your tokens</h2>
+    @if (revokeError(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+    @switch (state()) {
+      @case ('loading') {
+        <p class="note" role="status" i18n="@@tokens.loading">Loading…</p>
+      }
+      @case ('error') {
+        <p class="error" role="alert">
+          <ng-container i18n="@@tokens.list.error">The tokens could not be loaded.</ng-container>
+          <button type="button" class="link" (click)="load()" i18n="@@tokens.retry">
+            Try again
+          </button>
+        </p>
+      }
+      @default {
+        @if (tokens().length === 0) {
+          <p class="note" i18n="@@tokens.list.empty">You have no access tokens.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <caption class="visually-hidden" i18n="@@tokens.list.caption">
+                Your access tokens
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col" i18n="@@tokens.list.name">Name</th>
+                  <th scope="col" i18n="@@tokens.list.token">Token</th>
+                  <th scope="col" i18n="@@tokens.list.scopes">Scopes</th>
+                  <th scope="col" i18n="@@tokens.list.lastUsed">Last used</th>
+                  <th scope="col" i18n="@@tokens.list.expires">Expires</th>
+                  <th scope="col">
+                    <span class="visually-hidden" i18n="@@tokens.list.actions">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (token of tokens(); track token.id) {
+                  <tr>
+                    <th scope="row">{{ token.name }}</th>
+                    <td>
+                      <code>{{ token.prefix }}…</code>
+                    </td>
+                    <td>
+                      <ul class="chips">
+                        @for (scope of token.scopes; track scope) {
+                          <li class="chip" [title]="describeScope(scope)">{{ scope }}</li>
+                        }
+                      </ul>
+                    </td>
+                    <td>
+                      @if (token.lastUsedAt) {
+                        {{ token.lastUsedAt | date: 'medium' }}
+                      } @else {
+                        <span class="subtle" i18n="@@tokens.list.never">never</span>
+                      }
+                    </td>
+                    <td>
+                      {{ token.expiresAt | date: 'mediumDate' }}
+                      @if (isExpired(token)) {
+                        <span class="chip" i18n="@@tokens.list.expired">expired</span>
+                      }
+                    </td>
+                    <td class="actions">
+                      <button
+                        type="button"
+                        class="button small danger"
+                        [attr.aria-label]="revokeLabel(token)"
+                        (click)="askRevoke(token)"
+                        i18n="@@tokens.revoke.button"
+                      >
+                        Revoke
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    }
+  </section>
+</main>
+
+@if (revoking(); as token) {
+  <app-admin-dialog
+    heading="Revoke this token"
+    i18n-heading="@@tokens.revoke.title"
+    (closed)="cancelRevoke()"
+  >
+    <p i18n="@@tokens.revoke.message">
+      Revoke “{{ token.name }}”? Scripts that use it are refused from now on (within half a minute).
+      This cannot be undone.
+    </p>
+    <div class="dialog-actions">
+      <button
+        type="button"
+        class="button"
+        [disabled]="revokeBusy()"
+        (click)="cancelRevoke()"
+        i18n="@@tokens.cancel"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="button danger"
+        [disabled]="revokeBusy()"
+        (click)="revoke()"
+        i18n="@@tokens.revoke.confirm"
+      >
+        Revoke
+      </button>
+    </div>
+  </app-admin-dialog>
+}

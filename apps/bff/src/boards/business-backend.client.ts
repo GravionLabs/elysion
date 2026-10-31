@@ -157,6 +157,8 @@ export interface DirectoryUser {
   id: string;
   displayName: string;
   email: string | null;
+  /** An integration (a Keycloak service account, #851), not a person. */
+  isIntegration?: boolean;
 }
 
 export interface RoomGroup {
@@ -626,6 +628,29 @@ export class BusinessBackendClient {
     return this.request<unknown>(token, 'GET', `/admin/users${adminQuery(list)}`);
   }
 
+  /** Every personal access token of the instance (#851): names, owners and dates, never a secret. */
+  adminListAccessTokens(token: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/admin/access-tokens${adminQuery(list)}`);
+  }
+
+  async adminRevokeAccessToken(token: string, id: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/admin/access-tokens/${encodeURIComponent(id)}`);
+  }
+
+  /** The caller's personal access tokens that are not revoked (#851). */
+  listAccessTokens(token: string): Promise<AccessTokenSummary[]> {
+    return this.request<AccessTokenSummary[]>(token, 'GET', '/access-tokens');
+  }
+
+  /** Makes a personal access token: the one answer that carries the secret. The backend checks name, scopes and expiry (400). */
+  createAccessToken(token: string, input: CreateAccessTokenInput): Promise<CreatedAccessToken> {
+    return this.request<CreatedAccessToken>(token, 'POST', '/access-tokens', input);
+  }
+
+  async revokeAccessToken(token: string, id: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/access-tokens/${encodeURIComponent(id)}`);
+  }
+
   adminGetUser(token: string, id: string): Promise<unknown> {
     return this.request<unknown>(token, 'GET', `/admin/users/${encodeURIComponent(id)}`);
   }
@@ -861,8 +886,33 @@ async function validationMessage(response: Response): Promise<string> {
   }
 }
 
+/** A personal access token in its owner's list (#851): never the secret. */
+export interface AccessTokenSummary {
+  id: string;
+  name: string;
+  prefix: string;
+  scopes: string[];
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string;
+}
+
+/** The answer to making a token: the one time `token`, the secret, is shown. */
+export interface CreatedAccessToken extends AccessTokenSummary {
+  token: string;
+}
+
+/** What the caller sends to make a token; the rules (1 to 100 characters, known scopes, 1 to 365 days) belong to the backend. */
+export interface CreateAccessTokenInput {
+  name: string;
+  scopes: string[];
+  expiresInDays: number;
+}
+
 /** What a list of the administration area is asked for: a search text and a page, all checked by the controller. */
 export interface AdminList {
+  /** Users only: `person` or `integration` (#851). */
+  kind?: 'person' | 'integration';
   query?: string;
   page?: number;
   pageSize?: number;
@@ -887,6 +937,7 @@ export interface AdminGroupPatch {
 /** `?query=..&page=..&pageSize=..` from the three allowed values, encoded; empty when none is given. */
 function adminQuery(list: AdminList): string {
   const params = new URLSearchParams();
+  if (list.kind !== undefined) params.append('kind', list.kind);
   if (list.query !== undefined) params.append('query', list.query);
   if (list.page !== undefined) params.append('page', String(list.page));
   if (list.pageSize !== undefined) params.append('pageSize', String(list.pageSize));

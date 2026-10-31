@@ -1,3 +1,4 @@
+using Elysion.BusinessBackend.Api.AccessTokens;
 using Elysion.BusinessBackend.Api.Entities;
 
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,7 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
 
     public DbSet<Invitation> Invitations => Set<Invitation>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
+    public DbSet<AccessToken> AccessTokens => Set<AccessToken>();
 
     public void DiscardChanges() => ChangeTracker.Clear();
     public DbSet<Vote> Votes => Set<Vote>();
@@ -228,6 +230,19 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
             invitation.HasIndex(i => i.RoomId);
             invitation.ToTable(t => t.HasCheckConstraint("CK_Invitations_OneTarget",
                 "(\"BoardId\" IS NULL) <> (\"RoomId\" IS NULL)"));
+        });
+
+        modelBuilder.Entity<AccessToken>(token =>
+        {
+            token.Property(t => t.Name).HasMaxLength(AccessToken.MaxNameLength);
+            token.Property(t => t.Prefix).HasMaxLength(AccessTokenSecrets.DisplayLength);
+            token.Property(t => t.Hash).HasMaxLength(64);
+            token.Property(t => t.Scopes).HasMaxLength(200);
+            // A request finds its token by the hash of the secret: two tokens cannot share it.
+            token.HasIndex(t => t.Hash).IsUnique();
+            token.HasIndex(t => t.OwnerId);
+            token.HasOne(t => t.Owner).WithMany().HasForeignKey(t => t.OwnerId).OnDelete(DeleteBehavior.Cascade);
+            token.Ignore(t => t.ScopeList);
         });
 
         // "Which boards are in this room?" starts from the room.

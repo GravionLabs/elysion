@@ -80,7 +80,7 @@ same, and so does another provider that speaks OpenID Connect). Elysion's side o
   realm are not routed**; administer from inside the cluster (`kubectl port-forward`). Replace the bootstrap admin (`KC_BOOTSTRAP_ADMIN_*`, first start only) with a
   named administrator and delete it.
 - **The realm:** every release has `realm-elysion.production.json` among its assets ([releases](https://github.com/GravionLabs/elysion/releases)), derived from the
-  development realm by `scripts/build-realm.mjs`: no users, no direct password grant, `sslRequired: external`. Import it into an **empty** realm with the environment of
+  development realm by `scripts/build-realm.mjs`: no users, no example clients, no direct password grant, `sslRequired: external`. Import it into an **empty** realm with the environment of
   Keycloak set (it substitutes the placeholders): `ELYSION_APP_URL=https://elysion.example` (no trailing slash) and `ELYSION_BFF_CLIENT_SECRET` (a long random string; the
   BFF client's secret). Then add your users, or switch on Microsoft Entra ID, which the realm already has as an identity provider ([Sign in with Microsoft Entra ID](#sign-in-with-microsoft-entra-id)).
 

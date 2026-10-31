@@ -62,6 +62,12 @@ export function buildRoutes(loginGuard: CanActivateFn): Routes {
       loadComponent: () => import('./deactivated/deactivated').then((m) => m.Deactivated),
       canActivate: [loginGuard],
     },
+    // The person's access tokens for the public API (ADR 0033, #851).
+    {
+      path: 'settings/tokens',
+      loadComponent: () => import('./settings/access-tokens').then((m) => m.AccessTokens),
+      canActivate: [loginGuard],
+    },
     // The administration area (ADR 0027, #659): a lazy tree of its own; the frame tells a person who is not an administrator so.
     {
       path: 'admin',

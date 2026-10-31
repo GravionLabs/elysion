@@ -72,4 +72,22 @@ describe('describeAuditEntry', () => {
     expect(describeAuditEntry(about('user.deactivated'))).toBe('Ada deactivated Bob');
     expect(describeAuditEntry(about('user.reactivated'))).toBe('Ada reactivated Bob');
   });
+
+  it('names an access token and, for a revoke, its owner (#851)', () => {
+    const about = (action: string, by: string): AuditEntry => ({
+      ...entry(action, { tokenId: 't1', name: 'CI sync' }),
+      subjectType: 'user',
+      subjectId: 'u2',
+      subjectName: 'Bob',
+      actor: { id: 'u9', displayName: by },
+      target: null,
+    });
+
+    expect(describeAuditEntry(about('token.created', 'Bob'))).toBe(
+      'Bob made the access token “CI sync”',
+    );
+    expect(describeAuditEntry(about('token.revoked', 'Ada'))).toBe(
+      'Ada revoked the access token “CI sync” of Bob',
+    );
+  });
 });

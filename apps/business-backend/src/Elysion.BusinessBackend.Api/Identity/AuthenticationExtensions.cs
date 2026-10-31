@@ -1,5 +1,6 @@
 using System.Text;
 
+using Elysion.BusinessBackend.Api.AccessTokens;
 using Elysion.BusinessBackend.Api.Logging;
 
 using Microsoft.AspNetCore.Authentication;
@@ -14,6 +15,9 @@ namespace Elysion.BusinessBackend.Api.Identity;
 
 public static class AuthenticationExtensions
 {
+    /// <summary>The default scheme: forwards to the access-token scheme or to the Keycloak one, by the token's prefix.</summary>
+    public const string SelectorScheme = "Elysion";
+
     /// <summary>
     /// Keycloak access tokens as the only way in (docs/specs/identity.md): JWT bearer authentication, and a
     /// fallback policy that makes every endpoint require an authenticated user unless it opts out with
@@ -41,9 +45,20 @@ public static class AuthenticationExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        // The default scheme picks by the token: a personal access token (`elp_...`, ADR 0033) is looked up by its hash, anything
+        // else is validated as a Keycloak token. The internal API names its own scheme and accepts neither.
+        services.AddAuthentication(SelectorScheme)
+            .AddPolicyScheme(SelectorScheme,
+                null,
+                options => options.ForwardDefaultSelector = context =>
+                    AccessTokenSecrets.FromAuthorizationHeader(context.Request.Headers.Authorization) is null
+                        ? JwtBearerDefaults.AuthenticationScheme
+                        : AccessTokenAuthenticationHandler.SchemeName)
             .AddJwtBearer()
-            .AddJwtBearer(InternalApiOptions.Scheme, _ => { });
+            .AddJwtBearer(InternalApiOptions.Scheme, _ => { })
+            .AddScheme<AuthenticationSchemeOptions, AccessTokenAuthenticationHandler>(
+                AccessTokenAuthenticationHandler.SchemeName,
+                _ => { });
         services.AddOptions<JwtBearerOptions>(InternalApiOptions.Scheme)
             .Configure<IOptions<InternalApiOptions>>((jwt, internalApi) =>
             {

@@ -65,6 +65,10 @@ export function describeAuditEntry(entry: AuditEntry): string {
       return $localize`:@@audit.user.reactivated:${actor}:actor: reactivated ${entry.subjectName ?? target}:person:`;
     case 'owner.transferred':
       return $localize`:@@audit.owner.transferred:${actor}:actor: handed the ownership over to ${target}:target:`;
+    case 'token.created':
+      return $localize`:@@audit.token.created:${actor}:actor: made the access token “${text(entry, 'name')}:name:”`;
+    case 'token.revoked':
+      return $localize`:@@audit.token.revoked:${actor}:actor: revoked the access token “${text(entry, 'name')}:name:” of ${entry.subjectName ?? target}:person:`;
     case 'invitation.created':
       return $localize`:@@audit.invitation.created:${actor}:actor: made an invitation link for the role ${role}:role:`;
     case 'invitation.revoked':

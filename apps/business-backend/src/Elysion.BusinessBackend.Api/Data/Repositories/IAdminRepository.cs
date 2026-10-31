@@ -8,7 +8,9 @@ namespace Elysion.BusinessBackend.Api.Data.Repositories;
 /// </summary>
 public interface IAdminRepository
 {
+    /// <param name="integrations">True: only integrations; false: only people; null: both (#851).</param>
     Task<PagedResult<AdminUserDto>> ListUsersAsync(string? query,
+        bool? integrations,
         int page,
         int pageSize,
         CancellationToken cancellationToken);

@@ -75,6 +75,7 @@ export default defineConfig({
           { text: 'User guide', link: '/user-guide' },
           { text: 'Benutzerhandbuch (Deutsch)', link: '/user-guide.de' },
           { text: 'Self-hosting', link: '/self-hosting' },
+          { text: 'Public API', link: '/api' },
           { text: 'Roadmap', link: '/roadmap' },
         ],
       },

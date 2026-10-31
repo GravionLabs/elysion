@@ -69,6 +69,7 @@ Every route needs a Keycloak access token (`Authorization: Bearer ...`; [identit
 - `GET /api/auth/verify` is what Traefik's forwardAuth middleware calls (#8; the open-source Traefik has no JWT middleware): `200` with `X-Auth-User-Id` (`sub`) and `X-Auth-User-Email` (when the token has one), or `401`. Cheap by design: a cached key and a signature check.
 - `GET /api/auth/me` answers `{ id, email?, isAdministrator }` for the shell: `isAdministrator` is whether the token's `realm_access.roles` contains `OIDC_ADMIN_ROLE` (default `elysion-admin`; empty: never). It is a hint for the interface; the business backend checks the role on every admin call.
 - The board routes forward the caller's own token to the business backend (`@AccessToken()`), which decides what the user may do; its `401`, `403` and `404` (no role on a board is a 404 there) are passed on.
+- **Personal access tokens and integrations** ([ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md), #851): a token that starts with `elp_` is accepted only on the routes of a `@PublicApi()` controller (everything under `/public/v1`) and is `401` everywhere else, without a call to the backend; a Keycloak token whose `realm_access.roles` has `elysion-integration` (a service account) is verified as usual and is `403` everywhere but there. On a public route the guard resolves the credential (a personal access token, an integration's or a person's Keycloak token) with `CredentialResolver`: `GET /me/credential` of the business backend with the token, which answers the user, `kind` (`person` or `integration`), the token's id and the scopes, or `401` for an unknown, expired or revoked token. The answer (and a `401`) is remembered for **30 seconds** per token, keyed by the token's SHA-256 (at most 10 000 entries), so a revoke takes effect within that time; a deactivated owner (`403 account-deactivated`) and an unreachable backend are not remembered. A route with `@RequireScope('boards:read')` answers `403` to a credential without the scope. `request.auth.credential` holds the answer, and the log lines carry `tokenId` (never the token).
 
 In tests the verifier is replaced by one that trusts a locally generated key pair (`test/test-auth.ts`: `signToken`, `bearer`, `testVerifier`); everything else about the check is the production code.
 
@@ -135,11 +136,21 @@ A `403` of the business backend that carries the problem `code` `account-deactiv
 
 ## Public API
 
-Not built yet: [ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md) (#852). Routes under `/public/v1` on a Traefik router of
-their own (no CORS, no `forwardAuth`, a rate limit per token, 1 MiB bodies). The guard accepts personal access tokens and
-integration tokens only there; tokens and scopes are checked by the business backend. Problem details for errors, cursor
-pagination, the OpenAPI 3.1 document committed as `docs/api/openapi.v1.json` and compared in CI; the elements of a board are read
-from the stored document with `yjs`.
+[ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md), [api.md](../api.md). Routes under `/public/v1` on a Traefik router of their own
+(`public-api`: no CORS, no `forwardAuth`, a rate limit per `Authorization` header, 1 MiB bodies; [gateway.md](gateway.md)). Their
+controllers say `@PublicApi()` and each route the scope it needs (`@RequireScope`, see "Authentication"); the guard accepts personal
+access tokens and integration tokens there only. The token is forwarded unchanged to the business backend, which authorizes as for the
+browser.
+
+- **Built (#851):** the authentication above and `GET /public/v1/me` (`src/public-api/`), which needs no scope and answers
+  `{ id, name, kind, tokenId, scopes }`, asked of the backend afresh (not from the guard's cache), so it refuses a revoked token at once.
+- **`/api/access-tokens`** (`AccessTokensController`, a browser route): `GET` (the caller's tokens), `POST { name, scopes, expiresInDays }`
+  (`201` with the secret, once; a body of the wrong shape is `400` without a call, the rules are the backend's) and `DELETE :id` (`204`; a
+  non-UUID is `404` without a call). `GET /api/admin/access-tokens?query=&page=&pageSize=` and `DELETE /api/admin/access-tokens/:id` pass
+  the administration's list and revoke on; `GET /api/admin/users` takes `kind=person|integration` (anything else `400`).
+- **Not built yet (#852):** the routes of boards, rooms, members, snapshots and elements, problem details for errors, cursor pagination,
+  the OpenAPI 3.1 document committed as `docs/api/openapi.v1.json` and compared in CI; the elements of a board read from the stored
+  document with `yjs`.
 
 ## Webhooks
 

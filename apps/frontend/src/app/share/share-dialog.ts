@@ -73,7 +73,14 @@ export class ShareDialog {
     this.found()
       // Somebody who has a role already is changed in the list, not added again.
       .filter((user) => !this.members().some((m) => m.userId === user.id))
-      .map((user) => ({ id: user.id, label: user.displayName, detail: user.email })),
+      // An integration (#851) has no email: it says what it is instead.
+      .map((user) => ({
+        id: user.id,
+        label: user.displayName,
+        detail: user.isIntegration
+          ? $localize`:@@share.people.integration:Integration`
+          : user.email,
+      })),
   );
   #searchNo = 0;
 

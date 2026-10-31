@@ -110,6 +110,15 @@ export class FakeBusinessBackend {
   /** The last `/admin...` request (#656): what the BFF passed on, and what the fake answers with. */
   lastAdminRequest: { method: string; path: string; body: unknown } | null = null;
   adminAnswer: { status: number; body?: unknown } = { status: 200, body: { ok: true } };
+  /**
+   * What `GET /me/credential` answers per bearer token (ADR 0033, #851): a credential (200) or a status; a token that is not in
+   * here is unknown (401). `credentialCalls` counts the calls, so a test sees the BFF's cache.
+   */
+  readonly credentials = new Map<string, { status: number; body?: unknown }>();
+  credentialCalls = 0;
+  /** The last `/access-tokens` request (#851): method, path and parsed body; and what the fake answers with. */
+  lastAccessTokenRequest: { method: string; path: string; body: unknown } | null = null;
+  accessTokenAnswer: { status: number; body?: unknown } = { status: 200, body: [] };
   #server: Server | null = null;
 
   get url(): string {
@@ -173,6 +182,20 @@ export class FakeBusinessBackend {
         );
       const template = this.templates.find((t) => t.id === id);
       return template ? send(200, template) : send(404);
+    }
+    if (req.url === '/me/credential' && req.method === 'GET') {
+      this.credentialCalls += 1;
+      const token = /^Bearer (\S+)$/.exec(req.headers.authorization ?? '')?.[1] ?? '';
+      const answer = this.credentials.get(token) ?? { status: 401 };
+      return send(answer.status, answer.body);
+    }
+    if (/^\/access-tokens(?:\/[^/]+)?$/.test(req.url ?? '')) {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(chunk as Buffer);
+      const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString()) : undefined;
+      this.lastAccessTokenRequest = { method: req.method ?? '', path: req.url ?? '', body };
+      const answer = this.accessTokenAnswer;
+      return send(answer.status, answer.body);
     }
     if (
       /^\/admin(?:[/?]|$)/.test(req.url ?? '') ||
