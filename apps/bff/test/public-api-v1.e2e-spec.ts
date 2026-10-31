@@ -587,6 +587,108 @@ describe('the public REST API v1 (e2e, ADR 0033, #852)', () => {
       expect(upstream.credentialCalls).toBe(1);
     });
 
+    it("refuses a token without the route's scope (403 as problem details) before the backend is asked", async () => {
+      const retro = board('Retro', '2026-10-01T10:00:00Z');
+      upstream.members.set(retro.id, [
+        { userId: USER_A, displayName: 'Ada', email: null, role: 'Owner' },
+      ]);
+      const b = `/public/v1/boards/${retro.id}`;
+      const r = `/public/v1/rooms/${ROOM_ID}`;
+      const snapshotId = randomUUID();
+      const scoped: Array<
+        [method: 'get' | 'post' | 'patch' | 'delete', path: string, token: string, scope: string]
+      > = [
+        ['get', '/public/v1/boards', WRITE, 'boards:read'],
+        ['post', '/public/v1/boards', READ, 'boards:write'],
+        ['get', b, WRITE, 'boards:read'],
+        ['patch', b, READ, 'boards:write'],
+        ['delete', b, READ, 'boards:write'],
+        ['post', `${b}/duplicate`, READ, 'boards:write'],
+        ['get', `${b}/elements`, WRITE, 'boards:read'],
+        ['get', `${b}/files/f1`, WRITE, 'boards:read'],
+        ['get', `${b}/members`, WRITE, 'boards:read'],
+        ['post', `${b}/members`, WRITE, 'members:write'],
+        ['patch', `${b}/members/${USER_A}`, WRITE, 'members:write'],
+        ['delete', `${b}/members/${USER_A}`, WRITE, 'members:write'],
+        ['get', `${b}/snapshots`, WRITE, 'boards:read'],
+        ['post', `${b}/snapshots`, READ, 'snapshots:write'],
+        ['get', `${b}/snapshots/${snapshotId}`, WRITE, 'boards:read'],
+        ['get', '/public/v1/rooms', WRITE, 'boards:read'],
+        ['get', r, WRITE, 'boards:read'],
+        ['get', `${r}/members`, WRITE, 'boards:read'],
+        ['post', `${r}/members`, READ, 'members:write'],
+        ['patch', `${r}/members/${USER_A}`, READ, 'members:write'],
+        ['delete', `${r}/members/${USER_A}`, READ, 'members:write'],
+      ];
+      const requests = upstream.requests;
+      const credentialCalls = upstream.credentialCalls;
+
+      for (const [method, path, token, scope] of scoped) {
+        const response = await call(method, path, token)
+          .set('If-Match', '*')
+          .send({ name: 'x', email: 'bob@example.com', role: 'Editor' })
+          .expect(403);
+        expect(response.headers['content-type'], `${method} ${path}`).toMatch(PROBLEM);
+        expect(response.body, `${method} ${path}`).toEqual({
+          type: 'about:blank',
+          title: 'Forbidden',
+          status: 403,
+          detail: `This needs a token with the scope "${scope}".`,
+        });
+      }
+
+      // Only the credentials were resolved: no route of the backend was called.
+      expect(upstream.requests - requests).toBe(upstream.credentialCalls - credentialCalls);
+      expect(upstream.boards.get(retro.id)!.name).toBe('Retro');
+      expect(upstream.boards.size).toBe(1);
+      expect(upstream.members.get(retro.id)).toHaveLength(1);
+    });
+
+    it('answers a board the caller has no role on 404 as problem details on every board route, and changes nothing', async () => {
+      const own = board('Own', '2026-10-01T10:00:00Z');
+      const foreign = `/public/v1/boards/${randomUUID()}`;
+      const foreignRoom = `/public/v1/rooms/${randomUUID()}`;
+      // The backend answers a non-member's snapshot calls 404, as every board route (ADR 0032).
+      upstream.snapshotAnswer = { status: 404 };
+      const routes: Array<[method: 'get' | 'post' | 'patch' | 'delete', path: string]> = [
+        ['get', foreign],
+        ['patch', foreign],
+        ['delete', foreign],
+        ['post', `${foreign}/duplicate`],
+        ['get', `${foreign}/elements`],
+        ['get', `${foreign}/files/f1`],
+        ['get', `${foreign}/members`],
+        ['post', `${foreign}/members`],
+        ['patch', `${foreign}/members/${USER_A}`],
+        ['delete', `${foreign}/members/${USER_A}`],
+        ['get', `${foreign}/snapshots`],
+        ['post', `${foreign}/snapshots`],
+        ['get', `${foreign}/snapshots/${randomUUID()}`],
+        ['get', foreignRoom],
+        ['get', `${foreignRoom}/members`],
+        ['post', `${foreignRoom}/members`],
+        ['patch', `${foreignRoom}/members/${USER_A}`],
+        ['delete', `${foreignRoom}/members/${USER_A}`],
+      ];
+
+      for (const [method, path] of routes) {
+        const response = await call(method, path, ALL)
+          .set('If-Match', '*')
+          .send({ name: 'x', email: 'bob@example.com', role: 'Editor' })
+          .expect(404);
+        expect(response.headers['content-type'], `${method} ${path}`).toMatch(PROBLEM);
+        expect(response.body, `${method} ${path}`).toEqual({
+          type: 'about:blank',
+          title: 'Not Found',
+          status: 404,
+        });
+      }
+
+      expect([...upstream.boards.values()]).toEqual([own]);
+      expect(upstream.members.size).toBe(0);
+      expect(upstream.roomMembers.size).toBe(0);
+    });
+
     it('needs a credential: 401 as problem details with WWW-Authenticate', async () => {
       const response = await call('get', '/public/v1/boards').expect(401);
 
