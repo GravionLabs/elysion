@@ -16,7 +16,8 @@ import type { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw
 import { VIEW_BACKGROUND_COLOR } from './element-style';
 import { framesInOrder, type ExportOptions } from './export-options';
 import { recolor, sceneToStored, storedToScene } from './sticky-dark';
-import { svgsToPdf, type PdfAppendix } from './pdf';
+import { svgsToPdf, type PdfAppendix, type PdfTextPage } from './pdf';
+import { AGENDA_FILE_KEY } from './facilitation/agenda';
 
 export type ExportFormat = 'png' | 'svg' | 'excalidraw' | 'pdf';
 export type { ExportOptions } from './export-options';
@@ -170,6 +171,11 @@ export async function exportBoard(
   options: ExportOptions = {},
   /** Text pages for the end of a PDF (the comments, #733); only used when `options.comments` is on. */
   appendix?: PdfAppendix | null,
+  /**
+   * The agenda (#849): `page` is the first page of a PDF when `options.agenda` is on; `plan` goes into an `.excalidraw` file of
+   * the whole board (a template carries it), under {@link AGENDA_FILE_KEY}.
+   */
+  agenda: { page?: PdfTextPage | null; plan?: readonly unknown[] } = {},
 ): Promise<Blob | null> {
   const { selectionOnly = false, background = true, theme = 'current', scale = 1 } = options;
   const appState = api.getAppState();
@@ -208,6 +214,7 @@ export async function exportBoard(
           [{ svg: await exportToSvg({ elements, appState: exportState, files }) }],
           layout,
           options.comments ? appendix : null,
+          options.agenda ? agenda.page : null,
         );
       }
       const pages = [];
@@ -222,22 +229,30 @@ export async function exportBoard(
           }),
         });
       }
-      return svgsToPdf(pages, layout, options.comments ? appendix : null);
-    }
-    case 'excalidraw':
-      return new Blob(
-        [
-          serializeAsJSON(
-            elements,
-            { ...appState, viewBackgroundColor: VIEW_BACKGROUND_COLOR },
-            files,
-            'local',
-          ),
-        ],
-        {
-          type: 'application/json',
-        },
+      return svgsToPdf(
+        pages,
+        layout,
+        options.comments ? appendix : null,
+        options.agenda ? agenda.page : null,
       );
+    }
+    case 'excalidraw': {
+      let json = serializeAsJSON(
+        elements,
+        { ...appState, viewBackgroundColor: VIEW_BACKGROUND_COLOR },
+        files,
+        'local',
+      );
+      // The board's agenda travels with the whole board (a template), not with a selection.
+      if (!selectionOnly && agenda.plan && agenda.plan.length > 0) {
+        json = JSON.stringify(
+          { ...(JSON.parse(json) as object), [AGENDA_FILE_KEY]: agenda.plan },
+          null,
+          2,
+        );
+      }
+      return new Blob([json], { type: 'application/json' });
+    }
   }
 }
 

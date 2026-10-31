@@ -204,6 +204,31 @@ describe('exportBoard', () => {
     });
   });
 
+  it('carries the agenda in an .excalidraw file of the whole board, not of a selection (#849)', async () => {
+    const plan = [{ id: 'i1', title: 'Intro', durationMin: 5, frameId: null }];
+    const whole = JSON.parse(
+      await (await exportBoard(fakeApi(scene).api, 'excalidraw', {}, null, { plan }))!.text(),
+    );
+    expect(whole.elysionAgenda).toEqual(plan);
+    expect(whole.elements).toHaveLength(2);
+
+    const selection = JSON.parse(
+      await (await exportBoard(
+        fakeApi(scene, { b: true }).api,
+        'excalidraw',
+        { selectionOnly: true },
+        null,
+        { plan },
+      ))!.text(),
+    );
+    expect(selection.elysionAgenda).toBeUndefined();
+
+    const none = JSON.parse(
+      await (await exportBoard(fakeApi(scene).api, 'excalidraw', {}, null, { plan: [] }))!.text(),
+    );
+    expect(none.elysionAgenda).toBeUndefined();
+  });
+
   it('exports only the selection when asked, and nothing when nothing is selected', async () => {
     const { api } = fakeApi(scene, { b: true });
     const only = JSON.parse(
@@ -246,6 +271,21 @@ describe('exportBoard', () => {
       expect(pdf.text.startsWith('%PDF-')).toBe(true);
       expect(pdf.pages).toBe(1);
       expect(pdf.width).toBeGreaterThan(0);
+    });
+
+    it('puts the agenda first only when asked (#849)', async () => {
+      const page = { title: 'Agenda', lines: [{ text: '1. Intro' }] };
+      const without = await inspect(
+        (await exportBoard(fakeApi(scene).api, 'pdf', {}, null, { page }))!,
+      );
+      expect(without.pages).toBe(1);
+      expect(without.text).not.toContain('/Title (Agenda)');
+
+      const withAgenda = await inspect(
+        (await exportBoard(fakeApi(scene).api, 'pdf', { agenda: true }, null, { page }))!,
+      );
+      expect(withAgenda.pages).toBe(2);
+      expect(withAgenda.text).toContain('/Title (Agenda)');
     });
 
     describe('of a board with frames (#726)', () => {

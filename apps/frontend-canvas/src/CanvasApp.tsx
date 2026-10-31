@@ -58,6 +58,7 @@ import './styles/voting.css';
 import './styles/follow.css';
 import './styles/comments.css';
 import './styles/history.css';
+import './styles/agenda.css';
 import './styles/pdf-import.css';
 import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
@@ -72,8 +73,9 @@ import type { VotableElement } from './facilitation/voting';
 import { PresenceSync } from './presence/presence';
 import { FollowController, NOT_FOLLOWING, type FollowState } from './presence/follow';
 import { FollowOverlay } from './presence/FollowOverlay';
-import { viewportOf } from './presence/viewport';
+import { fitViewport, viewportOf } from './presence/viewport';
 import {
+  observeKey,
   readPresenter,
   startPresenting,
   stopPresenting,
@@ -88,6 +90,18 @@ import {
   stopTimer,
 } from './facilitation/timer';
 import { type TimerSync, observeTimer } from './facilitation/timer-sync';
+import {
+  type AgendaItem,
+  agendaForFile,
+  agendaFromFile,
+  changeAgenda,
+  readAgenda,
+  runItem,
+  runNext,
+} from './facilitation/agenda';
+import { AgendaPanel } from './facilitation/AgendaPanel';
+import { buildAgendaPage } from './facilitation/agenda-export';
+import { boardFrames, frameViewport, type BoardFrames } from './facilitation/agenda-frames';
 import { type AllVotedWatch, publishVoter, watchAllVoted } from './facilitation/voting-auto-end';
 import { VotingController } from './facilitation/voting-controller';
 import { dropLegacyVoting } from './facilitation/voting-legacy';
@@ -510,6 +524,15 @@ export function CanvasApp({
   threadsRef.current = threads;
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // The agenda (#849): the items of the document, the shared timer (the panel says when it ran out), whether the panel is
+  // open, and the frames of the board (only followed while the panel is open).
+  const [agenda, setAgenda] = useState<AgendaItem[]>([]);
+  const [timerState, setTimerState] = useState<TimerState | null>(null);
+  const [agendaOpen, setAgendaOpen] = useState(false);
+  const agendaOpenRef = useRef(agendaOpen);
+  agendaOpenRef.current = agendaOpen;
+  const [frames, setFrames] = useState<BoardFrames>(() => boardFrames([], {}));
+  const framesKey = useRef(frames.key);
   const [placing, setPlacing] = useState(false);
   const [pendingAnchor, setPendingAnchor] = useState<CommentAnchor | null>(null);
   const [activeThread, setActiveThread] = useState<string | null>(null);
@@ -635,8 +658,13 @@ export function CanvasApp({
     forgetLegacyGridSettings(); // what a browser kept of the grid before it was the board's
     setGrid(readGrid(doc));
     const stopGrid = observeGrid(doc, setGrid);
-    const timerSync = observeTimer(doc, (state) => timerCallback.current?.(state));
+    const timerSync = observeTimer(doc, (state) => {
+      setTimerState(state);
+      timerCallback.current?.(state);
+    });
     timerSyncRef.current = timerSync;
+    setAgenda(readAgenda(doc));
+    const agendaSync = observeKey(doc, () => readAgenda(doc), setAgenda);
     setThreads(readThreads(doc));
     const commentsSync = observeComments(doc, (next) => {
       setThreads(next);
@@ -781,6 +809,7 @@ export function CanvasApp({
     return () => {
       stopGrid();
       timerSync.destroy();
+      agendaSync.destroy();
       commentsSync.destroy();
       timerSyncRef.current = null;
       sceneUnsubscribe();
@@ -910,7 +939,8 @@ export function CanvasApp({
     openComments(null);
   };
   const openComments = (threadId: string | null) => {
-    setHistoryOpen(false); // both panels sit on the right edge
+    setHistoryOpen(false); // the panels sit on the right edge
+    setAgendaOpen(false);
     setCommentsOpen(true);
     setActiveThread(threadId);
     setPlacing(threadId === null);
@@ -924,6 +954,7 @@ export function CanvasApp({
   const toggleHistory = () => {
     if (!snapshotApiRef.current) return;
     setHistoryOpen((open) => !open);
+    setAgendaOpen(false);
     setCommentsOpen(false);
     setPlacing(false);
     setPendingAnchor(null);
@@ -948,6 +979,86 @@ export function CanvasApp({
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, []);
+  /** Opens or closes the agenda (#849); the comments and the history make room for it. */
+  const toggleAgenda = () => {
+    const api = apiRef.current;
+    if (!agendaOpenRef.current && api) {
+      readFramesOf(api.getSceneElements(), api.getAppState().selectedElementIds);
+    }
+    setAgendaOpen((open) => !open);
+    setHistoryOpen(false);
+    setCommentsOpen(false);
+    setPlacing(false);
+    setPendingAnchor(null);
+  };
+  const toggleAgendaRef = useRef(toggleAgenda);
+  toggleAgendaRef.current = toggleAgenda;
+  // Alt+A opens the agenda, caught like Alt+H (above) and for the same reasons; Excalidraw has no Alt+A of its own.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== 'KeyA' || !event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.shiftKey || event.repeat || event.defaultPrevented) return;
+      const target = event.target as Node | null;
+      if (target !== document.body && !rootRef.current?.contains(target)) return;
+      if (isTextEntry(event, apiRef.current)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      toggleAgendaRef.current();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, []);
+  /** The frames of the board and the selected one, for the agenda panel; its state changes only when they do. */
+  const readFramesOf = (
+    elements: Parameters<typeof boardFrames>[0],
+    selectedIds: Readonly<Record<string, boolean>>,
+  ) => {
+    const next = boardFrames(elements, selectedIds);
+    if (next.key === framesKey.current) return;
+    framesKey.current = next.key;
+    setFrames(next);
+  };
+
+  /** Who starts the timer of an agenda item: the host's user id, else the tab's own. */
+  const timerStarter = () => ({
+    id: userIdRef.current ?? identityNow.current.id,
+    name: identityNow.current.name,
+  });
+  /**
+   * Brings everybody to an item's frame (#849): this view is fitted to the frame and the others jump to it once through
+   * "Bring everyone to me" (#848), without following. Nothing happens for an item without a frame or whose frame is gone.
+   */
+  const bringToFrame = (doc: Y.Doc, frameId: string | null) => {
+    const api = apiRef.current;
+    if (!api || !frameId) return;
+    const frame = api.getSceneElements().find((element) => element.id === frameId);
+    const target = frame ? frameViewport(frame) : null;
+    if (!target) return;
+    if (followRef.current?.state.following) followRef.current.stop();
+    const { width, height, zoom } = api.getAppState();
+    const view = fitViewport(target, { width, height });
+    api.updateScene({
+      appState: {
+        scrollX: view.scrollX,
+        scrollY: view.scrollY,
+        zoom: { value: view.zoom as typeof zoom.value },
+      },
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+    summonEveryone(doc, identityNow.current.id, target);
+  };
+  /** A change of the agenda by an editor; a failure (a read-only board, a full list) is told as a notice. */
+  const agendaCommand = (run: (doc: Y.Doc) => void) =>
+    void timerCommand(run).catch((error: unknown) =>
+      noticeCallback.current?.(error instanceof Error ? error.message : String(error)),
+    );
+  const changeAgendaItems = (change: (items: AgendaItem[]) => AgendaItem[]) =>
+    agendaCommand((doc) => void changeAgenda(doc, change));
+  const startAgendaItem = (id: string) =>
+    agendaCommand((doc) => bringToFrame(doc, runItem(doc, id, timerStarter())?.frameId ?? null));
+  const nextAgendaItem = () =>
+    agendaCommand((doc) => bringToFrame(doc, runNext(doc, timerStarter())?.frameId ?? null));
+
   const describeAnchorRef = useRef(describeAnchor);
   describeAnchorRef.current = describeAnchor;
   const toggleCommentsRef = useRef(toggleComments);
@@ -1216,6 +1327,14 @@ export function CanvasApp({
       keepOpen: true,
       onSelect: () => setGridSize(size),
     })),
+    { type: 'heading', label: t.menuFacilitation },
+    {
+      type: 'item',
+      id: 'agenda',
+      label: t.menuAgenda,
+      hint: 'Alt+A',
+      onSelect: toggleAgenda,
+    },
     { type: 'heading', label: t.menuCanvas },
     {
       type: 'item',
@@ -1336,12 +1455,27 @@ export function CanvasApp({
                         describeAnchorRef.current,
                       )
                     : null,
+                  {
+                    page: options?.agenda
+                      ? buildAgendaPage(
+                          docRef.current ? readAgenda(docRef.current) : [],
+                          tRef.current,
+                          Date.now(),
+                        )
+                      : null,
+                    plan: agendaForFile(docRef.current ? readAgenda(docRef.current) : []),
+                  },
                 ),
               exportThumbnail: () => exportThumbnail(api),
-              importFile: (file) =>
-                readOnlyRef.current
-                  ? Promise.reject(new Error(tRef.current.errorReadOnly))
-                  : importFile(api, file),
+              importFile: async (file) => {
+                if (readOnlyRef.current) throw new Error(tRef.current.errorReadOnly);
+                const count = await importFile(api, file);
+                // A file that carries an agenda (a template, #849) brings it as a plan to start from; one without leaves it.
+                const plan = agendaFromFile(await file.text());
+                const doc = docRef.current;
+                if (plan && doc) changeAgenda(doc, () => plan);
+                return count;
+              },
               importPdf: (file) => startPdfRef.current(file),
               insertFile: (file) =>
                 readOnlyRef.current
@@ -1453,6 +1587,7 @@ export function CanvasApp({
               appState.selectedElementIds,
             );
             setCanConnect(connectableSelection(elements, appState.selectedElementIds) !== null);
+            if (agendaOpenRef.current) readFramesOf(elements, appState.selectedElementIds);
             setZoomPercent(Math.round(appState.zoom.value * 100));
             const selected = Object.values(appState.selectedElementIds).filter(Boolean).length;
             if (selected !== selectionCount.current) {
@@ -1545,6 +1680,19 @@ export function CanvasApp({
             canRestore={canModerate}
             onOpenBoard={(board) => openBoardCallback.current?.(board)}
             onClose={() => setHistoryOpen(false)}
+          />
+        )}
+        {agendaOpen && (
+          <AgendaPanel
+            items={agenda}
+            timer={timerState}
+            readOnly={readOnly}
+            frames={frames.frames}
+            selectedFrame={frames.selected}
+            onChange={changeAgendaItems}
+            onStart={startAgendaItem}
+            onNext={nextAgendaItem}
+            onClose={() => setAgendaOpen(false)}
           />
         )}
         <Toolbar

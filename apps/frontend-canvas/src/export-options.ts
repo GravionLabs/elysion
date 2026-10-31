@@ -25,6 +25,8 @@ export interface ExportOptions {
   orientation?: PageOrientation;
   /** For a PDF: append the board's comments as text pages (#733). Off by default. */
   comments?: boolean;
+  /** For a PDF: the board's agenda with planned and spent times as the first page (#849). Off by default. */
+  agenda?: boolean;
 }
 
 /** The part of a frame that its order depends on. */

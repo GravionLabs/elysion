@@ -1,0 +1,215 @@
+/*
+ * The agenda panel (facilitation/AgendaPanel.tsx, #849): a floating card on the right like the history and the comments
+ * (opening one closes the others). Not part of the scene. Colors are the design tokens'.
+ */
+.elysion-canvas .elysion-agenda {
+  position: absolute;
+  z-index: 6;
+  top: 16px;
+  right: 16px;
+  bottom: 88px;
+  display: flex;
+  flex-direction: column;
+  width: min(380px, calc(100% - 32px));
+  color: var(--c-text);
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.elysion-canvas .elysion-agenda__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.elysion-canvas .elysion-agenda__header h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.elysion-canvas .elysion-agenda button:not(.elysion-comment-close),
+.elysion-canvas .elysion-agenda input {
+  padding: 4px 10px;
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+  background: var(--c-surface-2, var(--c-surface-1));
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+}
+
+.elysion-canvas .elysion-agenda button:not(.elysion-comment-close) {
+  cursor: pointer;
+}
+
+.elysion-canvas .elysion-agenda button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.elysion-canvas .elysion-agenda .elysion-agenda__primary {
+  color: var(--c-on-primary, #fff);
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+}
+
+.elysion-canvas .elysion-agenda .elysion-agenda__icon {
+  min-width: 28px;
+  padding: 4px 6px;
+}
+
+.elysion-canvas .elysion-agenda :focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 1px;
+}
+
+.elysion-canvas .elysion-agenda__status {
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.elysion-canvas .elysion-agenda__status:not(:empty) {
+  padding: 8px 12px;
+  background: var(--c-primary-soft, var(--c-surface-2));
+  border-bottom: 1px solid var(--c-border);
+}
+
+.elysion-canvas .elysion-agenda__status--up:not(:empty) {
+  color: var(--c-danger-text, #b42318);
+}
+
+.elysion-canvas .elysion-agenda__body {
+  flex: 1;
+  padding: 8px 12px 12px;
+  overflow-y: auto;
+}
+
+.elysion-canvas .elysion-agenda__empty,
+.elysion-canvas .elysion-agenda__hint {
+  margin: 4px 0 8px;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.elysion-canvas .elysion-agenda__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.elysion-canvas .elysion-agenda__item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+}
+
+.elysion-canvas .elysion-agenda__item[draggable='true'] {
+  cursor: grab;
+}
+
+.elysion-canvas .elysion-agenda__item--current {
+  background: var(--c-primary-soft, var(--c-surface-2));
+  border: 2px solid var(--c-primary);
+}
+
+.elysion-canvas .elysion-agenda__item--done .elysion-agenda__title {
+  color: var(--c-text-subtle);
+}
+
+.elysion-canvas .elysion-agenda__item--dragging {
+  opacity: 0.5;
+}
+
+.elysion-canvas .elysion-agenda__line,
+.elysion-canvas .elysion-agenda__meta,
+.elysion-canvas .elysion-agenda__frame,
+.elysion-canvas .elysion-agenda__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.elysion-canvas .elysion-agenda__number {
+  color: var(--c-text-subtle);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.elysion-canvas .elysion-agenda__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.elysion-canvas .elysion-agenda__badge {
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+}
+
+.elysion-canvas .elysion-agenda__meta,
+.elysion-canvas .elysion-agenda__frame {
+  color: var(--c-text-subtle);
+}
+
+.elysion-canvas .elysion-agenda__minutes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.elysion-canvas .elysion-agenda__minutes input {
+  width: 64px;
+  padding: 2px 6px;
+}
+
+.elysion-canvas .elysion-agenda__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--c-border);
+}
+
+.elysion-canvas .elysion-agenda__total {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.elysion-canvas .elysion-agenda__new {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.elysion-canvas .elysion-agenda__field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.elysion-canvas .elysion-agenda__field--minutes {
+  flex: none;
+  width: 72px;
+}
