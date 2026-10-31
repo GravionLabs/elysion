@@ -129,9 +129,10 @@ export interface BoardElement {
 
 export async function boardElements(page: Page): Promise<BoardElement[]> {
   const text = await page.evaluate(async () => {
-    const canvas = document.querySelector('elysion-canvas') as HTMLElement & {
-      exportBoard(format: string): Promise<Blob | null>;
-    };
+    const canvas = document.querySelector('elysion-canvas') as
+      (HTMLElement & { exportBoard?(format: string): Promise<Blob | null> }) | null;
+    // Right after a navigation to another board the canvas can be gone for a moment: no elements yet (a poll asks again).
+    if (!canvas?.exportBoard) return '{"elements":[]}';
     const blob = await canvas.exportBoard('excalidraw');
     return blob ? await blob.text() : '{"elements":[]}';
   });

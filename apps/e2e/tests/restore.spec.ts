@@ -71,6 +71,7 @@ test('A saves a version with one rectangle and draws a second one; B sees both',
   await a.keyboard.press('Enter');
   await expect(history(a).getByText('Good state')).toBeVisible();
   await a.keyboard.press('Escape');
+  await expect(history(a)).toHaveCount(0);
 
   await rectangle(a, [700, 300]);
   await expect.poll(() => elementCount(a)).toBe(2);
@@ -85,6 +86,7 @@ test('only the owner may restore: B sees "Open as new board" but no Restore', as
   ).toBeVisible();
   await expect(history(b).getByRole('button', { name: /^Restore/ })).toHaveCount(0);
   await b.keyboard.press('Escape');
+  await expect(history(b)).toHaveCount(0);
 });
 
 test('A restores the version: both have one rectangle again, B is told, nobody reloaded', async () => {
@@ -95,6 +97,7 @@ test('A restores the version: both have one rectangle again, B is told, nobody r
   // The state before the restore is kept and is a version to restore as well.
   await expect(history(a).getByText('Before restore').first()).toBeVisible();
   await a.keyboard.press('Escape');
+  await expect(history(a)).toHaveCount(0);
 
   await expect.poll(() => elementCount(a)).toBe(1);
   await expect.poll(() => elementCount(b)).toBe(1);
@@ -108,6 +111,7 @@ test('A goes back by restoring "Before restore": both have two rectangles again'
   await a.getByRole('button', { name: 'Restore version' }).click();
   await expect(history(a).getByText(/The version is restored\./)).toBeVisible();
   await a.keyboard.press('Escape');
+  await expect(history(a)).toHaveCount(0);
 
   await expect.poll(() => elementCount(a)).toBe(2);
   await expect.poll(() => elementCount(b)).toBe(2);
@@ -117,8 +121,10 @@ test('B opens the version as a new board with one rectangle; the old board keeps
   await b.keyboard.press('Alt+h');
   await b.getByRole('button', { name: 'Open Good state as new board' }).click();
 
+  // The board page is already at a /board/ address: wait for the new one, not for the pattern.
+  await expect(b).not.toHaveURL(boardUrl);
   await expect(b).toHaveURL(/\/board\/[0-9a-f-]+$/);
-  expect(b.url()).not.toBe(boardUrl);
+  await expect(b.getByRole('button', { name: `Rename the board ${COPY}` })).toBeVisible();
   await expect(b.getByText('Connected', { exact: true })).toBeVisible();
   await expect.poll(() => elementCount(b)).toBe(1);
   await expect.poll(() => elementCount(a)).toBe(2);
