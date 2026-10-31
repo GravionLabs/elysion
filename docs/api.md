@@ -35,14 +35,15 @@ curl -s -H "Authorization: Bearer $TOKEN" https://elysion.example.com/public/v1/
 
 ## What v1 has
 
-| Resource  | Routes (under `/public/v1`)                                                                                                                             | Scope                                            |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Caller    | `GET /me`                                                                                                                                               | none                                             |
-| Boards    | `GET /boards` (`?roomId=` for one room), `GET /boards/{id}`, `POST /boards`, `PATCH /boards/{id}`, `DELETE /boards/{id}`, `POST /boards/{id}/duplicate` | `boards:read` to read, `boards:write` to change  |
-| Elements  | `GET /boards/{id}/elements`, `GET /boards/{id}/files/{fileId}`                                                                                          | `boards:read`                                    |
-| Rooms     | `GET /rooms`, `GET /rooms/{id}`                                                                                                                         | `boards:read`                                    |
-| Members   | `GET`, `POST /boards/{id}/members`, `PATCH`, `DELETE /boards/{id}/members/{userId}`; the same under `/rooms/{id}/members`                               | `boards:read` to list, `members:write` to change |
-| Snapshots | `GET /boards/{id}/snapshots`, `POST /boards/{id}/snapshots`, `GET /boards/{id}/snapshots/{snapshotId}`                                                  | `boards:read` to read, `snapshots:write` to save |
+| Resource  | Routes (under `/public/v1`)                                                                                                                                                                                 | Scope                                            |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Caller    | `GET /me`                                                                                                                                                                                                   | none                                             |
+| Boards    | `GET /boards` (`?roomId=` for one room), `GET /boards/{id}`, `POST /boards`, `PATCH /boards/{id}`, `DELETE /boards/{id}`, `POST /boards/{id}/duplicate`                                                     | `boards:read` to read, `boards:write` to change  |
+| Elements  | `GET /boards/{id}/elements`, `GET /boards/{id}/files/{fileId}`                                                                                                                                              | `boards:read`                                    |
+| Rooms     | `GET /rooms`, `GET /rooms/{id}`                                                                                                                                                                             | `boards:read`                                    |
+| Members   | `GET`, `POST /boards/{id}/members`, `PATCH`, `DELETE /boards/{id}/members/{userId}`; the same under `/rooms/{id}/members`                                                                                   | `boards:read` to list, `members:write` to change |
+| Snapshots | `GET /boards/{id}/snapshots`, `POST /boards/{id}/snapshots`, `GET /boards/{id}/snapshots/{snapshotId}`                                                                                                      | `boards:read` to read, `snapshots:write` to save |
+| Webhooks  | `GET`, `POST /boards/{id}/webhooks`, `GET`, `PATCH`, `DELETE /boards/{id}/webhooks/{webhookId}`, `.../test`, `.../deliveries`, `.../redeliver`; the same under `/webhooks` for every board (administrators) | `webhooks:write`                                 |
 
 - **The same rights as in the browser.** A token acts as its person (or integration) and never sees more: a board you are no member of is
   `404`, as if it did not exist; a viewer cannot rename (`403`); only owners delete a board and change its members.
@@ -51,6 +52,9 @@ curl -s -H "Authorization: Bearer $TOKEN" https://elysion.example.com/public/v1/
   seconds behind an open board. Writing elements is not in v1.
 - **Snapshots** (the versions of a board) can be listed, saved and read as JSON (the version and its scene, like the elements). **Renaming,
   deleting and restoring a version, and opening one as a new board, are not in v1**: they are in the browser only.
+- **Webhooks** tell your service when a board changes instead of it asking: an owner registers a URL for a board's events, an
+  administrator for every board's. The events, the payloads, the retries and how to check the `Elysion-Signature` are in
+  [webhooks.md](webhooks.md).
 - **Rename** needs `If-Match` with the `ETag` that `GET /boards/{id}` (or the last change) answered; `*` renames whatever the board is
   called now. Without it the answer is `428`, with an old one `412`.
 - **Lists** come in pages: `?limit=` (1 to 200, default 50) and `?cursor=`, the `next` of the page before (`null` on the last page). A
@@ -85,7 +89,7 @@ the browser. A scope only narrows that.
 | `boards:write`    | Creating, renaming, duplicating, deleting boards |
 | `members:write`   | Adding, changing and removing members            |
 | `snapshots:write` | Saving versions of boards                        |
-| `webhooks:write`  | Registering webhooks                             |
+| `webhooks:write`  | Registering and managing webhooks                |
 
 A route that needs a scope the credential does not have answers `403`. An unknown, expired or revoked token is `401`.
 

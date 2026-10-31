@@ -94,6 +94,17 @@ The pages for the administrators of the instance ([ADR 0027](../adr/0027-enterpr
 
 - **Access tokens** (`/admin/tokens`, `AdminTokens`, #851): every personal access token of the instance (`GET /api/admin/access-tokens`), a `PagedList` searched by name, start of the token or owner: name (with a "revoked" or "expired" chip), the start (`elp_` and eight characters, so a token reported by a secret scanner can be found), owner, scopes, last use, expiry, and **Revoke** after a question for one that is not revoked. **Users** has a select (people and integrations, people, integrations; `?kind=`) and an "Integration" chip; the dialog of an integration says what it is, and deactivating it stops its next call.
 
+## Webhooks (#853)
+
+`Webhooks` (`src/app/share/webhooks.ts`, [webhooks.md](../webhooks.md)) is one component for two places: a collapsed **Webhooks**
+section of the Share dialog of a board (its owners; nothing is loaded until it is opened; `WebhooksApi` on `/api/boards/:id/webhooks`)
+and the administration's page **Webhooks** (`/admin/webhooks`, `AdminWebhooks`, always open, on `/api/admin/webhooks`: the endpoints that
+hear every board). It lists the endpoints (URL, events or "All events", the start of the secret, a "Switched off" state with the reason
+and the time), adds one (an URL and the eight events as checkboxes, none ticked for all), shows the **secret** of the one just added once
+(as the access tokens do: Copy, "I have copied it", never stored), switches one off and on, sends a test event, deletes after a question,
+and opens the last deliveries of one (event, status, HTTP status, duration, attempts, time, error) with **Send again** for a finished one.
+A refusal of the backend (an `http` URL, a private address, ten endpoints) is shown with its message.
+
 ## Access tokens (#851)
 
 `AccessTokens` (`src/app/settings/`, route `/settings/tokens`, "Access tokens" in the user menu for everybody; [api.md](../api.md), [ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md)) has the header of the administration (brand, "All boards", user menu) and three parts: **New token** (a name of at most 100 characters, the five scopes as checkboxes with what each allows, `boards:read` ticked, and an expiry of 7, 30 or 90 days or a year; Create is off without a name or a scope), the **secret** of the token just made (a read-only field, selected on focus, **Copy** with `navigator.clipboard`, the warning that it is shown only this once, and "I have copied it", which forgets it; it is never stored), and **Your tokens** (name, start, scopes as chips, last use or "never", expiry with an "expired" chip, **Revoke** after a question). A refusal of the backend (409 with 50 active tokens, 400) is shown with its message. The share dialog shows an integration found by the people search with "Integration" instead of an email.

@@ -122,13 +122,35 @@ people on the board and pass its limits and the viewer rule; that is a later ver
 - **SSRF**: only `https` URLs (plain `http` behind a development flag); the hosted service resolves the host itself and refuses
   private, loopback, link-local and unique-local addresses, and connects to the address it checked (no second resolution).
 
+### Implemented in #853
+
+- **Who**: `/boards/{id}/webhooks` needs the board's administer policy (owners); `/admin/webhooks` the administrator's role, for endpoints
+  without a board that hear every board. Both are in the shell (the Share dialog, the administration) and on the public API
+  (`/public/v1/boards/{id}/webhooks` and `/public/v1/webhooks`, scope `webhooks:write`; the instance-wide routes need the administrator's
+  role, which a personal access token never carries, so an administrator uses their Keycloak token there). Ten endpoints per board and
+  ten for the instance.
+- **`snapshot.created` fires only for a version a person saves** ("Save version", `POST .../snapshots`), not for automatic and "Before
+  restore" versions. The payload names an actor, which only a saved version has; automatic versions are the backend's own history, made
+  from saves that already send `board.content.changed`, and a "Before restore" version is a step of a restore, not a decision to keep
+  something. A receiver that wants every version can list them through the API.
+- **`comment.created` is not in v1**: the backend cannot tell a comment apart in a save without decoding the Yjs state, as foreseen above.
+- **`board.content.changed`** is staged by `PUT /internal/boards/{id}/document` before the document is saved, so the save commits it; not
+  for a compaction rebuild, and not when the board had one in the last minute. Its `actorId` is null: the save is the realtime service's.
+- **Delivery**: every backend instance runs the worker; a row is taken with a lease (a concurrency token on the row), so two instances
+  never send it at the same time. Retries 30 s doubling to at most an hour, for 24 hours; an endpoint without a success for 24 hours is
+  switched off with the reason. The last 50 deliveries per endpoint are kept; "Send again" makes a new delivery of the same event.
+- **Secrets** are kept as they are (signing needs them), shown once, never logged. **SSRF**: the worker connects through a
+  `ConnectCallback` to an address it resolved and checked (IPv6 and IPv4-mapped included), follows no redirect and uses no proxy.
+  `WEBHOOKS_ALLOW_HTTP` and `WEBHOOKS_ALLOW_PRIVATE_NETWORKS` relax the rules for development only.
+- A board's endpoints have no foreign key to it: they hear its `board.deleted` and are removed once nothing waits for them.
+
 ## Consequences
 
 - One new trust boundary (`docs/security.md`): scripts on the internet with a token, at a separate edge route with its own limits.
   A leaked token acts as its person until it expires or is revoked; the prefix lets GitHub's secret scanning find it.
 - The backend gets a third authentication scheme, two tables (tokens, webhooks with their deliveries) and a hosted service; the
   BFF gets `yjs` and `@nestjs/swagger`.
-- An alert on a growing outbox, with a runbook (#853).
+- An alert on a growing outbox, with a runbook (#853: `WebhookOutboxGrowing`, [operations](../operations.md#webhookoutboxgrowing)).
 - Service accounts add a kind of user (an integration) to the backend, the member search and the admin pages (#851).
 - Out of scope for v1: writing elements, OAuth apps for third parties, integrations made from Elysion's admin pages, access to all
   boards for an integration, webhooks per room.

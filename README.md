@@ -36,7 +36,7 @@ Known gaps, so nobody finds them by surprise (the [roadmap](docs/roadmap.md) say
 - **Timer clocks** of two clients may differ by a few seconds (the end is worked out on every client).
 - **Images are PNG, JPEG, GIF or WebP** up to 10 MiB, 200 per board (SVG is refused: it can carry script). They are kept in the object store (RustFS in the stack).
 - **Backup is a service you start** (`docker compose --profile backup up -d backup`, [self-hosting](docs/self-hosting.md#back-up-and-restore)): nightly dumps of the databases and a copy of the images, on the same host unless you point it elsewhere, and an alert (`BackupTooOld`, [operations](docs/operations.md#backuptooold)) when the last good one is older than 36 hours, if you run the alerting of `docker-compose.observability.yml`.
-- **The public API reads elements but does not write them**, and there are no webhooks yet (#853); versions can be listed, saved and read, not restored, through it ([docs/api.md](docs/api.md)).
+- **The public API reads elements but does not write them**; webhooks report board, member and version events but not comments ([docs/webhooks.md](docs/webhooks.md)); versions can be listed, saved and read, not restored, through it ([docs/api.md](docs/api.md)).
 - **Browser tests cover the main paths, not every corner:** `apps/e2e` (Playwright, two browsers on one board, against the container stack in CI) covers sharing, the timer, the dot voting, a viewer's limits, images, rooms, templates, import and export, the drawing tools with connectors and undo, and losing and regaining the connection; there is no visual regression test and only Chromium is used.
 
 ## Architecture

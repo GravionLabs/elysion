@@ -144,7 +144,7 @@ which sets the scope the guard checks (`@RequireScope`, see "Authentication") an
 personal access tokens and integration tokens there only.
 
 - **Routes** (`PublicMeController`, `PublicBoardsController`, `PublicBoardMembersController`, `PublicRoomsController`,
-  `PublicRoomMembersController`, `PublicSnapshotsController`): `GET /me` (no scope); boards `GET`, `POST /boards`, `GET`, `PATCH`,
+  `PublicRoomMembersController`, `PublicSnapshotsController`, and the webhooks of "Webhooks" below): `GET /me` (no scope); boards `GET`, `POST /boards`, `GET`, `PATCH`,
   `DELETE /boards/:id`, `POST /boards/:id/duplicate`, `GET /boards/:id/elements`, `GET /boards/:id/files/:fileId`; rooms `GET /rooms`,
   `GET /rooms/:id`; members `GET`, `POST /boards/:id/members`, `PATCH`, `DELETE /boards/:id/members/:userId`, the same under
   `/rooms/:id/members`; snapshots `GET`, `POST /boards/:id/snapshots`, `GET /boards/:id/snapshots/:snapshotId`. Scopes: `boards:read`
@@ -195,5 +195,16 @@ role }`, a member `{ userId, displayName, email, role }`, a version the backend'
 
 ## Webhooks
 
-Not built yet: [ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md) (#853). Registered by board owners and admins through
-the shell and the public API; delivered by the business backend.
+[ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md), [webhooks.md](../webhooks.md) (#853). The BFF only passes the management of
+webhooks on; the business backend keeps them and delivers the events.
+
+- **The shell** (`src/boards/webhooks.controller.ts`): `BoardWebhooksController` at `/api/boards/:id/webhooks` and
+  `AdminWebhooksController` at `/api/admin/webhooks`: `GET` and `POST` (`{ url, events }`, `201` with the `secret`, once), `GET`,
+  `PATCH` (`{ url?, events?, enabled? }`) and `DELETE :webhookId`, `POST :webhookId/test` (`202`, the delivery),
+  `GET :webhookId/deliveries` (the last 50, newest first) and `POST :webhookId/deliveries/:deliveryId/redeliver` (`202`). A body of
+  the wrong shape (`webhookInput`, `webhookPatch` in `request-parsing.ts`) is `400` and an id that is no UUID `404`, both without a
+  call; who may (owners of the board, administrators) and the URL rules are the backend's.
+- **The public API** (`PublicBoardWebhooksController` at `/public/v1/boards/:id/webhooks`, `PublicInstanceWebhooksController` at
+  `/public/v1/webhooks`): the same routes with the scope `webhooks:write`, lists paged by cursor (webhooks oldest first, deliveries
+  newest first, then id), `Location` on a creation, errors as problem details. The instance-wide routes need the administrator's
+  role, which a personal access token never has: an administrator calls them with their own Keycloak token.
