@@ -1,0 +1,255 @@
+# top-most EditorConfig file
+root = true
+
+##############################
+# General editor settings
+##############################
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+tab_width = 4
+max_line_length = 120
+
+##############################
+# C# (.NET) code style and formatting
+##############################
+[*.cs]
+# Files
+csharp_new_line_before_members_in_object_initializers = true
+csharp_prefer_braces = when_multiline:suggestion
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_style_expression_bodied_constructors = true:suggestion
+csharp_style_expression_bodied_methods = true:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_expression_bodied_accessors = true:suggestion
+csharp_style_expression_bodied_indexers = true:suggestion
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_prefer_tuple_swap = true:suggestion
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_prefer_readonly_struct = true:suggestion
+csharp_style_prefer_utf8_string_literals = true:suggestion
+csharp_style_prefer_index_operator = true:suggestion
+csharp_style_prefer_range_operator = true:suggestion
+csharp_style_prefer_readonly_record_struct = true:suggestion
+csharp_style_prefer_simplified_interpolation = true:suggestion
+
+# Using directives
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = true
+csharp_using_directive_placement = outside_namespace:suggestion
+
+# Qualification and this.
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
+
+# Access modifiers
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggestion
+dotnet_style_readonly_field = true:suggestion
+
+# Nullability and coalescing
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
+
+# Object/collection initializers
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+dotnet_style_prefer_collection_expression = true:suggestion
+
+# Local functions and discards
+dotnet_style_prefer_inferred_tuple_names = true:suggestion
+dotnet_style_prefer_inferred_anonymous_type_member_names = true:suggestion
+dotnet_style_prefer_simplified_boolean_expressions = true:suggestion
+
+# Language version hint for IDEs (project sets the actual version)
+dotnet_language_version = latest
+
+##############################
+# Naming rules
+##############################
+# Symbols
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities = *
+dotnet_naming_symbols.interfaces.required_modifiers =
+
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.applicable_accessibilities = *
+dotnet_naming_symbols.constants.required_modifiers = const
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_fields.required_modifiers =
+
+dotnet_naming_symbols.types_and_members.applicable_kinds = class, struct, enum, property, method, delegate, event
+dotnet_naming_symbols.types_and_members.applicable_accessibilities = *
+dotnet_naming_symbols.types_and_members.required_modifiers =
+
+dotnet_naming_symbols.async_methods.applicable_kinds = method
+dotnet_naming_symbols.async_methods.applicable_accessibilities = *
+dotnet_naming_symbols.async_methods.required_modifiers = async
+
+# Styles
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_naming_style.pascal_case.required_prefix =
+dotnet_naming_style.pascal_case.required_suffix =
+
+dotnet_naming_style.camel_case.capitalization = camel_case
+dotnet_naming_style.camel_case.required_prefix =
+dotnet_naming_style.camel_case.required_suffix =
+
+dotnet_naming_style.underscore_prefix.capitalization = camel_case
+dotnet_naming_style.underscore_prefix.required_prefix = _
+dotnet_naming_style.underscore_prefix.required_suffix =
+
+dotnet_naming_style.interface_prefix.capitalization = pascal_case
+dotnet_naming_style.interface_prefix.required_prefix = I
+dotnet_naming_style.interface_prefix.required_suffix =
+
+dotnet_naming_style.async_suffix.capitalization = pascal_case
+dotnet_naming_style.async_suffix.required_suffix = Async
+
+# Rules
+dotnet_naming_rule.interfaces_must_begin_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_must_begin_with_i.style = interface_prefix
+dotnet_naming_rule.interfaces_must_begin_with_i.severity = suggestion
+
+dotnet_naming_rule.constants_should_be_pascal_case.symbols = constants
+dotnet_naming_rule.constants_should_be_pascal_case.style = pascal_case
+dotnet_naming_rule.constants_should_be_pascal_case.severity = suggestion
+
+dotnet_naming_rule.private_fields_should_be__camelCase.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be__camelCase.style = underscore_prefix
+dotnet_naming_rule.private_fields_should_be__camelCase.severity = suggestion
+
+dotnet_naming_rule.types_and_members_should_be_pascal_case.symbols = types_and_members
+dotnet_naming_rule.types_and_members_should_be_pascal_case.style = pascal_case
+dotnet_naming_rule.types_and_members_should_be_pascal_case.severity = suggestion
+
+dotnet_naming_rule.async_methods_should_end_with_async.symbols = async_methods
+dotnet_naming_rule.async_methods_should_end_with_async.style = async_suffix
+dotnet_naming_rule.async_methods_should_end_with_async.severity = suggestion
+
+##############################
+# .NET analyzer severities
+##############################
+dotnet_analyzer_diagnostic.category-Style.severity = suggestion
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.Naming.severity = suggestion
+dotnet_analyzer_diagnostic.category-Documentation.severity = none
+dotnet_analyzer_diagnostic.category-Design.severity = warning
+dotnet_analyzer_diagnostic.category-Reliability.severity = warning
+dotnet_analyzer_diagnostic.category-Performance.severity = warning
+dotnet_analyzer_diagnostic.category-Security.severity = warning
+dotnet_analyzer_diagnostic.category-CodeQuality.severity = warning
+
+dotnet_diagnostic.CA1062.severity = warning # Validate arguments of public methods
+dotnet_diagnostic.CA1848.severity = none     # Use LoggerMessage delegates (high-perf logging)
+dotnet_diagnostic.CA1873.severity = none     # Avoid IServiceProvider.GetService in generic code
+dotnet_diagnostic.CA2000.severity = warning  # Dispose objects before losing scope
+dotnet_diagnostic.CA2016.severity = warning  # Forward CancellationToken
+dotnet_diagnostic.CA2201.severity = suggestion # Avoid throwing general exceptions
+dotnet_diagnostic.CA1849.severity = suggestion # Call ConfigureAwait (library-oriented)
+dotnet_diagnostic.CA2012.severity = warning  # Use ValueTask correctly
+dotnet_diagnostic.CS1591.severity = none     # Missing XML comment for publicly visible member
+
+##############################
+# ReSharper / Rider alignment
+##############################
+resharper_csharp_using_directive_placement = outside_namespace
+resharper_place_system_directives_first = true
+resharper_separate_import_directive_groups = true
+resharper_csharp_braces_for_if_else = required_for_multiline
+resharper_csharp_braces_for_for = required_for_multiline
+resharper_csharp_braces_for_foreach = required_for_multiline
+resharper_csharp_braces_for_while = required_for_multiline
+resharper_csharp_wrap_arguments_style = chop_if_long
+resharper_csharp_wrap_parameters_style = chop_if_long
+resharper_csharp_wrap_after_dot_in_method_calls = false
+resharper_csharp_wrap_chained_method_calls = chop_if_long
+resharper_wrap_before_dot = true
+resharper_keep_existing_arrangement = true
+resharper_keep_existing_linebreaks = true
+resharper_csharp_keep_existing_embedded_arrangement = false
+resharper_csharp_place_simple_embedded_statement_on_same_line = never
+resharper_place_simple_embedded_statement_on_same_line = never
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_space_after_keywords_in_control_flow_statements = true
+resharper_csharp_blank_lines_around_properties = 1
+resharper_csharp_blank_lines_around_methods = 1
+resharper_naming_rule.private_instance_fields = aaBb, _
+resharper_naming_rule.interfaces = AaBb, I
+dotnet_style_file_header_template = unset
+csharp_preferred_modifier_order = public, private, protected, internal, static, extern, new, virtual, abstract, sealed, override, readonly, unsafe, volatile, async:suggestion
+dotnet_diagnostic.IDE0055.severity = suggestion
+
+##############################
+# JSON / JSONC
+##############################
+[*.json]
+indent_style = space
+indent_size = 2
+
+[*.jsonc]
+indent_style = space
+indent_size = 2
+
+##############################
+# YAML (pipelines, GitHub Actions)
+##############################
+[*.yml]
+indent_style = space
+indent_size = 2
+
+[*.yaml]
+indent_style = space
+indent_size = 2
+
+##############################
+# Markdown
+##############################
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
+
+##############################
+# Shell / PowerShell scripts
+##############################
+[*.sh]
+end_of_line = lf
+
+[*.ps1]
+end_of_line = crlf
+
+##############################
+# XML project/build files
+##############################
+[*.{csproj,props,targets,xml,config}]
+indent_style = space
+indent_size = 2
+
+##############################
+# Generated Code (Migrations, etc.)
+##############################
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_diagnostic.CA1062.severity = none
+dotnet_diagnostic.CA1861.severity = none
+
+##############################
+# Test Projects
+##############################
+[test/**/*.cs]
+dotnet_diagnostic.CA1062.severity = none

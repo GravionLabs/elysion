@@ -13,3 +13,7 @@ infra/helm/*/templates/
 apps/e2e/test-results
 apps/e2e/playwright-report
 infra/helm/snapshots/
+
+# Installed agent skills (GravionLabs/skills), verbatim copies
+.agents/skills/
+.claude/skills/
