@@ -108,7 +108,13 @@ export function AgendaPanel({
   }, [current]);
   const clock = now();
 
-  const timeUp = current !== null && timer !== null && hasEnded(timer, clock);
+  // The time is up when the timer ran out; the shell clears an ended timer after a few seconds, so without one the item's own
+  // planned time decides (an extended timer is followed while it is there).
+  const timeUp =
+    current !== null &&
+    (timer !== null
+      ? hasEnded(timer, clock)
+      : clock - (current.startedAt ?? clock) >= current.durationMin * 60_000);
   const end = plannedEnd(items, clock);
   const through = items.length > 0 && items.every((item) => item.state === 'done');
   const canNext = items.some((item) => item.state === 'current' || item.state === 'pending');

@@ -195,6 +195,18 @@ describe('AgendaPanel', () => {
     expect(screen.getAllByRole('listitem')[0].getAttribute('aria-current')).toBe('step');
   });
 
+  it('follows an extended timer, and still says the time is up once the ended timer was cleared', () => {
+    const extended = { ...started(5 * MIN, ADA, T0), durationMs: 8 * MIN };
+    const first = setup({ timer: extended, now: () => T0 + 6 * MIN }, startItem(plan(), 'a', T0));
+    expect(screen.getByRole('status').textContent).toBe('Now: Intro');
+    first.unmount();
+
+    setup({ timer: null, now: () => T0 + 6 * MIN }, startItem(plan(), 'a', T0));
+    expect(screen.getByRole('status').textContent).toBe(
+      'Time is up for Intro. Press Next when you are ready.',
+    );
+  });
+
   it('counts the time on while an item runs', () => {
     vi.useFakeTimers();
     try {
