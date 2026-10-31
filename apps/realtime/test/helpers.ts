@@ -15,7 +15,8 @@ import { LOG_STREAM } from '../src/logging/logging.module.js';
 import { MembershipSource } from '../src/membership/membership-source.js';
 import { MEMBERSHIP_OPTIONS } from '../src/membership/membership-watcher.js';
 import { DocumentStore } from '../src/persistence/document-store.js';
-import { MESSAGE_SYNC } from '../src/yjs/protocol.js';
+import { InMemorySnapshotSource, SnapshotSource } from '../src/persistence/snapshot-source.js';
+import { MESSAGE_RESTORED, MESSAGE_SYNC } from '../src/yjs/protocol.js';
 import { PERSISTENCE_OPTIONS } from '../src/yjs/yjs-room-registry.js';
 
 /** Helpers shared by the e2e suites that drive the real app with real WebSocket clients. */
@@ -30,6 +31,8 @@ function toUint8Array(data: RawData): Uint8Array {
 export class SyncClient {
   readonly doc = new Y.Doc();
   readonly closed: Promise<number>;
+  /** The announcements of restores (message type 6) this client received. */
+  readonly restored: unknown[] = [];
   private readonly socket: WebSocket;
 
   constructor(url: string, options?: ClientOptions) {
@@ -43,7 +46,10 @@ export class SyncClient {
     });
     this.socket.on('message', (data: RawData) => {
       const decoder = decoding.createDecoder(toUint8Array(data));
-      if (decoding.readVarUint(decoder) !== MESSAGE_SYNC) return;
+      const type = decoding.readVarUint(decoder);
+      if (type === MESSAGE_RESTORED)
+        this.restored.push(JSON.parse(decoding.readVarString(decoder)));
+      if (type !== MESSAGE_SYNC) return;
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, MESSAGE_SYNC);
       syncProtocol.readSyncMessage(decoder, encoder, this.doc, this);
@@ -92,10 +98,14 @@ export async function startInstance(
   logStream?: Writable,
   /** Who still has a role on a board; the check is off (`intervalMs: 0`) unless a test turns it on. */
   membership?: { source: MembershipSource; intervalMs: number },
+  /** Where the bytes of a version come from for a restore (ADR 0032). */
+  snapshots: SnapshotSource = new InMemorySnapshotSource(),
 ): Promise<{ app: INestApplication; url: string }> {
   const moduleFixture = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(DocumentStore)
     .useValue(store)
+    .overrideProvider(SnapshotSource)
+    .useValue(snapshots)
     .overrideProvider(LOG_STREAM)
     .useValue(logStream)
     .overrideProvider(MembershipSource)

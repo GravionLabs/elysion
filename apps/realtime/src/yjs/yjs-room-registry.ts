@@ -10,7 +10,8 @@ import { DocumentRejectedError, DocumentStore } from '../persistence/document-st
 import { PresenceRelay } from '../presence/presence-relay.js';
 import { type BoardRole, WS_CLOSE_FORBIDDEN } from '@elysion/shared-types';
 import { SaveMetrics } from '../metrics/save-metrics.js';
-import { MESSAGE_SYNC } from './protocol.js';
+import { MESSAGE_RESTORED, MESSAGE_SYNC } from './protocol.js';
+import { type RestoreResult, restoreSnapshot } from './restore.js';
 import { encodeVotingMessage } from '../voting/voting-broadcast.js';
 import { rebuildDocument } from './compaction.js';
 
@@ -75,6 +76,8 @@ export function persistenceOptionsFromEnv(): PersistenceOptions {
 const RELAY_ORIGIN = 'document-relay';
 
 /** Origin of updates merged in from the store; they are broadcast to clients but not saved again by themselves. */
+/** The origin of the update a restore makes: it goes to every client and is relayed and saved like an edit. */
+const RESTORE_ORIGIN = 'snapshot-restore';
 const STORE_ORIGIN = 'document-store';
 
 /** What the registry tracks per room to keep the stored document up to date. */
@@ -415,6 +418,9 @@ export class YjsRoomRegistry implements OnModuleDestroy {
         case 'voting':
           this.sendVotingToClients(room, message.data);
           break;
+        case 'restored':
+          this.sendRestoredToClients(room, message.data);
+          break;
         case 'reset': {
           // Another instance rebuilt the document: an idle copy here is out of date and must not be saved over it.
           const state = this.saves.get(room.boardId);
@@ -442,6 +448,40 @@ export class YjsRoomRegistry implements OnModuleDestroy {
       this.sendVotingToClients(room, data);
     }
     await this.relay.publish(boardId, { type: 'voting', data });
+  }
+
+  /**
+   * Restores a version onto the board (ADR 0032): loads the board when nobody has it open, merges the version forward as one
+   * update (clients on every instance see it like any edit), stores the result and tells the clients who did it. `json`
+   * is the validated announcement. Resolves with what changed.
+   */
+  async restoreSnapshot(
+    boardId: string,
+    snapshotState: Uint8Array,
+    json: string,
+  ): Promise<RestoreResult> {
+    const room = await this.getOrLoad(boardId);
+    try {
+      const result = restoreSnapshot(room.doc, snapshotState, RESTORE_ORIGIN);
+      // Stored before the person is told, and a board nobody has open goes to the store now.
+      await this.save(room);
+      const data = new TextEncoder().encode(json);
+      this.sendRestoredToClients(room, data);
+      await this.relay.publish(boardId, { type: 'restored', data });
+      return result;
+    } finally {
+      if (room.clients.size === 0) this.scheduleEviction(room);
+    }
+  }
+
+  private sendRestoredToClients(room: YjsRoom, data: Uint8Array): void {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, MESSAGE_RESTORED);
+    encoding.writeVarString(encoder, new TextDecoder().decode(data));
+    const message = encoding.toUint8Array(encoder);
+    for (const client of room.clients) {
+      if (client.readyState === client.OPEN) client.send(message);
+    }
   }
 
   private sendVotingToClients(room: YjsRoom, data: Uint8Array): void {
