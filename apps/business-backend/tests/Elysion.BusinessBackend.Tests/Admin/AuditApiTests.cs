@@ -24,11 +24,20 @@ public class AuditApiTests
     private static readonly DateTimeOffset Start = new(2026, 10, 5, 12, 0, 0, TimeSpan.Zero);
     private static readonly string[] AdminRoles = ["elysion-admin"];
 
+    /// <summary>
+    /// A clock the tests set, which moves on by a millisecond on every reading. Entries of a frozen clock would share
+    /// their time, and their order would fall to the random part of the version 7 ids written in the same millisecond.
+    /// </summary>
     private sealed class MutableTime(DateTimeOffset now) : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = now;
 
-        public override DateTimeOffset GetUtcNow() => Now;
+        public override DateTimeOffset GetUtcNow()
+        {
+            var now = Now;
+            Now = now.AddMilliseconds(1);
+            return now;
+        }
     }
 
     private MutableTime _time = null!;
