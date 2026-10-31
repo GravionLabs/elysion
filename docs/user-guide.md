@@ -1,6 +1,6 @@
 # User guide
 
-How to use Elysion (a short German version: [Benutzerhandbuch](./user-guide.de.md)): boards and rooms, working together on a canvas, sharing, and running a workshop with the timer and the dot voting.
+How to use Elysion (a short German version: [Benutzerhandbuch](./user-guide.de.md)): boards and rooms, working together on a canvas, sharing, and running a workshop with the agenda, the timer and the dot voting.
 To run Elysion first see [self-hosting](./self-hosting.md) or the demo in the [README](../README.md#demo). The screenshots are from the demo
 stack with two people, `guest` and `dev`, working on a retrospective board.
 
@@ -177,7 +177,26 @@ PDF is shown per page and can be canceled.
 
 ## Running a workshop
 
-The timer and the voting are for the people who lead a session. Everybody on the board sees them; owners and editors start and end them, and everybody, viewers too, votes.
+The agenda, the timer and the voting are for the people who lead a session. Everybody on the board sees them; owners and editors start and end them, and everybody, viewers too, votes.
+
+### The agenda
+
+The **agenda** plans a workshop step by step and runs it. Open it from the canvas menu (**⋯** at the end of the toolbar, under
+**Facilitation**, **Agenda**) or with **Alt+A**; it sits on the right, where the comments and the history do.
+
+1. **Add** the steps: a title (up to 200 characters) and the planned minutes. Rename a step or change its minutes in place; reorder by dragging a
+   step, with the arrow buttons, or with **Alt+Arrow Up** and **Alt+Arrow Down** on it; the **×** deletes it. The bottom line has the total and
+   the planned end.
+2. Select a **frame** on the board and press **Link to selected frame** on a step: the step names its frame (the small **×** unlinks it).
+3. **Start** on a step makes it the current one for everybody (it is highlighted, and a screen reader announces it), starts the **timer** with its
+   minutes and brings everybody to its frame once, as **Bring everyone to me** does: nobody follows you afterwards.
+4. **Next** finishes the current step and starts the next one. When the time is up the agenda says so, but it does not move on by itself.
+   Next to the planned minutes each step shows the time actually spent on it.
+
+Viewers see the agenda and the current step, and change nothing. The agenda belongs to the board: it is saved with it and comes with a
+**template** saved from it (a board made from the template starts with every step open and no time spent; adding a template to a board that
+exists leaves that board's agenda as it is). **Agenda as the first page of a PDF** in the Export menu puts the steps with their planned and spent
+times in front of a PDF (off by default).
 
 ### The timer
 
