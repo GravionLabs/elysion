@@ -57,6 +57,10 @@ What follows judges the **design** and the **code**, and says "demo only" where 
    the compose file does not and is documented as a demo.
 4. **The service to service tokens.** Each service checks the token it acts on: the business backend validates the Keycloak JWT itself and
    authorizes by membership; `/internal` accepts only the realtime service's token (another authentication scheme, another issuer and audience).
+5. **Scripts and integrations on the Internet** ([ADR 0033](adr/0033-public-api-tokens-and-webhooks.md), not built yet). The public API at
+   `/public/v1` has its own router without CORS and `forwardAuth`, with a rate limit per token. Personal access tokens (`elp_`, stored as a
+   hash, with an expiry and scopes) and Keycloak service accounts (role `elysion-integration`) are accepted there only and act as their person
+   or integration. Webhooks are the way out: signed, `https` only, never to a private address.
 
 ### Attacker positions and what each can do
 

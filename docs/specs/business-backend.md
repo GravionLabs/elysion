@@ -368,3 +368,10 @@ state whatever the answer. The restore is not: `POST .../snapshots/{snapshotId}/
 anything is kept or restored when the answer is not `Saved` (without a realtime service the restore cannot run anyway), because a
 stale "Before restore" could not bring back the live edits the restore overwrites. After `Saved`, a board with no stored document is
 empty and the restore proceeds with no "Before restore". Not built yet: the restore and "open as new board" (#847).
+
+## Public API and webhooks
+
+Not built yet: [ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md) (#851, #853). A third authentication scheme accepts
+personal access tokens (`elp_`, looked up by hash, cached 30 s) and acts as their owner with the token's scopes; Keycloak service
+accounts with the role `elysion-integration` become integration users with the access of a member. Webhooks are delivered from an
+outbox written in the same transaction as the change, signed with HMAC-SHA256 (`Elysion-Signature`).
