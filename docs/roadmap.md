@@ -4,9 +4,11 @@ What has been built, by phase, and what is next. Each phase is a GitHub mileston
 ([M1 to M11](https://github.com/GravionLabs/elysion/milestones?state=closed)); epics span several phases and have no
 milestone. The backlog and its order are on the project board
 ([GravionLabs project 7](https://github.com/users/GravionLabs/projects/7)). When the plan changes, update this file and the
-board together.
+board together. The order of the open PBIs of the next release is in
+[ROADMAP.md](https://github.com/GravionLabs/elysion/blob/main/ROADMAP.md) at the root of the repository
+([ADR 0030](adr/0030-rolling-release-branch.md)); from 0.5.0 on, milestones are releases, not phases.
 
-Last refreshed on 2026-10-16. **Phases M1 to M15 are done** (released as 0.1, 0.2 and 0.3); M16 is planned (Epic #842), and the rest is in [What is next](#what-is-next).
+Last refreshed on 2026-10-16. **Phases M1 to M15 are done** (released as 0.1, 0.2 and 0.3); the next release, 0.5.0 (formerly milestone M16), is planned (Epic #842), and the rest is in [What is next](#what-is-next).
 
 ## Done
 
@@ -74,7 +76,7 @@ The gaps users noticed first (Epic #722):
 - **Dark theme colors, a German interface and accessibility** (#736): sticky notes read as the dark palette's colors in the dark
   theme (#737), everything else of the dark theme is Excalidraw's own filter.
 
-## M16 Workshops and integrations
+## 0.5.0 Workshops and integrations (formerly M16)
 
 Running a whole workshop in Elysion and connecting it to other tools (Epic #842; PBIs written, tasks when scheduled, each feature starts
 with a decision):

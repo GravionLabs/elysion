@@ -1,0 +1,25 @@
+# Pushes to a release branch (the rolling `release/next`, docs/adr/0030-rolling-release-branch.md), handled by the
+# reusable workflow release-branch.yml of GravionLabs/ci: keeps the release pull request into main open and current,
+# labels the issues merged into the branch `merged`, sets the project Status `In release` and syncs the project field Needs.
+# GH_PAT is a classic PAT with scope `repo` (a pull request created with the GITHUB_TOKEN starts no required checks).
+# PROJECT_TOKEN (optional, classic PAT with scope `project`) falls back to GH_PAT.
+name: Release branch
+
+on:
+  push:
+    branches: ['release/**']
+
+permissions: {}
+
+jobs:
+  release-branch:
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    uses: GravionLabs/ci/.github/workflows/release-branch.yml@main
+    with:
+      project-url: https://github.com/users/GravionLabs/projects/17
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
