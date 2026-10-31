@@ -127,8 +127,15 @@ instances only the one that gets the call saves; a board open on another instanc
 sends no `X-Elysion-Element-Count`: the header describes the state that is being overwritten, which the service does not have at
 hand, so `ElementCount` stays empty.
 
-Not built yet (#847): a restore comes from the business backend as
-`POST /internal/boards/{id}/restore` with the snapshot id: the service loads the board if nobody has it open, writes the snapshot's
-elements and files forward with higher versions (live elements missing from it become `isDeleted`), leaves `session` alone, saves
-and tells every client who restored which version. A save made for a compaction carries `X-Elysion-Save-Reason: compaction`, so the
-backend snapshots the previous state first.
+**Restore** (built in #847): the business backend calls `POST /internal/boards/{boardId}/restore` with `{ snapshotId, by, at }` (`by`
+the display name of the person, `at` the moment of the version; same service token). The service reads the version's bytes from the
+backend (`GET /internal/boards/{id}/snapshots/{sid}/document`, `SnapshotSource`), loads the board if nobody has it open, and
+**merges forward** in one transaction (`yjs/restore.ts`): every element of the version is written with its content and a version
+above the live one (and a new `versionNonce`), every live element the version lacks becomes `isDeleted` with a higher version,
+`files` only gains references, `session` and `meta` (the generation) stay as they are. The update goes to every client like any
+edit (so nobody reloads, the view and tool stay, and a client with an old copy cannot bring old content back by reconciling it,
+because the written versions are above everything it holds); the board is saved before the call answers `204`
+(`404` when the backend has no such version, `400` for a body that is not valid, `401` without a service token). Then every client
+of the board on every instance gets **message type 6** (`MESSAGE_RESTORED`, a var string with the JSON `{ snapshotId, by, at }`,
+relayed between instances as document-relay type `restored`). A save made for a compaction carries `X-Elysion-Save-Reason:
+compaction`, so the backend snapshots the previous state first.
