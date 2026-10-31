@@ -111,6 +111,14 @@
         />
         <span i18n="@@topbar.export.comments">Comments in a PDF</span>
       </label>
+      <label class="menu-check">
+        <input
+          type="checkbox"
+          [checked]="settings().agenda"
+          (change)="change('agenda', $any($event.target).checked)"
+        />
+        <span i18n="@@topbar.export.agenda">Agenda as the first page of a PDF</span>
+      </label>
     </fieldset>
   </div>
 }

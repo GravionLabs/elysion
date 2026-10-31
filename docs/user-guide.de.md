@@ -84,3 +84,9 @@ Alle anderen sehen unter dieser Adresse „Du bist kein Administrator“.
 - **Abstimmung** startet eine Punkte-Abstimmung: Jede Person verteilt ihre Punkte auf Elemente (auch Betrachter stimmen mit), die Moderation
   beendet die Abstimmung, und alle sehen das Ergebnis. Während sie läuft, sieht jede Person nur die eigenen Stimmen; Namen zeigt das Ergebnis
   nur, wenn du beim Start **Zeigen, wer wofür gestimmt hat** angekreuzt hast.
+- **Agenda** (im Menü **⋯** am Ende der Werkzeugleiste unter **Moderation**, oder **Alt+A**) plant den Workshop: Punkte mit Titel, geplanten
+  Minuten und einem verknüpften Rahmen (**Mit ausgewähltem Rahmen verknüpfen**); ziehen oder **Alt+Pfeil** ändert die Reihenfolge. **Starten**
+  auf einem Punkt startet den Timer mit seinen Minuten und bringt alle zu seinem Rahmen, **Weiter** schließt ihn ab und startet den nächsten.
+  Ist die Zeit um, sagt die Agenda es, geht aber nicht von selbst weiter. Neben der geplanten steht die gebrauchte Zeit. Alle sehen den
+  aktuellen Punkt; Betrachter ändern nichts. Eine Vorlage nimmt die Agenda mit (ein Board daraus beginnt mit allen Punkten offen), und
+  **Agenda als erste Seite eines PDF** im Export-Menü stellt sie dem PDF voran.

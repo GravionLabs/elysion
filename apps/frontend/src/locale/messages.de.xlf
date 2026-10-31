@@ -4604,6 +4604,15 @@
         <target>Kommentare in einem PDF</target>
       </segment>
     </unit>
+    <unit id="topbar.export.agenda">
+      <notes>
+        <note category="location">src/app/topbar/export-menu.html:120,122</note>
+      </notes>
+      <segment>
+        <source>Agenda as the first page of a PDF</source>
+        <target>Agenda als erste Seite eines PDF</target>
+      </segment>
+    </unit>
     <unit id="topbar.export.preparing-file">
       <notes>
         <note category="location">src/app/topbar/export-menu.ts:28</note>

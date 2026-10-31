@@ -162,6 +162,56 @@ describe('viewerMayApply', () => {
     ).toBe(true);
   });
 
+  it('refuses a viewer to write, change, run or remove the agenda (#849)', () => {
+    const item = {
+      id: 'a1',
+      title: 'Intro',
+      durationMin: 5,
+      frameId: null,
+      state: 'pending',
+      spentMs: 0,
+      startedAt: null,
+    };
+    const server = board();
+    expect(
+      viewerMayApply(
+        server,
+        updateOf(server, (c) => c.getMap('session').set('agenda', { items: [item] })),
+      ),
+    ).toBe(false);
+
+    // A stored agenda: a viewer can neither start an item (with the timer), reorder, nor remove it.
+    const live = board();
+    live.getMap('session').set('agenda', { items: [item] });
+    const running = { items: [{ ...item, state: 'current', startedAt: 1000 }] };
+    expect(
+      viewerMayApply(
+        live,
+        updateOf(live, (c) => {
+          c.getMap('session').set('agenda', running);
+          c.getMap('session').set('timer', { durationMs: 300000, startedAt: 1000 });
+        }),
+      ),
+    ).toBe(false);
+    expect(
+      viewerMayApply(
+        live,
+        updateOf(live, (c) => c.getMap('session').delete('agenda')),
+      ),
+    ).toBe(false);
+    // A comment next to a stored agenda is still fine.
+    expect(
+      viewerMayApply(
+        live,
+        updateOf(live, (c) => {
+          const thread = new Y.Map<unknown>();
+          thread.set('text', 'about the agenda');
+          comments(c).set('t2', thread);
+        }),
+      ),
+    ).toBe(true);
+  });
+
   it('refuses a change to the timer, to another key of session or to another root type', () => {
     const server = board();
     expect(

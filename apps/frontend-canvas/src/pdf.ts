@@ -112,6 +112,15 @@ export interface PdfAppendix {
   }[];
 }
 
+/**
+ * A page of text before the board's pages (the agenda, #849): a title, then lines, each with its size and weight. A4, portrait;
+ * it runs on to another page when it is longer than one.
+ */
+export interface PdfTextPage {
+  title: string;
+  lines: { text: string; size?: number; bold?: boolean; indent?: number; after?: number }[];
+}
+
 export interface PdfPage {
   svg: SVGSVGElement;
   /** A line above the content, the name of a frame. */
@@ -131,9 +140,23 @@ export async function svgsToPdf(
   pages: readonly PdfPage[],
   layout: PdfLayout = {},
   appendix?: PdfAppendix | null,
+  /** A page of text that comes first (the agenda, #849). */
+  cover?: PdfTextPage | null,
 ): Promise<Blob> {
+  if (pages.length === 0) throw new Error('A PDF needs at least one page.');
   const [{ jsPDF }, { svg2pdf }] = await Promise.all([import('jspdf'), import('svg2pdf.js')]);
   let document: InstanceType<typeof jsPDF> | null = null;
+  if (cover) {
+    const a4 = PAGE_FORMATS.a4;
+    document = new jsPDF({
+      unit: 'px',
+      format: [a4.width, a4.height],
+      orientation: 'portrait',
+      compress: true,
+      hotfixes: ['px_scaling'],
+    });
+    writeTextPage(document, cover);
+  }
   for (const { svg, title } of pages) {
     const width = Number(svg.getAttribute('width'));
     const height = Number(svg.getAttribute('height'));
@@ -182,24 +205,7 @@ type PdfDocument = InstanceType<(typeof import('jspdf'))['jsPDF']>;
  * messages. A line is wrapped to the page, and a new page starts when the next lines do not fit.
  */
 export function writeAppendix(document: PdfDocument, appendix: PdfAppendix): void {
-  const page = PAGE_FORMATS.a4;
-  const width = page.width - 2 * MARGIN;
-  let y = 0;
-  const newPage = () => {
-    document.addPage([page.width, page.height], 'portrait');
-    y = MARGIN;
-  };
-  const line = (text: string, size: number, bold = false, indent = 0, after = 4) => {
-    document.setFont('helvetica', bold ? 'bold' : 'normal');
-    document.setFontSize(size);
-    for (const part of document.splitTextToSize(text, width - indent) as string[]) {
-      if (y + size * 1.3 > page.height - MARGIN) newPage();
-      document.text(part, MARGIN + indent, y + size);
-      y += size * 1.3;
-    }
-    y += after;
-  };
-  newPage();
+  const line = textWriter(document, true);
   document.outline.add(null, appendix.title, { pageNumber: document.getNumberOfPages() });
   line(appendix.title, 18, true, 0, 10);
   for (const section of appendix.sections) {
@@ -210,8 +216,48 @@ export function writeAppendix(document: PdfDocument, appendix: PdfAppendix): voi
         line(`${message.author}, ${message.date}`, 10, true, 12, 0);
         line(message.text, 11, false, 12, 4);
       }
-      if (thread.resolvedBy) line(thread.resolvedBy, 10, false, 12, 2);
-      y += 8;
+      if (thread.resolvedBy) line(thread.resolvedBy, 10, false, 12, 10);
+      else line('', 0, false, 0, 8);
     }
   }
+}
+
+/** Writes a page of text on the document's current page, which is A4 portrait (the agenda before the board, #849). */
+export function writeTextPage(document: PdfDocument, page: PdfTextPage): void {
+  const line = textWriter(document, false);
+  document.outline.add(null, page.title, { pageNumber: document.getNumberOfPages() });
+  line(page.title, 18, true, 0, 10);
+  for (const entry of page.lines) {
+    line(entry.text, entry.size ?? 11, entry.bold ?? false, entry.indent ?? 0, entry.after ?? 4);
+  }
+}
+
+/**
+ * Lines of Helvetica on A4 pages: a line is wrapped to the page, and a new page starts when the next line does not fit.
+ * `startOnNewPage` adds a page first (an appendix after the board); otherwise the text starts on the current page.
+ */
+function textWriter(
+  document: PdfDocument,
+  startOnNewPage: boolean,
+): (text: string, size: number, bold?: boolean, indent?: number, after?: number) => void {
+  const page = PAGE_FORMATS.a4;
+  const width = page.width - 2 * MARGIN;
+  let y = MARGIN;
+  const newPage = () => {
+    document.addPage([page.width, page.height], 'portrait');
+    y = MARGIN;
+  };
+  if (startOnNewPage) newPage();
+  return (text, size, bold = false, indent = 0, after = 4) => {
+    if (text !== '') {
+      document.setFont('helvetica', bold ? 'bold' : 'normal');
+      document.setFontSize(size);
+      for (const part of document.splitTextToSize(text, width - indent) as string[]) {
+        if (y + size * 1.3 > page.height - MARGIN) newPage();
+        document.text(part, MARGIN + indent, y + size);
+        y += size * 1.3;
+      }
+    }
+    y += after;
+  };
 }

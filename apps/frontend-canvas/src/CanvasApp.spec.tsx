@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { convertToExcalidrawElements, serializeAsJSON } from '@excalidraw/excalidraw';
 import { CanvasApp } from './CanvasApp';
 import { STICKY_COLORS, paperColor } from './sticky-note';
 import { excalidrawReady } from './test-utils';
@@ -416,6 +417,153 @@ describe('the canvas menu', () => {
 
       expect(await screen.findByRole('complementary', { name: 'History' })).toBeTruthy();
       expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    });
+  });
+
+  describe('the agenda (#849)', () => {
+    /** A template: a frame and an agenda whose first item is linked to it, with a run that a new board must not take over. */
+    const template = () => {
+      const [frame] = convertToExcalidrawElements([
+        { type: 'frame', x: 0, y: 0, width: 400, height: 300, name: 'Warm-up', children: [] },
+      ]);
+      const json = JSON.parse(serializeAsJSON([frame], {}, {}, 'local')) as Record<string, unknown>;
+      json['elysionAgenda'] = [
+        { id: 'i1', title: 'Intro', durationMin: 5, frameId: frame.id, state: 'done', spentMs: 9 },
+        { id: 'i2', title: 'Ideas', durationMin: 20, frameId: null },
+      ];
+      return { frameId: frame.id, file: new Blob([JSON.stringify(json)]) };
+    };
+
+    it('opens from the Facilitation part of the canvas menu, and with Alt+A (also as Option+A on a Mac)', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" />);
+      await excalidrawReady(container);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Canvas menu' }));
+      expect(screen.getByText('Facilitation')).toBeTruthy();
+      expect(screen.getByRole('menuitem', { name: /Agenda/ }).textContent).toContain('Alt+A');
+      fireEvent.click(screen.getByRole('menuitem', { name: /Agenda/ }));
+      expect(await screen.findByRole('complementary', { name: 'Agenda' })).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: 'Close the agenda' }));
+      expect(screen.queryByRole('complementary', { name: 'Agenda' })).toBeNull();
+
+      fireEvent.keyDown(container.querySelector('.excalidraw') as HTMLElement, {
+        key: 'å',
+        code: 'KeyA',
+        altKey: true,
+      });
+      expect(await screen.findByRole('complementary', { name: 'Agenda' })).toBeTruthy();
+      // Typing into the panel's own field is typing.
+      const typed = fireEvent.keyDown(screen.getByRole('textbox', { name: 'New item' }), {
+        key: 'å',
+        code: 'KeyA',
+        altKey: true,
+      });
+      expect(typed).toBe(true);
+      expect(screen.getByRole('complementary', { name: 'Agenda' })).toBeTruthy();
+      fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA', altKey: true });
+      expect(screen.queryByRole('complementary', { name: 'Agenda' })).toBeNull();
+    });
+
+    it('ignores A without Alt and Ctrl+Alt+A', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" />);
+      await excalidrawReady(container);
+      fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA' });
+      fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA', altKey: true, ctrlKey: true });
+      expect(screen.queryByRole('complementary', { name: 'Agenda' })).toBeNull();
+    });
+
+    it('takes the place of the history: one panel on the right at a time', async () => {
+      const snapshotApi = {
+        list: vi.fn(async () => []),
+        create: vi.fn(),
+        rename: vi.fn(),
+        remove: vi.fn(),
+        document: vi.fn(),
+        restore: vi.fn(),
+        openAsNew: vi.fn(),
+      };
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi} />);
+      await excalidrawReady(container);
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true });
+      await screen.findByRole('complementary', { name: 'History' });
+
+      fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA', altKey: true });
+      expect(await screen.findByRole('complementary', { name: 'Agenda' })).toBeTruthy();
+      expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
+    });
+
+    it('comes with a board made from a template, as a plan with nothing run, and its Start runs the timer', async () => {
+      const onControls = vi.fn();
+      const onTimerChange = vi.fn();
+      const { container } = render(
+        <CanvasApp boardId="test-board" onControls={onControls} onTimerChange={onTimerChange} />,
+      );
+      await excalidrawReady(container);
+      const controls = onControls.mock.calls[0][0];
+      const { file, frameId } = template();
+
+      await act(() => controls.importFile(file));
+      fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA', altKey: true });
+      const panel = await screen.findByRole('complementary', { name: 'Agenda' });
+
+      expect(within(panel).getAllByRole('listitem')).toHaveLength(2);
+      expect(within(panel).getByText('Frame: Warm-up')).toBeTruthy();
+      expect(within(panel).queryByText('Done')).toBeNull(); // the template's run is not taken over
+
+      fireEvent.click(within(panel).getByRole('button', { name: 'Start Intro' }));
+      await waitFor(() =>
+        expect(onTimerChange).toHaveBeenLastCalledWith(
+          expect.objectContaining({ durationMs: 5 * 60_000 }),
+        ),
+      );
+      expect(within(panel).getByRole('status').textContent).toBe('Now: Intro');
+
+      fireEvent.click(within(panel).getByRole('button', { name: 'Next' }));
+      await waitFor(() =>
+        expect(onTimerChange).toHaveBeenLastCalledWith(
+          expect.objectContaining({ durationMs: 20 * 60_000 }),
+        ),
+      );
+      expect(within(panel).getByRole('status').textContent).toBe('Now: Ideas');
+
+      // Saving the board as a template carries the plan again, with the frame link.
+      const saved = JSON.parse(await ((await controls.exportBoard('excalidraw')) as Blob).text());
+      expect(saved.elysionAgenda).toEqual([
+        { id: 'i1', title: 'Intro', durationMin: 5, frameId },
+        { id: 'i2', title: 'Ideas', durationMin: 20, frameId: null },
+      ]);
+    });
+
+    it('links the selected frame', async () => {
+      const onControls = vi.fn();
+      const { container } = render(<CanvasApp boardId="test-board" onControls={onControls} />);
+      await excalidrawReady(container);
+      const { file } = template();
+      await act(() => onControls.mock.calls[0][0].importFile(file));
+      fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA', altKey: true });
+      const panel = await screen.findByRole('complementary', { name: 'Agenda' });
+      const link = within(panel).getByRole('button', { name: 'Link Ideas to the selected frame' });
+      expect(link).toHaveProperty('disabled', true);
+
+      // Ctrl+A selects everything there is: the frame.
+      fireEvent.keyDown(container.querySelector('.excalidraw') as HTMLElement, {
+        key: 'a',
+        code: 'KeyA',
+        ctrlKey: true,
+        metaKey: true,
+      });
+      await waitFor(() => expect(link).toHaveProperty('disabled', false));
+      fireEvent.click(link);
+      await waitFor(() => expect(within(panel).getAllByText('Frame: Warm-up')).toHaveLength(2));
+    });
+
+    it('shows a viewer the agenda without controls', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" readOnly />);
+      await excalidrawReady(container);
+      fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA', altKey: true });
+      const panel = await screen.findByRole('complementary', { name: 'Agenda' });
+      expect(within(panel).getByText('This board has no agenda.')).toBeTruthy();
+      expect(within(panel).queryByRole('button', { name: 'Next' })).toBeNull();
     });
   });
 
