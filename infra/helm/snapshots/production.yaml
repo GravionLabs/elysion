@@ -338,6 +338,8 @@ spec:
               value: https://id.example/realms/elysion
             - name: OIDC_AUDIENCE
               value: elysion-bff
+            - name: PUBLIC_API_RATE_LIMIT_PER_MINUTE
+              value: "600"
             - name: WS_TOKEN_SECRET
               valueFrom:
                 secretKeyRef:
@@ -771,7 +773,7 @@ spec:
       match: Host(`elysion.example`) && PathPrefix(`/public/v1`)
       middlewares:
         - name: elysion-security-headers
-        - name: elysion-public-api-rate-limit
+        - name: elysion-public-api-ip-rate-limit
         - name: elysion-public-api-body-limit
       services:
         - name: elysion-bff
@@ -877,11 +879,12 @@ spec:
 
 ---
 # Source: elysion/templates/edge.yaml
-# The public API (ADR 0033): a rate limit per token rather than per address, and a body limit.
+# The public API (ADR 0033): a flood guard per client address (it also bounds made-up tokens, each of which costs the BFF a
+# lookup) and a body limit. The limit per token, with its RateLimit-* headers, is the BFF's.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: elysion-public-api-rate-limit
+  name: elysion-public-api-ip-rate-limit
   labels:
     app.kubernetes.io/name: elysion
     app.kubernetes.io/instance: elysion
@@ -889,11 +892,9 @@ metadata:
     helm.sh/chart: elysion-0.1.0
 spec:
   rateLimit:
-    average: 600
-    burst: 60
+    average: 1200
+    burst: 120
     period: 1m
-    sourceCriterion:
-      requestHeaderName: Authorization
 
 ---
 # Source: elysion/templates/edge.yaml
