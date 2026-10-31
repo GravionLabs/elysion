@@ -19,7 +19,7 @@ Renovate with a configuration made for the same stack (Angular, pnpm, SHA-pinned
    (pull requests opened with the default `GITHUB_TOKEN` do not start CI). `renovate-config.yml` validates the configuration in a pull request.
 2. **Groups** that move together: Angular with TypeScript and `zone.js`, NestJS, Excalidraw with React, build and test tooling, types, NuGet,
    GitHub Actions. A major update is a pull request of its own with the label `major`; nothing is merged automatically.
-3. **Rules that encode decisions:** `typescript` stays below 7, and the Docker `node` image below 25 until somebody changes
+3. **Rules that encode decisions:** `typescript` stays below 7, and the Docker `node` image below 27 (Node 26, the LTS since October 2026; it was 25 while Node 24 was the line) until somebody changes
    the rule on purpose. The shared `GravionLabs/ci` actions follow `main` and are not touched. Actions stay pinned to a commit SHA, with the version in a comment.
 4. **Commits are `chore(deps): ...`,** which `cliff.toml` leaves out of the release notes. A known vulnerability gets a pull request at once, outside the schedule
    (`osvVulnerabilityAlerts`), labelled `security`.
