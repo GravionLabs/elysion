@@ -332,3 +332,10 @@ Viewers vote (the read policy); a voting of another board is a `404`. **What the
 ## Board thumbnails
 
 The picture on a board's card (#729). `PUT /boards/{id}/thumbnail` (the board's write role) takes a PNG of at most 512 KiB (`415` for another type, `400` for bytes that are no PNG, `413` over the limit), keeps it in the object store under `thumbnails/{boardId}.png` (outside the board's file prefix on purpose: the files of a board are counted and copied by that prefix) and sets `Board.ThumbnailUpdatedAt`, the version of the picture. `GET /boards/{id}/thumbnail` (the read role) answers the PNG with an `ETag` made of that timestamp (`304` for a browser that has it, without reading the store), `private, no-cache`, `nosniff` and a sandboxing CSP, or `404` when there is none. The board list and a board carry `thumbnailUpdatedAt` and `hasThumbnail`. Duplicating a board copies the picture; deleting a board deletes it.
+
+## Snapshots
+
+Not built yet: [ADR 0032](../adr/0032-board-snapshots.md) (#846, #847). A snapshot is the board's stored Yjs state, gzipped in the
+object store at `snapshots/{boardId}/{id}.yjs.gz`, with a row in `BoardSnapshots`; automatic ones are made on a save at most once an
+hour, before a compaction and before a restore, kept 30 days (at most 50 per board), named ones until deleted (at most 100). A
+restore asks the realtime service to merge the snapshot forward onto the live board.
