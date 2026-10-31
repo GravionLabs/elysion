@@ -176,4 +176,18 @@ describe('presentUsers', () => {
 
     expect(result.map((u) => `${u.name}${u.id}`)).toEqual(['Al0', 'Sam1', 'Sam2']);
   });
+
+  it('lists a person once however many tabs they have, and not the local person in another tab', () => {
+    const result = presentUsers(
+      states([
+        [1, { user: user('me') }],
+        [2, { user: user('ada', 'Ada') }],
+        [3, { user: user('ada', 'Ada') }],
+        [4, { user: user('me') }],
+      ]),
+      1,
+    );
+
+    expect(result).toEqual([{ id: 'ada', name: 'Ada', color: '#3b82f6' }]);
+  });
 });

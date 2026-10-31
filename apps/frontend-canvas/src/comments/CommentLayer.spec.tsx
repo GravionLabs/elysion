@@ -92,7 +92,12 @@ describe('comments on the canvas', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Comments' }));
     expect(mentionDirectory).toHaveBeenCalled();
-    expect(screen.getByRole('status').textContent).toContain('Click an element or a point');
+    // The follow overlay has an (empty) status region of its own, so the one with the hint is found by its text.
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((region) => region.textContent?.includes('Click an element or a point')),
+    ).toBe(true);
     press(canvas, [180, 150]);
 
     const box = await screen.findByPlaceholderText('Write a comment… (@ mentions someone)');

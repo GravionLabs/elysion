@@ -35,7 +35,7 @@ import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader
 import { SessionService } from '../auth/session.service';
 import { LanguageService } from '../shared/language';
 import { PresenceStore } from './presence-store';
-import type { OfflineState, TimerState, VotingSession } from './canvas-element';
+import type { FollowState, OfflineState, TimerState, VotingSession } from './canvas-element';
 import { OFFLINE_BAR_AFTER_MS, OfflineBar } from './offline-bar';
 import { TEMPLATE_STATE_KEY, TemplateApi } from './template-api';
 
@@ -116,6 +116,9 @@ export class Board {
 
   /** The board's shared timer from the canvas's `timer` event (ADR 0020), or `null`. */
   readonly timer = signal<TimerState | null>(null);
+
+  /** Whom this user follows and who presents, from the canvas's `follow` event (#848), or `null` before it said. */
+  readonly follow = signal<FollowState | null>(null);
 
   /** The board's current dot voting from the canvas's `voting` event (ADR 0029), or `null`. */
   readonly voting = signal<VotingSession | null>(null);
@@ -492,6 +495,10 @@ export class Board {
 
   onVoting(event: Event): void {
     this.voting.set((event as CustomEvent<{ session: VotingSession | null }>).detail.session);
+  }
+
+  onFollow(event: Event): void {
+    this.follow.set((event as CustomEvent<FollowState>).detail);
   }
 
   onTimer(event: Event): void {

@@ -1,0 +1,58 @@
+/*
+ * Following and presenting (presence/FollowOverlay.tsx). A frame in the followed person's color around the canvas and a
+ * pill at the top. The layer catches no pointer events except the pill's button, so the canvas below stays usable. Below
+ * Excalidraw's UI layer (z-index 4) for the frame, above it for the pill so the toolbar never covers it.
+ */
+.elysion-canvas .elysion-follow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.elysion-canvas .elysion-follow-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  box-sizing: border-box;
+  border: 3px solid var(--follow-color, var(--c-primary));
+  border-radius: 2px;
+}
+
+.elysion-canvas .elysion-follow-status {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  z-index: 6;
+  transform: translateX(-50%);
+}
+
+.elysion-canvas .elysion-follow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--c-text, #1b1b1f);
+  background: var(--c-surface-1, #fff);
+  border: 2px solid var(--follow-color, var(--c-primary));
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+}
+
+.elysion-canvas .elysion-follow-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--follow-color, var(--c-primary));
+  border-radius: 50%;
+}
+
+.elysion-canvas .elysion-follow-button {
+  padding: 2px 10px;
+  font: inherit;
+  color: var(--c-on-primary, #fff);
+  cursor: pointer;
+  background: var(--c-primary);
+  border: 0;
+  border-radius: 999px;
+}

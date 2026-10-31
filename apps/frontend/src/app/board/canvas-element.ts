@@ -70,6 +70,16 @@ export interface OfflineState {
   sent: number;
 }
 
+/**
+ * The canvas's `follow` event (#848): whom this client follows (a person, or the presenter), the presenter while they
+ * are on the board, and whether this client stepped out of that presentation.
+ */
+export interface FollowState {
+  following: { id: string; name: string; color: string; reason: 'person' | 'presenter' } | null;
+  presenter: { id: string; name: string; color: string; me: boolean } | null;
+  steppedOut: boolean;
+}
+
 export interface TimerState {
   /** The length of the timer, including extensions. */
   durationMs: number;
@@ -158,4 +168,15 @@ export type CanvasElement = HTMLElement & {
   clearVotingResults?(): Promise<void>;
   /** Scrolls the view to an element (a result); rejects when it is not on the board. */
   scrollToElement?(elementId: string): Promise<void>;
+  /**
+   * Follows a person by the `id` of a `presence` entry (#848): the canvas shows what their window shows until they pan, zoom
+   * or press Esc. Rejects when they are not on the board, and before the canvas is up. The canvas announces the state as the
+   * `follow` event.
+   */
+  follow?(userId: string): Promise<void>;
+  /** Presenting: everybody follows the presenter. The first two reject on a read-only canvas; `stopPresenting` is for the presenter and the owner (`can-moderate`). */
+  startPresenting?(): Promise<void>;
+  stopPresenting?(): Promise<void>;
+  /** "Bring everyone to me": everybody else's view jumps once to this one. Rejects on a read-only canvas. */
+  summonEveryone?(): Promise<void>;
 };

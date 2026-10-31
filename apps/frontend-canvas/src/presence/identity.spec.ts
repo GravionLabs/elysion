@@ -80,4 +80,12 @@ describe('withHostIdentity', () => {
       MAX_NAME_LENGTH,
     );
   });
+
+  it("takes the host's user id, so every tab of a person is one person; a blank id is ignored", () => {
+    const base = identityFor('session-id');
+
+    expect(withHostIdentity(base, undefined, undefined, ' user-42 ').id).toBe('user-42');
+    expect(withHostIdentity(base, undefined, undefined, '  ').id).toBe('session-id');
+    expect(withHostIdentity(base, undefined, undefined, undefined).id).toBe('session-id');
+  });
 });

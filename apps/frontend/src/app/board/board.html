@@ -25,6 +25,7 @@
     (favoriteToggle)="toggleFavorite()"
     [timer]="timer()"
     [voting]="voting()"
+    [followState]="follow()"
     (renameRequested)="rename($event)"
     (themeToggle)="toggleTheme()"
     (libraryToggle)="toggleLibrary()"
@@ -43,6 +44,10 @@
     (votingEnd)="timerCommand((c) => c.endVoting?.())"
     (votingClear)="timerCommand((c) => c.clearVotingResults?.())"
     (votingFocus)="timerCommand((c) => c.scrollToElement?.($event))"
+    (followRequested)="timerCommand((c) => c.follow?.($event))"
+    (presentStart)="timerCommand((c) => c.startPresenting?.())"
+    (presentStop)="timerCommand((c) => c.stopPresenting?.())"
+    (presentSummon)="timerCommand((c) => c.summonEveryone?.())"
   />
   <app-offline-bar
     [since]="outage()?.since ?? null"
@@ -188,6 +193,7 @@
       (presence)="onPresence($event)"
       (timer)="onTimer($event)"
       (voting)="onVoting($event)"
+      (follow)="onFollow($event)"
     ></elysion-canvas>
   }
   <!-- Loaded the first time it is opened (#710): most visits never share. -->
