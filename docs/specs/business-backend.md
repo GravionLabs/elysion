@@ -339,3 +339,10 @@ Not built yet: [ADR 0032](../adr/0032-board-snapshots.md) (#846, #847). A snapsh
 object store at `snapshots/{boardId}/{id}.yjs.gz`, with a row in `BoardSnapshots`; automatic ones are made on a save at most once an
 hour, before a compaction and before a restore, kept 30 days (at most 50 per board), named ones until deleted (at most 100). A
 restore asks the realtime service to merge the snapshot forward onto the live board.
+
+## Public API and webhooks
+
+Not built yet: [ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md) (#851, #853). A third authentication scheme accepts
+personal access tokens (`elp_`, looked up by hash, cached 30 s) and acts as their owner with the token's scopes; Keycloak service
+accounts with the role `elysion-integration` become integration users with the access of a member. Webhooks are delivered from an
+outbox written in the same transaction as the change, signed with HMAC-SHA256 (`Elysion-Signature`).
