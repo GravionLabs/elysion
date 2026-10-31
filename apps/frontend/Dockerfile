@@ -12,6 +12,10 @@ RUN pnpm --filter @elysion/frontend build
 
 # The unprivileged variant: user nginx (uid 101), port 8080, pid and temp files in /tmp.
 FROM nginxinc/nginx-unprivileged:alpine AS runtime
+# The upstream image lags behind Alpine's security fixes (brotli-libs, curl): take the patched packages, then drop root again.
+USER root
+RUN apk upgrade --no-cache
+USER 101
 # Development defaults; the compose file / deployment sets the real values.
 ENV OIDC_ISSUER_URL=http://localhost:8081/realms/elysion \
     OIDC_CLIENT_ID=elysion-frontend \
