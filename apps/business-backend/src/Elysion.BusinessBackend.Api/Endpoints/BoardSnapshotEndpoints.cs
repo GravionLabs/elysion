@@ -96,7 +96,14 @@ public static class BoardSnapshotEndpoints
                 return MissingVersion();
             }
 
-            before = await service.CreateBeforeRestoreAsync(id, cancellationToken);
+            bool saved;
+            (saved, before) = await service.CreateBeforeRestoreAsync(id, cancellationToken);
+            if (!saved)
+            {
+                // The live state could not be stored, so "Before restore" would lag it: restoring would lose edits for good.
+                return TypedResults.Problem("The board could not be saved before the restore. Try again in a moment.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
         }
         catch (Exception e) when (e is AmazonServiceException or HttpRequestException)
         {

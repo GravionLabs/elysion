@@ -99,4 +99,20 @@ describe('Saving a board on request (e2e)', () => {
     client.close();
     await app.close();
   });
+
+  it('answers 503 when the store refuses the save, so the caller knows the stored state may lag', async () => {
+    const store = new InMemoryDocumentStore();
+    const boardId = randomUUID();
+    const { app, url } = await startInstance(store, slowSaves);
+    const client = new SyncClient(boardUrl(url, boardId));
+    await client.waitForOpen();
+    client.doc.getMap('elements').set('a', 1);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    vi.spyOn(store, 'save').mockRejectedValueOnce(new Error('backend down'));
+
+    expect((await save(url, boardId, `Bearer ${await serviceToken()}`)).status).toBe(503);
+
+    client.close();
+    await app.close();
+  });
 });

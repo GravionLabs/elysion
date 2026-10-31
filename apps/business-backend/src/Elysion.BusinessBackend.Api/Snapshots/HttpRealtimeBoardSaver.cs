@@ -5,11 +5,24 @@ using Microsoft.Extensions.Options;
 
 namespace Elysion.BusinessBackend.Api.Snapshots;
 
+/// <summary>How an ask to store the open board ended.</summary>
+public enum RealtimeSaveResult
+{
+    /// <summary>The realtime service answered success: the board is stored, or it is not open or unchanged (the stored state is current).</summary>
+    Saved,
+
+    /// <summary>No <c>REALTIME_URL</c> is set, so nobody was asked.</summary>
+    NotConfigured,
+
+    /// <summary>The service refused (also when its store failed), did not answer or timed out: the stored state may lag the live board.</summary>
+    Failed,
+}
+
 /// <summary>Asks the realtime service to store a board's open state now, so that "Save version" holds the last seconds too (ADR 0032).</summary>
 public interface IRealtimeBoardSaver
 {
-    /// <summary>Best effort: returns normally whether the board was open, the service is not configured, refused, or did not answer.</summary>
-    Task SaveNowAsync(Guid boardId, CancellationToken cancellationToken);
+    /// <summary>Never throws because of the call (only when cancelled); the caller decides what a failure means.</summary>
+    Task<RealtimeSaveResult> SaveNowAsync(Guid boardId, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -26,12 +39,12 @@ public sealed partial class HttpRealtimeBoardSaver(
     /// <summary>The realtime service's own save has to reach the backend within this.</summary>
     public static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
 
-    public async Task SaveNowAsync(Guid boardId, CancellationToken cancellationToken)
+    public async Task<RealtimeSaveResult> SaveNowAsync(Guid boardId, CancellationToken cancellationToken)
     {
         var url = realtime.Value.Url.Trim();
         if (url.Length == 0)
         {
-            return;
+            return RealtimeSaveResult.NotConfigured;
         }
 
         try
@@ -46,12 +59,16 @@ public sealed partial class HttpRealtimeBoardSaver(
             if (!response.IsSuccessStatusCode)
             {
                 Refused(logger, boardId, (int)response.StatusCode);
+                return RealtimeSaveResult.Failed;
             }
+
+            return RealtimeSaveResult.Saved;
         }
         catch (Exception e) when (e is HttpRequestException or UriFormatException
                                   || (e is OperationCanceledException && !cancellationToken.IsCancellationRequested))
         {
             Failed(logger, boardId, e.GetType().Name);
+            return RealtimeSaveResult.Failed;
         }
     }
 

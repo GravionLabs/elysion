@@ -2,6 +2,7 @@ import {
   Controller,
   Headers,
   HttpCode,
+  ServiceUnavailableException,
   HttpStatus,
   Param,
   ParseUUIDPipe,
@@ -13,8 +14,9 @@ import { YjsRoomRegistry } from '../yjs/yjs-room-registry.js';
 
 /**
  * The business backend asks for a board to be stored now, right before it keeps a version of it (ADR 0032), so the
- * version holds the last seconds too. Answers 204 once the board is stored, also when it is not open here or has
- * nothing unsaved. Not routed at the edge; the service token is the only way in.
+ * version holds the last seconds too (and before a restore, #847). Answers 204 once the board is stored, also when it
+ * is not open here or has nothing unsaved (the stored state is then current), and 503 when the store refused the save, so
+ * the caller knows the stored state may lag the live board. Not routed at the edge; the service token is the only way in.
  */
 @Controller('internal/boards')
 export class InternalSaveController {
@@ -35,6 +37,6 @@ export class InternalSaveController {
       if (error instanceof InvalidInternalCallError) throw new UnauthorizedException();
       throw error;
     }
-    await this.registry.saveNow(boardId);
+    if (!(await this.registry.saveNow(boardId))) throw new ServiceUnavailableException();
   }
 }

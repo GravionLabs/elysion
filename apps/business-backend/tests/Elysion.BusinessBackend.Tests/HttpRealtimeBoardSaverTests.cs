@@ -43,7 +43,7 @@ public class HttpRealtimeBoardSaverTests
     {
         var handler = new Handler(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent)));
 
-        await Saver(handler).SaveNowAsync(Board, CancellationToken.None);
+        (await Saver(handler).SaveNowAsync(Board, CancellationToken.None)).ShouldBe(RealtimeSaveResult.Saved);
 
         var request = handler.Requests.ShouldHaveSingleItem();
         request.Method.ShouldBe(HttpMethod.Post);
@@ -65,21 +65,22 @@ public class HttpRealtimeBoardSaverTests
     {
         var handler = new Handler(_ => throw new InvalidOperationException("must not be called"));
 
-        await Saver(handler, "").SaveNowAsync(Board, CancellationToken.None);
+        (await Saver(handler, "").SaveNowAsync(Board, CancellationToken.None)).ShouldBe(
+            RealtimeSaveResult.NotConfigured);
 
         handler.Requests.ShouldBeEmpty();
     }
 
     [Test]
-    public async Task A_refusal_an_unreachable_service_and_a_timeout_are_not_errors_for_the_caller()
+    public async Task A_refusal_an_unreachable_service_and_a_timeout_are_reported_as_failed_not_thrown()
     {
         var refused = new Handler(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized)));
         var down = new Handler(_ => throw new HttpRequestException("connection refused"));
         var slow = new Handler(_ => throw new TaskCanceledException("timed out"));
 
-        await Should.NotThrowAsync(() => Saver(refused).SaveNowAsync(Board, CancellationToken.None));
-        await Should.NotThrowAsync(() => Saver(down).SaveNowAsync(Board, CancellationToken.None));
-        await Should.NotThrowAsync(() => Saver(slow).SaveNowAsync(Board, CancellationToken.None));
+        (await Saver(refused).SaveNowAsync(Board, CancellationToken.None)).ShouldBe(RealtimeSaveResult.Failed);
+        (await Saver(down).SaveNowAsync(Board, CancellationToken.None)).ShouldBe(RealtimeSaveResult.Failed);
+        (await Saver(slow).SaveNowAsync(Board, CancellationToken.None)).ShouldBe(RealtimeSaveResult.Failed);
     }
 
     [Test]

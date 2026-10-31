@@ -97,15 +97,23 @@ public sealed partial class BoardSnapshotService(
 
     /// <summary>
     /// Before a restore (ADR 0032, #847): asks the realtime service to store the open board, then keeps the stored state as
-    /// "Before restore", so the restore can always be undone by restoring that one. Null when the board has no stored state.
+    /// "Before restore", so the restore can always be undone by restoring that one. Null <c>Before</c> when the board has no
+    /// stored state (after a successful save that means it is empty). When the save did not succeed (failed, or no realtime
+    /// service configured) the stored state may lag the live board, so nothing is kept and <c>Saved</c> is false: the caller
+    /// must not restore.
     /// </summary>
-    public async Task<BoardSnapshot?> CreateBeforeRestoreAsync(Guid boardId, CancellationToken cancellationToken)
+    public async Task<(bool Saved, BoardSnapshot? Before)> CreateBeforeRestoreAsync(Guid boardId,
+        CancellationToken cancellationToken)
     {
-        await realtime.SaveNowAsync(boardId, cancellationToken);
+        if (await realtime.SaveNowAsync(boardId, cancellationToken) != RealtimeSaveResult.Saved)
+        {
+            return (false, null);
+        }
+
         var document = await documents.FindAsync(boardId.ToString(), cancellationToken);
-        return document is null
+        return (true, document is null
             ? null
-            : await CreateAutomaticAsync(boardId, document.State, SnapshotKind.BeforeRestore, null, cancellationToken);
+            : await CreateAutomaticAsync(boardId, document.State, SnapshotKind.BeforeRestore, null, cancellationToken));
     }
 
     /// <summary>

@@ -654,6 +654,45 @@ public class BoardSnapshotsApiTests
     }
 
     [Test]
+    public async Task Restore_answers_503_and_changes_nothing_when_the_live_board_could_not_be_saved()
+    {
+        await SaveDocumentAsync([1]);
+        var version = await SaveVersionAsync();
+        var kinds = (await ListAsync()).Select(s => s.Kind).ToList();
+        foreach (var answer in new[] { RealtimeSaveResult.Failed, RealtimeSaveResult.NotConfigured })
+        {
+            _factory.RealtimeSaves.Answer = answer;
+            using var owner = As("owner");
+
+            (await owner.PostAsync(Url($"/{version.Id}/restore"), null)).StatusCode.ShouldBe(
+                HttpStatusCode.ServiceUnavailable);
+        }
+
+        _factory.RealtimeRestores.Asked.ShouldBeEmpty();
+        (await ListAsync()).Select(s => s.Kind).ShouldBe(kinds);
+        (await Query(db => db.AuditEntries.CountAsync(e => e.Action == AuditActions.SnapshotRestored))).ShouldBe(0);
+    }
+
+    [Test]
+    public async Task Restore_of_a_board_with_no_stored_state_after_a_successful_save_proceeds_without_before()
+    {
+        await SaveDocumentAsync([1]);
+        var version = await SaveVersionAsync();
+        await Query(async db =>
+        {
+            db.BoardDocuments.RemoveRange(db.BoardDocuments);
+            return await db.SaveChangesAsync();
+        });
+        using var owner = As("owner");
+
+        var response = await owner.PostAsync(Url($"/{version.Id}/restore"), null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await response.Content.ReadFromJsonAsync<RestoreSnapshotResponse>())!.Before.ShouldBeNull();
+        _factory.RealtimeRestores.Asked.ShouldHaveSingleItem();
+    }
+
+    [Test]
     public async Task Restore_answers_503_and_writes_no_audit_entry_when_the_realtime_service_does_not_restore()
     {
         await SaveDocumentAsync([1]);

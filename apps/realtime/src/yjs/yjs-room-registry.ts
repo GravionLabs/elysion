@@ -188,11 +188,9 @@ export class YjsRoomRegistry implements OnModuleDestroy {
    * done; does nothing when the board is not open on this instance or has no unsaved changes. A failed save is retried
    * as always and does not reject.
    */
-  async saveNow(boardId: string): Promise<void> {
+  async saveNow(boardId: string): Promise<boolean> {
     const room = this.rooms.get(boardId);
-    if (room) {
-      await this.save(room);
-    }
+    return room ? await this.save(room) : true;
   }
 
   /** Saves the room now if it has unsaved changes (used when its last client leaves). */
@@ -607,16 +605,16 @@ export class YjsRoomRegistry implements OnModuleDestroy {
   }
 
   /** Saves the room's state if it changed since the last save; waits for a save already running first. */
-  private async save(room: YjsRoom): Promise<void> {
+  private async save(room: YjsRoom): Promise<boolean> {
     const state = this.saves.get(room.boardId);
     if (!state) {
-      return;
+      return true;
     }
     while (state.saving) {
       await state.saving;
     }
     if (!state.dirty) {
-      return;
+      return true;
     }
 
     if (state.timer) clearTimeout(state.timer);
@@ -628,10 +626,11 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     state.saving = (state.connection ? runInConnection(state.connection, write) : write()).finally(
       () => (state.saving = null),
     );
-    await state.saving;
+    return await state.saving;
   }
 
-  private async writeToStore(room: YjsRoom, state: SaveState): Promise<void> {
+  /** True when the state is stored, false when the attempt failed (a retry is scheduled, or the room was given up). */
+  private async writeToStore(room: YjsRoom, state: SaveState): Promise<boolean> {
     const endTimer = this.metrics?.startSave();
     try {
       for (;;) {
@@ -643,7 +642,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
           room.sizeBytes = encoded.byteLength;
           state.version = result.version;
           state.failures = 0;
-          return;
+          return true;
         }
         // Another instance saved first. Yjs merges are lossless: take its state in, then save the union.
         Y.applyUpdate(room.doc, result.current.state, STORE_ORIGIN);
@@ -659,7 +658,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
           `Saving board ${room.boardId} was refused (${error.status}), giving up: ${error.message}`,
         );
         this.giveUp(room, state, 'The board no longer exists or cannot be stored');
-        return;
+        return false;
       }
       if (room.clients.size === 0 && state.failures >= this.options.maxFailuresWithoutClients) {
         // Nobody has the board open and the store has been failing for a long time: stop holding it in memory for ever.
@@ -667,7 +666,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
           `Saving board ${room.boardId} failed ${state.failures} times and nobody is connected, dropping its unsaved state: ${String(error)}`,
         );
         this.giveUp(room, state, 'The board could not be stored');
-        return;
+        return false;
       }
       state.dirty = true;
       const delay = Math.min(
@@ -678,6 +677,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
         `Saving board ${room.boardId} failed (attempt ${state.failures}), retrying in ${delay} ms: ${String(error)}`,
       );
       this.schedule(room, state, delay);
+      return false;
     }
   }
 

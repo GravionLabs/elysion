@@ -121,8 +121,9 @@ None at the moment. The WS-token issuance question is settled: the BFF issues it
 backend calls `POST /internal/boards/{boardId}/save` (no body; same service token as the voting route, not routed at the edge).
 `YjsRoomRegistry.saveNow` stores the board if it is open on this instance and has unsaved changes, waits for a save that is already
 running, and the answer is `204` once it is done; also `204` for a board that is not open here or unchanged, `400` for a board id
-that is no UUID, `401` without a valid service token. A save that fails is retried as always and the call still answers `204`; the
-backend treats the whole call as best effort (5 s timeout, any failure is logged and the stored state is snapshotted). With several
+that is no UUID, `401` without a valid service token. A save that fails is retried as always, but the call answers `503` (`saveNow` returns
+false), so the caller knows the stored state may lag the live board. "Save version" treats the call as best effort (5 s timeout,
+any failure is logged and the stored state is snapshotted); the restore (#847) does not: it answers 503 and restores nothing. With several
 instances only the one that gets the call saves; a board open on another instance is snapshotted from its last save. The save
 sends no `X-Elysion-Element-Count`: the header describes the state that is being overwritten, which the service does not have at
 hand, so `ElementCount` stays empty.

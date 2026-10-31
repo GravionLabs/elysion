@@ -361,6 +361,10 @@ save. Automatic and `BeforeRestore` snapshots are kept 30 days and at most 50 pe
 deleted, at most 100 per board. `SnapshotCleanupService` runs at 03:41 UTC: it removes the expired ones and the objects under
 `snapshots/` that have no row. Deleting a board deletes its rows (cascade) and `snapshots/{boardId}/`. There is no byte quota
 (#777 counts boards): the caps and the 8 MiB document limit bound a board. "Save version" first calls `IRealtimeBoardSaver` (`HttpRealtimeBoardSaver`): `POST {REALTIME_URL}/internal/boards/{boardId}/save` with
-the same one-minute service token as the voting news (`RealtimeServiceToken`), 5 s timeout. It is best effort: no `REALTIME_URL`, a
-refusal, an unreachable service or a timeout is logged (no token, no URL) and the stored state is snapshotted as it is; a board that
-is not open costs only the call. Not built yet: the restore and "open as new board" (#847).
+the same one-minute service token as the voting news (`RealtimeServiceToken`), 5 s timeout. The call answers `Saved` (success; also a board that is not open or unchanged, so the stored
+state is current), `NotConfigured` (no `REALTIME_URL`) or `Failed` (a refusal, which includes a failed store save of the realtime
+service, an unreachable service or a timeout; logged without token or URL). "Save version" is best effort and snapshots the stored
+state whatever the answer. The restore is not: `POST .../snapshots/{snapshotId}/restore` answers `503` (problem details) before
+anything is kept or restored when the answer is not `Saved` (without a realtime service the restore cannot run anyway), because a
+stale "Before restore" could not bring back the live edits the restore overwrites. After `Saved`, a board with no stored document is
+empty and the restore proceeds with no "Before restore". Not built yet: the restore and "open as new board" (#847).

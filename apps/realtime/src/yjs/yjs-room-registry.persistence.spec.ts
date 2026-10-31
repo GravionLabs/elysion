@@ -151,6 +151,21 @@ describe('YjsRoomRegistry persistence', () => {
       expect(store.saves).toHaveLength(1);
     });
 
+    it('saveNow answers true when stored or nothing is unsaved, false when the store failed', async () => {
+      const room = await registry.getOrLoad('b');
+      expect(await registry.saveNow('b')).toBe(true); // nothing changed
+      expect(await registry.saveNow('not-open')).toBe(true);
+      room.doc.getMap('elements').set('a', '1');
+      store.saveResult = async () => {
+        throw new Error('backend down');
+      };
+
+      expect(await registry.saveNow('b')).toBe(false);
+
+      store.saveResult = async () => ({ saved: true, version: '2' });
+      expect(await registry.saveNow('b')).toBe(true); // the retry-pending state is saved now
+    });
+
     it('saves a changed room once, a debounce after its last change, based on the loaded version', async () => {
       store.loadResult = async () => ({ state: stateOf({ a: '1' }), version: '7' });
       const room = await registry.getOrLoad('b');

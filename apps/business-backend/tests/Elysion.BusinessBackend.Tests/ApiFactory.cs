@@ -245,7 +245,10 @@ public sealed class RecordingRealtimeBoardSaver : IRealtimeBoardSaver
 
     public Func<Guid, Task>? OnSave { get; set; }
 
-    public async Task SaveNowAsync(Guid boardId, CancellationToken cancellationToken)
+    /// <summary>What the call answers; the default is a success.</summary>
+    public RealtimeSaveResult Answer { get; set; } = RealtimeSaveResult.Saved;
+
+    public async Task<RealtimeSaveResult> SaveNowAsync(Guid boardId, CancellationToken cancellationToken)
     {
         lock (Asked)
         {
@@ -256,5 +259,7 @@ public sealed class RecordingRealtimeBoardSaver : IRealtimeBoardSaver
         {
             await OnSave(boardId);
         }
+
+        return Answer;
     }
 }
