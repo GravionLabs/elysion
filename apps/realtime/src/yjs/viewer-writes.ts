@@ -1,6 +1,6 @@
 import * as Y from 'yjs';
 
-/** The root map that holds the board's shared facilitation state (timer, comments); the elements are a root map of their own. */
+/** The root map that holds the board's shared facilitation state (timer, agenda, presenter, comments); the elements are a root map of their own. */
 export const SESSION_MAP_KEY = 'session';
 
 /** The key of `session` a viewer may write under: the comment threads (#733). */
@@ -10,7 +10,7 @@ export const COMMENTS_KEY = 'comments';
  * Whether a viewer's Yjs update may be applied to the board (#733). A viewer's connection is read-only except for the
  * comment threads: the update is accepted only when everything it changes is the map `session.comments` or a type
  * inside it, and the only change it makes to `session` itself is creating `comments` when there is none yet. Anything
- * else (an element, the timer, another root type, replacing or deleting `comments`) refuses the whole update, so a
+ * else (an element, the timer, the agenda, another root type, replacing or deleting `comments`) refuses the whole update, so a
  * mixed update cannot smuggle a change in beside a comment.
  *
  * It is decided on a scratch copy: the update is applied to a copy of `doc`'s state and the changes of that
