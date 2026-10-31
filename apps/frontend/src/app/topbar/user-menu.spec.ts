@@ -16,7 +16,10 @@ describe('UserMenu', () => {
     await TestBed.configureTestingModule({
       imports: [UserMenu],
       providers: [
-        provideRouter([{ path: 'admin', children: [] }]),
+        provideRouter([
+          { path: 'admin', children: [] },
+          { path: 'settings/tokens', children: [] },
+        ]),
         { provide: LanguageService, useValue: { current: 'en', use } },
       ],
     }).compileComponents();
@@ -56,7 +59,11 @@ describe('UserMenu', () => {
     button().click();
     await fixture.whenStable();
 
-    (el().querySelector('[role="menuitem"]') as HTMLButtonElement).click();
+    (
+      [...el().querySelectorAll('[role="menuitem"]')].find(
+        (item) => item.textContent?.trim() === 'Log out',
+      ) as HTMLButtonElement
+    ).click();
     await fixture.whenStable();
 
     expect(logouts).toBe(1);
@@ -116,6 +123,20 @@ describe('UserMenu', () => {
 
     items[1].click();
     expect(use).toHaveBeenCalledWith('de');
+  });
+
+  it('offers the access tokens to everybody, and closes the menu when followed (#851)', async () => {
+    TestBed.inject(Account).isAdministrator.set(false);
+    button().click();
+    await fixture.whenStable();
+
+    const entry = el().querySelector('a[href="/settings/tokens"]') as HTMLAnchorElement;
+    expect(entry.textContent?.trim()).toBe('Access tokens');
+    expect(entry.getAttribute('role')).toBe('menuitem');
+
+    entry.click();
+    await fixture.whenStable();
+    expect(menu()).toBeNull();
   });
 
   describe('the way to the administration (ADR 0027)', () => {

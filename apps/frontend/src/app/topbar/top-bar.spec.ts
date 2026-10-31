@@ -477,7 +477,11 @@ describe('TopBar', () => {
 
       (el().querySelector('.user-button') as HTMLButtonElement).click();
       await fixture.whenStable();
-      (el().querySelector('[role="menuitem"]') as HTMLButtonElement).click();
+      (
+        [...el().querySelectorAll('[role="menuitem"]')].find(
+          (item) => item.textContent?.trim() === 'Log out',
+        ) as HTMLButtonElement
+      ).click();
 
       expect(logouts).toBe(1);
     });

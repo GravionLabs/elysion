@@ -12,6 +12,7 @@ import { BoardList } from './board-list/board-list';
 import { Invite } from './invite/invite';
 import { Deactivated } from './deactivated/deactivated';
 import { AdminLayout } from './admin/admin-layout';
+import { AccessTokens } from './settings/access-tokens';
 import { HttpTestingController } from '@angular/common/http/testing';
 
 describe('routes', () => {
@@ -55,6 +56,13 @@ describe('routes', () => {
 
     expect(page).toBeInstanceOf(Deactivated);
     TestBed.inject(HttpTestingController).expectOne('/api/rooms').flush([]);
+  });
+
+  it('opens the access tokens of the person (#851)', async () => {
+    const page = await harness.navigateByUrl('/settings/tokens', AccessTokens);
+
+    expect(page).toBeInstanceOf(AccessTokens);
+    TestBed.inject(HttpTestingController).expectOne('/api/access-tokens').flush([]);
   });
 
   it('opens an invitation link with the token as an input', async () => {
@@ -174,7 +182,7 @@ describe('routes', () => {
       const pages = (list: ReturnType<typeof buildRoutes>) =>
         list.filter((route) => route.component || route.loadComponent);
 
-      expect(pages(routes).length).toBe(4);
+      expect(pages(routes).length).toBe(5);
       // Each page is a chunk of its own (#710), not part of the first load.
       expect(pages(routes).every((route) => route.loadComponent && !route.component)).toBe(true);
       for (const route of pages(routes)) {

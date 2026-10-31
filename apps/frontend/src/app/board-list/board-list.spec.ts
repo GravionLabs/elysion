@@ -1433,7 +1433,11 @@ describe('BoardList', () => {
 
       (el().querySelector('.page-header .user-button') as HTMLButtonElement).click();
       await fixture.whenStable();
-      (el().querySelector('.page-header [role="menuitem"]') as HTMLButtonElement).click();
+      (
+        [...el().querySelectorAll('.page-header [role="menuitem"]')].find(
+          (item) => item.textContent?.trim() === 'Log out',
+        ) as HTMLButtonElement
+      ).click();
 
       expect((TestBed.inject(SessionService) as unknown as FakeSession).logoutCalls).toBe(1);
     });

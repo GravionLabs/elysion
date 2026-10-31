@@ -1,0 +1,152 @@
+<h1 i18n="@@admin.tokens.title">Access tokens</h1>
+<p class="lead" i18n="@@admin.tokens.lead">
+  The personal access tokens people made for the API. A token acts as its owner; revoke one that
+  leaked or is no longer needed. The start of a token is enough to find one reported by a secret
+  scanner.
+</p>
+
+<form class="tools" role="search" (submit)="$event.preventDefault(); submit()">
+  <input
+    type="search"
+    name="search"
+    autocomplete="off"
+    data-1p-ignore
+    data-lpignore="true"
+    placeholder="Name, start of the token or owner"
+    i18n-placeholder="@@admin.tokens.search.placeholder"
+    aria-label="Search access tokens"
+    i18n-aria-label="@@admin.tokens.search"
+    [value]="search()"
+    (input)="updateSearch($event)"
+  />
+  <button type="submit" class="button" i18n="@@admin.search">Search</button>
+</form>
+
+@if (actionError(); as message) {
+  <p class="error" role="alert">{{ message }}</p>
+}
+
+@switch (list.state()) {
+  @case ('error') {
+    <p class="error" role="alert">
+      <ng-container i18n="@@admin.tokens.error">The tokens could not be loaded.</ng-container>
+      <button type="button" class="link" (click)="list.load()" i18n="@@admin.retry">
+        Try again
+      </button>
+    </p>
+  }
+  @default {
+    @if (list.state() === 'loading') {
+      <p class="note" role="status" i18n="@@admin.loading">Loading…</p>
+    }
+    @if (list.state() === 'ready' && list.items().length === 0) {
+      <p class="note" i18n="@@admin.tokens.empty">No token matches.</p>
+    } @else if (list.items().length > 0) {
+      <div class="table-wrap">
+        <table>
+          <caption class="visually-hidden" i18n="@@admin.tokens.caption">
+            Access tokens
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" i18n="@@admin.tokens.name">Name</th>
+              <th scope="col" i18n="@@admin.tokens.token">Token</th>
+              <th scope="col" i18n="@@admin.tokens.owner">Owner</th>
+              <th scope="col" i18n="@@admin.tokens.scopes">Scopes</th>
+              <th scope="col" i18n="@@admin.tokens.lastUsed">Last used</th>
+              <th scope="col" i18n="@@admin.tokens.expires">Expires</th>
+              <th scope="col">
+                <span class="visually-hidden" i18n="@@admin.tokens.actions">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (token of list.items(); track token.id) {
+              <tr>
+                <th scope="row">
+                  {{ token.name }}
+                  @if (token.revokedAt) {
+                    <span class="chip" i18n="@@admin.tokens.revoked">revoked</span>
+                  } @else if (isExpired(token)) {
+                    <span class="chip" i18n="@@admin.tokens.expired">expired</span>
+                  }
+                </th>
+                <td>
+                  <code>{{ token.prefix }}…</code>
+                </td>
+                <td>{{ token.owner.displayName }}</td>
+                <td>
+                  <ul class="chips">
+                    @for (scope of token.scopes; track scope) {
+                      <li class="chip">{{ scope }}</li>
+                    }
+                  </ul>
+                </td>
+                <td>
+                  @if (token.lastUsedAt) {
+                    {{ token.lastUsedAt | date: 'medium' }}
+                  } @else {
+                    <span class="subtle" i18n="@@admin.users.never">never</span>
+                  }
+                </td>
+                <td>{{ token.expiresAt | date: 'mediumDate' }}</td>
+                <td class="actions">
+                  @if (!token.revokedAt) {
+                    <button
+                      type="button"
+                      class="button small danger"
+                      [attr.aria-label]="revokeLabel(token)"
+                      (click)="askRevoke(token)"
+                      i18n="@@admin.tokens.revoke"
+                    >
+                      Revoke
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-admin-pager
+        [page]="list.page()"
+        [pages]="list.pages()"
+        [total]="list.total()"
+        (go)="list.go($event)"
+      />
+    }
+  }
+}
+
+@if (revoking(); as token) {
+  <app-admin-dialog
+    heading="Revoke this token"
+    i18n-heading="@@admin.tokens.revoke.title"
+    (closed)="cancelRevoke()"
+  >
+    <p i18n="@@admin.tokens.revoke.message">
+      Revoke “{{ token.name }}” of {{ token.owner.displayName }}? Scripts that use it are refused
+      within half a minute. This cannot be undone; the owner can make a new token.
+    </p>
+    <div class="dialog-actions">
+      <button
+        type="button"
+        class="button"
+        [disabled]="busy()"
+        (click)="cancelRevoke()"
+        i18n="@@admin.cancel"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="button danger"
+        [disabled]="busy()"
+        (click)="revoke()"
+        i18n="@@admin.tokens.revoke.confirm"
+      >
+        Revoke
+      </button>
+    </div>
+  </app-admin-dialog>
+}

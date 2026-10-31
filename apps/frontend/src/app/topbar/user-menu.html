@@ -32,6 +32,15 @@
         {{ language.name }}
       </button>
     }
+    <a
+      class="menu-item"
+      role="menuitem"
+      routerLink="/settings/tokens"
+      (click)="open.set(false)"
+      i18n="@@topbar.user.tokens"
+    >
+      Access tokens
+    </a>
     @if (isAdministrator()) {
       <a
         class="menu-item"
