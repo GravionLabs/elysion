@@ -18,6 +18,8 @@ export interface AppConfig {
   WS_TOKEN_SECRET: string;
   /** Lifetime of a WS token in seconds. */
   WS_TOKEN_TTL_SECONDS: number;
+  /** Requests a minute one credential may make on the public API (ADR 0033), per BFF instance; announced in `RateLimit-*` headers. */
+  PUBLIC_API_RATE_LIMIT_PER_MINUTE: number;
   /** `trace`, `debug`, `info`, `warn`, `error` or `fatal` (ADR 0025). */
   LOG_LEVEL: LogLevel;
   /** `json` or `text`; unset: text in a terminal, JSON everywhere else (a container). */
@@ -112,6 +114,7 @@ export function validateEnv(env: Env): AppConfig {
       env['OIDC_ADMIN_ROLE'] === undefined ? 'elysion-admin' : (text('OIDC_ADMIN_ROLE') ?? ''),
     WS_TOKEN_SECRET: secret ?? '',
     WS_TOKEN_TTL_SECONDS: integer('WS_TOKEN_TTL_SECONDS', 60, 1, 3600),
+    PUBLIC_API_RATE_LIMIT_PER_MINUTE: integer('PUBLIC_API_RATE_LIMIT_PER_MINUTE', 600, 1, 100_000),
     LOG_LEVEL:
       oneOf<LogLevel>('LOG_LEVEL', ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) ?? 'info',
     ...(logFormat === undefined ? {} : { LOG_FORMAT: logFormat }),

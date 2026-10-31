@@ -24,8 +24,19 @@ describe('validateEnv', () => {
       OIDC_ADMIN_ROLE: 'elysion-admin',
       WS_TOKEN_SECRET: SECRET,
       WS_TOKEN_TTL_SECONDS: 60,
+      PUBLIC_API_RATE_LIMIT_PER_MINUTE: 600,
       LOG_LEVEL: 'info',
     });
+  });
+
+  it('reads the rate limit of the public API and refuses one below 1', () => {
+    expect(
+      validateEnv({ ...valid, PUBLIC_API_RATE_LIMIT_PER_MINUTE: '120' })
+        .PUBLIC_API_RATE_LIMIT_PER_MINUTE,
+    ).toBe(120);
+    expect(messageOf({ ...valid, PUBLIC_API_RATE_LIMIT_PER_MINUTE: '0' })).toContain(
+      'PUBLIC_API_RATE_LIMIT_PER_MINUTE',
+    );
   });
 
   it('names the administrator role elysion-admin unless told otherwise, and an empty value means nobody', () => {

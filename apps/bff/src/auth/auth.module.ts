@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller.js';
 import { AuthGuard } from './auth.guard.js';
 import { CredentialResolver } from './credential-resolver.js';
 import { TokenVerifier } from './token-verifier.js';
+import { PublicRateLimiter } from '../public-api/rate-limit.js';
 
 /** Where Keycloak publishes a realm's signing keys, relative to the issuer. */
 const KEYCLOAK_JWKS_PATH = '/protocol/openid-connect/certs';
@@ -39,8 +40,14 @@ const KEYCLOAK_JWKS_PATH = '/protocol/openid-connect/certs';
       useFactory: (config: AppConfigService) =>
         new CredentialResolver({ baseUrl: config.get('BUSINESS_BACKEND_URL') }),
     },
+    {
+      provide: PublicRateLimiter,
+      inject: [AppConfigService],
+      useFactory: (config: AppConfigService) =>
+        new PublicRateLimiter({ limit: config.get('PUBLIC_API_RATE_LIMIT_PER_MINUTE') }),
+    },
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
-  exports: [TokenVerifier, CredentialResolver],
+  exports: [TokenVerifier, CredentialResolver, PublicRateLimiter],
 })
 export class AuthModule {}

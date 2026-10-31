@@ -1,0 +1,4436 @@
+{
+  "openapi": "3.1.0",
+  "paths": {
+    "/public/v1/me": {
+      "get": {
+        "description": "The person or integration the credential acts as, the id of the personal access token (null for a Keycloak token) and its scopes. Use it to try a token.\n\nNeeds no scope.",
+        "operationId": "Me_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                },
+                "example": {
+                  "id": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+                  "name": "Ada Lovelace",
+                  "kind": "person",
+                  "tokenId": "0192f7a5-1d4e-7075-b193-6e8f0a2b4c53",
+                  "scopes": [
+                    "boards:read"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Who the caller is",
+        "tags": [
+          "Caller"
+        ]
+      }
+    },
+    "/public/v1/boards": {
+      "get": {
+        "description": "The boards the caller is a member of (directly, through a room or a group), newest first, a page at a time.\n\nNeeds the scope `boards:read`.",
+        "operationId": "Boards_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Boards per page, 1 to 200.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "The `next` of the page before.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roomId",
+            "required": false,
+            "in": "query",
+            "description": "Only the boards of this room.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+                      "name": "Sprint 42 retro",
+                      "createdAt": "2026-10-31T09:15:00Z",
+                      "roomId": null
+                    }
+                  ],
+                  "next": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List boards",
+        "tags": [
+          "Boards"
+        ],
+        "x-required-scope": "boards:read"
+      },
+      "post": {
+        "description": "A new, empty board owned by the caller.\n\nNeeds the scope `boards:write`.",
+        "operationId": "Boards_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardName"
+              },
+              "examples": {
+                "board": {
+                  "value": {
+                    "name": "Sprint 42 retro"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "Location": {
+                "description": "The address of the new board.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "The version of the board, for `If-Match`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicBoard"
+                },
+                "example": {
+                  "id": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+                  "name": "Sprint 42 retro",
+                  "createdAt": "2026-10-31T09:15:00Z",
+                  "roomId": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 1 MiB.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Payload Too Large",
+                  "status": 413
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a board",
+        "tags": [
+          "Boards"
+        ],
+        "x-required-scope": "boards:write"
+      }
+    },
+    "/public/v1/boards/{id}": {
+      "get": {
+        "description": "Needs the scope `boards:read`.",
+        "operationId": "Boards_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "ETag": {
+                "description": "The version of the board, for `If-Match`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicBoard"
+                },
+                "example": {
+                  "id": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+                  "name": "Sprint 42 retro",
+                  "createdAt": "2026-10-31T09:15:00Z",
+                  "roomId": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read a board",
+        "tags": [
+          "Boards"
+        ],
+        "x-required-scope": "boards:read"
+      },
+      "patch": {
+        "description": "Editors and owners. Send `If-Match` with the `ETag` of the board as read (or `*` to rename whatever it is called now): a board that was renamed or moved meanwhile is `412`, so a script never overwrites a change it has not seen.\n\nNeeds the scope `boards:write`.",
+        "operationId": "Boards_rename",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "The `ETag` of the board, or `*`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"q0dC4Tz0xkS2iY8bS1m2nVq7p3J\""
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardName"
+              },
+              "examples": {
+                "rename": {
+                  "value": {
+                    "name": "Sprint 42 retro (done)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "ETag": {
+                "description": "The new version of the board.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicBoard"
+                },
+                "example": {
+                  "id": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+                  "name": "Sprint 42 retro (done)",
+                  "createdAt": "2026-10-31T09:15:00Z",
+                  "roomId": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "The board changed since it was read: `If-Match` names an old `ETag`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Precondition Failed",
+                  "status": 412
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 1 MiB.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Payload Too Large",
+                  "status": 413
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Send `If-Match` with the `ETag` of the board (or `*`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Precondition Required",
+                  "status": 428
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rename a board",
+        "tags": [
+          "Boards"
+        ],
+        "x-required-scope": "boards:write"
+      },
+      "delete": {
+        "description": "Owners only. The board, its content, its files and its versions are gone for everybody.\n\nNeeds the scope `boards:write`.",
+        "operationId": "Boards_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a board",
+        "tags": [
+          "Boards"
+        ],
+        "x-required-scope": "boards:write"
+      }
+    },
+    "/public/v1/boards/{id}/duplicate": {
+      "post": {
+        "description": "A copy of a board the caller may read, owned by the caller, with its content and images (not its members or versions).\n\nNeeds the scope `boards:write`.",
+        "operationId": "Boards_duplicate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "Location": {
+                "description": "The address of the new board.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "The version of the new board.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicBoard"
+                },
+                "example": {
+                  "id": "0192f7a6-2b3c-7d4e-8f50-617283940a5b",
+                  "name": "Sprint 42 retro (copy)",
+                  "createdAt": "2026-10-31T09:15:00Z",
+                  "roomId": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Duplicate a board",
+        "tags": [
+          "Boards"
+        ],
+        "x-required-scope": "boards:write"
+      }
+    },
+    "/public/v1/boards/{id}/elements": {
+      "get": {
+        "description": "The board as an Excalidraw scene (`.excalidraw`, version 2): the live elements in drawing order, and the images as links to their files (`files.<id>.url`), never inline. It is the state of the last save, at most about 10 seconds behind an open board. Read-only: v1 cannot change elements.\n\nNeeds the scope `boards:read`.",
+        "operationId": "Boards_elements",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Scene"
+                },
+                "example": {
+                  "type": "excalidraw",
+                  "version": 2,
+                  "source": "elysion",
+                  "elements": [
+                    {
+                      "id": "k3Jd9",
+                      "type": "rectangle",
+                      "x": 120,
+                      "y": 80,
+                      "width": 200,
+                      "height": 120,
+                      "index": "a0",
+                      "version": 3,
+                      "isDeleted": false
+                    },
+                    {
+                      "id": "p8Lq2",
+                      "type": "image",
+                      "x": 400,
+                      "y": 80,
+                      "width": 320,
+                      "height": 180,
+                      "index": "a1",
+                      "fileId": "f3a9c1d27b",
+                      "isDeleted": false
+                    }
+                  ],
+                  "appState": {},
+                  "files": {
+                    "f3a9c1d27b": {
+                      "id": "f3a9c1d27b",
+                      "mimeType": "image/png",
+                      "created": 1761902100000,
+                      "url": "/public/v1/boards/0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f/files/f3a9c1d27b"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read the elements of a board",
+        "tags": [
+          "Boards"
+        ],
+        "x-required-scope": "boards:read"
+      }
+    },
+    "/public/v1/boards/{id}/files/{fileId}": {
+      "get": {
+        "description": "The bytes of an image of the board, as linked from its elements (`files.<id>.url`).\n\nNeeds the scope `boards:read`.",
+        "operationId": "Boards_file",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "f3a9c1d27b",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "image/*"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read a file of a board",
+        "tags": [
+          "Boards"
+        ],
+        "x-required-scope": "boards:read"
+      }
+    },
+    "/public/v1/boards/{id}/members": {
+      "get": {
+        "description": "Owners of the board only (as in the Share dialog). Ordered by user id.\n\nNeeds the scope `boards:read`.",
+        "operationId": "BoardMembers_list",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "The `next` of the page before.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Members per page, 1 to 200.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "userId": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+                      "displayName": "Ada Lovelace",
+                      "email": "ada@example.com",
+                      "role": "Editor"
+                    }
+                  ],
+                  "next": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the members of a board",
+        "tags": [
+          "Members"
+        ],
+        "x-required-scope": "boards:read"
+      },
+      "post": {
+        "description": "Owners only. By `email` or by `userId` (exactly one), with a role.\n\nNeeds the scope `members:write`.",
+        "operationId": "BoardMembers_add",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMember"
+              },
+              "examples": {
+                "byEmail": {
+                  "value": {
+                    "email": "ada@example.com",
+                    "role": "Editor"
+                  }
+                },
+                "byId": {
+                  "value": {
+                    "userId": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+                    "role": "Viewer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                },
+                "example": {
+                  "userId": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+                  "displayName": "Ada Lovelace",
+                  "email": "ada@example.com",
+                  "role": "Editor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The change breaks a rule of the member list (already a member, the last owner).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Conflict",
+                  "status": 409
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 1 MiB.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Payload Too Large",
+                  "status": 413
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a member to a board",
+        "tags": [
+          "Members"
+        ],
+        "x-required-scope": "members:write"
+      }
+    },
+    "/public/v1/boards/{id}/members/{userId}": {
+      "patch": {
+        "description": "Owners only. The last owner cannot become less (`409`).\n\nNeeds the scope `members:write`.",
+        "operationId": "BoardMembers_change",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberRole"
+              },
+              "examples": {
+                "viewer": {
+                  "value": {
+                    "role": "Viewer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                },
+                "example": {
+                  "userId": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+                  "displayName": "Ada Lovelace",
+                  "email": "ada@example.com",
+                  "role": "Viewer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The change breaks a rule of the member list (already a member, the last owner).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Conflict",
+                  "status": 409
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 1 MiB.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Payload Too Large",
+                  "status": 413
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change the role of a member of a board",
+        "tags": [
+          "Members"
+        ],
+        "x-required-scope": "members:write"
+      },
+      "delete": {
+        "description": "Owners only. The last owner cannot be removed (`409`).\n\nNeeds the scope `members:write`.",
+        "operationId": "BoardMembers_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The change breaks a rule of the member list (already a member, the last owner).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Conflict",
+                  "status": 409
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a member from a board",
+        "tags": [
+          "Members"
+        ],
+        "x-required-scope": "members:write"
+      }
+    },
+    "/public/v1/rooms": {
+      "get": {
+        "description": "The rooms the caller has a role in (directly or through a group), newest first, with that role.\n\nNeeds the scope `boards:read`.",
+        "operationId": "Rooms_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Rooms per page, 1 to 200.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "The `next` of the page before.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "0192f7a4-7a11-7d42-8e60-3b5c7d9e1f20",
+                      "name": "Team Phoenix",
+                      "createdAt": "2026-09-01T08:00:00Z",
+                      "role": "Editor"
+                    }
+                  ],
+                  "next": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List rooms",
+        "tags": [
+          "Rooms"
+        ],
+        "x-required-scope": "boards:read"
+      }
+    },
+    "/public/v1/rooms/{id}": {
+      "get": {
+        "description": "Its boards: `GET /public/v1/boards?roomId=<id>`.\n\nNeeds the scope `boards:read`.",
+        "operationId": "Rooms_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-7a11-7d42-8e60-3b5c7d9e1f20",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicRoom"
+                },
+                "example": {
+                  "id": "0192f7a4-7a11-7d42-8e60-3b5c7d9e1f20",
+                  "name": "Team Phoenix",
+                  "createdAt": "2026-09-01T08:00:00Z",
+                  "role": "Editor"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read a room",
+        "tags": [
+          "Rooms"
+        ],
+        "x-required-scope": "boards:read"
+      }
+    },
+    "/public/v1/rooms/{id}/members": {
+      "get": {
+        "description": "Owners of the room only (as in the Share dialog). Ordered by user id.\n\nNeeds the scope `boards:read`.",
+        "operationId": "RoomMembers_list",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-7a11-7d42-8e60-3b5c7d9e1f20",
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "The `next` of the page before.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Members per page, 1 to 200.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "userId": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+                      "displayName": "Ada Lovelace",
+                      "email": "ada@example.com",
+                      "role": "Editor"
+                    }
+                  ],
+                  "next": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the members of a room",
+        "tags": [
+          "Members"
+        ],
+        "x-required-scope": "boards:read"
+      },
+      "post": {
+        "description": "Owners only. By `email` or by `userId` (exactly one), with a role.\n\nNeeds the scope `members:write`.",
+        "operationId": "RoomMembers_add",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-7a11-7d42-8e60-3b5c7d9e1f20",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMember"
+              },
+              "examples": {
+                "byEmail": {
+                  "value": {
+                    "email": "ada@example.com",
+                    "role": "Editor"
+                  }
+                },
+                "byId": {
+                  "value": {
+                    "userId": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+                    "role": "Viewer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                },
+                "example": {
+                  "userId": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+                  "displayName": "Ada Lovelace",
+                  "email": "ada@example.com",
+                  "role": "Editor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The change breaks a rule of the member list (already a member, the last owner).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Conflict",
+                  "status": 409
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 1 MiB.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Payload Too Large",
+                  "status": 413
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a member to a room",
+        "tags": [
+          "Members"
+        ],
+        "x-required-scope": "members:write"
+      }
+    },
+    "/public/v1/rooms/{id}/members/{userId}": {
+      "patch": {
+        "description": "Owners only. The last owner cannot become less (`409`).\n\nNeeds the scope `members:write`.",
+        "operationId": "RoomMembers_change",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-7a11-7d42-8e60-3b5c7d9e1f20",
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberRole"
+              },
+              "examples": {
+                "viewer": {
+                  "value": {
+                    "role": "Viewer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                },
+                "example": {
+                  "userId": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+                  "displayName": "Ada Lovelace",
+                  "email": "ada@example.com",
+                  "role": "Viewer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The change breaks a rule of the member list (already a member, the last owner).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Conflict",
+                  "status": 409
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 1 MiB.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Payload Too Large",
+                  "status": 413
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change the role of a member of a room",
+        "tags": [
+          "Members"
+        ],
+        "x-required-scope": "members:write"
+      },
+      "delete": {
+        "description": "Owners only. The last owner cannot be removed (`409`).\n\nNeeds the scope `members:write`.",
+        "operationId": "RoomMembers_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-7a11-7d42-8e60-3b5c7d9e1f20",
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The change breaks a rule of the member list (already a member, the last owner).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Conflict",
+                  "status": 409
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a member from a room",
+        "tags": [
+          "Members"
+        ],
+        "x-required-scope": "members:write"
+      }
+    },
+    "/public/v1/boards/{id}/snapshots": {
+      "get": {
+        "description": "Saved and automatic versions, newest first. Renaming, deleting and restoring a version, and opening one as a new board, are not part of v1: they are in the browser only.\n\nNeeds the scope `boards:read`.",
+        "operationId": "Snapshots_list",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Versions per page, 1 to 200.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "The `next` of the page before.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "0192f7a5-0c3d-7f64-a082-5d7e9f1a3b42",
+                      "kind": "Manual",
+                      "name": "Before the workshop",
+                      "author": "Ada Lovelace",
+                      "createdAt": "2026-10-31T10:00:00Z",
+                      "sizeBytes": 48213,
+                      "elementCount": 37
+                    }
+                  ],
+                  "next": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the versions of a board",
+        "tags": [
+          "Snapshots"
+        ],
+        "x-required-scope": "boards:read"
+      },
+      "post": {
+        "description": "Editors and owners. Keeps the board as it is now, with an optional name. Renaming, deleting and restoring a version, and opening one as a new board, are not part of v1: they are in the browser only.\n\nNeeds the scope `snapshots:write`.",
+        "operationId": "Snapshots_create",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SnapshotName"
+              },
+              "examples": {
+                "named": {
+                  "value": {
+                    "name": "Before the workshop"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "Location": {
+                "description": "The address of the new version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Snapshot"
+                },
+                "example": {
+                  "id": "0192f7a5-0c3d-7f64-a082-5d7e9f1a3b42",
+                  "kind": "Manual",
+                  "name": "Before the workshop",
+                  "author": "Ada Lovelace",
+                  "createdAt": "2026-10-31T10:00:00Z",
+                  "sizeBytes": 48213,
+                  "elementCount": 37
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed: a field of the wrong type, a bad `limit` or `cursor`, a name the rules refuse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The change breaks a rule of the member list (already a member, the last owner).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Conflict",
+                  "status": 409
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 1 MiB.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Payload Too Large",
+                  "status": 413
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object store of the versions is not available.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Service Unavailable",
+                  "status": 503
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save a version of a board",
+        "tags": [
+          "Snapshots"
+        ],
+        "x-required-scope": "snapshots:write"
+      }
+    },
+    "/public/v1/boards/{id}/snapshots/{snapshotId}": {
+      "get": {
+        "description": "The version with its content as JSON: the same Excalidraw scene as `GET /public/v1/boards/{id}/elements` (images as links to the board's files). Renaming, deleting and restoring a version, and opening one as a new board, are not part of v1: they are in the browser only.\n\nNeeds the scope `boards:read`.",
+        "operationId": "Snapshots_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f",
+              "type": "string"
+            }
+          },
+          {
+            "name": "snapshotId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "0192f7a5-0c3d-7f64-a082-5d7e9f1a3b42",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Requests a minute the credential may make.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current minute.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the minute starts again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotWithScene"
+                },
+                "example": {
+                  "id": "0192f7a5-0c3d-7f64-a082-5d7e9f1a3b42",
+                  "kind": "Manual",
+                  "name": "Before the workshop",
+                  "author": "Ada Lovelace",
+                  "createdAt": "2026-10-31T10:00:00Z",
+                  "sizeBytes": 48213,
+                  "elementCount": 37,
+                  "scene": {
+                    "type": "excalidraw",
+                    "version": 2,
+                    "source": "elysion",
+                    "elements": [
+                      {
+                        "id": "k3Jd9",
+                        "type": "rectangle",
+                        "x": 120,
+                        "y": 80,
+                        "width": 200,
+                        "height": 120,
+                        "index": "a0"
+                      }
+                    ],
+                    "appState": {},
+                    "files": {}
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or one that is unknown, expired or revoked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential lacks the scope, the role on the board or room is too low, or its owner was deactivated (`code: account-deactivated`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such board, room, member or version, or one the caller may not see (the two are not told apart).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The stored version is gone.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Gone",
+                  "status": 410
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Over the rate limit of the token; `Retry-After` says when to try again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Too Many Requests",
+                  "status": 429
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The business backend failed or is not reachable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Bad Gateway",
+                  "status": 502
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The object store of the versions is not available.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "type": "about:blank",
+                  "title": "Service Unavailable",
+                  "status": 503
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read a version of a board",
+        "tags": [
+          "Snapshots"
+        ],
+        "x-required-scope": "boards:read"
+      }
+    }
+  },
+  "info": {
+    "title": "Elysion public API",
+    "description": "The versioned API of Elysion for scripts and integrations (ADR 0033). How to get a token and make the first call: docs/api.md.\n\n- **Authentication**: `Authorization: Bearer <token>` with a personal access token (`elp_...`), an integration's Keycloak token or a person's own Keycloak token. A token acts as its person or integration and never sees more; each route also needs a scope.\n- **Errors** are problem details (RFC 9457, `application/problem+json`).\n- **Lists** are pages: `?limit=` (1 to 200, default 50) and `?cursor=` (the `next` of the page before; `null` on the last page).\n- **Rate limit**: per credential, 600 requests a minute by default; every answer has `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`, a refused one `429` with `Retry-After`.\n- **Bodies** are JSON of at most 1 MiB.\n- **Not in v1**: writing elements; renaming, deleting and restoring versions and opening one as a new board; webhooks.",
+    "version": "1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "elp_... or JWT",
+        "type": "http",
+        "description": "A personal access token (`elp_...`) or a Keycloak access token."
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "about:blank",
+            "description": "Always `about:blank`: the status says what happened."
+          },
+          "title": {
+            "type": "string",
+            "example": "Not Found",
+            "description": "The standard text of the status."
+          },
+          "status": {
+            "type": "number",
+            "example": 404
+          },
+          "detail": {
+            "type": "string",
+            "example": "This needs a token with the scope \"boards:write\"."
+          },
+          "code": {
+            "type": "string",
+            "example": "account-deactivated",
+            "description": "Elysion's own code where a client may act on it: `account-deactivated` for a deactivated owner."
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status"
+        ]
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31"
+          },
+          "name": {
+            "type": "string",
+            "example": "Ada Lovelace"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "person",
+              "integration"
+            ],
+            "example": "person"
+          },
+          "tokenId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "0192f7a5-1d4e-7075-b193-6e8f0a2b4c53",
+            "description": "The id of the personal access token; null for a Keycloak token."
+          },
+          "scopes": {
+            "example": [
+              "boards:read"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "tokenId",
+          "scopes"
+        ]
+      },
+      "SceneFile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "f3a9c1d27b"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "image/png"
+          },
+          "created": {
+            "type": "number",
+            "example": 1761902100000,
+            "description": "When the file was added, in milliseconds since 1970."
+          },
+          "url": {
+            "type": "string",
+            "example": "/public/v1/boards/0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f/files/f3a9c1d27b",
+            "description": "Where the bytes are: a public API route that needs `boards:read`. Never inline."
+          }
+        },
+        "required": [
+          "id",
+          "mimeType",
+          "created",
+          "url"
+        ]
+      },
+      "PublicBoard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "0192f7a4-6f0e-7c3b-9d51-2a4b6c8d0e1f"
+          },
+          "name": {
+            "type": "string",
+            "example": "Sprint 42 retro"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-31T09:15:00Z"
+          },
+          "roomId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "0192f7a4-7a11-7d42-8e60-3b5c7d9e1f20",
+            "description": "The room the board is in; null for none."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "createdAt",
+          "roomId"
+        ]
+      },
+      "BoardPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicBoard"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "WzE3NjE5MDIxMDAwMDAsIjAxOTJmN2E0Il0",
+            "description": "The cursor of the next page; null on the last one."
+          }
+        },
+        "required": [
+          "items",
+          "next"
+        ]
+      },
+      "BoardName": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Sprint 42 retro",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "Scene": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "excalidraw"
+            ],
+            "example": "excalidraw"
+          },
+          "version": {
+            "type": "number",
+            "enum": [
+              2
+            ],
+            "example": 2
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "elysion"
+            ],
+            "example": "elysion"
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "The live elements in drawing order, as Excalidraw stores them (deleted ones are left out).",
+            "example": [
+              {
+                "id": "k3Jd9",
+                "type": "rectangle",
+                "x": 120,
+                "y": 80,
+                "width": 200,
+                "height": 120,
+                "index": "a0"
+              }
+            ]
+          },
+          "appState": {
+            "type": "object",
+            "additionalProperties": false,
+            "example": {}
+          },
+          "files": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SceneFile"
+            },
+            "description": "The files the elements show, by id, as links.",
+            "example": {}
+          }
+        },
+        "required": [
+          "type",
+          "version",
+          "source",
+          "elements",
+          "appState",
+          "files"
+        ]
+      },
+      "Member": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Ada Lovelace"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "ada@example.com"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Owner",
+              "Editor",
+              "Viewer"
+            ],
+            "example": "Editor"
+          }
+        },
+        "required": [
+          "userId",
+          "displayName",
+          "email",
+          "role"
+        ]
+      },
+      "MemberPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Member"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": null
+          }
+        },
+        "required": [
+          "items",
+          "next"
+        ]
+      },
+      "AddMember": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ada@example.com",
+            "description": "The email of the person; or `userId`."
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "0192f7a4-81c2-7e53-9f71-4c6d8e0f2a31",
+            "description": "The id of the person or integration; or `email`."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Owner",
+              "Editor",
+              "Viewer"
+            ],
+            "example": "Editor"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "MemberRole": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "Owner",
+              "Editor",
+              "Viewer"
+            ],
+            "example": "Viewer"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "PublicRoom": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "0192f7a4-7a11-7d42-8e60-3b5c7d9e1f20"
+          },
+          "name": {
+            "type": "string",
+            "example": "Team Phoenix"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-01T08:00:00Z"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Owner",
+              "Editor",
+              "Viewer"
+            ],
+            "example": "Editor",
+            "description": "The caller's role in the room."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "createdAt",
+          "role"
+        ]
+      },
+      "RoomPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicRoom"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": null
+          }
+        },
+        "required": [
+          "items",
+          "next"
+        ]
+      },
+      "Snapshot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "0192f7a5-0c3d-7f64-a082-5d7e9f1a3b42"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "Manual",
+              "Auto",
+              "BeforeRestore"
+            ],
+            "example": "Manual",
+            "description": "`Manual`: saved by somebody; `Auto`: kept by Elysion; `BeforeRestore`: the state before a restore."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "Before the workshop"
+          },
+          "author": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "Ada Lovelace",
+            "description": "Null for an automatic version."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-31T10:00:00Z"
+          },
+          "sizeBytes": {
+            "type": "number",
+            "example": 48213
+          },
+          "elementCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "example": 37
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "author",
+          "createdAt",
+          "sizeBytes",
+          "elementCount"
+        ]
+      },
+      "SnapshotPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Snapshot"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": null
+          }
+        },
+        "required": [
+          "items",
+          "next"
+        ]
+      },
+      "SnapshotName": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Before the workshop",
+            "maxLength": 100,
+            "description": "Optional; without it the version is unnamed."
+          }
+        }
+      },
+      "SnapshotWithScene": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "0192f7a5-0c3d-7f64-a082-5d7e9f1a3b42"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "Manual",
+              "Auto",
+              "BeforeRestore"
+            ],
+            "example": "Manual",
+            "description": "`Manual`: saved by somebody; `Auto`: kept by Elysion; `BeforeRestore`: the state before a restore."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "Before the workshop"
+          },
+          "author": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "Ada Lovelace",
+            "description": "Null for an automatic version."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-31T10:00:00Z"
+          },
+          "sizeBytes": {
+            "type": "number",
+            "example": 48213
+          },
+          "elementCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "example": 37
+          },
+          "scene": {
+            "$ref": "#/components/schemas/Scene"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "author",
+          "createdAt",
+          "sizeBytes",
+          "elementCount",
+          "scene"
+        ]
+      }
+    }
+  }
+}
