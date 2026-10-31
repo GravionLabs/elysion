@@ -16,6 +16,7 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
     public DbSet<BoardVisit> BoardVisits => Set<BoardVisit>();
     public DbSet<BoardFavorite> BoardFavorites => Set<BoardFavorite>();
     public DbSet<VotingSession> VotingSessions => Set<VotingSession>();
+    public DbSet<BoardSnapshot> BoardSnapshots => Set<BoardSnapshot>();
 
     public DbSet<Invitation> Invitations => Set<Invitation>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
@@ -178,6 +179,16 @@ public class ElysionDbContext(DbContextOptions<ElysionDbContext> options) : DbCo
             favorite.HasOne(f => f.Board).WithMany().HasForeignKey(f => f.BoardId).OnDelete(DeleteBehavior.Cascade);
             favorite.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
             favorite.HasIndex(f => f.UserId);
+        });
+
+        modelBuilder.Entity<BoardSnapshot>(snapshot =>
+        {
+            snapshot.Property(s => s.Name).HasMaxLength(BoardSnapshot.MaxNameLength);
+            snapshot.Property(s => s.Kind).HasConversion<string>().HasMaxLength(16);
+            snapshot.Property(s => s.CreatedBy).HasMaxLength(User.MaxSubjectLength);
+            // Snapshots go with their board (ADR 0032); "the history of this board, newest first" starts from the board.
+            snapshot.HasOne(s => s.Board).WithMany().HasForeignKey(s => s.BoardId).OnDelete(DeleteBehavior.Cascade);
+            snapshot.HasIndex(s => new { s.BoardId, s.CreatedAt });
         });
 
         modelBuilder.Entity<VotingSession>(session =>

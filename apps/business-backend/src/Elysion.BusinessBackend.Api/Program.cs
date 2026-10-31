@@ -11,6 +11,7 @@ using Elysion.BusinessBackend.Api.Logging;
 using Elysion.BusinessBackend.Api.Members;
 using Elysion.BusinessBackend.Api.Observability;
 using Elysion.BusinessBackend.Api.Quotas;
+using Elysion.BusinessBackend.Api.Snapshots;
 using Elysion.BusinessBackend.Api.Invitations;
 using Elysion.BusinessBackend.Api.Voting;
 
@@ -55,6 +56,11 @@ builder.Services.AddScoped<IUnitOfWork>(services => services.GetRequiredService<
 builder.Services.AddScoped<IBoardRepository, BoardRepository>();
 builder.Services.AddScoped<IBoardDocumentRepository, BoardDocumentRepository>();
 builder.Services.AddScoped<IBoardUserStateRepository, BoardUserStateRepository>();
+builder.Services.AddScoped<IBoardSnapshotRepository, BoardSnapshotRepository>();
+// Versions of a board (ADR 0032): made on request and on realtime saves, expired every night.
+builder.Services.AddScoped<BoardSnapshotService>();
+builder.Services.AddSingleton<SnapshotCleanupService>();
+builder.Services.AddHostedService(services => services.GetRequiredService<SnapshotCleanupService>());
 builder.Services.AddScoped<IVotingRepository, VotingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGroupRepository, GroupRepository>();
@@ -169,6 +175,7 @@ app.MapBoardDocumentEndpoints();
 app.MapBoardAccessEndpoints();
 app.MapBoardFileEndpoints();
 app.MapBoardThumbnailEndpoints();
+app.MapBoardSnapshotEndpoints();
 app.MapBoardUserStateEndpoints();
 app.MapVotingEndpoints();
 app.MapInvitationEndpoints();
