@@ -77,10 +77,10 @@
     { groupName: 'dotnet', matchManagers: ['nuget'] },
     { groupName: 'github-actions', matchManagers: ['github-actions'] },
     {
-      // Node 24 is the LTS of this repository (.nvmrc, the Dockerfiles, CI); a newer line is a decision, not an update.
+      // Node 26 is the LTS of this repository (.nvmrc, the Dockerfiles, CI); a newer line is a decision, not an update.
       matchDatasources: ['docker'],
       matchPackageNames: ['node'],
-      allowedVersions: '<25',
+      allowedVersions: '<27',
     },
     {
       // The shared workflows of the organisation are followed on `main` on purpose.

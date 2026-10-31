@@ -32,7 +32,7 @@
     "pino-pretty": "^13.2.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.6",
     "oxlint": "^1.86.0",
     "typescript": "^6.0.3",
     "vitest": "^5"
