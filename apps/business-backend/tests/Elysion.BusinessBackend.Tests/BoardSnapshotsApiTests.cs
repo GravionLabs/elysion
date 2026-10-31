@@ -129,6 +129,35 @@ public class BoardSnapshotsApiTests
     }
 
     [Test]
+    public async Task Save_version_first_asks_the_realtime_service_to_save_and_keeps_what_it_stored()
+    {
+        (await SaveDocumentAsync([1, 2])).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        _factory.RealtimeSaves.OnSave = async _ =>
+            (await SaveDocumentAsync([1, 2, 3, 4, 5], version: 1)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        var created = await SaveVersionAsync("after an edit");
+
+        _factory.RealtimeSaves.Asked.ShouldBe([_board.Id]);
+        await using var stored = await _factory.Files.GetAsync(FileTypes.SnapshotKey(_board.Id, created.Id),
+            CancellationToken.None);
+        using var bytes = new MemoryStream();
+        await stored!.Content.CopyToAsync(bytes);
+        (await UngzipAsync(bytes.ToArray())).ShouldBe(new byte[] { 1, 2, 3, 4, 5 });
+    }
+
+    [Test]
+    public async Task Save_version_of_a_board_whose_first_save_is_still_in_the_realtime_service_keeps_that_state()
+    {
+        _factory.RealtimeSaves.OnSave = async _ =>
+            (await SaveDocumentAsync([7, 7])).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        var created = await SaveVersionAsync("first");
+
+        created.Kind.ShouldBe("Manual");
+        _factory.RealtimeSaves.Asked.ShouldBe([_board.Id]);
+    }
+
+    [Test]
     public async Task Save_version_keeps_the_stored_state_gzipped_and_names_its_author()
     {
         (await SaveDocumentAsync([1, 2, 3, 4])).StatusCode.ShouldBe(HttpStatusCode.NoContent);

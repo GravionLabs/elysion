@@ -117,7 +117,17 @@ None at the moment. The WS-token issuance question is settled: the BFF issues it
 
 ## Snapshots
 
-Not built yet: [ADR 0032](../adr/0032-board-snapshots.md) (#847). A restore comes from the business backend as
+**Save on request** (built in #846, [ADR 0032](../adr/0032-board-snapshots.md)): before "Save version" copies the stored state, the
+backend calls `POST /internal/boards/{boardId}/save` (no body; same service token as the voting route, not routed at the edge).
+`YjsRoomRegistry.saveNow` stores the board if it is open on this instance and has unsaved changes, waits for a save that is already
+running, and the answer is `204` once it is done; also `204` for a board that is not open here or unchanged, `400` for a board id
+that is no UUID, `401` without a valid service token. A save that fails is retried as always and the call still answers `204`; the
+backend treats the whole call as best effort (5 s timeout, any failure is logged and the stored state is snapshotted). With several
+instances only the one that gets the call saves; a board open on another instance is snapshotted from its last save. The save
+sends no `X-Elysion-Element-Count`: the header describes the state that is being overwritten, which the service does not have at
+hand, so `ElementCount` stays empty.
+
+Not built yet (#847): a restore comes from the business backend as
 `POST /internal/boards/{id}/restore` with the snapshot id: the service loads the board if nobody has it open, writes the snapshot's
 elements and files forward with higher versions (live elements missing from it become `isDeleted`), leaves `session` alone, saves
 and tells every client who restored which version. A save made for a compaction carries `X-Elysion-Save-Reason: compaction`, so the

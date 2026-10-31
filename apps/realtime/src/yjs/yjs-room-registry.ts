@@ -180,6 +180,18 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     return { rooms: this.rooms.size, connections };
   }
 
+  /**
+   * Stores the board's open state now (the backend asks before it keeps a version, ADR 0032). Resolves when the save is
+   * done; does nothing when the board is not open on this instance or has no unsaved changes. A failed save is retried
+   * as always and does not reject.
+   */
+  async saveNow(boardId: string): Promise<void> {
+    const room = this.rooms.get(boardId);
+    if (room) {
+      await this.save(room);
+    }
+  }
+
   /** Saves the room now if it has unsaved changes (used when its last client leaves). */
   async flush(room: YjsRoom): Promise<void> {
     await this.save(room);

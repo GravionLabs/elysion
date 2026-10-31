@@ -30,6 +30,7 @@ public sealed partial class BoardSnapshotService(
     IBoardSnapshotRepository snapshots,
     IBoardDocumentRepository documents,
     IFileStore store,
+    IRealtimeBoardSaver realtime,
     IUnitOfWork unitOfWork,
     TimeProvider time,
     ILogger<BoardSnapshotService> logger)
@@ -41,7 +42,7 @@ public sealed partial class BoardSnapshotService(
     /// <summary>A save makes an automatic snapshot when the newest one is older than this.</summary>
     public static readonly TimeSpan AutomaticInterval = TimeSpan.FromHours(1);
 
-    /// <summary>"Save version": copies the stored state of the board.</summary>
+    /// <summary>"Save version": asks the realtime service to store the open board first (best effort), then copies the stored state.</summary>
     public async Task<SnapshotCreateResult> CreateManualAsync(
         Guid boardId,
         string? name,
@@ -53,6 +54,7 @@ public sealed partial class BoardSnapshotService(
             return new(SnapshotCreateStatus.LimitReached, null);
         }
 
+        await realtime.SaveNowAsync(boardId, cancellationToken);
         var document = await documents.FindAsync(boardId.ToString(), cancellationToken);
         if (document is null)
         {

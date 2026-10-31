@@ -1,12 +1,9 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Json;
-using System.Text;
 
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Identity;
 
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Elysion.BusinessBackend.Api.Voting;
 
@@ -75,20 +72,7 @@ public sealed partial class HttpVotingNotifier(
         }
     }
 
-    private string Sign()
-    {
-        var now = time.GetUtcNow();
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(internalApi.Value.Secret));
-        return new JwtSecurityTokenHandler().CreateEncodedJwt(new SecurityTokenDescriptor
-        {
-            Issuer = Issuer,
-            Audience = Audience,
-            IssuedAt = now.UtcDateTime,
-            NotBefore = now.UtcDateTime,
-            Expires = (now + Lifetime).UtcDateTime,
-            SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256),
-        });
-    }
+    private string Sign() => RealtimeServiceToken.Sign(internalApi.Value.Secret, time.GetUtcNow(), Lifetime);
 
     [LoggerMessage(Level = LogLevel.Warning,
         Message =

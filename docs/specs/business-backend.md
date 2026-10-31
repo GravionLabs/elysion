@@ -357,6 +357,7 @@ save with a stale version, or of a board id that is no UUID, makes none, and a f
 save. Automatic and `BeforeRestore` snapshots are kept 30 days and at most 50 per board (the oldest go first); saved ones until
 deleted, at most 100 per board. `SnapshotCleanupService` runs at 03:41 UTC: it removes the expired ones and the objects under
 `snapshots/` that have no row. Deleting a board deletes its rows (cascade) and `snapshots/{boardId}/`. There is no byte quota
-(#777 counts boards): the caps and the 8 MiB document limit bound a board. Not built yet: the call that makes the realtime service
-save an open board before "Save version" (the snapshot holds the state of the last save, at most 10 seconds old), the restore and
-"open as new board" (#847).
+(#777 counts boards): the caps and the 8 MiB document limit bound a board. "Save version" first calls `IRealtimeBoardSaver` (`HttpRealtimeBoardSaver`): `POST {REALTIME_URL}/internal/boards/{boardId}/save` with
+the same one-minute service token as the voting news (`RealtimeServiceToken`), 5 s timeout. It is best effort: no `REALTIME_URL`, a
+refusal, an unreachable service or a timeout is logged (no token, no URL) and the stored state is snapshotted as it is; a board that
+is not open costs only the call. Not built yet: the restore and "open as new board" (#847).

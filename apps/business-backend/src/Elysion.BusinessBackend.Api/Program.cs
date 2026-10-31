@@ -102,6 +102,7 @@ builder.Services.AddOptions<RealtimeOptions>()
     .Configure<IConfiguration>((options, configuration) =>
         options.Url = configuration[RealtimeOptions.UrlSetting] ?? "");
 builder.Services.AddHttpClient<IVotingNotifier, HttpVotingNotifier>();
+builder.Services.AddHttpClient<IRealtimeBoardSaver, HttpRealtimeBoardSaver>();
 
 // The optional second source of group members: Microsoft Graph reads the linked groups (#667). Off unless tenant, client and secret are set.
 builder.Services.AddOptions<GraphOptions>()
