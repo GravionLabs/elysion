@@ -4,6 +4,7 @@ import { createRemoteJWKSet } from 'jose';
 import { AppConfigService } from '../config/config.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthGuard } from './auth.guard.js';
+import { CredentialResolver } from './credential-resolver.js';
 import { TokenVerifier } from './token-verifier.js';
 
 /** Where Keycloak publishes a realm's signing keys, relative to the issuer. */
@@ -32,8 +33,14 @@ const KEYCLOAK_JWKS_PATH = '/protocol/openid-connect/certs';
         });
       },
     },
+    {
+      provide: CredentialResolver,
+      inject: [AppConfigService],
+      useFactory: (config: AppConfigService) =>
+        new CredentialResolver({ baseUrl: config.get('BUSINESS_BACKEND_URL') }),
+    },
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
-  exports: [TokenVerifier],
+  exports: [TokenVerifier, CredentialResolver],
 })
 export class AuthModule {}

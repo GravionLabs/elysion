@@ -125,14 +125,39 @@ export class AdminController {
     return this.backend.adminStats(token);
   }
 
+  /** `?kind=person` or `?kind=integration` keeps one of the two (#851); any other value is a 400. */
   @Get('users')
   users(
     @AccessToken() token: string,
     @Query('query') query?: unknown,
     @Query('page') page?: unknown,
     @Query('pageSize') pageSize?: unknown,
+    @Query('kind') kind?: unknown,
   ): Promise<unknown> {
-    return this.backend.adminListUsers(token, listFrom(query, page, pageSize));
+    if (kind !== undefined && kind !== 'person' && kind !== 'integration') {
+      throw new BadRequestException('kind must be person or integration.');
+    }
+    return this.backend.adminListUsers(token, {
+      ...listFrom(query, page, pageSize),
+      ...(kind === undefined ? {} : { kind }),
+    });
+  }
+
+  /** Every personal access token of the instance (#851), searchable by its name, its prefix or its owner's name. */
+  @Get('access-tokens')
+  accessTokens(
+    @AccessToken() token: string,
+    @Query('query') query?: unknown,
+    @Query('page') page?: unknown,
+    @Query('pageSize') pageSize?: unknown,
+  ): Promise<unknown> {
+    return this.backend.adminListAccessTokens(token, listFrom(query, page, pageSize));
+  }
+
+  @Delete('access-tokens/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  revokeAccessToken(@AccessToken() token: string, @Param('id', uuid) id: string): Promise<void> {
+    return this.backend.adminRevokeAccessToken(token, id);
   }
 
   @Get('users/:id')

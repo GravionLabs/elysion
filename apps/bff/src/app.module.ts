@@ -7,6 +7,7 @@ import { BoardsModule } from './boards/boards.module.js';
 import { MetricsModule } from './metrics/metrics.module.js';
 import { ConfigModule } from './config/config.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
+import { PublicApiModule } from './public-api/public-api.module.js';
 import { CspReportController } from './csp/csp-report.controller.js';
 import { HealthController } from './health.controller.js';
 import { LoggingModule } from './logging/logging.module.js';
@@ -20,6 +21,7 @@ import { LoggingModule } from './logging/logging.module.js';
     BoardsModule,
     AdminModule,
     RealtimeModule,
+    PublicApiModule,
   ],
   controllers: [AppController, HealthController, CspReportController],
   providers: [AppService],
