@@ -1,4 +1,4 @@
-import { waitFor } from '@testing-library/dom';
+import { fireEvent, waitFor, within } from '@testing-library/dom';
 import { describe, expect, it, vi } from 'vitest';
 import { ELEMENT_TAG_NAME } from './element';
 import { fakeVotingApi } from './facilitation/fake-voting-api';
@@ -165,6 +165,37 @@ describe('elysion-canvas custom element', () => {
 
     expect(Object.getOwnPropertyDescriptor(el, 'mentionSearch')).toBeUndefined();
     expect(el.mentionSearch).toBe(search);
+    document.body.removeChild(el);
+  });
+
+  it('has a snapshotApi property, also when it was set early, that makes the History panel available (#846)', async () => {
+    const api = {
+      list: vi.fn(async () => []),
+      create: vi.fn(),
+      rename: vi.fn(),
+      remove: vi.fn(),
+      document: vi.fn(),
+    };
+    const el = document.createElement(ELEMENT_TAG_NAME) as HTMLElement & {
+      snapshotApi?: typeof api;
+    };
+    Object.defineProperty(el, 'snapshotApi', {
+      value: api,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+
+    document.body.appendChild(el);
+
+    expect(Object.getOwnPropertyDescriptor(el, 'snapshotApi')).toBeUndefined();
+    expect(el.snapshotApi).toBe(api);
+    await waitFor(() =>
+      expect(el.querySelector('[data-testid="elysion-tool-comments"]')).toBeTruthy(),
+    );
+    fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true });
+    await waitFor(() => expect(el.querySelector('aside.elysion-history')).toBeTruthy());
+    expect(within(el).getByRole('heading', { name: 'History' })).toBeTruthy();
     document.body.removeChild(el);
   });
 

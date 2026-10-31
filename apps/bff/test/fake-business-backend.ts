@@ -50,6 +50,12 @@ export class FakeBusinessBackend {
   lastVotingRequest: { method: string; path: string; body: unknown } | null = null;
   /** What the voting routes answer; a test sets it. `body` undefined is an empty answer (204 for "none"). */
   votingAnswer: { status: number; body?: unknown } = { status: 200, body: undefined };
+  /** The last request to a snapshot route (#846): method, path and parsed body. */
+  lastSnapshotRequest: { method: string; path: string; body: unknown } | null = null;
+  /** What the snapshot routes answer; a test sets it. `body` undefined is an empty answer. */
+  snapshotAnswer: { status: number; body?: unknown } = { status: 200, body: undefined };
+  /** The bytes the document route of a snapshot serves. */
+  snapshotDocument = Buffer.from([1, 2, 3]);
   requests = 0;
   /** The role per board id the caller has (`Owner`, `Editor`, `Viewer`); a board that is not in here: 404, as for a non-member. */
   readonly roles = new Map<string, string>();
@@ -258,6 +264,29 @@ export class FakeBusinessBackend {
         body: text ? JSON.parse(text) : null,
       };
       const { status, body } = this.invitationAnswer;
+      return body === undefined ? send(status) : send(status, body);
+    }
+    const snapshotRoute = /^\/boards\/([^/]+)\/snapshots(?:\/([^/]+)(\/document)?)?$/.exec(
+      req.url ?? '',
+    );
+    if (snapshotRoute) {
+      const parts: Buffer[] = [];
+      for await (const chunk of req) parts.push(chunk as Buffer);
+      const text = Buffer.concat(parts).toString();
+      this.lastSnapshotRequest = {
+        method: req.method ?? '',
+        path: req.url ?? '',
+        body: text ? JSON.parse(text) : null,
+      };
+      if (snapshotRoute[3] && this.snapshotAnswer.status === 200) {
+        res.writeHead(200, {
+          'content-type': 'application/octet-stream',
+          'content-length': this.snapshotDocument.length,
+          'x-internal': 'must-not-be-passed-on',
+        });
+        return void res.end(this.snapshotDocument);
+      }
+      const { status, body } = this.snapshotAnswer;
       return body === undefined ? send(status) : send(status, body);
     }
     const votingRoute = /^\/boards\/([^/]+)\/votings?(?:\/|$)/.exec(req.url ?? '');

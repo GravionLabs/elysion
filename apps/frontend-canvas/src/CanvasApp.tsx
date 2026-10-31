@@ -57,6 +57,7 @@ import './styles/connection-points.css';
 import './styles/voting.css';
 import './styles/follow.css';
 import './styles/comments.css';
+import './styles/history.css';
 import './styles/pdf-import.css';
 import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
@@ -114,6 +115,8 @@ import {
 } from './comments/comments';
 import { CommentLayer } from './comments/CommentLayer';
 import { CommentPanel } from './comments/CommentPanel';
+import { HistoryPanel } from './history/HistoryPanel';
+import type { SnapshotApi } from './history/history';
 import { buildAppendix } from './comments/appendix';
 import type { Person } from './comments/mentions';
 
@@ -249,6 +252,11 @@ export interface CanvasAppProps {
    */
   votingApi?: VotingApi;
   /**
+   * How the canvas reaches the board's versions (#846, ADR 0032): the host sets it together with a board that has a record.
+   * Without one the History panel stays unavailable.
+   */
+  snapshotApi?: SnapshotApi;
+  /**
    * The people `@` offers in a comment (#733): `{id, name}` with the identity provider's id, which is what a mention stores.
    * Asked each time the comments open. Without one only the authors of earlier comments are offered.
    */
@@ -327,6 +335,7 @@ export function CanvasApp({
   tokenProvider,
   fileStore,
   votingApi,
+  snapshotApi,
   mentionDirectory,
   mentionSearch,
   canModerate = false,
@@ -399,6 +408,8 @@ export function CanvasApp({
   tokenProviderRef.current = tokenProvider;
   const fileStoreRef = useRef(fileStore);
   fileStoreRef.current = fileStore;
+  const snapshotApiRef = useRef(snapshotApi);
+  snapshotApiRef.current = snapshotApi;
   const votingApiRef = useRef(votingApi);
   votingApiRef.current = votingApi;
   const fileErrorCallback = useRef(onFileError);
@@ -481,6 +492,7 @@ export function CanvasApp({
   const threadsRef = useRef(threads);
   threadsRef.current = threads;
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [pendingAnchor, setPendingAnchor] = useState<CommentAnchor | null>(null);
   const [activeThread, setActiveThread] = useState<string | null>(null);
@@ -871,6 +883,7 @@ export function CanvasApp({
     openComments(null);
   };
   const openComments = (threadId: string | null) => {
+    setHistoryOpen(false); // both panels sit on the right edge
     setCommentsOpen(true);
     setActiveThread(threadId);
     setPlacing(threadId === null);
@@ -880,6 +893,30 @@ export function CanvasApp({
       .then((people) => setDirectory(people ?? []))
       .catch(() => setDirectory([]));
   };
+  /** Opens or closes the History panel (#846); the comments make room for it. */
+  const toggleHistory = () => {
+    if (!snapshotApiRef.current) return;
+    setHistoryOpen((open) => !open);
+    setCommentsOpen(false);
+    setPlacing(false);
+    setPendingAnchor(null);
+  };
+  const toggleHistoryRef = useRef(toggleHistory);
+  toggleHistoryRef.current = toggleHistory;
+  // Alt+H opens the history. `code`, not `key`: with Option held a Mac types another character. Like the grid shortcut it is
+  // the canvas's only when the focus is on the page body or inside the canvas.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== 'KeyH' || !event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.repeat || event.defaultPrevented) return;
+      const target = event.target as Node | null;
+      if (target !== document.body && !rootRef.current?.contains(target)) return;
+      event.preventDefault();
+      toggleHistoryRef.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   const describeAnchorRef = useRef(describeAnchor);
   describeAnchorRef.current = describeAnchor;
   const toggleCommentsRef = useRef(toggleComments);
@@ -1156,6 +1193,14 @@ export function CanvasApp({
       onSelect: () => setGridSize(size),
     })),
     { type: 'heading', label: t.menuCanvas },
+    {
+      type: 'item',
+      id: 'history',
+      label: t.menuHistory,
+      hint: 'Alt+H',
+      disabled: !snapshotApi,
+      onSelect: toggleHistory,
+    },
     {
       type: 'item',
       id: 'help',
@@ -1466,6 +1511,14 @@ export function CanvasApp({
             onCancelNew={() => setPendingAnchor(null)}
             onShow={showThread}
             onClose={toggleComments}
+          />
+        )}
+        {historyOpen && snapshotApi && (
+          <HistoryPanel
+            api={snapshotApi}
+            readOnly={readOnly}
+            canDelete={canModerate}
+            onClose={() => setHistoryOpen(false)}
           />
         )}
         <Toolbar

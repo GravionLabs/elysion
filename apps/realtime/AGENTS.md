@@ -32,7 +32,7 @@ Every `/yjs` connection needs `?token=` (the BFF's board-scoped WS token): `src/
 
 ## Voting notifications
 
-`src/voting/` (ADR 0029): `InternalVotingController` takes the business backend's `POST /internal/boards/:boardId/voting` (service token checked by `InternalCallVerifier`, iss `elysion-business-backend`, aud `elysion-realtime`), `parseVotingNotification` validates the body, `YjsRoomRegistry.announceVoting` sends message type 5 (`MESSAGE_VOTING`) to the board's sockets and relays it as document-relay type `voting`. `test/voting.e2e-spec.ts` drives it with two instances. Wire format: `docs/specs/realtime.md`.
+`src/voting/` (ADR 0029): `InternalVotingController` takes the business backend's `POST /internal/boards/:boardId/voting` (service token checked by `InternalCallVerifier`, iss `elysion-business-backend`, aud `elysion-realtime`), `parseVotingNotification` validates the body, `YjsRoomRegistry.announceVoting` sends message type 5 (`MESSAGE_VOTING`) to the board's sockets and relays it as document-relay type `voting`. `test/voting.e2e-spec.ts` drives it with two instances. `src/persistence/internal-save.controller.ts` takes `POST /internal/boards/:boardId/save` (same token), which calls `YjsRoomRegistry.saveNow` so the backend's "Save version" holds the last seconds (ADR 0032; `test/internal-save.e2e-spec.ts`). Wire format: `docs/specs/realtime.md`.
 
 ## Persistence
 

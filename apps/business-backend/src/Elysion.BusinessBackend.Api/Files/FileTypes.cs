@@ -52,4 +52,9 @@ public static class FileTypes
     /// (<c>MAX_FILES_PER_BOARD</c>) and copied by it, and the picture is neither an image of the board nor served as one.
     /// </summary>
     public static string ThumbnailKey(Guid boardId) => $"thumbnails/{boardId}.png";
+
+    /// <summary>Where the snapshots of a board are (ADR 0032); outside <see cref="Prefix"/>, so the files count and copy stay as they are.</summary>
+    public static string SnapshotPrefix(Guid boardId) => $"snapshots/{boardId}/";
+
+    public static string SnapshotKey(Guid boardId, Guid snapshotId) => $"{SnapshotPrefix(boardId)}{snapshotId}.yjs.gz";
 }

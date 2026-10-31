@@ -3,6 +3,7 @@ import { AppConfigService } from '../config/config.module.js';
 import { BoardsController } from './boards.controller.js';
 import { FilesController } from './files.controller.js';
 import { ThumbnailController } from './thumbnail.controller.js';
+import { SnapshotsController } from './snapshots.controller.js';
 import { VotingController } from './voting.controller.js';
 import { InvitationsController } from './invitations.controller.js';
 import { TemplatesController } from './templates.controller.js';
@@ -20,6 +21,7 @@ import { BUSINESS_BACKEND_URL, BusinessBackendClient } from './business-backend.
     BoardsController,
     FilesController,
     ThumbnailController,
+    SnapshotsController,
     VotingController,
     InvitationsController,
     MembersController,

@@ -4,6 +4,7 @@ using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Snapshots;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -20,6 +21,14 @@ public static class BoardDocumentEndpoints
 {
     /// <summary>Largest state accepted; the measured large board (3,500 elements) is 2.3 MB.</summary>
     public const int MaxStateBytes = 32 * 1024 * 1024;
+
+    /// <summary>The realtime service sends <c>compaction</c> with the save of a compaction rebuild (ADR 0026, ADR 0032).</summary>
+    public const string SaveReasonHeader = "X-Elysion-Save-Reason";
+
+    public const string CompactionReason = "compaction";
+
+    /// <summary>Optional: how many live elements the saved state has (the backend cannot decode Yjs).</summary>
+    public const string ElementCountHeader = "X-Elysion-Element-Count";
 
     private const string OctetStream = MediaTypeNames.Application.Octet;
 
@@ -55,6 +64,7 @@ public static class BoardDocumentEndpoints
         HttpRequest request,
         IBoardDocumentRepository documents,
         IBoardRepository boards,
+        BoardSnapshotService snapshots,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -104,11 +114,33 @@ public static class BoardDocumentEndpoints
             return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
         }
 
+        // Automatic versions (ADR 0032): the state that is about to be overwritten is kept when the newest snapshot is an hour old
+        // and the state changed, and always before a compaction rebuild. Nothing here may fail the save.
+        var compaction = request.Headers[SaveReasonHeader].ToString() == CompactionReason;
+        BoardDocument? previous = null;
+        if (!create && Guid.TryParse(boardId, out var snapshotBoard)
+                    && (compaction || await snapshots.IsAutomaticDueAsync(snapshotBoard, cancellationToken)))
+        {
+            previous = await documents.FindAsync(boardId, cancellationToken);
+            if (previous is null || previous.Version != expected || previous.State.AsSpan().SequenceEqual(state))
+            {
+                previous = null;
+            }
+        }
+
         var result = await documents.SaveAsync(boardId,
             state,
             create ? null : expected,
             time.GetUtcNow(),
             cancellationToken);
+        if (result.Status == DocumentSaveStatus.Saved && previous is not null)
+        {
+            int? elements = int.TryParse(request.Headers[ElementCountHeader].ToString(), out var count) && count >= 0
+                ? count
+                : null;
+            await snapshots.TryCreateAutomaticAsync(Guid.Parse(boardId), previous.State, elements, cancellationToken);
+        }
+
         return result switch
         {
             { Status: DocumentSaveStatus.Saved, Document: { } saved } => new SavedResult(saved.Version),

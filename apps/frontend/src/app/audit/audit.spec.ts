@@ -44,6 +44,12 @@ describe('describeAuditEntry', () => {
     ['invitation.created', { role: 'Viewer' }, 'Ada made an invitation link for the role Viewer'],
     ['invitation.revoked', { invitationId: 'i' }, 'Ada revoked an invitation link'],
     ['invitation.accepted', { role: 'Editor' }, 'Ada joined with an invitation link as Editor'],
+    [
+      'snapshot.deleted',
+      { snapshotId: 's', kind: 'Manual' },
+      'Ada deleted a saved version of the board',
+    ],
+    ['snapshot.restored', { snapshotId: 's' }, 'Ada restored a version of the board'],
   ])('says what %s is', (action, details, sentence) => {
     expect(describeAuditEntry(entry(action, details))).toBe(sentence);
   });

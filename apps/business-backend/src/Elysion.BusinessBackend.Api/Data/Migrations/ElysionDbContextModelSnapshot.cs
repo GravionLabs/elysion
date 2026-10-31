@@ -160,6 +160,44 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.ToTable("BoardMemberships");
                 });
 
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.BoardSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int?>("ElementCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId", "CreatedAt");
+
+                    b.ToTable("BoardSnapshots");
+                });
+
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.BoardVisit", b =>
                 {
                     b.Property<Guid>("BoardId")
@@ -634,6 +672,17 @@ namespace Elysion.BusinessBackend.Api.Data.Migrations
                     b.Navigation("Board");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.BoardSnapshot", b =>
+                {
+                    b.HasOne("Elysion.BusinessBackend.Api.Entities.Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
                 });
 
             modelBuilder.Entity("Elysion.BusinessBackend.Api.Entities.BoardVisit", b =>

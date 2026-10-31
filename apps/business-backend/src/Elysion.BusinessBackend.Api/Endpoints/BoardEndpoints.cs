@@ -244,6 +244,7 @@ public static class BoardEndpoints
         // The files go with the board; they are only reachable through it.
         await files.DeletePrefixAsync(FileTypes.Prefix(id), cancellationToken);
         await files.DeletePrefixAsync(FileTypes.ThumbnailKey(id), cancellationToken);
+        await files.DeletePrefixAsync(FileTypes.SnapshotPrefix(id), cancellationToken);
         return TypedResults.NoContent();
     }
 

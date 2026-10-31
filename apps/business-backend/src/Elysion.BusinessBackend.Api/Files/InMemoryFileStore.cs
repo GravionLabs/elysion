@@ -32,6 +32,16 @@ public sealed class InMemoryFileStore : IFileStore
     public Task<int> CountAsync(string prefix, CancellationToken cancellationToken) =>
         Task.FromResult(_objects.Keys.Count(key => key.StartsWith(prefix, StringComparison.Ordinal)));
 
+    public Task<IReadOnlyList<string>> ListAsync(string prefix, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<string>>(
+            _objects.Keys.Where(key => key.StartsWith(prefix, StringComparison.Ordinal)).Order().ToList());
+
+    public Task DeleteAsync(string key, CancellationToken cancellationToken)
+    {
+        _objects.TryRemove(key, out _);
+        return Task.CompletedTask;
+    }
+
     public Task DeletePrefixAsync(string prefix, CancellationToken cancellationToken)
     {
         foreach (var key in _objects.Keys.Where(key => key.StartsWith(prefix, StringComparison.Ordinal)))

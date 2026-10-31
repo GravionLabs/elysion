@@ -7,6 +7,7 @@ using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Snapshots;
 using Elysion.BusinessBackend.Api.Voting;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -48,6 +49,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     /// <summary>What the voting endpoints told the realtime service, in order; nothing is sent anywhere.</summary>
     public RecordingVotingNotifier Notifications { get; } = new();
+
+    /// <summary>The boards "Save version" asked the realtime service to save; nothing is sent anywhere.</summary>
+    public RecordingRealtimeBoardSaver RealtimeSaves { get; } = new();
 
     private readonly string _databaseName = Guid.NewGuid().ToString();
     private readonly TimeProvider? _time;
@@ -172,6 +176,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IVotingNotifier>();
             services.AddSingleton<IVotingNotifier>(Notifications);
 
+            services.RemoveAll<IRealtimeBoardSaver>();
+            services.AddSingleton<IRealtimeBoardSaver>(RealtimeSaves);
+
             services.RemoveAll<IFileStore>();
             services.AddSingleton<IFileStore>(Files);
 
@@ -200,5 +207,26 @@ public sealed class RecordingVotingNotifier : IVotingNotifier
         }
 
         return Task.CompletedTask;
+    }
+}
+
+/// <summary>Remembers which boards were asked to save; <see cref="OnSave"/> stands in for what the realtime service stores meanwhile.</summary>
+public sealed class RecordingRealtimeBoardSaver : IRealtimeBoardSaver
+{
+    public List<Guid> Asked { get; } = [];
+
+    public Func<Guid, Task>? OnSave { get; set; }
+
+    public async Task SaveNowAsync(Guid boardId, CancellationToken cancellationToken)
+    {
+        lock (Asked)
+        {
+            Asked.Add(boardId);
+        }
+
+        if (OnSave is not null)
+        {
+            await OnSave(boardId);
+        }
     }
 }

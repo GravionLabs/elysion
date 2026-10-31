@@ -1,0 +1,172 @@
+/*
+ * The history panel (history/, #846): a floating card on the right like the comments, below the toolbar. Not part of the
+ * scene. Colors are the design tokens'.
+ */
+.elysion-canvas .elysion-history {
+  position: absolute;
+  z-index: 6;
+  top: 16px;
+  right: 16px;
+  bottom: 88px;
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100% - 32px));
+  color: var(--c-text);
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.elysion-canvas .elysion-history__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.elysion-canvas .elysion-history__header h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.elysion-canvas .elysion-history button:not(.elysion-comment-close),
+.elysion-canvas .elysion-history input {
+  padding: 4px 10px;
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+  background: var(--c-surface-2, var(--c-surface-1));
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+}
+
+.elysion-canvas .elysion-history button:not(.elysion-comment-close) {
+  cursor: pointer;
+}
+
+.elysion-canvas .elysion-history button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.elysion-canvas .elysion-history .elysion-history__primary {
+  color: var(--c-on-primary, #fff);
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+}
+
+.elysion-canvas .elysion-history .elysion-history__danger {
+  color: var(--c-on-danger, #fff);
+  background: var(--c-danger, #b42318);
+  border-color: var(--c-danger, #b42318);
+}
+
+.elysion-canvas .elysion-history :focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 1px;
+}
+
+.elysion-canvas .elysion-history__name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.elysion-canvas .elysion-history__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.elysion-canvas .elysion-history__body {
+  flex: 1;
+  padding: 8px 12px 12px;
+  overflow-y: auto;
+}
+
+.elysion-canvas .elysion-history__problem {
+  margin: 4px 0 8px;
+  color: var(--c-danger-text, #b42318);
+  font-size: 13px;
+}
+
+.elysion-canvas .elysion-history__empty {
+  color: var(--c-text-subtle);
+  font-size: 13px;
+}
+
+.elysion-canvas .elysion-history__day {
+  margin: 12px 0 6px;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.elysion-canvas .elysion-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.elysion-canvas .elysion-history__entry {
+  display: flex;
+  gap: 10px;
+  padding: 6px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+}
+
+.elysion-canvas .elysion-history__preview {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 60px;
+  overflow: hidden;
+  color: var(--c-text-subtle);
+  font-size: 11px;
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm, 4px);
+}
+
+.elysion-canvas .elysion-history__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.elysion-canvas .elysion-history__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.elysion-canvas .elysion-history__title {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.elysion-canvas .elysion-history__meta {
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}

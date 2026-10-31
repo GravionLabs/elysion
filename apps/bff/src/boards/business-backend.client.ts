@@ -12,6 +12,7 @@ import {
   Injectable,
   NotFoundException,
   PayloadTooLargeException,
+  ServiceUnavailableException,
   UnauthorizedException,
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
@@ -33,6 +34,17 @@ export interface Board {
   lastOpenedAt?: string | null;
   /** Whether the caller starred the board (#730). */
   isFavorite?: boolean;
+}
+
+/** A version of a board in its history (ADR 0032); `author` is null for an automatic one. */
+export interface BoardSnapshot {
+  id: string;
+  kind: 'Manual' | 'Auto' | 'BeforeRestore';
+  name: string | null;
+  author: string | null;
+  createdAt: string;
+  sizeBytes: number;
+  elementCount: number | null;
 }
 
 /** A person in a voting: `id` is the identity-provider subject, the id the canvas knows (#732). */
@@ -528,6 +540,54 @@ export class BusinessBackendClient {
     };
   }
 
+  // The versions of a board (ADR 0032, #846): the backend decides who may list, save, rename and delete.
+
+  listSnapshots(token: string, boardId: string): Promise<BoardSnapshot[]> {
+    return this.request<BoardSnapshot[]>(token, 'GET', `/boards/${boardId}/snapshots`);
+  }
+
+  createSnapshot(token: string, boardId: string, name?: string): Promise<BoardSnapshot> {
+    return this.request<BoardSnapshot>(
+      token,
+      'POST',
+      `/boards/${boardId}/snapshots`,
+      name === undefined ? {} : { name },
+    );
+  }
+
+  renameSnapshot(
+    token: string,
+    boardId: string,
+    snapshotId: string,
+    name: string,
+  ): Promise<BoardSnapshot> {
+    return this.request<BoardSnapshot>(
+      token,
+      'PATCH',
+      `/boards/${boardId}/snapshots/${snapshotId}`,
+      {
+        name,
+      },
+    );
+  }
+
+  async deleteSnapshot(token: string, boardId: string, snapshotId: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', `/boards/${boardId}/snapshots/${snapshotId}`);
+  }
+
+  /** The Yjs state of a version, for the preview picture; a stream to pipe on. */
+  async getSnapshotDocument(
+    token: string,
+    boardId: string,
+    snapshotId: string,
+  ): Promise<BackendFile> {
+    const response = await this.fetchBackend(
+      `/boards/${boardId}/snapshots/${snapshotId}/document`,
+      { method: 'GET', headers: this.headers(token), signal: AbortSignal.timeout(FILE_TIMEOUT_MS) },
+    );
+    return this.fileOf(response);
+  }
+
   async deleteBoard(token: string, id: string): Promise<void> {
     await this.request<void>(token, 'DELETE', `/boards/${id}`);
   }
@@ -721,6 +781,10 @@ export class BusinessBackendClient {
     }
     if (response.status === 415) {
       throw new UnsupportedMediaTypeException();
+    }
+    if (response.status === 503) {
+      // The object store of the versions is down (ADR 0032): say so instead of "bad gateway".
+      throw new ServiceUnavailableException(await problemDetail(response));
     }
     if (response.status === 400) {
       throw new BadRequestException(await validationMessage(response));
