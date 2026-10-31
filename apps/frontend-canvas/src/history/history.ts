@@ -23,6 +23,19 @@ export interface SnapshotApi {
   remove(id: string): Promise<void>;
   /** The Yjs state of a version, for its preview picture. */
   document(id: string): Promise<Uint8Array>;
+  /**
+   * Restores a version onto the board (owners, #847). Everybody on the board follows by itself; resolves with the
+   * "Before restore" version that was kept first (`null` when the board had no stored state).
+   */
+  restore(id: string): Promise<SnapshotInfo | null>;
+  /** "Open as new board" (#847): a new board of the caller with the state of the version. */
+  openAsNew(id: string): Promise<OpenedBoard>;
+}
+
+/** The board "Open as new board" made: its id and the route that opens it. */
+export interface OpenedBoard {
+  id: string;
+  path: string;
 }
 
 export const MAX_SNAPSHOT_NAME_LENGTH = 120;

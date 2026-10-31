@@ -78,6 +78,10 @@ export interface BoardSnapshotApi {
   remove(id: string): Promise<void>;
   /** The Yjs state of a version, for its preview picture. */
   document(id: string): Promise<Uint8Array>;
+  /** Restores a version onto the board (owners, #847); resolves with the "Before restore" version kept first, or `null`. */
+  restore(id: string): Promise<BoardSnapshotInfo | null>;
+  /** "Open as new board" (#847): the board that was made, with the route that opens it. */
+  openAsNew(id: string): Promise<{ id: string; path: string }>;
 }
 
 /** The `offline` event of the canvas (#735): the connection broke after the board was loaded, or is back. */

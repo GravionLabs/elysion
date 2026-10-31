@@ -60,6 +60,33 @@ describe('SnapshotApi', () => {
     await removed;
   });
 
+  it('restores a version and resolves with the version that was kept first', async () => {
+    const restored = api.restore('s 1');
+    const request = http.expectOne('/api/boards/b%2F1/snapshots/s%201/restore');
+    expect(request.request.method).toBe('POST');
+    request.flush({ before: { id: 'b1', kind: 'BeforeRestore' } });
+
+    expect(await restored).toEqual({ id: 'b1', kind: 'BeforeRestore' });
+  });
+
+  it('opens a version as a new board and resolves with the board', async () => {
+    const opened = api.openAsNew('s1');
+    const request = http.expectOne('/api/boards/b%2F1/snapshots/s1/copy');
+    expect(request.request.method).toBe('POST');
+    request.flush({ id: 'n1', name: 'Retro (Kickoff)', path: '/board/n1' });
+
+    expect(await opened).toMatchObject({ id: 'n1', path: '/board/n1' });
+  });
+
+  it('rejects a refused restore with the HTTP status', async () => {
+    const restored = api.restore('s1');
+    http
+      .expectOne('/api/boards/b%2F1/snapshots/s1/restore')
+      .flush(null, { status: 403, statusText: 'Forbidden' });
+
+    await expect(restored).rejects.toMatchObject({ status: 403 });
+  });
+
   it('reads the state of a version as bytes', async () => {
     const state = api.document('s1');
     const request = http.expectOne('/api/boards/b%2F1/snapshots/s1/document');

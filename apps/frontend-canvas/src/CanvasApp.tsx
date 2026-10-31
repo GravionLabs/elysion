@@ -116,9 +116,19 @@ import {
 import { CommentLayer } from './comments/CommentLayer';
 import { CommentPanel } from './comments/CommentPanel';
 import { HistoryPanel } from './history/HistoryPanel';
-import type { SnapshotApi } from './history/history';
+import type { OpenedBoard, SnapshotApi } from './history/history';
 import { buildAppendix } from './comments/appendix';
 import type { Person } from './comments/mentions';
+
+/**
+ * Whether a key goes into text rather than to the canvas: typed into a field (the panels' own inputs too), into
+ * Excalidraw's text editor, or part of an IME composition. The canvas's keyboard shortcuts leave such a key alone.
+ */
+const isTextEntry = (event: KeyboardEvent, api: ExcalidrawImperativeAPI | null): boolean =>
+  event.isComposing ||
+  (event.target instanceof Element &&
+    event.target.closest('input, textarea, select, [contenteditable="true"]') !== null) ||
+  Boolean(api?.getAppState().editingTextElement);
 
 /** What the host can ask the canvas to do; the element exposes these as methods. */
 export interface CanvasControls {
@@ -236,6 +246,8 @@ export interface CanvasAppProps {
   onError?: (error: Error) => void;
   /** Something the person should be told that is not a failure of the board: the board is full, a change was too large, a library was refused. */
   onNotice?: (message: string) => void;
+  /** "Open as new board" in the History panel made a board (#847): the host navigates to it. */
+  onOpenBoard?: (board: OpenedBoard) => void;
   /**
    * Asked before every connection to the board server (the first and each reconnect) for the token that goes on the
    * URL; see `YjsWebsocketClientOptions.tokenProvider` for what it may return. Without one, no token is sent.
@@ -332,6 +344,7 @@ export function CanvasApp({
   onCommentsChange,
   onError,
   onNotice,
+  onOpenBoard,
   tokenProvider,
   fileStore,
   votingApi,
@@ -404,6 +417,10 @@ export function CanvasApp({
   errorCallback.current = onError;
   const noticeCallback = useRef(onNotice);
   noticeCallback.current = onNotice;
+  const openBoardCallback = useRef(onOpenBoard);
+  openBoardCallback.current = onOpenBoard;
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const tokenProviderRef = useRef(tokenProvider);
   tokenProviderRef.current = tokenProvider;
   const fileStoreRef = useRef(fileStore);
@@ -692,6 +709,16 @@ export function CanvasApp({
         setEpoch((value) => value + 1);
       },
       onBoardFull: () => noticeCallback.current?.(tRef.current.boardFullServer),
+      onRestored: (payload) => {
+        const { by, at } = (payload ?? {}) as { by?: unknown; at?: unknown };
+        if (typeof by !== 'string' || typeof at !== 'string' || Number.isNaN(Date.parse(at)))
+          return;
+        const time = new Date(at).toLocaleString(localeRef.current, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        });
+        noticeCallback.current?.(tRef.current.restoredNotice(by, time));
+      },
       onUpdateTooLarge: () => noticeCallback.current?.(tRef.current.updateTooLarge),
       onStatusChange: (status) => {
         statusCallback.current?.(status);
@@ -904,18 +931,22 @@ export function CanvasApp({
   const toggleHistoryRef = useRef(toggleHistory);
   toggleHistoryRef.current = toggleHistory;
   // Alt+H opens the history. `code`, not `key`: with Option held a Mac types another character. Like the grid shortcut it is
-  // the canvas's only when the focus is on the page body or inside the canvas.
+  // the canvas's only when the focus is on the page body or inside the canvas, and like it it is caught in the capture
+  // phase: once a shape was drawn the focus is on Excalidraw's container, whose key handler stops the key from bubbling.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.code !== 'KeyH' || !event.altKey || event.ctrlKey || event.metaKey) return;
       if (event.repeat || event.defaultPrevented) return;
       const target = event.target as Node | null;
       if (target !== document.body && !rootRef.current?.contains(target)) return;
+      // Not while typing: a version name in the History panel, a text being edited, an IME composition.
+      if (isTextEntry(event, apiRef.current)) return;
       event.preventDefault();
+      event.stopPropagation();
       toggleHistoryRef.current();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, []);
   const describeAnchorRef = useRef(describeAnchor);
   describeAnchorRef.current = describeAnchor;
@@ -1055,14 +1086,7 @@ export function CanvasApp({
       const key = event.key.toLowerCase();
       if ((key !== 'c' && key !== 'n') || event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.repeat || event.defaultPrevented) return;
-      const target = event.target;
-      if (
-        target instanceof Element &&
-        target.closest('input, textarea, select, [contenteditable="true"]')
-      ) {
-        return;
-      }
-      if (apiRef.current?.getAppState().editingTextElement) return;
+      if (isTextEntry(event, apiRef.current)) return;
       if (key === 'c') {
         // C connects two selected elements; with nothing to connect it opens the comments (#733).
         const api = apiRef.current;
@@ -1518,6 +1542,8 @@ export function CanvasApp({
             api={snapshotApi}
             readOnly={readOnly}
             canDelete={canModerate}
+            canRestore={canModerate}
+            onOpenBoard={(board) => openBoardCallback.current?.(board)}
             onClose={() => setHistoryOpen(false)}
           />
         )}

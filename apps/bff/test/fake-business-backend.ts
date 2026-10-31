@@ -266,9 +266,10 @@ export class FakeBusinessBackend {
       const { status, body } = this.invitationAnswer;
       return body === undefined ? send(status) : send(status, body);
     }
-    const snapshotRoute = /^\/boards\/([^/]+)\/snapshots(?:\/([^/]+)(\/document)?)?$/.exec(
-      req.url ?? '',
-    );
+    const snapshotRoute =
+      /^\/boards\/([^/]+)\/snapshots(?:\/([^/]+)(\/document|\/restore|\/copy)?)?$/.exec(
+        req.url ?? '',
+      );
     if (snapshotRoute) {
       const parts: Buffer[] = [];
       for await (const chunk of req) parts.push(chunk as Buffer);
@@ -278,7 +279,7 @@ export class FakeBusinessBackend {
         path: req.url ?? '',
         body: text ? JSON.parse(text) : null,
       };
-      if (snapshotRoute[3] && this.snapshotAnswer.status === 200) {
+      if (snapshotRoute[3] === '/document' && this.snapshotAnswer.status === 200) {
         res.writeHead(200, {
           'content-type': 'application/octet-stream',
           'content-length': this.snapshotDocument.length,

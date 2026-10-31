@@ -21,6 +21,7 @@ import { PresenceRelay } from './presence/presence-relay.js';
 import { RedisModule } from './redis/redis.module.js';
 import { InternalVotingController } from './voting/internal-voting.controller.js';
 import { InternalSaveController } from './persistence/internal-save.controller.js';
+import { InternalRestoreController } from './persistence/internal-restore.controller.js';
 import { YjsGateway } from './yjs/yjs.gateway.js';
 import {
   PERSISTENCE_OPTIONS,
@@ -36,6 +37,7 @@ import {
     MetricsController,
     InternalVotingController,
     InternalSaveController,
+    InternalRestoreController,
   ],
   providers: [
     AppService,

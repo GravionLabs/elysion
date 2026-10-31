@@ -14,3 +14,6 @@ public record SnapshotDto(
 public record CreateSnapshotRequest(string? Name);
 
 public record RenameSnapshotRequest(string? Name);
+
+/// <summary>The answer to a restore: the "Before restore" version that was kept first, or null when the board had no stored state.</summary>
+public record RestoreSnapshotResponse(SnapshotDto? Before);

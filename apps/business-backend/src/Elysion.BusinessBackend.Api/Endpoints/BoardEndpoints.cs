@@ -206,7 +206,7 @@ public static class BoardEndpoints
     }
 
     /// <summary>A board owned by <paramref name="owner"/>, with the explicit Owner membership that sharing lists will show.</summary>
-    private static Board NewOwnedBoard(string name, ICurrentUser owner, DateTimeOffset now)
+    internal static Board NewOwnedBoard(string name, ICurrentUser owner, DateTimeOffset now)
     {
         var board = Board.Create(Guid.CreateVersion7(), name, now, owner.Id);
         board.Memberships.Add(BoardMembership.Create(board.Id, owner.Id, BoardRole.Owner, now));
@@ -248,20 +248,20 @@ public static class BoardEndpoints
         return TypedResults.NoContent();
     }
 
-    private static async Task<bool> OverBoardQuotaAsync(IBoardRepository boards,
+    internal static async Task<bool> OverBoardQuotaAsync(IBoardRepository boards,
         QuotaOptions limits,
         ICurrentUser user,
         CancellationToken cancellationToken) =>
         await boards.CountOwnedAsync(user.Id, cancellationToken) >= limits.MaxBoards;
 
-    private static ProblemHttpResult BoardQuotaReached(QuotaOptions limits) =>
+    internal static ProblemHttpResult BoardQuotaReached(QuotaOptions limits) =>
         TypedResults.Problem($"You own {limits.MaxBoards} boards, the most you may keep. Delete one to make another.",
             statusCode: StatusCodes.Status409Conflict,
             title: "Board quota reached");
 
     // Postgres keeps microseconds; without this the response to the create would show more digits than
     // every later read of the same board.
-    private static DateTimeOffset TruncateToMicroseconds(DateTimeOffset value) =>
+    internal static DateTimeOffset TruncateToMicroseconds(DateTimeOffset value) =>
         new(value.Ticks - value.Ticks % 10, value.Offset);
 
     private static ValidationProblem InvalidName() =>

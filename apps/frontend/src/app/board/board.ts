@@ -18,7 +18,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom, startWith, switchMap } from 'rxjs';
 import { Theme, ThemeService } from '../theme/theme.service';
 import { SyncStatus, TopBar } from '../topbar/top-bar';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AppBrand } from '../shared/app-brand';
 import { BoardApi, BoardLookup, BoardRole, isStoredBoardId } from './board-api';
 import { FilesApi } from './files-api';
@@ -82,6 +82,7 @@ export class Board {
   readonly #files = inject(FilesApi);
   readonly #votings = inject(VotingApi);
   readonly #snapshots = inject(SnapshotApi);
+  readonly #router = inject(Router);
   readonly #members = inject(MembersApi);
   readonly #users = inject(UsersApi);
   readonly #thumbnails = inject(ThumbnailUploader);
@@ -499,6 +500,13 @@ export class Board {
 
   onVoting(event: Event): void {
     this.voting.set((event as CustomEvent<{ session: VotingSession | null }>).detail.session);
+  }
+
+  /** "Open as new board" in the History panel made a board (#847): go to it. */
+  onOpenBoard(event: Event): void {
+    const { path } = (event as CustomEvent<{ id: string; path: string }>).detail;
+    if (typeof path === 'string' && path.startsWith('/board/'))
+      void this.#router.navigateByUrl(path);
   }
 
   onFollow(event: Event): void {

@@ -2,7 +2,7 @@ import { type Root, createRoot } from 'react-dom/client';
 import { CanvasApp, type CanvasControls } from './CanvasApp';
 import type { TimerState } from './facilitation/timer';
 import type { StartOptions, VotingApi, VotingView } from './facilitation/voting';
-import type { SnapshotApi, SnapshotInfo } from './history/history';
+import type { OpenedBoard, SnapshotApi, SnapshotInfo } from './history/history';
 import type { ExportFormat, ExportOptions } from './board-io';
 import { parseTheme } from './useResolvedTheme';
 import { parseLocale, createI18n } from './i18n';
@@ -10,7 +10,7 @@ import type { FileStore } from './yjs/files';
 
 import type { Person } from './comments/mentions';
 
-export type { FileStore, VotingApi, SnapshotApi, SnapshotInfo, Person };
+export type { FileStore, VotingApi, SnapshotApi, SnapshotInfo, OpenedBoard, Person };
 
 /** The people `@` offers in a comment: asked each time the comments open. */
 export type MentionDirectory = () => Promise<readonly Person[]>;
@@ -345,6 +345,7 @@ class ElysionCanvasElement extends HTMLElement {
         onError={(error) => this.#emit('error', { message: error.message })}
         onOfflineChange={(state) => this.#emit('offline', state)}
         onNotice={(message) => this.#emit('notice', { message })}
+        onOpenBoard={(board) => this.#emit('openboard', board)}
         onFileError={(error) => this.#emit('fileerror', { message: error.message })}
         onSynced={() => this.#emit('synced', {})}
         tokenProvider={this.#tokenProvider}

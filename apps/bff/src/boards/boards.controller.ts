@@ -27,7 +27,7 @@ export interface BoardResponse extends Board {
 // An id that is not a UUID cannot exist, so it is a 404 without asking the backend.
 const boardId = new ParseUUIDPipe({ errorHttpStatusCode: HttpStatus.NOT_FOUND });
 
-function toResponse(board: Board): BoardResponse {
+export function toResponse(board: Board): BoardResponse {
   return { ...board, path: `/board/${board.id}` };
 }
 

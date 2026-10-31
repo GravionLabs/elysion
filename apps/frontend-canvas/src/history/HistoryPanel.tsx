@@ -4,6 +4,7 @@ import {
   MAX_SNAPSHOT_NAME_LENGTH,
   formatSize,
   groupByDay,
+  type OpenedBoard,
   type SnapshotApi,
   type SnapshotInfo,
 } from './history';
@@ -15,6 +16,10 @@ export interface HistoryPanelProps {
   readOnly: boolean;
   /** Owners delete versions. */
   canDelete: boolean;
+  /** Owners restore a version onto the board (#847). */
+  canRestore?: boolean;
+  /** "Open as new board" made a board: the host navigates to it. */
+  onOpenBoard?: (board: OpenedBoard) => void;
   onClose: () => void;
 }
 
@@ -41,7 +46,14 @@ function titleOf(snapshot: SnapshotInfo, t: Messages): string {
  * optional), a preview picture drawn from each version, and rename and delete by role. A side panel like the comments; it
  * works with the keyboard (Esc closes it, the focus returns to where it was) and every control has a name.
  */
-export function HistoryPanel({ api, readOnly, canDelete, onClose }: HistoryPanelProps) {
+export function HistoryPanel({
+  api,
+  readOnly,
+  canDelete,
+  canRestore = false,
+  onOpenBoard,
+  onClose,
+}: HistoryPanelProps) {
   const { t, locale } = useI18n();
   const headingId = useId();
   const nameId = useId();
@@ -53,12 +65,15 @@ export function HistoryPanel({ api, readOnly, canDelete, onClose }: HistoryPanel
   const [renaming, setRenaming] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [asking, setAsking] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState<string | null>(null);
+  const [restored, setRestored] = useState(false);
   const [previews, setPreviews] = useState<Record<string, string | null>>({});
   const previewsRef = useRef<Record<string, string | null>>({});
   const requested = useRef(new Set<string>());
   const gone = useRef(false);
   const saveButton = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLElement>(null);
 
   // The focus goes into the panel when it opens and back to where it was when it closes.
   useEffect(() => {
@@ -191,18 +206,60 @@ export function HistoryPanel({ api, readOnly, canDelete, onClose }: HistoryPanel
     }
   };
 
+  const restore = async (snapshot: SnapshotInfo) => {
+    if (busy) return;
+    setBusy(true);
+    setProblem(null);
+    setRestored(false);
+    try {
+      const before = await api.restore(snapshot.id);
+      if (gone.current) return;
+      if (before) setItems((list) => [before, ...(list ?? [])]);
+      setRestoring(null);
+      setRestored(true);
+      // The question and its buttons are gone: the focus stays in the panel, so that Esc still closes it. Only when it was
+      // still there (or fell to the body with the buttons): a person who went elsewhere during the wait keeps their place.
+      queueMicrotask(() => {
+        const active = document.activeElement;
+        if (!active || active === document.body || panel.current?.contains(active)) {
+          closeButton.current?.focus();
+        }
+      });
+    } catch (error) {
+      if (!gone.current) setProblem(problemText(error, t.historyRestoreFailed, t));
+    } finally {
+      if (!gone.current) setBusy(false);
+    }
+  };
+
+  const openAsNew = async (snapshot: SnapshotInfo) => {
+    if (busy) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      const board = await api.openAsNew(snapshot.id);
+      if (!gone.current) onOpenBoard?.(board);
+    } catch (error) {
+      if (!gone.current) setProblem(problemText(error, t.historyOpenAsNewFailed, t));
+    } finally {
+      if (!gone.current) setBusy(false);
+    }
+  };
+
   return (
     <aside
+      ref={panel}
       className="elysion-history"
       aria-labelledby={headingId}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
         event.stopPropagation();
         // Esc first leaves a form or question that is open, then the panel.
-        if (naming || renaming || asking) {
+        if (naming || renaming || asking || restoring) {
           setNaming(false);
           setRenaming(null);
           setAsking(null);
+          setRestoring(null);
         } else onClose();
       }}
     >
@@ -259,6 +316,10 @@ export function HistoryPanel({ api, readOnly, canDelete, onClose }: HistoryPanel
             {problem}
           </p>
         )}
+        {/* Always there, so that a screen reader announces the message when it appears (a polite live region). */}
+        <div role="status" aria-live="polite" aria-atomic="true">
+          {restored && <p className="elysion-history__done">{t.historyRestored}</p>}
+        </div>
         {items === null && <p role="status">{t.historyLoading}</p>}
         {items?.length === 0 && !problem && (
           <p className="elysion-history__empty">{t.historyEmpty}</p>
@@ -320,7 +381,29 @@ export function HistoryPanel({ api, readOnly, canDelete, onClose }: HistoryPanel
                           .filter(Boolean)
                           .join(' · ')}
                       </span>
-                      {asking === snapshot.id ? (
+                      {restoring === snapshot.id ? (
+                        <div className="elysion-history__row" role="group" aria-label={title}>
+                          <span>{t.historyRestoreQuestion}</span>
+                          <button
+                            type="button"
+                            className="elysion-history__primary"
+                            autoFocus
+                            disabled={busy}
+                            onClick={() => void restore(snapshot)}
+                          >
+                            {t.historyRestoreConfirm}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRestoring(null);
+                              queueMicrotask(() => closeButton.current?.focus());
+                            }}
+                          >
+                            {t.historyCancel}
+                          </button>
+                        </div>
+                      ) : asking === snapshot.id ? (
                         <div className="elysion-history__row" role="group" aria-label={title}>
                           <span>{t.historyDeleteQuestion}</span>
                           <button
@@ -339,6 +422,28 @@ export function HistoryPanel({ api, readOnly, canDelete, onClose }: HistoryPanel
                       ) : (
                         renaming !== snapshot.id && (
                           <div className="elysion-history__row">
+                            {canRestore && (
+                              <button
+                                type="button"
+                                aria-label={t.historyRestoreOf(title)}
+                                onClick={() => {
+                                  setRestoring(snapshot.id);
+                                  setRestored(false);
+                                }}
+                              >
+                                {t.historyRestore}
+                              </button>
+                            )}
+                            {onOpenBoard && (
+                              <button
+                                type="button"
+                                aria-label={t.historyOpenAsNewOf(title)}
+                                disabled={busy}
+                                onClick={() => void openAsNew(snapshot)}
+                              >
+                                {t.historyOpenAsNew}
+                              </button>
+                            )}
                             {!readOnly && snapshot.kind === 'Manual' && (
                               <button
                                 type="button"
