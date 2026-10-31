@@ -13,6 +13,7 @@ An open-source alternative to [Mural](https://mural.co): a collaborative whitebo
 - **Realtime:** every change is merged by Yjs CRDTs over WebSockets (several realtime instances stay in step through Valkey); boards are persisted and survive a restart.
 - **Facilitation:** a **shared timer** with a countdown for everybody, and **dot voting** (votes per person, your own dots while it runs, a ranked result in a movable dialog when it ends, by the facilitator or when everybody has voted). The votes are kept on the server and are secret while the voting runs; viewers vote too, and a voting can be started as "named" to show who voted for what.
 - **Identity:** login through Keycloak; the BFF, the realtime service and the business backend each check the token, and a viewer's changes are refused by the server, not only hidden in the interface.
+- **Public API:** a versioned REST API for scripts and integrations at `/public/v1` with personal access tokens and scopes: boards, rooms, members, versions and the elements of a board as Excalidraw JSON, described by an OpenAPI 3.1 document ([docs/api.md](docs/api.md)).
 - **Operations:** Traefik at the edge with CORS and rate limits, metrics and structured logs, a Helm chart ([ADR 0018](docs/adr/0018-kubernetes-packaging.md)).
 
 ## Try it
@@ -35,6 +36,7 @@ Known gaps, so nobody finds them by surprise (the [roadmap](docs/roadmap.md) say
 - **Timer clocks** of two clients may differ by a few seconds (the end is worked out on every client).
 - **Images are PNG, JPEG, GIF or WebP** up to 10 MiB, 200 per board (SVG is refused: it can carry script). They are kept in the object store (RustFS in the stack).
 - **Backup is a service you start** (`docker compose --profile backup up -d backup`, [self-hosting](docs/self-hosting.md#back-up-and-restore)): nightly dumps of the databases and a copy of the images, on the same host unless you point it elsewhere, and an alert (`BackupTooOld`, [operations](docs/operations.md#backuptooold)) when the last good one is older than 36 hours, if you run the alerting of `docker-compose.observability.yml`.
+- **The public API reads elements but does not write them**, and there are no webhooks yet (#853); versions can be listed, saved and read, not restored, through it ([docs/api.md](docs/api.md)).
 - **Browser tests cover the main paths, not every corner:** `apps/e2e` (Playwright, two browsers on one board, against the container stack in CI) covers sharing, the timer, the dot voting, a viewer's limits, images, rooms, templates, import and export, the drawing tools with connectors and undo, and losing and regaining the connection; there is no visual regression test and only Chromium is used.
 
 ## Architecture

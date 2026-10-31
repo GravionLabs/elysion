@@ -60,9 +60,11 @@ What follows judges the **design** and the **code**, and says "demo only" where 
    the compose file does not and is documented as a demo.
 4. **The service to service tokens.** Each service checks the token it acts on: the business backend validates the Keycloak JWT itself and
    authorizes by membership; `/internal` accepts only the realtime service's token (another authentication scheme, another issuer and audience).
-5. **Scripts and integrations on the Internet** ([ADR 0033](adr/0033-public-api-tokens-and-webhooks.md), tokens since #851; the routes
-   come with #852 and webhooks with #853). The public API at `/public/v1` has its own router without CORS and `forwardAuth`, with a rate
-   limit per token and a body limit. Personal access tokens (`elp_`, stored as a hash, with an expiry and scopes) and Keycloak service
+5. **Scripts and integrations on the Internet** ([ADR 0033](adr/0033-public-api-tokens-and-webhooks.md), tokens since #851, the routes
+   since #852; webhooks come with #853). The public API at `/public/v1` has its own router without CORS and `forwardAuth`, with a rate
+   limit per client address at the edge, a rate limit per token in the BFF (keyed by the token the backend resolved, so made-up tokens
+   get no buckets of their own) and a body limit of 1 MiB at both. Every route passes the token on to the business backend, which
+   authorizes as for the browser and sees a revoke on that call. Personal access tokens (`elp_`, stored as a hash, with an expiry and scopes) and Keycloak service
    accounts (role `elysion-integration`) are accepted there only (`401` and `403` on `/api`) and act as their person or integration; a token
    cannot make, list or revoke tokens. Webhooks are the way out: signed, `https` only, never to a private address.
 

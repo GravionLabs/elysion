@@ -1,9 +1,70 @@
 # The public API
 
 Elysion has a versioned API for scripts and integrations at `/public/v1` ([ADR 0033](adr/0033-public-api-tokens-and-webhooks.md)). It is
-not the API the browser uses (`/api`): it has its own route at the edge, without CORS, with a rate limit per token (600 requests a minute,
-a burst of 60) and a body limit of 1 MiB. This page says how a caller authenticates. The routes for boards, rooms, members, versions and
-elements, and their OpenAPI document, come with #852; until then the API has one route, `GET /public/v1/me`.
+not the API the browser uses (`/api`): it has its own route at the edge, without CORS, a rate limit per token (600 requests a minute) and a
+body limit of 1 MiB. This page says how to get a token and make the first call, and what the API has; every route, with its scope, its
+parameters and an example of each answer, is in the [reference](api/reference.md), made from the OpenAPI 3.1 document
+[`openapi.v1.json`](api/openapi.v1.json) that the code generates.
+
+## The first call
+
+1. In Elysion, open the menu under your name, **Access tokens**, and make a token with the scope **Read boards** (`boards:read`). Copy it:
+   it is shown once.
+2. Ask who you are, then list your boards:
+
+```sh
+TOKEN=elp_...   # the token you copied
+curl -s -H "Authorization: Bearer $TOKEN" https://elysion.example.com/public/v1/me
+# {"id":"…","name":"Ada","kind":"person","tokenId":"…","scopes":["boards:read"]}
+curl -s -H "Authorization: Bearer $TOKEN" 'https://elysion.example.com/public/v1/boards?limit=10'
+# {"items":[{"id":"0192f7a4-…","name":"Sprint 42 retro","createdAt":"2026-10-31T09:15:00Z","roomId":null}],"next":null}
+```
+
+On the development stack the address is `http://localhost`. To create and rename boards, make a token with `boards:write` as well:
+
+```sh
+BOARD=$(curl -s -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"name":"From a script"}' \
+  https://elysion.example.com/public/v1/boards | jq -r .id)
+ETAG=$(curl -s -o /dev/null -D - -H "Authorization: Bearer $TOKEN" https://elysion.example.com/public/v1/boards/$BOARD \
+  | awk 'tolower($1)=="etag:" {print $2}' | tr -d '\r')
+curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -H "If-Match: $ETAG" -H 'Content-Type: application/json' \
+  -d '{"name":"Renamed by a script"}' https://elysion.example.com/public/v1/boards/$BOARD
+curl -s -H "Authorization: Bearer $TOKEN" https://elysion.example.com/public/v1/boards/$BOARD/elements
+# {"type":"excalidraw","version":2,"source":"elysion","elements":[],"appState":{},"files":{}}
+```
+
+## What v1 has
+
+| Resource  | Routes (under `/public/v1`)                                                                                                                             | Scope                                            |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Caller    | `GET /me`                                                                                                                                               | none                                             |
+| Boards    | `GET /boards` (`?roomId=` for one room), `GET /boards/{id}`, `POST /boards`, `PATCH /boards/{id}`, `DELETE /boards/{id}`, `POST /boards/{id}/duplicate` | `boards:read` to read, `boards:write` to change  |
+| Elements  | `GET /boards/{id}/elements`, `GET /boards/{id}/files/{fileId}`                                                                                          | `boards:read`                                    |
+| Rooms     | `GET /rooms`, `GET /rooms/{id}`                                                                                                                         | `boards:read`                                    |
+| Members   | `GET`, `POST /boards/{id}/members`, `PATCH`, `DELETE /boards/{id}/members/{userId}`; the same under `/rooms/{id}/members`                               | `boards:read` to list, `members:write` to change |
+| Snapshots | `GET /boards/{id}/snapshots`, `POST /boards/{id}/snapshots`, `GET /boards/{id}/snapshots/{snapshotId}`                                                  | `boards:read` to read, `snapshots:write` to save |
+
+- **The same rights as in the browser.** A token acts as its person (or integration) and never sees more: a board you are no member of is
+  `404`, as if it did not exist; a viewer cannot rename (`403`); only owners delete a board and change its members.
+- **Elements** are the board as an Excalidraw scene (the `.excalidraw` format, version 2): the live elements in drawing order, and the images
+  as links (`files.<id>.url`, a route of the API that needs `boards:read`), never inline. It is the state of the last save, at most about 10
+  seconds behind an open board. Writing elements is not in v1.
+- **Snapshots** (the versions of a board) can be listed, saved and read as JSON (the version and its scene, like the elements). **Renaming,
+  deleting and restoring a version, and opening one as a new board, are not in v1**: they are in the browser only.
+- **Rename** needs `If-Match` with the `ETag` that `GET /boards/{id}` (or the last change) answered; `*` renames whatever the board is
+  called now. Without it the answer is `428`, with an old one `412`.
+- **Lists** come in pages: `?limit=` (1 to 200, default 50) and `?cursor=`, the `next` of the page before (`null` on the last page). A
+  cursor is opaque; one that was not handed out is `400`.
+- **Errors** are problem details (RFC 9457, `application/problem+json`): `{"type":"about:blank","title":"Not Found","status":404}`, with a
+  `detail` where there is more to say and `code: "account-deactivated"` when the token's owner was deactivated.
+- **Rate limit:** 600 requests a minute per token (`PUBLIC_API_RATE_LIMIT_PER_MINUTE`). Every answer says how many are left
+  (`RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` in seconds, `RateLimit-Policy`); over the limit the answer is `429` with
+  `Retry-After`. The edge also limits each client address (1200 a minute) against floods.
+- **Bodies** are JSON of at most 1 MiB (`413` above).
+- **Versioning:** a breaking change is a `/public/v2`; v1 stays for at least six months after it and then answers with `Deprecation` and
+  `Sunset` headers.
+
+## Who can call
 
 A caller is one of three:
 

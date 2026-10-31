@@ -376,7 +376,11 @@ empty and the restore proceeds with no "Before restore". Not built yet: the rest
 ## Public API and webhooks
 
 [ADR 0033](../adr/0033-public-api-tokens-and-webhooks.md). The authentication (personal access tokens and integrations) is in
-"Authentication" above (#851). Webhooks are not built yet (#853): delivered from an outbox written in the same transaction as the
+"Authentication" above (#851). The routes of the public API are the BFF's ([bff.md](bff.md), "Public API"): they call the
+endpoints of this service as the caller, so a token never sees more than its owner. One endpoint is there for them (#852):
+`GET /boards/{id}/document` (`BoardDocumentEndpoints.ReadForMember`, `BoardPolicies.Read`) answers the stored Yjs state of the board
+(`application/octet-stream`, the version as `ETag`), `204` for a board that was never saved and `404` without a role, so that the BFF
+can decode the elements; it is read-only, saves stay with the realtime service's internal route. Webhooks are not built yet (#853): delivered from an outbox written in the same transaction as the
 change, signed with HMAC-SHA256 (`Elysion-Signature`).
 
 **Personal access tokens** (`AccessToken`, migration `AddAccessTokens`, which also adds `Users.IsIntegration`; `AccessTokenEndpoints`):
