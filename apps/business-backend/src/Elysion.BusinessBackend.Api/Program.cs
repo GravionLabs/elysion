@@ -14,6 +14,7 @@ using Elysion.BusinessBackend.Api.Quotas;
 using Elysion.BusinessBackend.Api.Snapshots;
 using Elysion.BusinessBackend.Api.Invitations;
 using Elysion.BusinessBackend.Api.Voting;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -89,6 +90,24 @@ builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IRoomMembershipRepository, RoomMembershipRepository>();
 builder.Services.AddScoped<ITemplateRepository, TemplateRepository>();
 builder.Services.AddScoped<BoardMemberService>();
+
+// Webhooks (ADR 0033, #853): events are staged in the outbox with the change, and a worker on every instance sends them.
+builder.Services.AddOptions<WebhookOptions>()
+    .Configure<IConfiguration>((options, configuration) =>
+    {
+        options.AllowHttp = configuration.GetValue(WebhookOptions.AllowHttpSetting, false);
+        options.AllowPrivateNetworks = configuration.GetValue(WebhookOptions.AllowPrivateNetworksSetting, false);
+        options.WorkerEnabled = configuration.GetValue(WebhookOptions.WorkerEnabledSetting, true);
+    });
+builder.Services.AddScoped<IWebhookRepository, WebhookRepository>();
+builder.Services.AddScoped<IWebhookEvents, WebhookEvents>();
+builder.Services.AddSingleton<IWebhookHostResolver, DnsWebhookHostResolver>();
+builder.Services.AddHttpClient<IWebhookSender, WebhookSender>(client => client.Timeout = WebhookSender.Timeout)
+    .ConfigurePrimaryHttpMessageHandler(services => WebhookHttpHandler.Create(
+        services.GetRequiredService<Microsoft.Extensions.Options.IOptions<WebhookOptions>>().Value,
+        services.GetRequiredService<IWebhookHostResolver>()));
+builder.Services.AddSingleton<WebhookDeliveryService>();
+builder.Services.AddHostedService(services => services.GetRequiredService<WebhookDeliveryService>());
 builder.Services.AddScoped<RoomMemberService>();
 
 // The caller as a local user, provisioned from the token once per authenticated request.
@@ -184,6 +203,7 @@ app.MapBoardUserStateEndpoints();
 app.MapVotingEndpoints();
 app.MapInvitationEndpoints();
 app.MapTemplateEndpoints();
+app.MapWebhookEndpoints();
 
 app.Run();
 

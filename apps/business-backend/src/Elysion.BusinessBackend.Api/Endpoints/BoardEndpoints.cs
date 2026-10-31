@@ -6,6 +6,7 @@ using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
 using Elysion.BusinessBackend.Api.Quotas;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -96,6 +97,7 @@ public static class BoardEndpoints
         IOptions<QuotaOptions> quotas,
         IUnitOfWork unitOfWork,
         ICurrentUser user,
+        IWebhookEvents webhooks,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -111,6 +113,10 @@ public static class BoardEndpoints
 
         var board = NewOwnedBoard(name, user, TruncateToMicroseconds(time.GetUtcNow()));
         boards.Add(board);
+        await webhooks.RaiseAsync(WebhookEventTypes.BoardCreated,
+            board.Id,
+            new { name = board.Name },
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         // An absolute Location, as CreatedAtAction produced.
         var location = UriHelper.BuildAbsolute(http.Scheme, http.Host, http.PathBase, $"/boards/{board.Id}");
@@ -122,6 +128,7 @@ public static class BoardEndpoints
         BoardNameRequest? request,
         IBoardRepository boards,
         IUnitOfWork unitOfWork,
+        IWebhookEvents webhooks,
         CancellationToken cancellationToken)
     {
         if (!Board.TryNormalizeName(request?.Name, out var name))
@@ -135,7 +142,16 @@ public static class BoardEndpoints
             return TypedResults.NotFound();
         }
 
+        var previousName = board.Name;
         board.Name = name;
+        if (previousName != name)
+        {
+            await webhooks.RaiseAsync(WebhookEventTypes.BoardRenamed,
+                id,
+                new { name, previousName },
+                cancellationToken);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return TypedResults.Ok(BoardDto.From(board));
     }
@@ -153,6 +169,7 @@ public static class BoardEndpoints
         IFileStore files,
         IUnitOfWork unitOfWork,
         ICurrentUser user,
+        IWebhookEvents webhooks,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -198,6 +215,10 @@ public static class BoardEndpoints
             });
         }
 
+        await webhooks.RaiseAsync(WebhookEventTypes.BoardCreated,
+            copy.Id,
+            new { name = copy.Name, duplicatedFrom = id },
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         // The images the copy's document refers to (the files of the source, under the same ids).
         await files.CopyPrefixAsync(FileTypes.Prefix(id), FileTypes.Prefix(copy.Id), cancellationToken);
@@ -228,6 +249,7 @@ public static class BoardEndpoints
         IBoardDocumentRepository documents,
         IFileStore files,
         IUnitOfWork unitOfWork,
+        IWebhookEvents webhooks,
         CancellationToken cancellationToken)
     {
         var board = await boards.FindForUpdateAsync(id, cancellationToken);
@@ -239,6 +261,8 @@ public static class BoardEndpoints
         boards.Remove(board);
         // The canvas content goes with the board (ADR 0011).
         await documents.RemoveAsync(id.ToString(), cancellationToken);
+        // The board's own endpoints still hear this one; the worker removes them after it (WebhookEndpoint).
+        await webhooks.RaiseAsync(WebhookEventTypes.BoardDeleted, id, new { name = board.Name }, cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
         // The files go with the board; they are only reachable through it.

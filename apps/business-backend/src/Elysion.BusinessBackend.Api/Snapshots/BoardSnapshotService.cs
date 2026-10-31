@@ -4,6 +4,7 @@ using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Files;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 namespace Elysion.BusinessBackend.Api.Snapshots;
 
@@ -31,6 +32,7 @@ public sealed partial class BoardSnapshotService(
     IBoardDocumentRepository documents,
     IFileStore store,
     IRealtimeBoardSaver realtime,
+    IWebhookEvents webhooks,
     IUnitOfWork unitOfWork,
     TimeProvider time,
     ILogger<BoardSnapshotService> logger)
@@ -209,6 +211,15 @@ public sealed partial class BoardSnapshotService(
             ElementCount = elementCount,
         };
         snapshots.Add(snapshot);
+        if (kind == SnapshotKind.Manual)
+        {
+            // Only a version a person saved is an event (#853): automatic and "Before restore" ones are the backend's own history.
+            await webhooks.RaiseAsync(WebhookEventTypes.SnapshotCreated,
+                boardId,
+                new { snapshotId = id, name },
+                cancellationToken);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return snapshot;
     }

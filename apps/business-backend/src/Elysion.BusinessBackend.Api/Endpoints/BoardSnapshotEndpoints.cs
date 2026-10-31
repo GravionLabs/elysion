@@ -10,6 +10,7 @@ using Elysion.BusinessBackend.Api.Identity;
 using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Quotas;
 using Elysion.BusinessBackend.Api.Snapshots;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Extensions;
@@ -148,6 +149,7 @@ public static class BoardSnapshotEndpoints
         IFileStore files,
         IUnitOfWork unitOfWork,
         ICurrentUser user,
+        IWebhookEvents webhooks,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -185,6 +187,10 @@ public static class BoardSnapshotEndpoints
         {
             BoardId = copy.Id.ToString(), State = state, Version = 1, UpdatedAt = now,
         });
+        await webhooks.RaiseAsync(WebhookEventTypes.BoardCreated,
+            copy.Id,
+            new { name = copy.Name, openedFrom = new { boardId = id, snapshotId } },
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         // The images the version's document refers to (the files of the source, under the same ids).
         await files.CopyPrefixAsync(FileTypes.Prefix(id), FileTypes.Prefix(copy.Id), cancellationToken);
