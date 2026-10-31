@@ -502,6 +502,16 @@ spec:
       services:
         - name: elysion-bff
           port: 3000
+    # The public API (ADR 0033): for scripts, so no CORS; no forwardAuth, the BFF's guard checks every token itself.
+    - kind: Rule
+      match: PathPrefix(`/public/v1`)
+      middlewares:
+        - name: elysion-security-headers
+        - name: elysion-public-api-rate-limit
+        - name: elysion-public-api-body-limit
+      services:
+        - name: elysion-bff
+          port: 3000
     # WebSocket: the token in the URL is checked by the realtime service itself, so no forwardAuth, no rate limit.
     - kind: Rule
       match: PathPrefix(`/yjs`)
@@ -575,6 +585,41 @@ spec:
     average: 50
     burst: 100
     period: 1s
+
+---
+# Source: elysion/templates/edge.yaml
+# The public API (ADR 0033): a rate limit per token rather than per address, and a body limit.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: elysion-public-api-rate-limit
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  rateLimit:
+    average: 600
+    burst: 60
+    period: 1m
+    sourceCriterion:
+      requestHeaderName: Authorization
+
+---
+# Source: elysion/templates/edge.yaml
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: elysion-public-api-body-limit
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  buffering:
+    maxRequestBodyBytes: 1048576
 
 ---
 # Source: elysion/templates/edge.yaml

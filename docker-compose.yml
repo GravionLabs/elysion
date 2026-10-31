@@ -286,6 +286,17 @@ services:
       - 'traefik.http.routers.csp-report.priority=100'
       - 'traefik.http.routers.csp-report.middlewares=security-headers,rate-limit'
       - 'traefik.http.routers.csp-report.service=bff'
+      # The public API (ADR 0033): scripts with a personal access token or an integration's token, not browsers. No CORS and no
+      # forwardAuth (the BFF's guard checks every request itself), a rate limit per token (keyed by the Authorization header, so
+      # one script cannot use up another's) and a body limit of 1 MiB.
+      - 'traefik.http.routers.public-api.rule=PathPrefix(`/public/v1`)'
+      - 'traefik.http.routers.public-api.middlewares=security-headers,public-api-rate-limit,public-api-body-limit'
+      - 'traefik.http.routers.public-api.service=bff'
+      - 'traefik.http.middlewares.public-api-rate-limit.ratelimit.average=${PUBLIC_API_RATE_LIMIT_AVERAGE:-600}'
+      - 'traefik.http.middlewares.public-api-rate-limit.ratelimit.burst=${PUBLIC_API_RATE_LIMIT_BURST:-60}'
+      - 'traefik.http.middlewares.public-api-rate-limit.ratelimit.period=1m'
+      - 'traefik.http.middlewares.public-api-rate-limit.ratelimit.sourcecriterion.requestheadername=Authorization'
+      - 'traefik.http.middlewares.public-api-body-limit.buffering.maxRequestBodyBytes=1048576'
     networks:
       - elysion
 
