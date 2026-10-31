@@ -15,7 +15,12 @@ import {
 import type { Response } from 'express';
 import { pipeline } from 'node:stream/promises';
 import { AccessToken } from '../auth/access-token.decorator.js';
-import { type BoardSnapshot, BusinessBackendClient } from './business-backend.client.js';
+import { type BoardResponse, toResponse } from './boards.controller.js';
+import {
+  type BoardSnapshot,
+  BusinessBackendClient,
+  type RestoreSnapshotResult,
+} from './business-backend.client.js';
 
 // An id that is not a UUID cannot exist, so it is a 404 without asking the backend.
 const uuid = new ParseUUIDPipe({ errorHttpStatusCode: HttpStatus.NOT_FOUND });
@@ -84,6 +89,27 @@ export class SnapshotsController {
     @Body() body: unknown,
   ): Promise<BoardSnapshot> {
     return this.backend.renameSnapshot(token, id, snapshotId, nameFrom(body, true) ?? '');
+  }
+
+  /** Restores a version onto the board: owners only (the backend decides). Every client of the board follows by itself. */
+  @Post(':snapshotId/restore')
+  @HttpCode(HttpStatus.OK)
+  restore(
+    @AccessToken() token: string,
+    @Param('id', uuid) id: string,
+    @Param('snapshotId', uuid) snapshotId: string,
+  ): Promise<RestoreSnapshotResult> {
+    return this.backend.restoreSnapshot(token, id, snapshotId);
+  }
+
+  /** "Open as new board": like duplicate, with the state of the version; anybody who may read the board and create boards. */
+  @Post(':snapshotId/copy')
+  async openAsNewBoard(
+    @AccessToken() token: string,
+    @Param('id', uuid) id: string,
+    @Param('snapshotId', uuid) snapshotId: string,
+  ): Promise<BoardResponse> {
+    return toResponse(await this.backend.openSnapshotAsNewBoard(token, id, snapshotId));
   }
 
   @Delete(':snapshotId')

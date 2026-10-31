@@ -47,6 +47,11 @@ export interface BoardSnapshot {
   elementCount: number | null;
 }
 
+/** The answer to a restore (ADR 0032, #847): the "Before restore" version that was kept first, or `null`. */
+export interface RestoreSnapshotResult {
+  before: BoardSnapshot | null;
+}
+
 /** A person in a voting: `id` is the identity-provider subject, the id the canvas knows (#732). */
 export interface VotingPerson {
   id: string;
@@ -569,6 +574,24 @@ export class BusinessBackendClient {
         name,
       },
     );
+  }
+
+  /** Restores a version onto the board (owners): the backend keeps the current state first, then the realtime service applies it. */
+  restoreSnapshot(
+    token: string,
+    boardId: string,
+    snapshotId: string,
+  ): Promise<RestoreSnapshotResult> {
+    return this.request<RestoreSnapshotResult>(
+      token,
+      'POST',
+      `/boards/${boardId}/snapshots/${snapshotId}/restore`,
+    );
+  }
+
+  /** "Open as new board": a new board of the caller with the state of the version. */
+  openSnapshotAsNewBoard(token: string, boardId: string, snapshotId: string): Promise<Board> {
+    return this.request<Board>(token, 'POST', `/boards/${boardId}/snapshots/${snapshotId}/copy`);
   }
 
   async deleteSnapshot(token: string, boardId: string, snapshotId: string): Promise<void> {

@@ -53,6 +53,8 @@ describe('Board snapshots (e2e, against a fake business backend)', () => {
     await api().patch(`${base}/${snapshotId}`).expect(401);
     await api().delete(`${base}/${snapshotId}`).expect(401);
     await api().get(`${base}/${snapshotId}/document`).expect(401);
+    await api().post(`${base}/${snapshotId}/restore`).expect(401);
+    await api().post(`${base}/${snapshotId}/copy`).expect(401);
   });
 
   it('lists the versions the backend returns', async () => {
@@ -122,6 +124,59 @@ describe('Board snapshots (e2e, against a fake business backend)', () => {
     });
   });
 
+  it('restores a version, forwarding nothing from the browser, and returns the version it kept first', async () => {
+    upstream.snapshotAnswer = {
+      status: 200,
+      body: { before: { ...snapshot, kind: 'BeforeRestore', name: 'Before restore' } },
+    };
+
+    const { body } = await authed(api().post(`${base}/${snapshotId}/restore`))
+      .send({ state: 'AAAA' })
+      .expect(200);
+
+    expect(body.before).toMatchObject({ kind: 'BeforeRestore', name: 'Before restore' });
+    expect(upstream.lastSnapshotRequest).toEqual({
+      method: 'POST',
+      path: `/boards/${boardId}/snapshots/${snapshotId}/restore`,
+      body: null,
+    });
+  });
+
+  it.each([
+    [403, 403],
+    [404, 404],
+    [410, 410],
+    [503, 503],
+    [500, 502],
+  ])('passes the backend status %i of a restore on as %i', async (backend, bff) => {
+    upstream.snapshotAnswer = { status: backend };
+
+    await authed(api().post(`${base}/${snapshotId}/restore`)).expect(bff);
+  });
+
+  it('opens a version as a new board and adds the path that opens it', async () => {
+    const copy = { id: randomUUID(), name: 'Retro (Kickoff)', createdAt: '2026-10-31T10:00:00Z' };
+    upstream.snapshotAnswer = { status: 201, body: copy };
+
+    const { body } = await authed(api().post(`${base}/${snapshotId}/copy`)).expect(201);
+
+    expect(body).toEqual({ ...copy, path: `/board/${copy.id}` });
+    expect(upstream.lastSnapshotRequest).toMatchObject({
+      method: 'POST',
+      path: `/boards/${boardId}/snapshots/${snapshotId}/copy`,
+    });
+  });
+
+  it.each([
+    [404, 404],
+    [409, 409],
+    [410, 410],
+  ])('passes the backend status %i of opening a version as a new board on as %i', async (b, f) => {
+    upstream.snapshotAnswer = { status: b };
+
+    await authed(api().post(`${base}/${snapshotId}/copy`)).expect(f);
+  });
+
   it('streams the state of a version without the backend internal headers', async () => {
     upstream.snapshotAnswer = { status: 200, body: undefined };
     upstream.snapshotDocument = Buffer.from([9, 8, 7]);
@@ -156,6 +211,8 @@ describe('Board snapshots (e2e, against a fake business backend)', () => {
   it('answers 404 for ids that are no UUIDs without asking the backend', async () => {
     await authed(api().get('/api/boards/not-a-uuid/snapshots')).expect(404);
     await authed(api().delete(`${base}/not-a-uuid`)).expect(404);
+    await authed(api().post(`${base}/not-a-uuid/restore`)).expect(404);
+    await authed(api().post(`${base}/not-a-uuid/copy`)).expect(404);
     expect(upstream.lastSnapshotRequest).toBeNull();
   });
 });
