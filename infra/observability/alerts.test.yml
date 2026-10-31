@@ -86,3 +86,40 @@ tests:
             exp_annotations:
               summary: 'More than 2 percent of the BFF requests fail with 5xx'
               runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#bfferrorratehigh
+
+  - interval: 1m
+    name: a webhook outbox that keeps growing
+    input_series:
+      # Two instances report the same outbox; it grows by 5 a minute from 50, then is drained.
+      - series: 'elysion_webhook_outbox_pending{instance="business-backend-1:8080"}'
+        values: '50+5x80 0x30'
+      - series: 'elysion_webhook_outbox_pending{instance="business-backend-2:8080"}'
+        values: '50+5x80 0x30'
+    alert_rule_test:
+      - eval_time: 9m # 95 waiting: under the threshold
+        alertname: WebhookOutboxGrowing
+        exp_alerts: []
+      - eval_time: 30m # over 100 since minute 11, not yet for 30 minutes
+        alertname: WebhookOutboxGrowing
+        exp_alerts: []
+      - eval_time: 45m
+        alertname: WebhookOutboxGrowing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: 'More than 100 webhook deliveries wait, and the outbox keeps growing'
+              runbook: https://github.com/GravionLabs/Elysion/blob/main/docs/operations.md#webhookoutboxgrowing
+      - eval_time: 100m # drained
+        alertname: WebhookOutboxGrowing
+        exp_alerts: []
+
+  - interval: 1m
+    name: a large outbox that is draining
+    input_series:
+      - series: 'elysion_webhook_outbox_pending{instance="business-backend-1:8080"}'
+        values: '500-2x80'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: WebhookOutboxGrowing
+        exp_alerts: []
