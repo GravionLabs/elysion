@@ -45,3 +45,46 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function isUuid(value: string): boolean {
   return UUID.test(value);
 }
+
+/** The most events a webhook body may list (there are eight); more is a mistake, not a subscription. */
+const MAX_WEBHOOK_EVENTS = 20;
+
+function webhookEvents(value: unknown): string[] {
+  if (
+    !Array.isArray(value) ||
+    value.length > MAX_WEBHOOK_EVENTS ||
+    !value.every((event) => typeof event === 'string')
+  ) {
+    throw new BadRequestException('events must be a list of texts.');
+  }
+  return value as string[];
+}
+
+/** A new webhook by shape (#853): a text URL and a list of event names (none or left out: all). The backend owns the rules (400). */
+export function webhookInput(body: unknown): { url: string; events: string[] } {
+  const { url, events } = (body ?? {}) as Record<string, unknown>;
+  if (typeof url !== 'string') {
+    throw new BadRequestException('A webhook needs a url.');
+  }
+  return { url, events: events === undefined ? [] : webhookEvents(events) };
+}
+
+/** A change of a webhook by shape: `url` a text, `events` a list of texts, `enabled` true or false; each may be left out. */
+export function webhookPatch(body: unknown): {
+  url?: string;
+  events?: string[];
+  enabled?: boolean;
+} {
+  const { url, events, enabled } = (body ?? {}) as Record<string, unknown>;
+  if (url !== undefined && typeof url !== 'string') {
+    throw new BadRequestException('url must be a text.');
+  }
+  if (enabled !== undefined && typeof enabled !== 'boolean') {
+    throw new BadRequestException('enabled must be true or false.');
+  }
+  return {
+    ...(url === undefined ? {} : { url }),
+    ...(events === undefined ? {} : { events: webhookEvents(events) }),
+    ...(enabled === undefined ? {} : { enabled }),
+  };
+}

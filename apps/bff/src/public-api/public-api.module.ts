@@ -10,6 +10,10 @@ import {
 import { PublicMeController } from './public-me.controller.js';
 import { PublicRoomsController } from './public-rooms.controller.js';
 import { PublicSnapshotsController } from './public-snapshots.controller.js';
+import {
+  PublicBoardWebhooksController,
+  PublicInstanceWebhooksController,
+} from './public-webhooks.controller.js';
 
 /** The controllers of the public API, v1 (ADR 0033): the OpenAPI document is made from exactly these (openapi.ts). */
 export const PUBLIC_API_CONTROLLERS = [
@@ -19,6 +23,8 @@ export const PUBLIC_API_CONTROLLERS = [
   PublicRoomsController,
   PublicRoomMembersController,
   PublicSnapshotsController,
+  PublicBoardWebhooksController,
+  PublicInstanceWebhooksController,
 ];
 
 /**

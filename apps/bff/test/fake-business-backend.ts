@@ -16,6 +16,33 @@ interface FakeRoom {
   role: string;
 }
 
+interface FakeWebhook {
+  id: string;
+  boardId: string | null;
+  url: string;
+  events: string[];
+  enabled: boolean;
+  disabledAt: string | null;
+  disabledReason: string | null;
+  createdAt: string;
+  secretPrefix: string;
+  secret: string;
+}
+
+interface FakeDelivery {
+  id: string;
+  eventId: string;
+  eventType: string;
+  status: 'pending' | 'succeeded' | 'failed';
+  attempts: number;
+  responseStatus: number | null;
+  durationMs: number | null;
+  error: string | null;
+  createdAt: string;
+  lastAttemptAt: string | null;
+  nextAttemptAt: string | null;
+}
+
 interface FakeMember {
   userId: string;
   displayName: string;
@@ -126,6 +153,15 @@ export class FakeBusinessBackend {
   /** The last `/access-tokens` request (#851): method, path and parsed body; and what the fake answers with. */
   lastAccessTokenRequest: { method: string; path: string; body: unknown } | null = null;
   accessTokenAnswer: { status: number; body?: unknown } = { status: 200, body: [] };
+  /**
+   * The webhooks of the boards (#853), by id, as the backend keeps them (with the secret, which only the answer to the creation
+   * carries), and their deliveries. A board's routes answer 404 for a board that is not in `boards` and 403 when `roles` gives the
+   * caller a role below Owner, as the backend's policy does.
+   */
+  readonly webhooks = new Map<string, FakeWebhook>();
+  readonly webhookDeliveries = new Map<string, FakeDelivery[]>();
+  /** The last request to a board's webhook route: method, path and parsed body. */
+  lastWebhookRequest: { method: string; path: string; body: unknown } | null = null;
   #server: Server | null = null;
 
   get url(): string {
@@ -146,6 +182,102 @@ export class FakeBusinessBackend {
       server.close(() => resolve());
       server.closeAllConnections();
     });
+  }
+
+  /** A board's webhooks, as `WebhookEndpoints` of the business backend answers them (#853). */
+  async #handleWebhooks(
+    req: IncomingMessage,
+    route: RegExpExecArray,
+    send: (status: number, body?: unknown) => void,
+  ): Promise<void> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString()) : undefined;
+    this.lastWebhookRequest = { method: req.method ?? '', path: req.url ?? '', body };
+    const [, boardId, webhookId, action, deliveryId] = route;
+    if (!this.boards.has(boardId!)) return send(404);
+    const role = this.roles.get(boardId!);
+    if (role !== undefined && role !== 'Owner') return send(403);
+    const shown = ({ secret: _secret, ...webhook }: FakeWebhook) => webhook;
+    const notFound = () => send(404, { status: 404, detail: 'There is no such webhook.' });
+    if (webhookId === undefined) {
+      if (req.method === 'GET') {
+        return send(
+          200,
+          [...this.webhooks.values()].filter((w) => w.boardId === boardId).map(shown),
+        );
+      }
+      if (typeof body?.url !== 'string' || !body.url.startsWith('https://')) {
+        return send(400, { title: 'Invalid', errors: { url: ['Only https URLs are allowed.'] } });
+      }
+      const secret = `whsec_${'s'.repeat(43)}`;
+      const webhook: FakeWebhook = {
+        id: randomUUID(),
+        boardId: boardId!,
+        url: body.url,
+        events: body.events ?? [],
+        enabled: true,
+        disabledAt: null,
+        disabledReason: null,
+        createdAt: new Date().toISOString(),
+        secretPrefix: secret.slice(0, 10),
+        secret,
+      };
+      this.webhooks.set(webhook.id, webhook);
+      this.webhookDeliveries.set(webhook.id, []);
+      return send(201, webhook);
+    }
+    const webhook = this.webhooks.get(webhookId);
+    if (webhook === undefined || webhook.boardId !== boardId) return notFound();
+    const deliveries = this.webhookDeliveries.get(webhook.id)!;
+    const delivery = (eventType: string, eventId = randomUUID()): FakeDelivery => ({
+      id: randomUUID(),
+      eventId,
+      eventType,
+      status: 'pending',
+      attempts: 0,
+      responseStatus: null,
+      durationMs: null,
+      error: null,
+      createdAt: new Date().toISOString(),
+      lastAttemptAt: null,
+      nextAttemptAt: new Date().toISOString(),
+    });
+    if (action === 'test') {
+      const made = delivery('webhook.test');
+      deliveries.unshift(made);
+      return send(202, made);
+    }
+    if (action === 'deliveries' && deliveryId !== undefined) {
+      const original = deliveries.find((d) => d.id === deliveryId);
+      if (original === undefined)
+        return send(404, { status: 404, detail: 'There is no such delivery.' });
+      if (original.status === 'pending') {
+        return send(409, { status: 409, detail: 'This delivery is still being sent.' });
+      }
+      const again = delivery(original.eventType, original.eventId);
+      deliveries.unshift(again);
+      return send(202, again);
+    }
+    if (action === 'deliveries') return send(200, deliveries);
+    if (req.method === 'GET') return send(200, shown(webhook));
+    if (req.method === 'DELETE') {
+      this.webhooks.delete(webhook.id);
+      return send(204);
+    }
+    if (body?.url !== undefined) webhook.url = body.url;
+    if (body?.events !== undefined) webhook.events = body.events;
+    if (body?.enabled === false) {
+      webhook.enabled = false;
+      webhook.disabledAt = new Date().toISOString();
+      webhook.disabledReason = 'Switched off by a person.';
+    }
+    if (body?.enabled === true) {
+      webhook.enabled = true;
+      webhook.disabledAt = null;
+      webhook.disabledReason = null;
+    }
+    return send(200, shown(webhook));
   }
 
   async #handle(req: IncomingMessage, res: import('node:http').ServerResponse): Promise<void> {
@@ -198,6 +330,11 @@ export class FakeBusinessBackend {
     ) {
       return send(401);
     }
+    const webhookRoute =
+      /^\/boards\/([^/]+)\/webhooks(?:\/([^/]+)(?:\/(test|deliveries)(?:\/([^/]+)\/redeliver)?)?)?$/.exec(
+        req.url ?? '',
+      );
+    if (webhookRoute) return this.#handleWebhooks(req, webhookRoute, send);
     const documentRoute = /^\/boards\/([^/]+)\/document$/.exec(req.url ?? '');
     if (documentRoute && req.method === 'GET') {
       if (!this.boards.has(documentRoute[1]!)) return send(404);

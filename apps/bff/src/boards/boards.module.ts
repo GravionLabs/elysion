@@ -14,6 +14,7 @@ import { UsersController } from './users.controller.js';
 import { AccessTokensController } from './access-tokens.controller.js';
 import { RoomGroupsController } from './room-groups.controller.js';
 import { RoomsController } from './rooms.controller.js';
+import { AdminWebhooksController, BoardWebhooksController } from './webhooks.controller.js';
 import { BUSINESS_BACKEND_URL, BusinessBackendClient } from './business-backend.client.js';
 
 /** `BUSINESS_BACKEND_URL` comes from the configuration (default: the business backend's dev port). */
@@ -33,6 +34,8 @@ import { BUSINESS_BACKEND_URL, BusinessBackendClient } from './business-backend.
     AccessTokensController,
     RoomGroupsController,
     TemplatesController,
+    BoardWebhooksController,
+    AdminWebhooksController,
   ],
   providers: [
     {
