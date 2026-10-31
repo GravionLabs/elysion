@@ -3,7 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import * as Y from 'yjs';
 import { identityFor } from './identity';
-import { POINTER_INTERVAL_MS, PRESENT_DEBOUNCE_MS, PresenceSync } from './presence';
+import {
+  POINTER_INTERVAL_MS,
+  PRESENT_DEBOUNCE_MS,
+  PresenceSync,
+  VIEWPORT_INTERVAL_MS,
+} from './presence';
 
 /** Two awareness instances that see each other, as two clients of one board do through the server. */
 function pair() {
@@ -34,6 +39,11 @@ function fakeApi() {
 
 const collaboratorsOf = (updateScene: ReturnType<typeof vi.fn>) =>
   updateScene.mock.calls.at(-1)?.[0].collaborators as Map<string, { username: string }>;
+
+const view = (x: number) => ({ x, y: 0, width: 100, height: 50 });
+const viewportOf = (awareness: awarenessProtocol.Awareness, from: awarenessProtocol.Awareness) =>
+  (awareness.getStates().get(from.clientID) as { viewport?: { x: number } } | undefined)?.viewport
+    ?.x;
 
 describe('PresenceSync', () => {
   beforeEach(() => vi.useFakeTimers());
@@ -253,6 +263,64 @@ describe('PresenceSync', () => {
 
     expect(b.getStates().get(a.clientID)).toMatchObject({
       user: { name: 'Ada', color: '#14b8a6' },
+    });
+  });
+
+  describe('the viewport', () => {
+    it('sends it to the others, at most ten times a second, with the last one kept', () => {
+      const { a, b } = pair();
+      const focused = { hasFocus: () => true };
+      const presence = join(a, identityFor('ada'), () => null, undefined, focused);
+
+      presence.viewportChanged(view(1));
+      presence.viewportChanged(view(2));
+      presence.viewportChanged(view(3));
+      expect(viewportOf(b, a)).toBe(1);
+
+      vi.advanceTimersByTime(VIEWPORT_INTERVAL_MS);
+      expect(viewportOf(b, a)).toBe(3);
+    });
+
+    it('sends nothing while the window has no focus, and the latest one when it gets it', () => {
+      const { a, b } = pair();
+      let focus = false;
+      const presence = join(a, identityFor('ada'), () => null, undefined, {
+        hasFocus: () => focus,
+      });
+
+      presence.viewportChanged(view(5));
+      vi.advanceTimersByTime(1000);
+      expect(viewportOf(b, a)).toBeUndefined();
+
+      focus = true;
+      window.dispatchEvent(new Event('focus'));
+      expect(viewportOf(b, a)).toBe(5);
+    });
+
+    it('does not write the same viewport again', () => {
+      const { a } = pair();
+      const presence = join(a, identityFor('ada'), () => null, undefined, { hasFocus: () => true });
+      const changes = vi.fn();
+      presence.viewportChanged(view(1));
+      a.on('update', changes);
+
+      presence.viewportChanged(view(1));
+      vi.advanceTimersByTime(VIEWPORT_INTERVAL_MS);
+
+      expect(changes).not.toHaveBeenCalled();
+    });
+
+    it('stops publishing and listening after it was destroyed', () => {
+      const { a, b } = pair();
+      const presence = join(a, identityFor('ada'), () => null, undefined, { hasFocus: () => true });
+      presence.viewportChanged(view(1));
+      presence.viewportChanged(view(2));
+
+      presence.destroy();
+      vi.advanceTimersByTime(1000);
+      window.dispatchEvent(new Event('focus'));
+
+      expect(viewportOf(b, a)).toBe(1);
     });
   });
 });

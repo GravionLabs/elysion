@@ -5561,5 +5561,68 @@
         <target>Gib eine ganze Zahl von Stimmen zwischen 1 und <ph id="0" equiv="max" disp="MAX_VOTES"/> ein.</target>
       </segment>
     </unit>
+    <unit id="topbar.present.button-title">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:7,8</note>
+      </notes>
+      <segment>
+        <source>Present to the board</source>
+        <target>Dem Board präsentieren</target>
+      </segment>
+    </unit>
+    <unit id="topbar.present.button">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:14,18</note>
+      </notes>
+      <segment>
+        <source>Present</source>
+        <target>Präsentieren</target>
+      </segment>
+    </unit>
+    <unit id="topbar.present.menu">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:18</note>
+      </notes>
+      <segment>
+        <source>Present</source>
+        <target>Präsentieren</target>
+      </segment>
+    </unit>
+    <unit id="topbar.present.stop">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:21,23</note>
+      </notes>
+      <segment>
+        <source>Stop presenting</source>
+        <target>Präsentation beenden</target>
+      </segment>
+    </unit>
+    <unit id="topbar.present.start">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:23,25</note>
+      </notes>
+      <segment>
+        <source>Start presenting</source>
+        <target>Präsentation starten</target>
+      </segment>
+    </unit>
+    <unit id="topbar.present.summon">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:27,29</note>
+      </notes>
+      <segment>
+        <source>Bring everyone to me</source>
+        <target>Alle zu mir holen</target>
+      </segment>
+    </unit>
+    <unit id="topbar.presence.follow">
+      <notes>
+        <note category="location">src/app/topbar/top-bar.ts:210</note>
+      </notes>
+      <segment>
+        <source>Follow <ph id="0" equiv="name" disp="name"/></source>
+        <target><ph id="0" equiv="name" disp="name"/> folgen</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

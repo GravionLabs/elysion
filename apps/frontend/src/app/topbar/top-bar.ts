@@ -17,9 +17,10 @@ import { ExportFormat } from '../board/download';
 import type { PresentUser } from '../board/presence-store';
 import { ExportMenu, ExportRequest } from './export-menu';
 import { TemplateMenu } from './template-menu';
+import { PresentMenu } from './present-menu';
 import { TimerMenu } from './timer-menu';
 import { VotingMenu, type VotingRequest } from './voting-menu';
-import type { TimerState, VotingSession } from '../board/canvas-element';
+import type { FollowState, TimerState, VotingSession } from '../board/canvas-element';
 import { UserMenu } from './user-menu';
 import type { TemplateInfo } from '../board/template-api';
 import type { SessionUser } from '../auth/session.service';
@@ -37,7 +38,16 @@ const STATUS_LABEL: Record<SyncStatus, string> = {
 
 /** The bar at the top of the board page, modeled on ariadne's: identity left, actions right. */
 @Component({
-  imports: [AppBrand, ExportMenu, RouterLink, TemplateMenu, TimerMenu, UserMenu, VotingMenu],
+  imports: [
+    AppBrand,
+    ExportMenu,
+    PresentMenu,
+    RouterLink,
+    TemplateMenu,
+    TimerMenu,
+    UserMenu,
+    VotingMenu,
+  ],
   selector: 'app-top-bar',
   styleUrl: './top-bar.scss',
   templateUrl: './top-bar.html',
@@ -73,6 +83,8 @@ export class TopBar {
   readonly user = input<SessionUser | null>(null);
   /** The other people on the board. */
   readonly users = input<readonly PresentUser[]>([]);
+  /** Whom this user follows and who presents (the canvas's `follow` event, #848), or `null` before it said. */
+  readonly followState = input<FollowState | null>(null);
 
   /** The user confirmed a new name (trimmed, different from the current one). */
   readonly renameRequested = output<string>();
@@ -102,6 +114,18 @@ export class TopBar {
   readonly votingClear = output<void>();
   /** A result was clicked: scroll the canvas to the element. */
   readonly votingFocus = output<string>();
+  /** The user clicked a person's avatar: follow their view (the id of the `presence` entry). */
+  readonly followRequested = output<string>();
+  /** Presenting, asked for by those who may write; the board page calls the canvas (#848). */
+  readonly presentStart = output<void>();
+  readonly presentStop = output<void>();
+  readonly presentSummon = output<void>();
+
+  /** Stop presenting is offered to the presenter and to an owner, who may end anybody's presentation (#848). */
+  protected readonly canStopPresenting = computed(() => {
+    const presenter = this.followState()?.presenter;
+    return presenter != null && (presenter.me || this.canShare());
+  });
 
   protected readonly favoriteOnTitle = $localize`:@@topbar.favorite-on:Add to favorites`;
   protected readonly favoriteOffTitle = $localize`:@@topbar.favorite-off:Remove from favorites`;
@@ -187,6 +211,14 @@ export class TopBar {
       ? $localize`:@@topbar.presence.one:${names[0]}:name: is on this board`
       : $localize`:@@topbar.presence.many:On this board: ${names.join(', ')}:names:`;
   });
+
+  protected followLabel(name: string): string {
+    return $localize`:@@topbar.presence.follow:Follow ${name}:name:`;
+  }
+
+  protected isFollowed(userId: string): boolean {
+    return this.followState()?.following?.id === userId;
+  }
 
   protected initialsOf(name: string): string {
     return (

@@ -85,6 +85,14 @@ export const en = {
         ? ` Result: ${top.map((entry) => `${entry.label} (${entry.count})`).join(', ')}.`
         : ''
     }`,
+  // Following and presenting (#848)
+  followingPill: (name: string) => `Following ${name} — Esc to stop`,
+  presenterPill: (name: string) => `${name} is presenting`,
+  presenterPillMe: 'You are presenting — everybody follows you',
+  followPresenter: 'Follow presenter',
+  errorNotOnBoardPerson: 'That person is not on the board, or has not shown their view yet.',
+  errorPresenterBusy: 'Somebody else is presenting. Only they or an owner can end it.',
+  errorNotPresenter: 'Only the presenter or an owner can end the presentation.',
   // Comments (#733)
   toolComments: 'Comments',
   toolCommentsTitle: 'Comments: click an element or a point to comment on it',
@@ -224,6 +232,15 @@ export const de: Messages = {
         ? ` Ergebnis: ${top.map((entry) => `${entry.label} (${entry.count})`).join(', ')}.`
         : ''
     }`,
+  // Folgen und Präsentieren (#848)
+  followingPill: (name: string) => `Du folgst ${name} — Esc zum Beenden`,
+  presenterPill: (name: string) => `${name} präsentiert`,
+  presenterPillMe: 'Du präsentierst — alle folgen dir',
+  followPresenter: 'Präsentation folgen',
+  errorNotOnBoardPerson:
+    'Diese Person ist nicht auf dem Board oder hat ihre Ansicht noch nicht gezeigt.',
+  errorPresenterBusy: 'Jemand anderes präsentiert. Nur diese Person oder ein Owner kann beenden.',
+  errorNotPresenter: 'Nur die präsentierende Person oder ein Owner kann die Präsentation beenden.',
   errorReadOnly: 'Dieses Board ist schreibgeschützt.',
   errorBusy: 'Ein anderer Import ist noch offen.',
   errorNotReady: 'Der Canvas ist noch nicht bereit.',

@@ -52,23 +52,35 @@ export interface PresenceState {
   readonly button?: 'up' | 'down';
   /** The ids of the elements this client has selected. */
   readonly selectedElementIds?: Readonly<Record<string, true>>;
+  /**
+   * The part of the scene this client shows (scene coordinates), for the people who follow it. Only while the window has
+   * the focus, so of several tabs the one in use is the one that changed last. Never written to the document.
+   */
+  readonly viewport?: {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  };
 }
 
 /** The longest name shown next to a cursor. */
 export const MAX_NAME_LENGTH = 40;
 
 /**
- * The identity a host asks for with the `user-name` and `user-color` attributes, on top of the session's:
- * a blank name or a color that is not `#rrggbb` is ignored and the generated one stays.
+ * The identity a host asks for with the `user-name`, `user-color` and `user-id` attributes, on top of the session's:
+ * a blank name or id, or a color that is not `#rrggbb`, is ignored and the generated one stays. The host's id makes
+ * every tab of one person the same person for the others (following somebody, the avatars).
  */
 export function withHostIdentity(
   session: SessionIdentity,
   name: string | undefined,
   color: string | undefined,
+  id?: string,
 ): SessionIdentity {
   const trimmed = name?.trim().slice(0, MAX_NAME_LENGTH);
   return {
-    id: session.id,
+    id: id?.trim() || session.id,
     name: trimmed || session.name,
     color: color && HEX_COLOR.test(color) ? color : session.color,
   };

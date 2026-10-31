@@ -15,6 +15,7 @@ Playwright tests with two browsers on one board (user A and user B). They are **
 | `io.spec.ts`            | importing `fixtures/sample.excalidraw`; PNG, SVG, PDF and Excalidraw export as downloads; exporting the selection only                                                                                                                           |
 | `drawing.spec.ts`       | rectangle, text, sticky note color, arrow, a connector from a connection point that follows its shape, undo and redo; B compares                                                                                                                 |
 | `language.spec.ts`      | German for `Accept-Language: de` ("Neues Board"), the user menu switch is remembered by cookie, English for other languages                                                                                                                      |
+| `presenting.spec.ts`    | following and presenting (#848): B follows A by the avatar button and stops with Esc, A presents and B follows without asking, steps out and back in, "Bring everyone to me" moves B once; the view is read from the grid dots                   |
 | `reconnect.spec.ts`     | the realtime service stopped and started (`compose` helper), drawing during the outage, a WS token of 5 seconds                                                                                                                                  |
 
 ```sh

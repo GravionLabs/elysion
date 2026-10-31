@@ -215,6 +215,39 @@ class ElysionCanvasElement extends HTMLElement {
       : Promise.reject(new Error(this.#notReady()));
   }
 
+  /**
+   * Follows a person (#848), by the `id` of an entry of the `presence` event: the canvas shows what their window shows until
+   * they pan, zoom or press Esc, or the person leaves. Rejects when they are not on the board or have not shown a view yet.
+   */
+  follow(userId: string): Promise<void> {
+    return this.#timer((controls) => controls.follow(userId));
+  }
+
+  /** Ends following (what Esc does). */
+  stopFollowing(): Promise<void> {
+    return this.#timer((controls) => controls.stopFollowing());
+  }
+
+  /** Goes back into the presentation this person stepped out of. */
+  followPresenter(): Promise<void> {
+    return this.#timer((controls) => controls.followPresenter());
+  }
+
+  /** Makes this person the presenter: everybody follows them while they are on the board. Editors and owners; rejects on a read-only canvas. */
+  startPresenting(): Promise<void> {
+    return this.#timer((controls) => controls.startPresenting());
+  }
+
+  /** Ends the presentation (the presenter, or an owner: `can-moderate`). */
+  stopPresenting(): Promise<void> {
+    return this.#timer((controls) => controls.stopPresenting());
+  }
+
+  /** "Bring everyone to me": everybody else's view jumps once to this one, without following. Editors and owners. */
+  summonEveryone(): Promise<void> {
+    return this.#timer((controls) => controls.summonEveryone());
+  }
+
   /** Starts a shared countdown of `durationMs` for everybody on the board; rejects on a read-only canvas or before it is up. */
   startTimer(durationMs: number): Promise<void> {
     return this.#timer((controls) => controls.startTimer(durationMs));
@@ -281,6 +314,7 @@ class ElysionCanvasElement extends HTMLElement {
         onLibraryChange={(open) => this.#emit('librarychange', { open })}
         onSelectionCount={(count) => this.#emit('selectioncount', { count })}
         onPresenceChange={(users) => this.#emit('presence', { users })}
+        onFollowChange={(state) => this.#emit('follow', state)}
         onTimerChange={(state: TimerState | null) => this.#emit('timer', { state })}
         onVotingChange={(session: VotingView | null) => this.#emit('voting', { session })}
         onCommentsChange={(summary) => this.#emit('comments', summary)}

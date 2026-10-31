@@ -197,7 +197,6 @@
   display: grid;
   width: 24px;
   height: 24px;
-  margin-left: -6px;
   place-items: center;
   color: #11131a; /* the colors are the same in both themes, so is the text on them */
   font-size: 10px;
@@ -208,8 +207,34 @@
   user-select: none;
 }
 
-.avatar:first-child {
+.presence li {
+  display: flex;
+  margin-left: -6px;
+}
+
+.presence li:first-child {
   margin-left: 0;
+}
+
+// The avatar is a button: it follows the person's view when clicked.
+button.avatar {
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(1.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 1px;
+  }
+
+  &[aria-pressed='true'] {
+    outline: 2px solid var(--c-primary);
+    outline-offset: 1px;
+  }
 }
 
 .avatar.more {
