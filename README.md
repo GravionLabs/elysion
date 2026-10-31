@@ -55,7 +55,7 @@ Decisions are recorded as ADRs: [gateway and BFF](docs/adr/0001-gateway-and-bff.
 
 ## Getting started
 
-You need Node.js (see `.nvmrc`), [pnpm](https://pnpm.io) (pinned via `packageManager`, enabled with `corepack enable`), the [.NET 10 SDK](https://dotnet.microsoft.com) and Docker with Compose. Elysion uses pnpm only.
+You need Node.js (see `.nvmrc`), [pnpm](https://pnpm.io) (pinned via `packageManager`; Node 25 and later ship without corepack, so `npm install --global corepack` once, then `corepack enable`), the [.NET 10 SDK](https://dotnet.microsoft.com) and Docker with Compose. Elysion uses pnpm only.
 
 ```sh
 pnpm install      # JS/TS workspace dependencies (frontend, frontend-canvas, bff, realtime)

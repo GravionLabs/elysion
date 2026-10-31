@@ -1,7 +1,8 @@
-FROM node:24-alpine AS base
-RUN corepack enable
+FROM node:26-alpine AS base
 
 FROM base AS build
+# Node 25 and later ship without corepack; it is installed for the build only and reads pnpm from `packageManager`.
+RUN npm install --global corepack@0.36.0 && corepack enable
 WORKDIR /workspace
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/frontend apps/frontend
@@ -12,6 +13,10 @@ RUN pnpm --filter @elysion/frontend build
 
 # The unprivileged variant: user nginx (uid 101), port 8080, pid and temp files in /tmp.
 FROM nginxinc/nginx-unprivileged:alpine AS runtime
+# The upstream image lags behind Alpine's security fixes (brotli-libs, curl): take the patched packages, then drop root again.
+USER root
+RUN apk upgrade --no-cache
+USER 101
 # Development defaults; the compose file / deployment sets the real values.
 ENV OIDC_ISSUER_URL=http://localhost:8081/realms/elysion \
     OIDC_CLIENT_ID=elysion-frontend \

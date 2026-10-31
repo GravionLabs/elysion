@@ -116,7 +116,7 @@ test('the board is exported as an Excalidraw file that holds its elements', asyn
 
 test('only the selection is exported when asked to', async () => {
   // Select one element through the canvas' keyboard: Ctrl+A selects all, so click one shape of the fixture instead.
-  await a.keyboard.press('Control+a');
+  await a.keyboard.press('ControlOrMeta+a');
   const all = await exportAs(a, 'Excalidraw file');
   const everything = JSON.parse((await bytesOf(all)).toString('utf8')).elements.length;
 

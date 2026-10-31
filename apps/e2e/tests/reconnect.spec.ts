@@ -133,7 +133,7 @@ const texts = async (page: Page) =>
 async function editText(page: Page, x: number, y: number, text: string) {
   const box = (await page.locator('elysion-canvas').boundingBox())!;
   await page.mouse.dblclick(box.x + x, box.y + y);
-  await page.keyboard.press('Control+A');
+  await page.keyboard.press('ControlOrMeta+A');
   await page.keyboard.type(text);
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');

@@ -39,8 +39,10 @@ expect 401 "the API refuses an anonymous request" "$APP/api/boards"
 # The security headers (#681); the upgrade test turns them off for the version it starts from (SMOKE_HEADERS=0), which has none.
 if [ "${SMOKE_HEADERS:-1}" = 1 ]; then
   has_header() { # has_header <header> <what> <curl args...>
-    local header="$1" what="$2"; shift 2
-    curl -s -D - -o /dev/null "$@" | grep -qi "^$header:" || fail "$what: no $header header"
+    local header="$1" what="$2" headers; shift 2
+    # Read the headers first: `curl | grep -q` fails under pipefail when grep exits on the match while curl still writes (SIGPIPE).
+    headers="$(curl -s -D - -o /dev/null "$@")"
+    grep -qi "^$header:" <<<"$headers" || fail "$what: no $header header"
     echo "ok  $what"
   }
   for header in Content-Security-Policy X-Content-Type-Options Permissions-Policy Cross-Origin-Opener-Policy; do
