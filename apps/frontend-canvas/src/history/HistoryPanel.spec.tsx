@@ -282,6 +282,41 @@ describe('HistoryPanel', () => {
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
+    it('leaves the focus where the person put it while the restore was running', async () => {
+      let finish: (value: SnapshotInfo | null) => void = () => {};
+      const restore = vi.fn(
+        () => new Promise<SnapshotInfo | null>((resolve) => (finish = resolve)),
+      );
+      setup({ canRestore: true }, fakeApi({ restore }));
+      await loaded();
+      const elsewhere = document.createElement('button');
+      document.body.append(elsewhere);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Restore Kickoff' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Restore version' }));
+      elsewhere.focus();
+      await act(async () => finish(null));
+      await screen.findByText(/The version is restored\./);
+      await act(async () => {}); // the queued focus move, if there were one
+
+      expect(document.activeElement).toBe(elsewhere);
+      elsewhere.remove();
+    });
+
+    it('announces the result in a polite live region that is there before the restore', async () => {
+      setup({ canRestore: true });
+      await loaded();
+      const region = screen
+        .getAllByRole('status')
+        .find((candidate) => candidate.getAttribute('aria-live') === 'polite');
+      expect(region?.textContent).toBe('');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Restore Kickoff' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Restore version' }));
+
+      await waitFor(() => expect(region?.textContent).toMatch(/The version is restored\./));
+    });
+
     it('does not restore when the question is declined, and says why a restore failed', async () => {
       const restore = vi.fn(async () =>
         Promise.reject(Object.assign(new Error('x'), { status: 503 })),

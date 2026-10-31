@@ -73,6 +73,7 @@ export function HistoryPanel({
   const gone = useRef(false);
   const saveButton = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLElement>(null);
 
   // The focus goes into the panel when it opens and back to where it was when it closes.
   useEffect(() => {
@@ -216,8 +217,14 @@ export function HistoryPanel({
       if (before) setItems((list) => [before, ...(list ?? [])]);
       setRestoring(null);
       setRestored(true);
-      // The question and its buttons are gone: the focus stays in the panel, so that Esc still closes it.
-      queueMicrotask(() => closeButton.current?.focus());
+      // The question and its buttons are gone: the focus stays in the panel, so that Esc still closes it. Only when it was
+      // still there (or fell to the body with the buttons): a person who went elsewhere during the wait keeps their place.
+      queueMicrotask(() => {
+        const active = document.activeElement;
+        if (!active || active === document.body || panel.current?.contains(active)) {
+          closeButton.current?.focus();
+        }
+      });
     } catch (error) {
       if (!gone.current) setProblem(problemText(error, t.historyRestoreFailed, t));
     } finally {
@@ -241,6 +248,7 @@ export function HistoryPanel({
 
   return (
     <aside
+      ref={panel}
       className="elysion-history"
       aria-labelledby={headingId}
       onKeyDown={(event) => {
@@ -308,11 +316,10 @@ export function HistoryPanel({
             {problem}
           </p>
         )}
-        {restored && (
-          <p className="elysion-history__done" role="status">
-            {t.historyRestored}
-          </p>
-        )}
+        {/* Always there, so that a screen reader announces the message when it appears (a polite live region). */}
+        <div role="status" aria-live="polite" aria-atomic="true">
+          {restored && <p className="elysion-history__done">{t.historyRestored}</p>}
+        </div>
         {items === null && <p role="status">{t.historyLoading}</p>}
         {items?.length === 0 && !problem && (
           <p className="elysion-history__empty">{t.historyEmpty}</p>

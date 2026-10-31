@@ -120,6 +120,16 @@ import type { OpenedBoard, SnapshotApi } from './history/history';
 import { buildAppendix } from './comments/appendix';
 import type { Person } from './comments/mentions';
 
+/**
+ * Whether a key goes into text rather than to the canvas: typed into a field (the panels' own inputs too), into
+ * Excalidraw's text editor, or part of an IME composition. The canvas's keyboard shortcuts leave such a key alone.
+ */
+const isTextEntry = (event: KeyboardEvent, api: ExcalidrawImperativeAPI | null): boolean =>
+  event.isComposing ||
+  (event.target instanceof Element &&
+    event.target.closest('input, textarea, select, [contenteditable="true"]') !== null) ||
+  Boolean(api?.getAppState().editingTextElement);
+
 /** What the host can ask the canvas to do; the element exposes these as methods. */
 export interface CanvasControls {
   /** The board as the picture of its card (#729): a 480 by 300 PNG in the light theme, or `null` when the board is empty. */
@@ -929,6 +939,8 @@ export function CanvasApp({
       if (event.repeat || event.defaultPrevented) return;
       const target = event.target as Node | null;
       if (target !== document.body && !rootRef.current?.contains(target)) return;
+      // Not while typing: a version name in the History panel, a text being edited, an IME composition.
+      if (isTextEntry(event, apiRef.current)) return;
       event.preventDefault();
       event.stopPropagation();
       toggleHistoryRef.current();
@@ -1074,14 +1086,7 @@ export function CanvasApp({
       const key = event.key.toLowerCase();
       if ((key !== 'c' && key !== 'n') || event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.repeat || event.defaultPrevented) return;
-      const target = event.target;
-      if (
-        target instanceof Element &&
-        target.closest('input, textarea, select, [contenteditable="true"]')
-      ) {
-        return;
-      }
-      if (apiRef.current?.getAppState().editingTextElement) return;
+      if (isTextEntry(event, apiRef.current)) return;
       if (key === 'c') {
         // C connects two selected elements; with nothing to connect it opens the comments (#733).
         const api = apiRef.current;

@@ -357,6 +357,43 @@ describe('the canvas menu', () => {
       outside.remove();
     });
 
+    it("ignores Alt+H typed into the History panel's own name field, and during an IME composition", async () => {
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi()} />);
+      await excalidrawReady(container);
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true });
+      await screen.findByRole('complementary', { name: 'History' });
+      fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
+      const name = screen.getByLabelText('Version name (optional)');
+
+      const typed = fireEvent.keyDown(name, { key: '˙', code: 'KeyH', altKey: true });
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true, isComposing: true });
+
+      expect(typed).toBe(true); // not prevented: the character reaches the field
+      expect(screen.getByRole('complementary', { name: 'History' })).toBeTruthy();
+      expect(screen.getByLabelText('Version name (optional)')).toBeTruthy();
+    });
+
+    it('ignores Alt+H typed into a text being edited on the canvas', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi()} />);
+      await excalidrawReady(container);
+      // A click with the text tool opens Excalidraw's text editor.
+      const at = { clientX: 200, clientY: 200, pointerId: 1, pointerType: 'mouse', button: 0 };
+      const canvas = container.querySelector('canvas.interactive') as Element;
+      fireEvent.click(screen.getByRole('button', { name: 'Text' }));
+      fireEvent.pointerDown(canvas, { ...at, buttons: 1 });
+      fireEvent.pointerUp(canvas, { ...at, buttons: 0 });
+      await waitFor(() =>
+        expect(container.querySelector('textarea.excalidraw-wysiwyg')).toBeTruthy(),
+      );
+      const editor = container.querySelector('textarea.excalidraw-wysiwyg') as HTMLElement;
+
+      const typed = fireEvent.keyDown(editor, { key: '˙', code: 'KeyH', altKey: true });
+
+      expect(typed).toBe(true);
+      expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
+      fireEvent.keyDown(editor, { key: 'Escape' });
+    });
+
     it('is unavailable without a snapshotApi: the menu item is disabled and Alt+H does nothing', async () => {
       const { container } = render(<CanvasApp boardId="test-board" />);
       await excalidrawReady(container);
