@@ -116,7 +116,7 @@ import {
 import { CommentLayer } from './comments/CommentLayer';
 import { CommentPanel } from './comments/CommentPanel';
 import { HistoryPanel } from './history/HistoryPanel';
-import type { SnapshotApi } from './history/history';
+import type { OpenedBoard, SnapshotApi } from './history/history';
 import { buildAppendix } from './comments/appendix';
 import type { Person } from './comments/mentions';
 
@@ -236,6 +236,8 @@ export interface CanvasAppProps {
   onError?: (error: Error) => void;
   /** Something the person should be told that is not a failure of the board: the board is full, a change was too large, a library was refused. */
   onNotice?: (message: string) => void;
+  /** "Open as new board" in the History panel made a board (#847): the host navigates to it. */
+  onOpenBoard?: (board: OpenedBoard) => void;
   /**
    * Asked before every connection to the board server (the first and each reconnect) for the token that goes on the
    * URL; see `YjsWebsocketClientOptions.tokenProvider` for what it may return. Without one, no token is sent.
@@ -332,6 +334,7 @@ export function CanvasApp({
   onCommentsChange,
   onError,
   onNotice,
+  onOpenBoard,
   tokenProvider,
   fileStore,
   votingApi,
@@ -404,6 +407,10 @@ export function CanvasApp({
   errorCallback.current = onError;
   const noticeCallback = useRef(onNotice);
   noticeCallback.current = onNotice;
+  const openBoardCallback = useRef(onOpenBoard);
+  openBoardCallback.current = onOpenBoard;
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const tokenProviderRef = useRef(tokenProvider);
   tokenProviderRef.current = tokenProvider;
   const fileStoreRef = useRef(fileStore);
@@ -692,6 +699,16 @@ export function CanvasApp({
         setEpoch((value) => value + 1);
       },
       onBoardFull: () => noticeCallback.current?.(tRef.current.boardFullServer),
+      onRestored: (payload) => {
+        const { by, at } = (payload ?? {}) as { by?: unknown; at?: unknown };
+        if (typeof by !== 'string' || typeof at !== 'string' || Number.isNaN(Date.parse(at)))
+          return;
+        const time = new Date(at).toLocaleString(localeRef.current, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        });
+        noticeCallback.current?.(tRef.current.restoredNotice(by, time));
+      },
       onUpdateTooLarge: () => noticeCallback.current?.(tRef.current.updateTooLarge),
       onStatusChange: (status) => {
         statusCallback.current?.(status);
@@ -1518,6 +1535,8 @@ export function CanvasApp({
             api={snapshotApi}
             readOnly={readOnly}
             canDelete={canModerate}
+            canRestore={canModerate}
+            onOpenBoard={(board) => openBoardCallback.current?.(board)}
             onClose={() => setHistoryOpen(false)}
           />
         )}

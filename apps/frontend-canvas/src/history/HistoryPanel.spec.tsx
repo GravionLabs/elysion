@@ -57,6 +57,14 @@ function fakeApi(overrides: Partial<SnapshotApi> = {}): SnapshotApi {
     document: vi.fn(async (id: string) =>
       id === 's-auto' ? new Uint8Array() : new Uint8Array([1, 2]),
     ),
+    restore: vi.fn(async () => ({
+      ...named,
+      id: 's-before',
+      kind: 'BeforeRestore' as const,
+      name: 'Before restore',
+      author: null,
+    })),
+    openAsNew: vi.fn(async () => ({ id: 'b-new', path: '/board/b-new' })),
     ...overrides,
   };
 }
@@ -228,6 +236,79 @@ describe('HistoryPanel', () => {
       'Your role on this board does not allow that.',
     );
     expect(screen.getByText('Kickoff')).toBeTruthy();
+  });
+
+  describe('restoring and opening as a new board (#847)', () => {
+    it('offers Restore to owners only', async () => {
+      const { unmount } = setup({ canRestore: true });
+      await loaded();
+      expect(screen.getByRole('button', { name: 'Restore Kickoff' })).toBeTruthy();
+      unmount();
+
+      setup({ canRestore: false });
+      await loaded();
+      expect(screen.queryByRole('button', { name: /^Restore/ })).toBeNull();
+    });
+
+    it('asks before restoring, restores, lists the version it kept and says so', async () => {
+      const { api } = setup({ canRestore: true });
+      await loaded();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Restore Kickoff' }));
+      expect(api.restore).not.toHaveBeenCalled();
+      expect(screen.getByText(/The current state is kept as "Before restore"\./)).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: 'Restore version' }));
+
+      await waitFor(() => expect(api.restore).toHaveBeenCalledWith('s-old'));
+      expect(await screen.findByText(/The version is restored\./)).toBeTruthy();
+      expect((await screen.findAllByText('Before restore')).length).toBeGreaterThan(0);
+    });
+
+    it('does not restore when the question is declined, and says why a restore failed', async () => {
+      const restore = vi.fn(async () =>
+        Promise.reject(Object.assign(new Error('x'), { status: 503 })),
+      );
+      setup({ canRestore: true }, fakeApi({ restore }));
+      await loaded();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Restore Kickoff' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(restore).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Restore Kickoff' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Restore version' }));
+      expect((await screen.findByRole('alert')).textContent).toBe(
+        'The store for versions is not available right now.',
+      );
+      expect(screen.queryByText(/The version is restored\./)).toBeNull();
+    });
+
+    it('opens a version as a new board and hands the board to the host, also for a viewer', async () => {
+      const onOpenBoard = vi.fn();
+      const { api } = setup({ readOnly: true, canDelete: false, onOpenBoard });
+      await loaded();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Open Kickoff as new board' }));
+
+      await waitFor(() =>
+        expect(onOpenBoard).toHaveBeenCalledWith({ id: 'b-new', path: '/board/b-new' }),
+      );
+      expect(api.openAsNew).toHaveBeenCalledWith('s-old');
+    });
+
+    it('tells why opening as a new board failed', async () => {
+      const openAsNew = vi.fn(async () =>
+        Promise.reject(Object.assign(new Error('x'), { status: 409 })),
+      );
+      const onOpenBoard = vi.fn();
+      setup({ onOpenBoard }, fakeApi({ openAsNew }));
+      await loaded();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Open Kickoff as new board' }));
+
+      expect((await screen.findByRole('alert')).textContent).toMatch(/not possible now/);
+      expect(onOpenBoard).not.toHaveBeenCalled();
+    });
   });
 
   it('gives a viewer the list and nothing to change', async () => {

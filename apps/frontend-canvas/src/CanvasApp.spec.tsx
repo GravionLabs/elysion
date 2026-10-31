@@ -299,6 +299,8 @@ describe('the canvas menu', () => {
       rename: vi.fn(),
       remove: vi.fn(),
       document: vi.fn(),
+      restore: vi.fn(),
+      openAsNew: vi.fn(),
     });
 
     it('opens from the canvas menu and closes with its close button', async () => {

@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
 import { By, Title } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { TopBar } from '../topbar/top-bar';
 import { ShareDialog } from '../share/share-dialog';
 import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
@@ -689,6 +689,26 @@ describe('Board', () => {
     expect(fixture.nativeElement.querySelector('.board-banner')?.textContent).toContain(
       'This board is full',
     );
+  });
+
+  it('goes to the board that "Open as new board" made (#847)', () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const el: HTMLElement = fixture.nativeElement.querySelector('elysion-canvas');
+
+    el.dispatchEvent(new CustomEvent('openboard', { detail: { id: 'n1', path: '/board/n1' } }));
+
+    expect(navigate).toHaveBeenCalledWith('/board/n1');
+  });
+
+  it('does not follow a path that is not a board', () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const el: HTMLElement = fixture.nativeElement.querySelector('elysion-canvas');
+
+    el.dispatchEvent(
+      new CustomEvent('openboard', { detail: { id: 'x', path: 'https://evil.example' } }),
+    );
+
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('moves to error status when the canvas script fails to load', async () => {

@@ -128,6 +128,17 @@ export const en = {
   historyDeleteOf: (title: string) => `Delete ${title}`,
   historyDeleteQuestion: 'Delete this version? This cannot be undone.',
   historyDeleteConfirm: 'Delete version',
+  historyRestore: 'Restore',
+  historyRestoreOf: (title: string) => `Restore ${title}`,
+  historyRestoreQuestion:
+    'Restore this version? The board goes back to it for everybody. The current state is kept as "Before restore".',
+  historyRestoreConfirm: 'Restore version',
+  historyRestoreFailed: 'The version could not be restored.',
+  historyRestored: 'The version is restored. The previous state is kept as "Before restore".',
+  historyOpenAsNew: 'Open as new board',
+  historyOpenAsNewOf: (title: string) => `Open ${title} as new board`,
+  historyOpenAsNewFailed: 'The version could not be opened as a new board.',
+  restoredNotice: (by: string, time: string) => `${by} restored the version of ${time}`,
   // Comments (#733)
   toolComments: 'Comments',
   toolCommentsTitle: 'Comments: click an element or a point to comment on it',
@@ -324,6 +335,19 @@ export const de: Messages = {
   historyDeleteOf: (title: string) => `${title} löschen`,
   historyDeleteQuestion: 'Diese Version löschen? Das lässt sich nicht rückgängig machen.',
   historyDeleteConfirm: 'Version löschen',
+  historyRestore: 'Wiederherstellen',
+  historyRestoreOf: (title: string) => `${title} wiederherstellen`,
+  historyRestoreQuestion:
+    'Diese Version wiederherstellen? Das Board geht für alle auf sie zurück. Der aktuelle Stand bleibt als „Vor der Wiederherstellung“ erhalten.',
+  historyRestoreConfirm: 'Version wiederherstellen',
+  historyRestoreFailed: 'Die Version konnte nicht wiederhergestellt werden.',
+  historyRestored:
+    'Die Version ist wiederhergestellt. Der vorherige Stand bleibt als „Vor der Wiederherstellung“ erhalten.',
+  historyOpenAsNew: 'Als neues Board öffnen',
+  historyOpenAsNewOf: (title: string) => `${title} als neues Board öffnen`,
+  historyOpenAsNewFailed: 'Die Version konnte nicht als neues Board geöffnet werden.',
+  restoredNotice: (by: string, time: string) =>
+    `${by} hat die Version vom ${time} wiederhergestellt`,
   // Comments (#733)
   toolComments: 'Kommentare',
   toolCommentsTitle: 'Kommentare: Klicke auf ein Element oder eine Stelle, um zu kommentieren',

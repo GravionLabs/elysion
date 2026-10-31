@@ -170,3 +170,9 @@
   color: var(--c-text-subtle);
   font-size: 12px;
 }
+
+.elysion-canvas .elysion-history__done {
+  margin: 4px 0 8px;
+  color: var(--c-text);
+  font-size: 13px;
+}

@@ -41,6 +41,26 @@ export class SnapshotApi {
         ),
       remove: (id) =>
         withStatus(firstValueFrom(this.#http.delete<void>(`${base()}/${encodeURIComponent(id)}`))),
+      restore: async (id) =>
+        (
+          await withStatus(
+            firstValueFrom(
+              this.#http.post<{ before: BoardSnapshotInfo | null }>(
+                `${base()}/${encodeURIComponent(id)}/restore`,
+                {},
+              ),
+            ),
+          )
+        ).before,
+      openAsNew: (id) =>
+        withStatus(
+          firstValueFrom(
+            this.#http.post<{ id: string; path: string }>(
+              `${base()}/${encodeURIComponent(id)}/copy`,
+              {},
+            ),
+          ),
+        ),
       document: async (id) =>
         new Uint8Array(
           await withStatus(
