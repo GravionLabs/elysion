@@ -1,7 +1,8 @@
 FROM node:26-alpine AS base
-RUN corepack enable
 
 FROM base AS build
+# Node 25 and later ship without corepack; it is installed for the build only and reads pnpm from `packageManager`.
+RUN npm install --global corepack@0.36.0 && corepack enable
 WORKDIR /workspace
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/frontend apps/frontend
