@@ -36,6 +36,6 @@ public static class UserEndpoints
 
         var found = await users.SearchAsync(text, MaxResults, cancellationToken);
         return TypedResults.Ok<IReadOnlyList<UserDto>>(
-            found.Select(u => new UserDto(u.Id, u.DisplayName, u.Email)).ToList());
+            found.Select(u => new UserDto(u.Id, u.DisplayName, u.Email, u.IsIntegration)).ToList());
     }
 }

@@ -41,6 +41,13 @@ public class User
 
     public bool IsDeactivated => DeactivatedAt is not null;
 
+    /// <summary>
+    /// Whether this is an integration (ADR 0033, #851): a Keycloak service account with the realm role <c>elysion-integration</c>,
+    /// not a person. It has no email, its name is the client id, it is accepted on the public API only (the BFF refuses it
+    /// elsewhere), and otherwise it is a user like any other: it sees what it was added to.
+    /// </summary>
+    public bool IsIntegration { get; set; }
+
     /// <summary>The least time between two writes of <see cref="LastSeenAt"/>.</summary>
     public static readonly TimeSpan SeenInterval = TimeSpan.FromMinutes(5);
 

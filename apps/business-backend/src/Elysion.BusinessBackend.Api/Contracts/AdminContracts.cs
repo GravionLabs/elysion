@@ -13,7 +13,8 @@ public sealed record AdminUserDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? LastSeenAt,
     IReadOnlyList<AdminGroupRef> Groups,
-    DateTimeOffset? DeactivatedAt = null);
+    DateTimeOffset? DeactivatedAt = null,
+    bool IsIntegration = false);
 
 /// <summary>A room or board a person has a direct role in (<c>Role</c> is Owner, Editor or Viewer): names and roles, no content.</summary>
 public sealed record AdminMembershipDto(Guid Id, string Name, string Role);
@@ -27,7 +28,8 @@ public sealed record AdminUserDetailDto(
     IReadOnlyList<AdminGroupRef> Groups,
     IReadOnlyList<AdminMembershipDto> Rooms,
     IReadOnlyList<AdminMembershipDto> Boards,
-    DateTimeOffset? DeactivatedAt = null);
+    DateTimeOffset? DeactivatedAt = null,
+    bool IsIntegration = false);
 
 /// <summary><c>Source</c> is Local or IdentityProvider (linked); <c>ExternalId</c> is the claim value of a linked group.</summary>
 public sealed record AdminGroupDto(
@@ -74,3 +76,18 @@ public sealed record AdminTransferRequest(Guid FromUserId, Guid ToUserId);
 
 /// <summary>How many boards and rooms changed owner.</summary>
 public sealed record AdminTransferResultDto(int Boards, int Rooms);
+
+/// <summary>
+/// A personal access token in the administration (#851): whose it is and what it may do, never the secret or its hash. <c>Prefix</c>
+/// is the start of the secret, so a leaked token can be found.
+/// </summary>
+public sealed record AdminAccessTokenDto(
+    Guid Id,
+    string Name,
+    string Prefix,
+    IReadOnlyList<string> Scopes,
+    AdminOwnerDto Owner,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? LastUsedAt,
+    DateTimeOffset ExpiresAt,
+    DateTimeOffset? RevokedAt);

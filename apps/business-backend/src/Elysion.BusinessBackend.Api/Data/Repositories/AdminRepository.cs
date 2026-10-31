@@ -10,6 +10,7 @@ namespace Elysion.BusinessBackend.Api.Data.Repositories;
 public sealed class AdminRepository(ElysionDbContext db) : IAdminRepository
 {
     public async Task<PagedResult<AdminUserDto>> ListUsersAsync(string? query,
+        bool? integrations,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
@@ -25,12 +26,26 @@ public sealed class AdminRepository(ElysionDbContext db) : IAdminRepository
 #pragma warning restore CA1862
         }
 
+        if (integrations is { } onlyIntegrations)
+        {
+            users = users.Where(u => u.IsIntegration == onlyIntegrations);
+        }
+
         var total = await users.CountAsync(cancellationToken);
         var rows = await users.OrderByDescending(u => u.CreatedAt)
             .ThenBy(u => u.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(u => new { u.Id, u.DisplayName, u.Email, u.CreatedAt, u.LastSeenAt, u.DeactivatedAt })
+            .Select(u => new
+            {
+                u.Id,
+                u.DisplayName,
+                u.Email,
+                u.CreatedAt,
+                u.LastSeenAt,
+                u.DeactivatedAt,
+                u.IsIntegration
+            })
             .ToListAsync(cancellationToken);
 
         // The groups of this page's people in one query.
@@ -51,7 +66,8 @@ public sealed class AdminRepository(ElysionDbContext db) : IAdminRepository
                 r.CreatedAt,
                 r.LastSeenAt,
                 byUser.GetValueOrDefault(r.Id) ?? [],
-                r.DeactivatedAt))
+                r.DeactivatedAt,
+                r.IsIntegration))
             .ToList();
         return new PagedResult<AdminUserDto>(items, total, page, pageSize);
     }
@@ -104,7 +120,8 @@ public sealed class AdminRepository(ElysionDbContext db) : IAdminRepository
             boards.OrderBy(b => b.Name, StringComparer.CurrentCultureIgnoreCase)
                 .Select(b => new AdminMembershipDto(b.BoardId, b.Name, b.Role.ToString()))
                 .ToList(),
-            user.DeactivatedAt);
+            user.DeactivatedAt,
+            user.IsIntegration);
     }
 
     public async Task<PagedResult<AdminGroupDto>> ListGroupsAsync(string? query,
