@@ -423,6 +423,38 @@ describe('TopBar', () => {
 
       expect(events).toEqual(['start', 'summon', 'stop']);
     });
+
+    describe('while somebody else presents', () => {
+      const others = { id: 'x', name: 'Xi', color: '#14b8a6', me: false };
+      const setup = async (canShare: boolean) => {
+        fixture.componentRef.setInput('canShare', canShare);
+        fixture.componentRef.setInput('followState', {
+          following: null,
+          presenter: others,
+          steppedOut: false,
+        });
+        await fixture.whenStable();
+        trigger().click();
+        await fixture.whenStable();
+      };
+
+      it('lets an owner stop it', async () => {
+        const events: string[] = [];
+        fixture.componentInstance.presentStop.subscribe(() => events.push('stop'));
+        await setup(true);
+
+        expect(item('Start presenting')).toBeUndefined();
+        item('Stop presenting').click();
+
+        expect(events).toEqual(['stop']);
+      });
+
+      it('offers an editor who is not the presenter no Stop entry', async () => {
+        await setup(false);
+
+        expect(item('Stop presenting')).toBeUndefined();
+      });
+    });
   });
 
   describe('the signed-in user', () => {

@@ -128,7 +128,7 @@
     />
     @if (!readOnly()) {
       <app-present-menu
-        [presenting]="followState()?.presenter?.me ?? false"
+        [presenting]="canStopPresenting()"
         [active]="followState()?.presenter != null"
         (startRequested)="presentStart.emit()"
         (stopRequested)="presentStop.emit()"

@@ -121,6 +121,12 @@ export class TopBar {
   readonly presentStop = output<void>();
   readonly presentSummon = output<void>();
 
+  /** Stop presenting is offered to the presenter and to an owner, who may end anybody's presentation (#848). */
+  protected readonly canStopPresenting = computed(() => {
+    const presenter = this.followState()?.presenter;
+    return presenter != null && (presenter.me || this.canShare());
+  });
+
   protected readonly favoriteOnTitle = $localize`:@@topbar.favorite-on:Add to favorites`;
   protected readonly favoriteOffTitle = $localize`:@@topbar.favorite-off:Remove from favorites`;
   protected readonly maxNameLength = MAX_BOARD_NAME_LENGTH;
