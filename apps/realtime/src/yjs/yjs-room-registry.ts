@@ -76,9 +76,10 @@ export function persistenceOptionsFromEnv(): PersistenceOptions {
 const RELAY_ORIGIN = 'document-relay';
 
 /** Origin of updates merged in from the store; they are broadcast to clients but not saved again by themselves. */
+const STORE_ORIGIN = 'document-store';
+
 /** The origin of the update a restore makes: it goes to every client and is relayed and saved like an edit. */
 const RESTORE_ORIGIN = 'snapshot-restore';
-const STORE_ORIGIN = 'document-store';
 
 /** What the registry tracks per room to keep the stored document up to date. */
 interface SaveState {
@@ -87,7 +88,7 @@ interface SaveState {
   dirty: boolean;
   firstDirtyAt: number | null;
   timer: NodeJS.Timeout | null;
-  saving: Promise<void> | null;
+  saving: Promise<boolean> | null;
   failures: number;
   evictionTimer: NodeJS.Timeout | null;
   /** Bumped whenever someone asks for the room, so an eviction that was already under way notices and stops. */
@@ -623,10 +624,11 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     state.firstDirtyAt = null;
     // A save runs from a timer, outside any connection: it takes the context of the connection that made the change.
     const write = () => this.writeToStore(room, state);
-    state.saving = (state.connection ? runInConnection(state.connection, write) : write()).finally(
+    const saving = (state.connection ? runInConnection(state.connection, write) : write()).finally(
       () => (state.saving = null),
     );
-    return await state.saving;
+    state.saving = saving;
+    return await saving;
   }
 
   /** True when the state is stored, false when the attempt failed (a retry is scheduled, or the room was given up). */
