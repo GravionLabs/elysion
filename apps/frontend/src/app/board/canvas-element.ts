@@ -142,6 +142,8 @@ export type CanvasElement = HTMLElement & {
       orientation?: 'auto' | 'portrait' | 'landscape';
       /** A PDF gets the board's comments as text pages at the end (#733). */
       comments?: boolean;
+      /** A PDF gets the board's agenda, with planned and spent times, as its first page (#849). */
+      agenda?: boolean;
     },
   ): Promise<Blob | null>;
   /**

@@ -128,6 +128,21 @@ describe('ExportMenu', () => {
     localStorage.clear(); // the menu remembers it; the other tests start from the defaults
   });
 
+  it('has an Agenda as the first page of a PDF option that is off until it is switched on (#849)', async () => {
+    await open();
+    const option = [...el().querySelectorAll<HTMLInputElement>('.menu-settings input')].find(
+      (input) => input.parentElement?.textContent?.includes('Agenda as the first page of a PDF'),
+    )!;
+    expect(option.checked).toBe(false);
+
+    option.click();
+    await fixture.whenStable();
+    items()[2].click();
+
+    expect(requests[0].settings.agenda).toBe(true);
+    localStorage.clear();
+  });
+
   describe('while a file is being prepared', () => {
     beforeEach(async () => {
       fixture.componentRef.setInput('busy', 'pdf');

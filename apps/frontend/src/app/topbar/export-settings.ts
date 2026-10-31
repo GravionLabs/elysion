@@ -17,6 +17,8 @@ export interface ExportSettings {
   scale: PngScale;
   /** Add the board's comments to a PDF as text pages (#733). */
   comments: boolean;
+  /** Put the board's agenda, with planned and spent times, on the first page of a PDF (#849). */
+  agenda: boolean;
 }
 
 export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
@@ -27,6 +29,7 @@ export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   background: true,
   scale: 1,
   comments: false,
+  agenda: false,
 };
 
 const STORAGE_KEY = 'elysion.export-settings';
@@ -65,6 +68,8 @@ export function parseSettings(value: unknown): ExportSettings {
       typeof stored['comments'] === 'boolean'
         ? stored['comments']
         : DEFAULT_EXPORT_SETTINGS.comments,
+    agenda:
+      typeof stored['agenda'] === 'boolean' ? stored['agenda'] : DEFAULT_EXPORT_SETTINGS.agenda,
   };
 }
 
@@ -98,5 +103,6 @@ export function toCanvasOptions(settings: ExportSettings, selectionOnly: boolean
     pageFormat: settings.pageFormat,
     orientation: settings.orientation,
     comments: settings.comments,
+    agenda: settings.agenda,
   };
 }

@@ -4735,6 +4735,14 @@
         <source>Comments in a PDF</source>
       </segment>
     </unit>
+    <unit id="topbar.export.agenda">
+      <notes>
+        <note category="location">src/app/topbar/export-menu.html:120,122</note>
+      </notes>
+      <segment>
+        <source>Agenda as the first page of a PDF</source>
+      </segment>
+    </unit>
     <unit id="topbar.export.preparing-file">
       <notes>
         <note category="location">src/app/topbar/export-menu.ts:28</note>
