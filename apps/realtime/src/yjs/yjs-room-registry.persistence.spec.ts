@@ -134,6 +134,38 @@ describe('YjsRoomRegistry persistence', () => {
   });
 
   describe('saving', () => {
+    it('saveNow stores a changed room at once, does nothing for an unchanged or unknown one', async () => {
+      const room = await registry.getOrLoad('b');
+      room.doc.getMap('elements').set('a', '1');
+
+      await registry.saveNow('b');
+
+      expect(store.saves).toHaveLength(1);
+      const saved = new Y.Doc();
+      Y.applyUpdate(saved, store.saves[0].state);
+      expect(elementsOf(saved)).toEqual({ a: '1' });
+      await registry.saveNow('b'); // nothing changed since
+      await registry.saveNow('not-open');
+      expect(store.saves).toHaveLength(1);
+      await vi.advanceTimersByTimeAsync(60_000); // the debounce timer was cancelled by the save
+      expect(store.saves).toHaveLength(1);
+    });
+
+    it('saveNow answers true when stored or nothing is unsaved, false when the store failed', async () => {
+      const room = await registry.getOrLoad('b');
+      expect(await registry.saveNow('b')).toBe(true); // nothing changed
+      expect(await registry.saveNow('not-open')).toBe(true);
+      room.doc.getMap('elements').set('a', '1');
+      store.saveResult = async () => {
+        throw new Error('backend down');
+      };
+
+      expect(await registry.saveNow('b')).toBe(false);
+
+      store.saveResult = async () => ({ saved: true, version: '2' });
+      expect(await registry.saveNow('b')).toBe(true); // the retry-pending state is saved now
+    });
+
     it('saves a changed room once, a debounce after its last change, based on the loaded version', async () => {
       store.loadResult = async () => ({ state: stateOf({ a: '1' }), version: '7' });
       const room = await registry.getOrLoad('b');

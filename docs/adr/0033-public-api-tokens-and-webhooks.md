@@ -4,7 +4,7 @@
   and with the access of a member, read-only elements in v1, the outbox for webhooks)
 - Date: 2026-10-30
 - Issues: #850 (Feature #844); implemented in #851, #852 and #853
-- Builds on: [ADR 0001](0001-gateway-and-bff.md) (Traefik and the BFF), [ADR 0014](0014-keycloak-identity-provider.md) (Keycloak, services only validate), [ADR 0017](0017-internal-api-authentication.md) (internal calls), [ADR 0027](0027-enterprise-sign-in-groups-and-administration.md) (administration), ADR 0032 (snapshots, #845)
+- Builds on: [ADR 0001](0001-gateway-and-bff.md) (Traefik and the BFF), [ADR 0014](0014-keycloak-identity-provider.md) (Keycloak, services only validate), [ADR 0017](0017-internal-api-authentication.md) (internal calls), [ADR 0027](0027-enterprise-sign-in-groups-and-administration.md) (administration), [ADR 0032](0032-board-snapshots.md) (snapshots, #845)
 
 ## Context
 

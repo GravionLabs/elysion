@@ -55,7 +55,9 @@ import './styles/grid.css';
 import './styles/toolbar.css';
 import './styles/connection-points.css';
 import './styles/voting.css';
+import './styles/follow.css';
 import './styles/comments.css';
+import './styles/history.css';
 import './styles/pdf-import.css';
 import type { ExcalidrawImperativeAPI, ToolType } from '@excalidraw/excalidraw/types';
 import * as Y from 'yjs';
@@ -68,6 +70,15 @@ import type { PresentUser } from './presence/collaborators';
 import type { Awareness } from 'y-protocols/awareness';
 import type { VotableElement } from './facilitation/voting';
 import { PresenceSync } from './presence/presence';
+import { FollowController, NOT_FOLLOWING, type FollowState } from './presence/follow';
+import { FollowOverlay } from './presence/FollowOverlay';
+import { viewportOf } from './presence/viewport';
+import {
+  readPresenter,
+  startPresenting,
+  stopPresenting,
+  summonEveryone,
+} from './facilitation/presenter';
 import {
   type TimerState,
   extendTimer,
@@ -104,8 +115,20 @@ import {
 } from './comments/comments';
 import { CommentLayer } from './comments/CommentLayer';
 import { CommentPanel } from './comments/CommentPanel';
+import { HistoryPanel } from './history/HistoryPanel';
+import type { OpenedBoard, SnapshotApi } from './history/history';
 import { buildAppendix } from './comments/appendix';
 import type { Person } from './comments/mentions';
+
+/**
+ * Whether a key goes into text rather than to the canvas: typed into a field (the panels' own inputs too), into
+ * Excalidraw's text editor, or part of an IME composition. The canvas's keyboard shortcuts leave such a key alone.
+ */
+const isTextEntry = (event: KeyboardEvent, api: ExcalidrawImperativeAPI | null): boolean =>
+  event.isComposing ||
+  (event.target instanceof Element &&
+    event.target.closest('input, textarea, select, [contenteditable="true"]') !== null) ||
+  Boolean(api?.getAppState().editingTextElement);
 
 /** What the host can ask the canvas to do; the element exposes these as methods. */
 export interface CanvasControls {
@@ -148,6 +171,25 @@ export interface CanvasControls {
   clearVotingResults(): Promise<void>;
   /** Scrolls the view to an element (a result of the voting); rejects when it is not on the board. */
   scrollToElement(elementId: string): Promise<void>;
+  /**
+   * Follows a person (#848): this canvas shows what their window shows (fitted into its own window, through the tab of them
+   * whose view changed last) until the person pans, zooms or presses Esc. Rejects when they are not on the board or have
+   * not shown a view yet, and before the canvas is up. Works on a read-only canvas.
+   */
+  follow(userId: string): Promise<void>;
+  /** Ends following a person or the presenter (what Esc does). */
+  stopFollowing(): Promise<void>;
+  /** Goes back into the presentation this person stepped out of. */
+  followPresenter(): Promise<void>;
+  /**
+   * Makes this person the presenter: everybody on the board follows them while they are on it. Editors and owners; rejects
+   * on a read-only canvas, and while somebody else presents (unless the host says `can-moderate`).
+   */
+  startPresenting(): Promise<void>;
+  /** Ends the presentation: for the presenter and an owner (`can-moderate`); a no-op when nobody presents. */
+  stopPresenting(): Promise<void>;
+  /** "Bring everyone to me": everybody else's view jumps once to this one, without following. Editors and owners. */
+  summonEveryone(): Promise<void>;
 }
 
 export interface CanvasAppProps {
@@ -184,6 +226,11 @@ export interface CanvasAppProps {
   /** The other people on the board changed (somebody joined, left or was renamed); settled, not per pointer move. */
   onPresenceChange?: (users: PresentUser[]) => void;
   /**
+   * Whom this client follows, who presents and whether this client stepped out of the presentation changed (#848). Also
+   * called after the connection was made, so the host learns the state of a board it joined while somebody presents.
+   */
+  onFollowChange?: (state: FollowState) => void;
+  /**
    * The shared timer changed, on this client or another: its state, or `null` when there is none. Also called after
    * the connection was made, so somebody who joins while a timer runs gets it.
    */
@@ -199,6 +246,8 @@ export interface CanvasAppProps {
   onError?: (error: Error) => void;
   /** Something the person should be told that is not a failure of the board: the board is full, a change was too large, a library was refused. */
   onNotice?: (message: string) => void;
+  /** "Open as new board" in the History panel made a board (#847): the host navigates to it. */
+  onOpenBoard?: (board: OpenedBoard) => void;
   /**
    * Asked before every connection to the board server (the first and each reconnect) for the token that goes on the
    * URL; see `YjsWebsocketClientOptions.tokenProvider` for what it may return. Without one, no token is sent.
@@ -214,6 +263,11 @@ export interface CanvasAppProps {
    * record. Without one the voting does nothing and `startVoting` rejects.
    */
   votingApi?: VotingApi;
+  /**
+   * How the canvas reaches the board's versions (#846, ADR 0032): the host sets it together with a board that has a record.
+   * Without one the History panel stays unavailable.
+   */
+  snapshotApi?: SnapshotApi;
   /**
    * The people `@` offers in a comment (#733): `{id, name}` with the identity provider's id, which is what a mention stores.
    * Asked each time the comments open. Without one only the authors of earlier comments are offered.
@@ -284,14 +338,17 @@ export function CanvasApp({
   onLibraryChange,
   onSelectionCount,
   onPresenceChange,
+  onFollowChange,
   onTimerChange,
   onVotingChange,
   onCommentsChange,
   onError,
   onNotice,
+  onOpenBoard,
   tokenProvider,
   fileStore,
   votingApi,
+  snapshotApi,
   mentionDirectory,
   mentionSearch,
   canModerate = false,
@@ -336,6 +393,10 @@ export function CanvasApp({
   selectionCallback.current = onSelectionCount;
   const selectionCount = useRef(0);
   const presenceCallback = useRef(onPresenceChange);
+  const followCallback = useRef(onFollowChange);
+  followCallback.current = onFollowChange;
+  const canModerateRef = useRef(canModerate);
+  canModerateRef.current = canModerate;
   const timerCallback = useRef(onTimerChange);
   timerCallback.current = onTimerChange;
   const votingCallback = useRef(onVotingChange);
@@ -356,10 +417,16 @@ export function CanvasApp({
   errorCallback.current = onError;
   const noticeCallback = useRef(onNotice);
   noticeCallback.current = onNotice;
+  const openBoardCallback = useRef(onOpenBoard);
+  openBoardCallback.current = onOpenBoard;
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const tokenProviderRef = useRef(tokenProvider);
   tokenProviderRef.current = tokenProvider;
   const fileStoreRef = useRef(fileStore);
   fileStoreRef.current = fileStore;
+  const snapshotApiRef = useRef(snapshotApi);
+  snapshotApiRef.current = snapshotApi;
   const votingApiRef = useRef(votingApi);
   votingApiRef.current = votingApi;
   const fileErrorCallback = useRef(onFileError);
@@ -422,6 +489,9 @@ export function CanvasApp({
   maxElementsRef.current = maxElements;
   const bindingRef = useRef<ExcalidrawYjsBinding | null>(null);
   const presenceRef = useRef<PresenceSync | null>(null);
+  const followRef = useRef<FollowController | null>(null);
+  // Whom this client follows, for the frame and the pill.
+  const [follow, setFollow] = useState<FollowState>(NOT_FOLLOWING);
   const docRef = useRef<Y.Doc | null>(null);
   const timerSyncRef = useRef<TimerSync | null>(null);
   const votingControllerRef = useRef<VotingController | null>(null);
@@ -439,13 +509,14 @@ export function CanvasApp({
   const threadsRef = useRef(threads);
   threadsRef.current = threads;
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [pendingAnchor, setPendingAnchor] = useState<CommentAnchor | null>(null);
   const [activeThread, setActiveThread] = useState<string | null>(null);
   const [directory, setDirectory] = useState<readonly Person[]>([]);
   // Who this tab is, made once: a re-render must not make a new collaborator.
   const identityRef = useRef(createSessionIdentity());
-  const identity = withHostIdentity(identityRef.current, userName, userColor);
+  const identity = withHostIdentity(identityRef.current, userName, userColor, userId);
   const identityNow = useRef(identity);
   identityNow.current = identity;
   const sceneStoreRef = useRef(new SceneStore());
@@ -615,6 +686,7 @@ export function CanvasApp({
       onSynced: () => {
         void offlineWork.synced(connection.client?.generation ?? '');
         syncedCallback.current?.();
+        followRef.current?.synced();
         // The voting is the server's: ask for it (a late joiner, a reconnect). The old document key goes.
         void votingSync.refresh();
         // The map of the comments is made by those who may write, as soon as they are connected: a viewer's first comment
@@ -637,10 +709,24 @@ export function CanvasApp({
         setEpoch((value) => value + 1);
       },
       onBoardFull: () => noticeCallback.current?.(tRef.current.boardFullServer),
+      onRestored: (payload) => {
+        const { by, at } = (payload ?? {}) as { by?: unknown; at?: unknown };
+        if (typeof by !== 'string' || typeof at !== 'string' || Number.isNaN(Date.parse(at)))
+          return;
+        const time = new Date(at).toLocaleString(localeRef.current, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        });
+        noticeCallback.current?.(tRef.current.restoredNotice(by, time));
+      },
       onUpdateTooLarge: () => noticeCallback.current?.(tRef.current.updateTooLarge),
       onStatusChange: (status) => {
         statusCallback.current?.(status);
         if (status === 'disconnected') offlineWork.disconnected();
+        if (status === 'connected') {
+          followRef.current?.refresh();
+          followCallback.current?.(followRef.current?.state ?? NOT_FOLLOWING);
+        }
         // The shell learns what the board's timer is once the connection is up, also when there is none.
         if (status === 'connected') {
           timerSync.emit();
@@ -662,6 +748,20 @@ export function CanvasApp({
       (users) => presenceCallback.current?.(users),
     );
     presenceRef.current = presence;
+
+    // Following a person or the presenter, and the jump of "bring everyone to me" (#848).
+    const followController = new FollowController({
+      awareness: client.awareness,
+      doc,
+      api: () => apiRef.current,
+      me: () => identityNow.current.id,
+      canWrite: () => !readOnlyRef.current,
+      onChange: (state) => {
+        setFollow(state);
+        followCallback.current?.(state);
+      },
+    });
+    followRef.current = followController;
 
     // Who this client is for a voting, and the watch that ends it once everybody present has used all their votes.
     // After the presence sync, which sets the awareness state as a whole.
@@ -690,6 +790,9 @@ export function CanvasApp({
       allVotedRef.current = null;
       awarenessRef.current = null;
       docRef.current = null;
+      followController.destroy();
+      followRef.current = null;
+      setFollow(NOT_FOLLOWING);
       presence.destroy();
       presenceRef.current = null;
       client.destroy();
@@ -717,7 +820,18 @@ export function CanvasApp({
   // The host changed the name or color after the canvas started.
   useEffect(() => {
     presenceRef.current?.identityChanged(identityNow.current);
-  }, [identity.name, identity.color]);
+  }, [identity.id, identity.name, identity.color]);
+
+  // Esc ends following (#848): of a person, or of the presenter, whom anybody may step out of.
+  const following = follow.following !== null;
+  useEffect(() => {
+    if (!following) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') followRef.current?.stop();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [following]);
 
   /** Runs a change of the board's shared state (the timer); rejects when the canvas is read-only or not up, or when the change is invalid. */
   const timerCommand = (run: (doc: Y.Doc) => unknown): Promise<void> => {
@@ -796,6 +910,7 @@ export function CanvasApp({
     openComments(null);
   };
   const openComments = (threadId: string | null) => {
+    setHistoryOpen(false); // both panels sit on the right edge
     setCommentsOpen(true);
     setActiveThread(threadId);
     setPlacing(threadId === null);
@@ -805,6 +920,34 @@ export function CanvasApp({
       .then((people) => setDirectory(people ?? []))
       .catch(() => setDirectory([]));
   };
+  /** Opens or closes the History panel (#846); the comments make room for it. */
+  const toggleHistory = () => {
+    if (!snapshotApiRef.current) return;
+    setHistoryOpen((open) => !open);
+    setCommentsOpen(false);
+    setPlacing(false);
+    setPendingAnchor(null);
+  };
+  const toggleHistoryRef = useRef(toggleHistory);
+  toggleHistoryRef.current = toggleHistory;
+  // Alt+H opens the history. `code`, not `key`: with Option held a Mac types another character. Like the grid shortcut it is
+  // the canvas's only when the focus is on the page body or inside the canvas, and like it it is caught in the capture
+  // phase: once a shape was drawn the focus is on Excalidraw's container, whose key handler stops the key from bubbling.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== 'KeyH' || !event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.repeat || event.defaultPrevented) return;
+      const target = event.target as Node | null;
+      if (target !== document.body && !rootRef.current?.contains(target)) return;
+      // Not while typing: a version name in the History panel, a text being edited, an IME composition.
+      if (isTextEntry(event, apiRef.current)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      toggleHistoryRef.current();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, []);
   const describeAnchorRef = useRef(describeAnchor);
   describeAnchorRef.current = describeAnchor;
   const toggleCommentsRef = useRef(toggleComments);
@@ -943,14 +1086,7 @@ export function CanvasApp({
       const key = event.key.toLowerCase();
       if ((key !== 'c' && key !== 'n') || event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.repeat || event.defaultPrevented) return;
-      const target = event.target;
-      if (
-        target instanceof Element &&
-        target.closest('input, textarea, select, [contenteditable="true"]')
-      ) {
-        return;
-      }
-      if (apiRef.current?.getAppState().editingTextElement) return;
+      if (isTextEntry(event, apiRef.current)) return;
       if (key === 'c') {
         // C connects two selected elements; with nothing to connect it opens the comments (#733).
         const api = apiRef.current;
@@ -1083,6 +1219,14 @@ export function CanvasApp({
     { type: 'heading', label: t.menuCanvas },
     {
       type: 'item',
+      id: 'history',
+      label: t.menuHistory,
+      hint: 'Alt+H',
+      disabled: !snapshotApi,
+      onSelect: toggleHistory,
+    },
+    {
+      type: 'item',
       id: 'help',
       label: t.menuHelp,
       hint: '?',
@@ -1173,6 +1317,7 @@ export function CanvasApp({
             }
             bindingRef.current?.attach(api);
             presenceRef.current?.refresh(); // the collaborators that were there before the canvas was
+            followRef.current?.refresh(); // and the one this client is to follow
             controlsCallback.current?.({
               whenSettled: (timeoutMs) =>
                 bindingRef.current?.whenSettled(timeoutMs) ?? Promise.resolve(),
@@ -1217,6 +1362,52 @@ export function CanvasApp({
               endVoting: () => votingCommand((controller) => controller.end()),
               // All the results: every closed voting goes, so an older one does not show up after the last was cleared.
               clearVotingResults: () => votingCommand((controller) => controller.clear()),
+              follow: (personId) => {
+                const controller = followRef.current;
+                if (!controller) return Promise.reject(new Error(tRef.current.errorNotReady));
+                return controller.follow(personId)
+                  ? Promise.resolve()
+                  : Promise.reject(new Error(tRef.current.errorNotOnBoardPerson));
+              },
+              stopFollowing: () => {
+                followRef.current?.stop();
+                return Promise.resolve();
+              },
+              followPresenter: () => {
+                followRef.current?.followPresenter();
+                return Promise.resolve();
+              },
+              startPresenting: () =>
+                timerCommand((doc) => {
+                  const presenter = followRef.current?.state.presenter;
+                  if (presenter && !presenter.me && !canModerateRef.current) {
+                    throw new Error(tRef.current.errorPresenterBusy);
+                  }
+                  startPresenting(doc, identityNow.current.id);
+                }),
+              stopPresenting: () =>
+                timerCommand((doc) => {
+                  const entry = readPresenter(doc);
+                  const live = followRef.current?.state.presenter;
+                  if (
+                    entry &&
+                    entry.userId !== identityNow.current.id &&
+                    live &&
+                    !canModerateRef.current
+                  ) {
+                    throw new Error(tRef.current.errorNotPresenter);
+                  }
+                  stopPresenting(doc);
+                }),
+              summonEveryone: () =>
+                timerCommand((doc) => {
+                  const { scrollX, scrollY, zoom, width, height } = api.getAppState();
+                  summonEveryone(
+                    doc,
+                    identityNow.current.id,
+                    viewportOf({ scrollX, scrollY, zoom: zoom.value }, { width, height }),
+                  );
+                }),
               scrollToElement: (elementId) => {
                 const target = api.getSceneElements().find((element) => element.id === elementId);
                 if (!target) return Promise.reject(new Error(tRef.current.errorNotOnBoard));
@@ -1229,6 +1420,19 @@ export function CanvasApp({
           onChange={(elements, appState, files) => {
             bindingRef.current?.onLocalChange(elements, files);
             presenceRef.current?.selectionChanged(appState.selectedElementIds);
+            {
+              const view = {
+                scrollX: appState.scrollX,
+                scrollY: appState.scrollY,
+                zoom: appState.zoom.value,
+              };
+              const size = { width: appState.width, height: appState.height };
+              // The follow controller first: a view it made itself must not be taken for the person's panning.
+              followRef.current?.viewChanged(view, size);
+              if (size.width > 0 && size.height > 0) {
+                presenceRef.current?.viewportChanged(viewportOf(view, size));
+              }
+            }
             setActiveTool(appState.activeTool.type);
             if (appState.objectsSnapModeEnabled !== guidesOnRef.current) {
               apiRef.current?.updateScene({
@@ -1281,6 +1485,10 @@ export function CanvasApp({
           <DefaultSidebar.Trigger style={{ display: 'none' }} aria-hidden="true" />
         </Excalidraw>
         <Minimap store={sceneStoreRef.current} onPan={panTo} />
+        <FollowOverlay
+          state={follow}
+          onFollowPresenter={() => followRef.current?.followPresenter()}
+        />
         {!readOnly && (
           <ConnectionPoints apiRef={apiRef} rootRef={rootRef} store={sceneStoreRef.current} />
         )}
@@ -1327,6 +1535,16 @@ export function CanvasApp({
             onCancelNew={() => setPendingAnchor(null)}
             onShow={showThread}
             onClose={toggleComments}
+          />
+        )}
+        {historyOpen && snapshotApi && (
+          <HistoryPanel
+            api={snapshotApi}
+            readOnly={readOnly}
+            canDelete={canModerate}
+            canRestore={canModerate}
+            onOpenBoard={(board) => openBoardCallback.current?.(board)}
+            onClose={() => setHistoryOpen(false)}
           />
         )}
         <Toolbar

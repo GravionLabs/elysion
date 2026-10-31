@@ -2,6 +2,7 @@ import { type Root, createRoot } from 'react-dom/client';
 import { CanvasApp, type CanvasControls } from './CanvasApp';
 import type { TimerState } from './facilitation/timer';
 import type { StartOptions, VotingApi, VotingView } from './facilitation/voting';
+import type { OpenedBoard, SnapshotApi, SnapshotInfo } from './history/history';
 import type { ExportFormat, ExportOptions } from './board-io';
 import { parseTheme } from './useResolvedTheme';
 import { parseLocale, createI18n } from './i18n';
@@ -9,7 +10,7 @@ import type { FileStore } from './yjs/files';
 
 import type { Person } from './comments/mentions';
 
-export type { FileStore, VotingApi, Person };
+export type { FileStore, VotingApi, SnapshotApi, SnapshotInfo, OpenedBoard, Person };
 
 /** The people `@` offers in a comment: asked each time the comments open. */
 export type MentionDirectory = () => Promise<readonly Person[]>;
@@ -46,6 +47,7 @@ class ElysionCanvasElement extends HTMLElement {
   #tokenProvider: TokenProvider | undefined;
   #fileStore: FileStore | undefined;
   #votingApi: VotingApi | undefined;
+  #snapshotApi: SnapshotApi | undefined;
   #mentionDirectory: MentionDirectory | undefined;
   #mentionSearch: MentionSearch | undefined;
 
@@ -94,6 +96,19 @@ class ElysionCanvasElement extends HTMLElement {
   }
 
   /**
+   * How the canvas reaches the board's versions (#846, ADR 0032): `list`, `create`, `rename`, `remove` and `document`, backed
+   * by the host's API. A property because it is an object with methods. Without one the History panel stays unavailable.
+   */
+  get snapshotApi(): SnapshotApi | undefined {
+    return this.#snapshotApi;
+  }
+
+  set snapshotApi(api: SnapshotApi | undefined) {
+    this.#snapshotApi = api;
+    this.#render();
+  }
+
+  /**
    * The people `@` offers in a comment (#733): `{id, name}` with the identity provider's id, which is what a mention stores.
    * A property, like `fileStore`, because it is a function. Without one only the authors of earlier comments are offered.
    */
@@ -127,6 +142,7 @@ class ElysionCanvasElement extends HTMLElement {
     this.#adoptEarlyProperty('tokenProvider');
     this.#adoptEarlyProperty('fileStore');
     this.#adoptEarlyProperty('votingApi');
+    this.#adoptEarlyProperty('snapshotApi');
     this.#adoptEarlyProperty('mentionDirectory');
     this.#adoptEarlyProperty('mentionSearch');
     this.#root = createRoot(this);
@@ -135,7 +151,13 @@ class ElysionCanvasElement extends HTMLElement {
   }
 
   #adoptEarlyProperty(
-    name: 'tokenProvider' | 'fileStore' | 'votingApi' | 'mentionDirectory' | 'mentionSearch',
+    name:
+      | 'tokenProvider'
+      | 'fileStore'
+      | 'votingApi'
+      | 'snapshotApi'
+      | 'mentionDirectory'
+      | 'mentionSearch',
   ): void {
     if (Object.prototype.hasOwnProperty.call(this, name)) {
       const value = (this as unknown as Record<string, unknown>)[name];
@@ -146,6 +168,8 @@ class ElysionCanvasElement extends HTMLElement {
         this.fileStore = value as FileStore | undefined;
       } else if (name === 'votingApi') {
         this.votingApi = value as VotingApi | undefined;
+      } else if (name === 'snapshotApi') {
+        this.snapshotApi = value as SnapshotApi | undefined;
       } else if (name === 'mentionDirectory') {
         this.mentionDirectory = value as MentionDirectory | undefined;
       } else {
@@ -215,6 +239,39 @@ class ElysionCanvasElement extends HTMLElement {
       : Promise.reject(new Error(this.#notReady()));
   }
 
+  /**
+   * Follows a person (#848), by the `id` of an entry of the `presence` event: the canvas shows what their window shows until
+   * they pan, zoom or press Esc, or the person leaves. Rejects when they are not on the board or have not shown a view yet.
+   */
+  follow(userId: string): Promise<void> {
+    return this.#timer((controls) => controls.follow(userId));
+  }
+
+  /** Ends following (what Esc does). */
+  stopFollowing(): Promise<void> {
+    return this.#timer((controls) => controls.stopFollowing());
+  }
+
+  /** Goes back into the presentation this person stepped out of. */
+  followPresenter(): Promise<void> {
+    return this.#timer((controls) => controls.followPresenter());
+  }
+
+  /** Makes this person the presenter: everybody follows them while they are on the board. Editors and owners; rejects on a read-only canvas. */
+  startPresenting(): Promise<void> {
+    return this.#timer((controls) => controls.startPresenting());
+  }
+
+  /** Ends the presentation (the presenter, or an owner: `can-moderate`). */
+  stopPresenting(): Promise<void> {
+    return this.#timer((controls) => controls.stopPresenting());
+  }
+
+  /** "Bring everyone to me": everybody else's view jumps once to this one, without following. Editors and owners. */
+  summonEveryone(): Promise<void> {
+    return this.#timer((controls) => controls.summonEveryone());
+  }
+
   /** Starts a shared countdown of `durationMs` for everybody on the board; rejects on a read-only canvas or before it is up. */
   startTimer(durationMs: number): Promise<void> {
     return this.#timer((controls) => controls.startTimer(durationMs));
@@ -281,17 +338,20 @@ class ElysionCanvasElement extends HTMLElement {
         onLibraryChange={(open) => this.#emit('librarychange', { open })}
         onSelectionCount={(count) => this.#emit('selectioncount', { count })}
         onPresenceChange={(users) => this.#emit('presence', { users })}
+        onFollowChange={(state) => this.#emit('follow', state)}
         onTimerChange={(state: TimerState | null) => this.#emit('timer', { state })}
         onVotingChange={(session: VotingView | null) => this.#emit('voting', { session })}
         onCommentsChange={(summary) => this.#emit('comments', summary)}
         onError={(error) => this.#emit('error', { message: error.message })}
         onOfflineChange={(state) => this.#emit('offline', state)}
         onNotice={(message) => this.#emit('notice', { message })}
+        onOpenBoard={(board) => this.#emit('openboard', board)}
         onFileError={(error) => this.#emit('fileerror', { message: error.message })}
         onSynced={() => this.#emit('synced', {})}
         tokenProvider={this.#tokenProvider}
         fileStore={this.#fileStore}
         votingApi={this.#votingApi}
+        snapshotApi={this.#snapshotApi}
         mentionDirectory={this.#mentionDirectory}
         mentionSearch={this.#mentionSearch}
         canModerate={this.hasAttribute('can-moderate')}

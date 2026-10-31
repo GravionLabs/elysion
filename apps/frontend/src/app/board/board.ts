@@ -18,10 +18,11 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom, startWith, switchMap } from 'rxjs';
 import { Theme, ThemeService } from '../theme/theme.service';
 import { SyncStatus, TopBar } from '../topbar/top-bar';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AppBrand } from '../shared/app-brand';
 import { BoardApi, BoardLookup, BoardRole, isStoredBoardId } from './board-api';
 import { FilesApi } from './files-api';
+import { SnapshotApi } from './snapshot-api';
 import { VotingApi } from './voting-api';
 import { ThumbnailUploader } from './thumbnail-uploader';
 import { ShareDialog } from '../share/share-dialog';
@@ -35,7 +36,7 @@ import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader
 import { SessionService } from '../auth/session.service';
 import { LanguageService } from '../shared/language';
 import { PresenceStore } from './presence-store';
-import type { OfflineState, TimerState, VotingSession } from './canvas-element';
+import type { FollowState, OfflineState, TimerState, VotingSession } from './canvas-element';
 import { OFFLINE_BAR_AFTER_MS, OfflineBar } from './offline-bar';
 import { TEMPLATE_STATE_KEY, TemplateApi } from './template-api';
 
@@ -80,6 +81,8 @@ export class Board {
   readonly #api = inject(BoardApi);
   readonly #files = inject(FilesApi);
   readonly #votings = inject(VotingApi);
+  readonly #snapshots = inject(SnapshotApi);
+  readonly #router = inject(Router);
   readonly #members = inject(MembersApi);
   readonly #users = inject(UsersApi);
   readonly #thumbnails = inject(ThumbnailUploader);
@@ -116,6 +119,9 @@ export class Board {
 
   /** The board's shared timer from the canvas's `timer` event (ADR 0020), or `null`. */
   readonly timer = signal<TimerState | null>(null);
+
+  /** Whom this user follows and who presents, from the canvas's `follow` event (#848), or `null` before it said. */
+  readonly follow = signal<FollowState | null>(null);
 
   /** The board's current dot voting from the canvas's `voting` event (ADR 0029), or `null`. */
   readonly voting = signal<VotingSession | null>(null);
@@ -347,6 +353,8 @@ export class Board {
   protected readonly fileStore = this.#files.storeFor(() => this.boardId());
   /** The voting of this board on the server; the canvas votes through it (ADR 0029). */
   protected readonly votingApi = this.#votings.forBoard(() => this.boardId());
+  /** The versions of this board (the History panel of the canvas, ADR 0032). */
+  protected readonly snapshotApi = this.#snapshots.forBoard(() => this.boardId());
 
   /**
    * The people `@` offers in a comment (#733). Only an owner may list the members, so everybody else is offered the people who
@@ -492,6 +500,17 @@ export class Board {
 
   onVoting(event: Event): void {
     this.voting.set((event as CustomEvent<{ session: VotingSession | null }>).detail.session);
+  }
+
+  /** "Open as new board" in the History panel made a board (#847): go to it. */
+  onOpenBoard(event: Event): void {
+    const { path } = (event as CustomEvent<{ id: string; path: string }>).detail;
+    if (typeof path === 'string' && path.startsWith('/board/'))
+      void this.#router.navigateByUrl(path);
+  }
+
+  onFollow(event: Event): void {
+    this.follow.set((event as CustomEvent<FollowState>).detail);
   }
 
   onTimer(event: Event): void {

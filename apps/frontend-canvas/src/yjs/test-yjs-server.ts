@@ -6,7 +6,13 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
 import { WebSocketServer, type WebSocket as NodeWebSocket } from 'ws';
-import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC, MESSAGE_VOTING } from './protocol.js';
+import {
+  MESSAGE_AWARENESS,
+  MESSAGE_BOARD_FULL,
+  MESSAGE_RESTORED,
+  MESSAGE_SYNC,
+  MESSAGE_VOTING,
+} from './protocol.js';
 
 export interface TestYjsServer {
   url: string;
@@ -25,6 +31,8 @@ export interface TestYjsServer {
   sendBoardFull: () => void;
   /** Tells every client that the voting changed (message type 5): the JSON as a length-prefixed string, or as the rest of the message. */
   sendVoting: (payload: unknown, framing?: 'string' | 'rest') => void;
+  /** Tells every client that a person restored a version (message type 6): the JSON as a length-prefixed string. */
+  sendRestored: (payload: unknown) => void;
 }
 
 interface Room {
@@ -168,6 +176,12 @@ export function startTestYjsServer(): Promise<TestYjsServer> {
           const json = JSON.stringify(payload);
           if (framing === 'string') encoding.writeVarString(encoder, json);
           else encoding.writeUint8Array(encoder, new TextEncoder().encode(json));
+          for (const client of wss.clients) client.send(encoding.toUint8Array(encoder));
+        },
+        sendRestored: (payload) => {
+          const encoder = encoding.createEncoder();
+          encoding.writeVarUint(encoder, MESSAGE_RESTORED);
+          encoding.writeVarString(encoder, JSON.stringify(payload));
           for (const client of wss.clients) client.send(encoding.toUint8Array(encoder));
         },
         sendBoardFull: () => {

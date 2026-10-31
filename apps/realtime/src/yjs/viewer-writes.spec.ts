@@ -114,6 +114,54 @@ describe('viewerMayApply', () => {
     ).toBe(false);
   });
 
+  it('refuses a viewer to start, change, replace or end a presentation or a summon (#848)', () => {
+    const server = board();
+    const presenter = { userId: 'u1', startedAt: 1000 };
+    const summon = {
+      id: 's1',
+      userId: 'u1',
+      viewport: { x: 0, y: 0, width: 10, height: 10 },
+      at: 1,
+    };
+    const presenting = updateOf(server, (c) => c.getMap('session').set('presenter', presenter));
+    expect(viewerMayApply(server, presenting)).toBe(false);
+    expect(
+      viewerMayApply(
+        server,
+        updateOf(server, (c) => c.getMap('session').set('summon', summon)),
+      ),
+    ).toBe(false);
+
+    // The same holds once a presenter is stored: a viewer can neither end it nor take it over.
+    const live = board();
+    live.getMap('session').set('presenter', presenter);
+    expect(
+      viewerMayApply(
+        live,
+        updateOf(live, (c) => c.getMap('session').delete('presenter')),
+      ),
+    ).toBe(false);
+    expect(
+      viewerMayApply(
+        live,
+        updateOf(live, (c) =>
+          c.getMap('session').set('presenter', { userId: 'viewer', startedAt: 2000 }),
+        ),
+      ),
+    ).toBe(false);
+    // A comment next to a stored presenter is still fine.
+    expect(
+      viewerMayApply(
+        live,
+        updateOf(live, (c) => {
+          const thread = new Y.Map<unknown>();
+          thread.set('text', 'second');
+          comments(c).set('t2', thread);
+        }),
+      ),
+    ).toBe(true);
+  });
+
   it('refuses a change to the timer, to another key of session or to another root type', () => {
     const server = board();
     expect(

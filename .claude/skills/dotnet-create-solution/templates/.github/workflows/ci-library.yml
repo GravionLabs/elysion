@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      verbosity:
+        description: 'dotnet build verbosity level'
+        required: false
+        default: 'minimal'
+        type: choice
+        options:
+          - quiet
+          - minimal
+          - normal
+          - detailed
+          - diagnostic
+      force-publish:
+        description: 'Force package publication'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  wiki:
+    name: Wiki
+    if: github.ref == 'refs/heads/main'
+    uses: GravionLabs/ci/.github/workflows/sync-wiki.yml@main
+    permissions:
+      contents: write
+
+  # Build, test, pack, verify and (on main) publish the NuGet package.
+  # Versioning is handled internally by the reusable workflow via GitVersion.
+  # The publish step only runs on refs/heads/main, so PRs build and test but never publish.
+  package:
+    name: Package
+    permissions:
+      contents: write
+      packages: write
+      checks: write
+      pull-requests: write
+    uses: GravionLabs/ci/.github/workflows/nuget-package.yml@main
+    with:
+      gitversion-config-file: GitVersion.yml
+      publish-feed-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+      verbosity: ${{ github.event.inputs.verbosity || 'minimal' }}
+      force-publish: ${{ github.event.inputs.force-publish == 'true' }}
+      # List all expected files in the NuGet package (update <ProjectName> and target frameworks):
+      verify-package-files: |
+        lib/net8.0/<ProjectName>.dll
+        lib/net9.0/<ProjectName>.dll
+        lib/net10.0/<ProjectName>.dll
+        lib/net8.0/<ProjectName>.xml
+        lib/net9.0/<ProjectName>.xml
+        lib/net10.0/<ProjectName>.xml
+        README.md
+      cliff-config: cliff.toml
+      update-changelog: true
+    secrets:
+      publish-api-key: ${{ secrets.GITHUB_TOKEN }}

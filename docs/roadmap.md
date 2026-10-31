@@ -89,7 +89,7 @@ with a decision):
 
 ## What is next
 
-- **Agent skills per project** (#824): `apm install` before working, the skill folders are not committed.
+- **Agent skills per project** (#824): installed with `npx skills` (`/skills-install`) and committed.
 - **Checks by hand that CI cannot do:** a screen reader pass ([#739](https://github.com/GravionLabs/elysion/issues/739)), a real Entra
   tenant (the stand-in does not show Entra's own claim shapes), the Helm chart on a managed cluster, and the weekly load workflow.
 - **Known limit:** the votes of one person can exceed their limit by one when two requests arrive at the same moment

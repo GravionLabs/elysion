@@ -38,6 +38,12 @@ public static class AuditActions
     /// </summary>
     public const string OwnerTransferred = "owner.transferred";
 
+    /// <summary>A snapshot (a version) of a board was deleted by an owner (ADR 0032); details: <c>snapshotId</c>, <c>kind</c>.</summary>
+    public const string SnapshotDeleted = "snapshot.deleted";
+
+    /// <summary>A board was restored to a snapshot (#847); details: <c>snapshotId</c>.</summary>
+    public const string SnapshotRestored = "snapshot.restored";
+
     public const string InvitationCreated = "invitation.created";
     public const string InvitationRevoked = "invitation.revoked";
     public const string InvitationAccepted = "invitation.accepted";

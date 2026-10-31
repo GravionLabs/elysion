@@ -7,6 +7,7 @@ using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Snapshots;
 using Elysion.BusinessBackend.Api.Voting;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -48,6 +49,12 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     /// <summary>What the voting endpoints told the realtime service, in order; nothing is sent anywhere.</summary>
     public RecordingVotingNotifier Notifications { get; } = new();
+
+    /// <summary>The boards "Save version" asked the realtime service to save; nothing is sent anywhere.</summary>
+    public RecordingRealtimeBoardSaver RealtimeSaves { get; } = new();
+
+    /// <summary>The restores the endpoints asked the realtime service for; nothing is sent anywhere.</summary>
+    public RecordingRealtimeBoardRestorer RealtimeRestores { get; } = new();
 
     private readonly string _databaseName = Guid.NewGuid().ToString();
     private readonly TimeProvider? _time;
@@ -172,6 +179,12 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IVotingNotifier>();
             services.AddSingleton<IVotingNotifier>(Notifications);
 
+            services.RemoveAll<IRealtimeBoardSaver>();
+            services.AddSingleton<IRealtimeBoardSaver>(RealtimeSaves);
+
+            services.RemoveAll<IRealtimeBoardRestorer>();
+            services.AddSingleton<IRealtimeBoardRestorer>(RealtimeRestores);
+
             services.RemoveAll<IFileStore>();
             services.AddSingleton<IFileStore>(Files);
 
@@ -200,5 +213,53 @@ public sealed class RecordingVotingNotifier : IVotingNotifier
         }
 
         return Task.CompletedTask;
+    }
+}
+
+/// <summary>Remembers the restores that were asked for and answers with <see cref="Answer"/>.</summary>
+public sealed class RecordingRealtimeBoardRestorer : IRealtimeBoardRestorer
+{
+    public List<(Guid BoardId, Guid SnapshotId, string By, DateTimeOffset At)> Asked { get; } = [];
+
+    public RealtimeRestoreStatus Answer { get; set; } = RealtimeRestoreStatus.Restored;
+
+    public Task<RealtimeRestoreStatus> RestoreAsync(Guid boardId,
+        Guid snapshotId,
+        string by,
+        DateTimeOffset at,
+        CancellationToken cancellationToken)
+    {
+        lock (Asked)
+        {
+            Asked.Add((boardId, snapshotId, by, at));
+        }
+
+        return Task.FromResult(Answer);
+    }
+}
+
+/// <summary>Remembers which boards were asked to save; <see cref="OnSave"/> stands in for what the realtime service stores meanwhile.</summary>
+public sealed class RecordingRealtimeBoardSaver : IRealtimeBoardSaver
+{
+    public List<Guid> Asked { get; } = [];
+
+    public Func<Guid, Task>? OnSave { get; set; }
+
+    /// <summary>What the call answers; the default is a success.</summary>
+    public RealtimeSaveResult Answer { get; set; } = RealtimeSaveResult.Saved;
+
+    public async Task<RealtimeSaveResult> SaveNowAsync(Guid boardId, CancellationToken cancellationToken)
+    {
+        lock (Asked)
+        {
+            Asked.Add(boardId);
+        }
+
+        if (OnSave is not null)
+        {
+            await OnSave(boardId);
+        }
+
+        return Answer;
     }
 }

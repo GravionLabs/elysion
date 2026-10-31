@@ -463,6 +463,22 @@ describe('YjsWebsocketClient', () => {
       client.destroy();
     });
 
+    it('hands a restored message (type 6) to the host as parsed JSON', async () => {
+      const payloads: unknown[] = [];
+      const client = new YjsWebsocketClient(`${server.url}?board=g6-restored`, new Y.Doc(), {
+        ...options,
+        onRestored: (payload) => payloads.push(payload),
+      });
+      await waitUntil(() => server.connectionUrls().length === 1);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      server.sendRestored({ by: 'Ada', at: '2026-10-31T10:00:00Z', snapshotId: 's1' });
+      await waitUntil(() => payloads.length === 1);
+
+      expect(payloads).toEqual([{ by: 'Ada', at: '2026-10-31T10:00:00Z', snapshotId: 's1' }]);
+      client.destroy();
+    });
+
     it.each(['string', 'rest'] as const)(
       'hands a voting message (type 5, payload %s-framed) to the host as parsed JSON',
       async (framing) => {

@@ -1,0 +1,30 @@
+<button
+  type="button"
+  class="menu-button"
+  [class.active]="active()"
+  aria-haspopup="menu"
+  [attr.aria-expanded]="open()"
+  title="Present to the board"
+  i18n-title="@@topbar.present.button-title"
+  (click)="toggle()"
+>
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M3 4h18v12H3zM12 16v4M8 20h8M10 8l5 2-5 2z" />
+  </svg>
+  <span i18n="@@topbar.present.button">Present</span>
+</button>
+
+@if (open()) {
+  <div class="menu" role="menu" aria-label="Present" i18n-aria-label="@@topbar.present.menu">
+    <button type="button" class="menu-item" role="menuitem" (click)="togglePresenting()">
+      @if (presenting()) {
+        <ng-container i18n="@@topbar.present.stop">Stop presenting</ng-container>
+      } @else {
+        <ng-container i18n="@@topbar.present.start">Start presenting</ng-container>
+      }
+    </button>
+    <button type="button" class="menu-item" role="menuitem" (click)="summon()">
+      <ng-container i18n="@@topbar.present.summon">Bring everyone to me</ng-container>
+    </button>
+  </div>
+}

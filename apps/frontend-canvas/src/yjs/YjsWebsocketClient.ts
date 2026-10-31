@@ -3,7 +3,13 @@ import * as encoding from 'lib0/encoding';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
-import { MESSAGE_AWARENESS, MESSAGE_BOARD_FULL, MESSAGE_SYNC, MESSAGE_VOTING } from './protocol.js';
+import {
+  MESSAGE_AWARENESS,
+  MESSAGE_BOARD_FULL,
+  MESSAGE_RESTORED,
+  MESSAGE_SYNC,
+  MESSAGE_VOTING,
+} from './protocol.js';
 
 /** The longest wait between attempts to get a token. */
 const MAX_BACKOFF_MS = 30_000;
@@ -81,6 +87,8 @@ export interface YjsWebsocketClientOptions {
   onSynced?: () => void;
   /** The realtime service announced a change of the board's voting (message type 5): the parsed JSON payload (ADR 0029). */
   onVoting?: (payload: unknown) => void;
+  /** A person restored a version of the board (message type 6, ADR 0032): the parsed JSON `{ by, at, snapshotId }`. */
+  onRestored?: (payload: unknown) => void;
   /**
    * The document was rebuilt while this client was away (close code 4409, ADR 0026): this client's `Y.Doc` must not be
    * merged into the new one. The client does not reconnect; the host throws the document away, makes a new client and
@@ -315,6 +323,11 @@ export class YjsWebsocketClient {
     if (messageType === MESSAGE_VOTING) {
       const payload = readVotingPayload(decoder);
       if (payload !== undefined) this.#options.onVoting?.(payload);
+      return;
+    }
+    if (messageType === MESSAGE_RESTORED) {
+      const payload = readVotingPayload(decoder);
+      if (payload !== undefined) this.#options.onRestored?.(payload);
       return;
     }
     if (messageType === MESSAGE_BOARD_FULL) {

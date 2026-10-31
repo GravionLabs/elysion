@@ -22,7 +22,7 @@ Milestone 0.5.0 (formerly M16). `release/next` is cut from `main` at `3add5dc`.
 
 | Order | Issue | Title                                                                  | Depends on / decision |
 | ----- | ----- | ---------------------------------------------------------------------- | --------------------- |
-| 1     | #871  | move from apm-hub to GravionLabs/skills                                | — (supersedes #824)   |
+| 1     | #871  | move to GravionLabs/skills                                             | — (supersedes #824)   |
 | 2     | #845  | decide how board snapshots are stored and restored                     | decision, ADR first   |
 | 2     | #848  | follow a person and present to the board                               | —                     |
 | 2     | #850  | decide the public API, its access tokens and webhooks                  | decision, ADR first   |

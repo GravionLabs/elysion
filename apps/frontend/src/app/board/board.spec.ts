@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
 import { By, Title } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { TopBar } from '../topbar/top-bar';
 import { ShareDialog } from '../share/share-dialog';
 import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
@@ -691,6 +691,26 @@ describe('Board', () => {
     );
   });
 
+  it('goes to the board that "Open as new board" made (#847)', () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const el: HTMLElement = fixture.nativeElement.querySelector('elysion-canvas');
+
+    el.dispatchEvent(new CustomEvent('openboard', { detail: { id: 'n1', path: '/board/n1' } }));
+
+    expect(navigate).toHaveBeenCalledWith('/board/n1');
+  });
+
+  it('does not follow a path that is not a board', () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const el: HTMLElement = fixture.nativeElement.querySelector('elysion-canvas');
+
+    el.dispatchEvent(
+      new CustomEvent('openboard', { detail: { id: 'x', path: 'https://evil.example' } }),
+    );
+
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('moves to error status when the canvas script fails to load', async () => {
     loader.load = vi.fn().mockRejectedValue(new Error('network error'));
     const failingFixture = TestBed.createComponent(Board);
@@ -725,6 +745,76 @@ describe('Board', () => {
       await fixture.whenStable();
 
       expect(avatars()).toHaveLength(0);
+    });
+  });
+
+  describe('following and presenting (#848)', () => {
+    type FollowCanvas = HTMLElement & {
+      follow?: ReturnType<typeof vi.fn>;
+      startPresenting?: ReturnType<typeof vi.fn>;
+      stopPresenting?: ReturnType<typeof vi.fn>;
+      summonEveryone?: ReturnType<typeof vi.fn>;
+    };
+    const canvas = () => fixture.nativeElement.querySelector('elysion-canvas') as FollowCanvas;
+    const bar = () => fixture.nativeElement.querySelector('app-top-bar') as HTMLElement;
+    const present = (users: unknown) =>
+      canvas().dispatchEvent(new CustomEvent('presence', { detail: { users } }));
+
+    it('follows the person whose avatar was clicked, through the canvas', async () => {
+      fixture.detectChanges();
+      canvas().follow = vi.fn().mockResolvedValue(undefined);
+      present([{ id: 'ada', name: 'Ada Lovelace', color: '#14b8a6' }]);
+      await fixture.whenStable();
+
+      (bar().querySelector('.presence button.avatar') as HTMLButtonElement).click();
+
+      expect(canvas().follow).toHaveBeenCalledWith('ada');
+    });
+
+    it("shows the canvas's refusal in the banner", async () => {
+      fixture.detectChanges();
+      canvas().follow = vi.fn().mockRejectedValue(new Error('That person is not on the board.'));
+      present([{ id: 'ada', name: 'Ada Lovelace', color: '#14b8a6' }]);
+      await fixture.whenStable();
+
+      (bar().querySelector('.presence button.avatar') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      expect(component.notice()).toBe('That person is not on the board.');
+    });
+
+    it('presents, ends and brings everyone through the canvas from the Present menu', async () => {
+      fixture.detectChanges();
+      Object.assign(canvas(), {
+        startPresenting: vi.fn().mockResolvedValue(undefined),
+        stopPresenting: vi.fn().mockResolvedValue(undefined),
+        summonEveryone: vi.fn().mockResolvedValue(undefined),
+      });
+      const click = async (label: string) => {
+        (bar().querySelector('app-present-menu button') as HTMLButtonElement).click();
+        fixture.detectChanges();
+        const items = [...bar().querySelectorAll('app-present-menu [role="menuitem"]')];
+        (items.find((i) => i.textContent?.includes(label)) as HTMLButtonElement).click();
+        await fixture.whenStable();
+      };
+
+      await click('Start presenting');
+      await click('Bring everyone to me');
+      canvas().dispatchEvent(
+        new CustomEvent('follow', {
+          detail: {
+            following: null,
+            presenter: { id: 'kc-1', name: 'Ada', color: '#14b8a6', me: true },
+            steppedOut: false,
+          },
+        }),
+      );
+      fixture.detectChanges();
+      await click('Stop presenting');
+
+      expect(canvas().startPresenting).toHaveBeenCalledTimes(1);
+      expect(canvas().summonEveryone).toHaveBeenCalledTimes(1);
+      expect(canvas().stopPresenting).toHaveBeenCalledTimes(1);
     });
   });
 

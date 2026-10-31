@@ -10,7 +10,8 @@ import { DocumentRejectedError, DocumentStore } from '../persistence/document-st
 import { PresenceRelay } from '../presence/presence-relay.js';
 import { type BoardRole, WS_CLOSE_FORBIDDEN } from '@elysion/shared-types';
 import { SaveMetrics } from '../metrics/save-metrics.js';
-import { MESSAGE_SYNC } from './protocol.js';
+import { MESSAGE_RESTORED, MESSAGE_SYNC } from './protocol.js';
+import { type RestoreResult, restoreSnapshot } from './restore.js';
 import { encodeVotingMessage } from '../voting/voting-broadcast.js';
 import { rebuildDocument } from './compaction.js';
 
@@ -77,6 +78,9 @@ const RELAY_ORIGIN = 'document-relay';
 /** Origin of updates merged in from the store; they are broadcast to clients but not saved again by themselves. */
 const STORE_ORIGIN = 'document-store';
 
+/** The origin of the update a restore makes: it goes to every client and is relayed and saved like an edit. */
+const RESTORE_ORIGIN = 'snapshot-restore';
+
 /** What the registry tracks per room to keep the stored document up to date. */
 interface SaveState {
   /** The stored version the next save is based on; `null` while the board has no stored document. */
@@ -84,7 +88,7 @@ interface SaveState {
   dirty: boolean;
   firstDirtyAt: number | null;
   timer: NodeJS.Timeout | null;
-  saving: Promise<void> | null;
+  saving: Promise<boolean> | null;
   failures: number;
   evictionTimer: NodeJS.Timeout | null;
   /** Bumped whenever someone asks for the room, so an eviction that was already under way notices and stops. */
@@ -178,6 +182,16 @@ export class YjsRoomRegistry implements OnModuleDestroy {
       connections += room.clients.size;
     }
     return { rooms: this.rooms.size, connections };
+  }
+
+  /**
+   * Stores the board's open state now (the backend asks before it keeps a version, ADR 0032). Resolves when the save is
+   * done; does nothing when the board is not open on this instance or has no unsaved changes. A failed save is retried
+   * as always and does not reject.
+   */
+  async saveNow(boardId: string): Promise<boolean> {
+    const room = this.rooms.get(boardId);
+    return room ? await this.save(room) : true;
   }
 
   /** Saves the room now if it has unsaved changes (used when its last client leaves). */
@@ -403,6 +417,9 @@ export class YjsRoomRegistry implements OnModuleDestroy {
         case 'voting':
           this.sendVotingToClients(room, message.data);
           break;
+        case 'restored':
+          this.sendRestoredToClients(room, message.data);
+          break;
         case 'reset': {
           // Another instance rebuilt the document: an idle copy here is out of date and must not be saved over it.
           const state = this.saves.get(room.boardId);
@@ -430,6 +447,40 @@ export class YjsRoomRegistry implements OnModuleDestroy {
       this.sendVotingToClients(room, data);
     }
     await this.relay.publish(boardId, { type: 'voting', data });
+  }
+
+  /**
+   * Restores a version onto the board (ADR 0032): loads the board when nobody has it open, merges the version forward as one
+   * update (clients on every instance see it like any edit), stores the result and tells the clients who did it. `json`
+   * is the validated announcement. Resolves with what changed.
+   */
+  async restoreSnapshot(
+    boardId: string,
+    snapshotState: Uint8Array,
+    json: string,
+  ): Promise<RestoreResult> {
+    const room = await this.getOrLoad(boardId);
+    try {
+      const result = restoreSnapshot(room.doc, snapshotState, RESTORE_ORIGIN);
+      // Stored before the person is told, and a board nobody has open goes to the store now.
+      await this.save(room);
+      const data = new TextEncoder().encode(json);
+      this.sendRestoredToClients(room, data);
+      await this.relay.publish(boardId, { type: 'restored', data });
+      return result;
+    } finally {
+      if (room.clients.size === 0) this.scheduleEviction(room);
+    }
+  }
+
+  private sendRestoredToClients(room: YjsRoom, data: Uint8Array): void {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, MESSAGE_RESTORED);
+    encoding.writeVarString(encoder, new TextDecoder().decode(data));
+    const message = encoding.toUint8Array(encoder);
+    for (const client of room.clients) {
+      if (client.readyState === client.OPEN) client.send(message);
+    }
   }
 
   private sendVotingToClients(room: YjsRoom, data: Uint8Array): void {
@@ -555,16 +606,16 @@ export class YjsRoomRegistry implements OnModuleDestroy {
   }
 
   /** Saves the room's state if it changed since the last save; waits for a save already running first. */
-  private async save(room: YjsRoom): Promise<void> {
+  private async save(room: YjsRoom): Promise<boolean> {
     const state = this.saves.get(room.boardId);
     if (!state) {
-      return;
+      return true;
     }
     while (state.saving) {
       await state.saving;
     }
     if (!state.dirty) {
-      return;
+      return true;
     }
 
     if (state.timer) clearTimeout(state.timer);
@@ -573,13 +624,15 @@ export class YjsRoomRegistry implements OnModuleDestroy {
     state.firstDirtyAt = null;
     // A save runs from a timer, outside any connection: it takes the context of the connection that made the change.
     const write = () => this.writeToStore(room, state);
-    state.saving = (state.connection ? runInConnection(state.connection, write) : write()).finally(
+    const saving = (state.connection ? runInConnection(state.connection, write) : write()).finally(
       () => (state.saving = null),
     );
-    await state.saving;
+    state.saving = saving;
+    return await saving;
   }
 
-  private async writeToStore(room: YjsRoom, state: SaveState): Promise<void> {
+  /** True when the state is stored, false when the attempt failed (a retry is scheduled, or the room was given up). */
+  private async writeToStore(room: YjsRoom, state: SaveState): Promise<boolean> {
     const endTimer = this.metrics?.startSave();
     try {
       for (;;) {
@@ -591,7 +644,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
           room.sizeBytes = encoded.byteLength;
           state.version = result.version;
           state.failures = 0;
-          return;
+          return true;
         }
         // Another instance saved first. Yjs merges are lossless: take its state in, then save the union.
         Y.applyUpdate(room.doc, result.current.state, STORE_ORIGIN);
@@ -607,7 +660,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
           `Saving board ${room.boardId} was refused (${error.status}), giving up: ${error.message}`,
         );
         this.giveUp(room, state, 'The board no longer exists or cannot be stored');
-        return;
+        return false;
       }
       if (room.clients.size === 0 && state.failures >= this.options.maxFailuresWithoutClients) {
         // Nobody has the board open and the store has been failing for a long time: stop holding it in memory for ever.
@@ -615,7 +668,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
           `Saving board ${room.boardId} failed ${state.failures} times and nobody is connected, dropping its unsaved state: ${String(error)}`,
         );
         this.giveUp(room, state, 'The board could not be stored');
-        return;
+        return false;
       }
       state.dirty = true;
       const delay = Math.min(
@@ -626,6 +679,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
         `Saving board ${room.boardId} failed (attempt ${state.failures}), retrying in ${delay} ms: ${String(error)}`,
       );
       this.schedule(room, state, delay);
+      return false;
     }
   }
 

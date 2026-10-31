@@ -12,7 +12,7 @@ import type {
   ExcalidrawFrameLikeElement,
   NonDeletedExcalidrawElement,
 } from '@excalidraw/excalidraw/element/types';
-import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
+import type { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { VIEW_BACKGROUND_COLOR } from './element-style';
 import { framesInOrder, type ExportOptions } from './export-options';
 import { recolor, sceneToStored, storedToScene } from './sticky-dark';
@@ -44,18 +44,29 @@ export function fitInto(
  * board's color (whatever the screen shows), or `null` for an empty board. The grid is not in it: the canvas does not draw it.
  */
 export async function exportThumbnail(api: ExcalidrawImperativeAPI): Promise<Blob | null> {
-  const scene = api.getSceneElements();
-  if (scene.length === 0) return null;
+  return thumbnailOf(api.getSceneElements(), api.getAppState(), api.getFiles());
+}
+
+/**
+ * The thumbnail of some elements (the scene, or a stored version of the board, #846): the same picture whatever the source.
+ * `elements` are in their stored colors; deleted ones are not drawn.
+ */
+export async function thumbnailOf(
+  elements: readonly NonDeletedExcalidrawElement[],
+  appState: Partial<AppState>,
+  files: BinaryFiles,
+): Promise<Blob | null> {
+  if (elements.length === 0) return null;
   const rendered = await exportToCanvas({
-    elements: colorsForExport(scene, false),
+    elements: colorsForExport(elements, false),
     appState: {
-      ...api.getAppState(),
+      ...appState,
       viewBackgroundColor: VIEW_BACKGROUND_COLOR,
       exportBackground: false,
       exportWithDarkMode: false,
       exportScale: 1,
     },
-    files: api.getFiles(),
+    files,
     maxWidthOrHeight: THUMBNAIL_WIDTH * 2, // sharp enough to be scaled down
     exportPadding: 12,
   });

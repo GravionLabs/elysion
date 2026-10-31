@@ -70,7 +70,7 @@ export interface PresentUser {
 }
 
 /**
- * The other clients with a valid identity (the same rules as `toCollaborators`), ordered by name and id so
+ * The other people with a valid identity (the same rules as `toCollaborators`, but one entry per person id), ordered by name and id so
  * the list only changes when somebody comes or goes or renames, not when somebody moves the pointer.
  */
 export function presentUsers(
@@ -78,11 +78,15 @@ export function presentUsers(
   localClientId: number,
 ): PresentUser[] {
   const users: PresentUser[] = [];
+  const own = (states.get(localClientId) as Partial<PresenceState> | null | undefined)?.user;
+  const seen = new Set<string>(isIdentity(own) ? [own.id] : []);
   for (const [clientId, raw] of states) {
     const user = (raw as Partial<PresenceState> | null)?.user;
-    if (clientId === localClientId || !isIdentity(user)) {
+    // Several tabs of one person are one person; the person themself (another tab of them) is not "another" one.
+    if (clientId === localClientId || !isIdentity(user) || seen.has(user.id)) {
       continue;
     }
+    seen.add(user.id);
     users.push({
       id: user.id,
       name: user.name.slice(0, MAX_NAME_LENGTH),

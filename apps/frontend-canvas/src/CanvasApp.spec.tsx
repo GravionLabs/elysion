@@ -292,6 +292,133 @@ describe('the canvas menu', () => {
     await waitFor(async () => expect(await live()).toBe(1));
   });
 
+  describe('the history (#846)', () => {
+    const snapshotApi = () => ({
+      list: vi.fn(async () => []),
+      create: vi.fn(),
+      rename: vi.fn(),
+      remove: vi.fn(),
+      document: vi.fn(),
+      restore: vi.fn(),
+      openAsNew: vi.fn(),
+    });
+
+    it('opens from the canvas menu and closes with its close button', async () => {
+      const api = snapshotApi();
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={api} />);
+      await excalidrawReady(container);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Canvas menu' }));
+      expect(screen.getByRole('menuitem', { name: /History/ }).textContent).toContain('Alt+H');
+      fireEvent.click(screen.getByRole('menuitem', { name: /History/ }));
+
+      expect(await screen.findByRole('complementary', { name: 'History' })).toBeTruthy();
+      expect(api.list).toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'Close the history' }));
+      expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
+    });
+
+    it('opens and closes with Alt+H, also on a Mac where Option+H types another character', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi()} />);
+      await excalidrawReady(container);
+
+      fireEvent.keyDown(document.body, { key: '˙', code: 'KeyH', altKey: true });
+      expect(await screen.findByRole('complementary', { name: 'History' })).toBeTruthy();
+
+      fireEvent.keyDown(document.body, { key: '˙', code: 'KeyH', altKey: true });
+      expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
+    });
+
+    it('opens with Alt+H while the focus is on the canvas, after drawing, where Excalidraw handles the keys first', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi()} />);
+      await excalidrawReady(container);
+
+      // A shape just drawn leaves the focus on Excalidraw's container, whose own key handler stops the key from bubbling.
+      fireEvent.keyDown(container.querySelector('.excalidraw') as HTMLElement, {
+        key: 'h',
+        code: 'KeyH',
+        altKey: true,
+      });
+
+      expect(await screen.findByRole('complementary', { name: 'History' })).toBeTruthy();
+    });
+
+    it('ignores H without Alt, Alt+Ctrl+H, and a key typed into another field', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi()} />);
+      await excalidrawReady(container);
+      const outside = document.createElement('input');
+      document.body.append(outside);
+
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH' });
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true, ctrlKey: true });
+      fireEvent.keyDown(outside, { key: 'h', code: 'KeyH', altKey: true });
+
+      expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
+      outside.remove();
+    });
+
+    it("ignores Alt+H typed into the History panel's own name field, and during an IME composition", async () => {
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi()} />);
+      await excalidrawReady(container);
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true });
+      await screen.findByRole('complementary', { name: 'History' });
+      fireEvent.click(screen.getByRole('button', { name: 'Save version' }));
+      const name = screen.getByLabelText('Version name (optional)');
+
+      const typed = fireEvent.keyDown(name, { key: '˙', code: 'KeyH', altKey: true });
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true, isComposing: true });
+
+      expect(typed).toBe(true); // not prevented: the character reaches the field
+      expect(screen.getByRole('complementary', { name: 'History' })).toBeTruthy();
+      expect(screen.getByLabelText('Version name (optional)')).toBeTruthy();
+    });
+
+    it('ignores Alt+H typed into a text being edited on the canvas', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" snapshotApi={snapshotApi()} />);
+      await excalidrawReady(container);
+      // A click with the text tool opens Excalidraw's text editor.
+      const at = { clientX: 200, clientY: 200, pointerId: 1, pointerType: 'mouse', button: 0 };
+      const canvas = container.querySelector('canvas.interactive') as Element;
+      fireEvent.click(screen.getByRole('button', { name: 'Text' }));
+      fireEvent.pointerDown(canvas, { ...at, buttons: 1 });
+      fireEvent.pointerUp(canvas, { ...at, buttons: 0 });
+      await waitFor(() =>
+        expect(container.querySelector('textarea.excalidraw-wysiwyg')).toBeTruthy(),
+      );
+      const editor = container.querySelector('textarea.excalidraw-wysiwyg') as HTMLElement;
+
+      const typed = fireEvent.keyDown(editor, { key: '˙', code: 'KeyH', altKey: true });
+
+      expect(typed).toBe(true);
+      expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
+      fireEvent.keyDown(editor, { key: 'Escape' });
+    });
+
+    it('is unavailable without a snapshotApi: the menu item is disabled and Alt+H does nothing', async () => {
+      const { container } = render(<CanvasApp boardId="test-board" />);
+      await excalidrawReady(container);
+
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true });
+      expect(screen.queryByRole('complementary', { name: 'History' })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Canvas menu' }));
+      expect(screen.getByRole('menuitem', { name: /History/ }).getAttribute('aria-disabled')).toBe(
+        'true',
+      );
+    });
+
+    it('gives a viewer the list without Save version', async () => {
+      const { container } = render(
+        <CanvasApp boardId="test-board" readOnly snapshotApi={snapshotApi()} />,
+      );
+      await excalidrawReady(container);
+
+      fireEvent.keyDown(document.body, { key: 'h', code: 'KeyH', altKey: true });
+
+      expect(await screen.findByRole('complementary', { name: 'History' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    });
+  });
+
   it('gives a viewer Help but no Clear canvas', async () => {
     const { container } = render(<CanvasApp boardId="test-board" readOnly />);
     await excalidrawReady(container);

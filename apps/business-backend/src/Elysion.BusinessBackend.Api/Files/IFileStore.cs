@@ -20,6 +20,12 @@ public interface IFileStore
     /// <summary>How many objects have a key that starts with <paramref name="prefix"/>.</summary>
     Task<int> CountAsync(string prefix, CancellationToken cancellationToken);
 
+    /// <summary>The keys of the objects whose key starts with <paramref name="prefix"/>.</summary>
+    Task<IReadOnlyList<string>> ListAsync(string prefix, CancellationToken cancellationToken);
+
+    /// <summary>Removes one object; no error when there is none.</summary>
+    Task DeleteAsync(string key, CancellationToken cancellationToken);
+
     Task DeletePrefixAsync(string prefix, CancellationToken cancellationToken);
 
     /// <summary>Copies every object under <paramref name="sourcePrefix"/> to the same name under <paramref name="targetPrefix"/>.</summary>

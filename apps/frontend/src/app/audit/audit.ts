@@ -71,6 +71,10 @@ export function describeAuditEntry(entry: AuditEntry): string {
       return $localize`:@@audit.invitation.revoked:${actor}:actor: revoked an invitation link`;
     case 'invitation.accepted':
       return $localize`:@@audit.invitation.accepted:${actor}:actor: joined with an invitation link as ${role}:role:`;
+    case 'snapshot.deleted':
+      return $localize`:@@audit.snapshot.deleted:${actor}:actor: deleted a saved version of the board`;
+    case 'snapshot.restored':
+      return $localize`:@@audit.snapshot.restored:${actor}:actor: restored a version of the board`;
     default:
       return `${actor}: ${entry.action}`;
   }

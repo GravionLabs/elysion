@@ -154,8 +154,7 @@ The repository is a pnpm workspace (`apps/*`, `packages/*`); the root scripts ru
 
 ## Agent skills
 
-Run `apm install` in the repo root before working with an AI agent here. The stack skills (.NET, Angular, TypeScript) are declared in `apm.yml` and deployed to the git-ignored `.agents/skills/` and `.claude/skills/`, so a fresh clone has none until you run it.
-It needs [apm](https://github.com/microsoft/apm).
+The agent skills (.NET, Angular, TypeScript plus the `core` preset) come from [GravionLabs/skills](https://github.com/GravionLabs/skills) and are committed: `skills-lock.json`, `.agents/skills/` and `.claude/skills/`, so a fresh clone has them. Update with `npx skills check` and `npx skills update`; change the set with `/skills-install`.
 
 ## Pre-commit hook
 

@@ -126,6 +126,15 @@
       (clearRequested)="votingClear.emit()"
       (elementRequested)="votingFocus.emit($event)"
     />
+    @if (!readOnly()) {
+      <app-present-menu
+        [presenting]="canStopPresenting()"
+        [active]="followState()?.presenter != null"
+        (startRequested)="presentStart.emit()"
+        (stopRequested)="presentStop.emit()"
+        (summonRequested)="presentSummon.emit()"
+      />
+    }
   </div>
 
   <div class="topbar-end">
@@ -148,10 +157,24 @@
     @if (users().length > 0) {
       <ul class="presence" [attr.aria-label]="presenceLabel()" [title]="presenceLabel()">
         @for (user of visibleUsers(); track user.id) {
-          <li class="avatar" [style.background-color]="user.color">{{ initialsOf(user.name) }}</li>
+          <li>
+            <button
+              type="button"
+              class="avatar"
+              [style.background-color]="user.color"
+              [attr.aria-label]="followLabel(user.name)"
+              [attr.aria-pressed]="isFollowed(user.id)"
+              [title]="followLabel(user.name)"
+              (click)="followRequested.emit(user.id)"
+            >
+              {{ initialsOf(user.name) }}
+            </button>
+          </li>
         }
         @if (hiddenUsers() > 0) {
-          <li class="avatar more">+{{ hiddenUsers() }}</li>
+          <li>
+            <span class="avatar more">+{{ hiddenUsers() }}</span>
+          </li>
         }
       </ul>
     }

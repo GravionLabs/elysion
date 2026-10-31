@@ -98,6 +98,12 @@ public sealed partial class S3FileStore : IFileStore, IDisposable
     public async Task<int> CountAsync(string prefix, CancellationToken cancellationToken) =>
         (await ListAsync(prefix, cancellationToken)).Count;
 
+    async Task<IReadOnlyList<string>> IFileStore.ListAsync(string prefix, CancellationToken cancellationToken) =>
+        await ListAsync(prefix, cancellationToken);
+
+    public Task DeleteAsync(string key, CancellationToken cancellationToken) =>
+        _s3.DeleteObjectAsync(_bucket, key, cancellationToken);
+
     public async Task DeletePrefixAsync(string prefix, CancellationToken cancellationToken)
     {
         var keys = await ListAsync(prefix, cancellationToken);
