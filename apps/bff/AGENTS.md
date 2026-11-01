@@ -25,7 +25,7 @@ pnpm --filter @elysion/bff test:e2e     # vitest (e2e, against a fake business b
 
 ## Board endpoints
 
-`src/boards/`: `BusinessBackendClient` (Node's built-in `fetch`, no HTTP library) maps the business backend's answers to the BFF's errors, `BoardsController` serves `/api/boards`. The backend URL comes from `BUSINESS_BACKEND_URL` (default `http://localhost:5174`). The e2e tests start `test/fake-business-backend.ts`, a small in-memory copy of the Board API with the same routes and status codes, so keep it in step with `BoardsController` in the business backend. `tsc -p tsconfig.json` reports a pre-existing error for `supertest/types` in `test/app.e2e-spec.ts`; the build config (`tsconfig.build.json`) excludes the tests.
+`src/boards/`: `BusinessBackendClient` (Node's built-in `fetch`, no HTTP library) maps the business backend's answers to the BFF's errors, `BoardsController` serves `/api/boards`. The backend URL comes from `BUSINESS_BACKEND_URL` (default `http://localhost:5174`). On the host the BFF listens on `PORT` (3000) and finds Keycloak at `OIDC_ISSUER_URL` (8081); for a second dev stack (`ELYSION_PORT_OFFSET`, AGENTS.md) `pnpm setup:env` writes the moved ports into a new `.env` (`scripts/dev-stack-config.mjs`). The e2e tests start `test/fake-business-backend.ts`, a small in-memory copy of the Board API with the same routes and status codes, so keep it in step with `BoardsController` in the business backend. `tsc -p tsconfig.json` reports a pre-existing error for `supertest/types` in `test/app.e2e-spec.ts`; the build config (`tsconfig.build.json`) excludes the tests.
 
 ## Authentication
 

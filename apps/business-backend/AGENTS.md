@@ -30,7 +30,7 @@ dotnet tool run dotnet-ef database update \
   --project src/Elysion.BusinessBackend.Api --startup-project src/Elysion.BusinessBackend.Api
 ```
 
-Connection string is in `appsettings.Development.json` (`ConnectionStrings:Elysion`), pointing at `localhost:5432` — matches the `postgres` service of `docker-compose.yml`, whose host port 5432 `docker-compose.dev.yml` publishes (`pnpm dev:infra`).
+Connection string is in `appsettings.Development.json` (`ConnectionStrings:Elysion`), pointing at `localhost:5432` — matches the `postgres` service of `docker-compose.yml`, whose host port 5432 `docker-compose.dev.yml` publishes (`pnpm dev:infra`). A second dev stack of another worktree (`ELYSION_PORT_OFFSET`, root AGENTS.md) moves that port, RustFS's, Keycloak's and the backend's own (5174): `eval "$(pnpm --silent dev:env)"` exports `ConnectionStrings__Elysion`, `S3_ENDPOINT`, `OIDC_ISSUER_URL` and `ASPNETCORE_URLS` for it (`scripts/dev-stack-config.mjs`), which win over `appsettings.Development.json`; start with `dotnet run --no-launch-profile` so the launch profile's URL does not.
 
 ## C# formatting and style
 
