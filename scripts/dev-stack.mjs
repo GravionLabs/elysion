@@ -9,13 +9,20 @@
 // Which stack: ELYSION_STACK and ELYSION_PORT_OFFSET (environment or the root .env, scripts/dev-stack-config.mjs, #890). A
 // second worktree sets both and gets its own project, volumes and ports; without them this is the one stack `elysion`.
 //
-//   node scripts/dev-stack.mjs <infra|infra-down|up|logs|observability|down|check|env> [more arguments for compose]
+//   node scripts/dev-stack.mjs <infra|infra-down|up|logs|observability|down|demo|demo-down|load|check|env> [arguments]
+//   `demo` / `demo-down` are `pnpm demo` / `pnpm demo:down` (docker-compose.yml alone), `load` is `pnpm dev:load`
+//   (docker-compose.load.yml on top); without the two settings they are the plain `docker compose` commands they were.
 //   `check` runs scripts/demo-smoke.sh against the stack; `env` prints `export` lines for a shell (`eval "$(...)"`) with the
 //   stack's compose variables, the browser tests' addresses and the business backend's settings on the host.
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { composeEnvironment, currentStack, hostAppSettings } from './dev-stack-config.mjs';
-import { forStack, withOtlpAccessLog } from './traefik-logs-config.mjs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  composeEnvironment,
+  currentStack,
+  readDotenv,
+  shellEnvironment,
+} from './dev-stack-config.mjs';
+import { generatedConfig } from './traefik-logs-config.mjs';
 
 const COMPOSE = ['compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.dev.yml'];
 const OBSERVABILITY = [...COMPOSE, '-f', 'docker-compose.observability.yml'];
@@ -29,6 +36,10 @@ const ACTIONS = {
   // Prometheus, Alertmanager and Grafana (docker-compose.observability.yml, docs/operations.md).
   observability: [...OBSERVABILITY, 'up', '-d', '--build', '--remove-orphans'],
   down: [...OBSERVABILITY, '--profile', 'logs', 'down'],
+  demo: ['compose', 'up', '-d', '--build'],
+  'demo-down': ['compose', 'down'],
+  // The load test's stack (apps/load, docs/performance.md).
+  load: [...COMPOSE, '-f', 'docker-compose.load.yml', 'up', '-d', '--build'],
   check: null,
   env: null,
 };
@@ -57,11 +68,17 @@ try {
 const env = { ...process.env, ...composeEnvironment(stack) };
 
 // Traefik's static configuration is one file: another stack's network and constraint, and the log export, go into a copy.
-function writeTraefikConfig(withLogs) {
-  if (stack.name === 'elysion' && !withLogs) return;
-  let config = readFileSync('infra/traefik/traefik.yml', 'utf8');
-  if (stack.name !== 'elysion') config = forStack(config, stack.name);
-  if (withLogs) config = withOtlpAccessLog(config, TRAEFIK_VIEWER_ENDPOINT);
+// `keep` (dev:env) leaves a file generated for this stack as it is, the log export of `dev:logs` included.
+function writeTraefikConfig(withLogs, keep = false) {
+  const config = generatedConfig(readFileSync('infra/traefik/traefik.yml', 'utf8'), stack.name, {
+    withLogs,
+    keep,
+    endpoint: TRAEFIK_VIEWER_ENDPOINT,
+    existing: existsSync(GENERATED_TRAEFIK_CONFIG)
+      ? readFileSync(GENERATED_TRAEFIK_CONFIG, 'utf8')
+      : undefined,
+  });
+  if (config === null) return;
   writeFileSync(GENERATED_TRAEFIK_CONFIG, config);
   env.TRAEFIK_STATIC_CONFIG = `./${GENERATED_TRAEFIK_CONFIG}`;
 }
@@ -69,14 +86,11 @@ function writeTraefikConfig(withLogs) {
 const quote = (value) => `'${value.replaceAll("'", `'\\''`)}'`;
 
 if (action === 'env') {
-  writeTraefikConfig(false);
-  const lines = {
-    ...composeEnvironment(stack),
-    ...(env.TRAEFIK_STATIC_CONFIG ? { TRAEFIK_STATIC_CONFIG: env.TRAEFIK_STATIC_CONFIG } : {}),
-    E2E_BASE_URL: stack.urls.app,
-    E2E_KEYCLOAK_URL: stack.urls.keycloak,
-    ...hostAppSettings(stack).backend,
-  };
+  writeTraefikConfig(false, true);
+  const lines = shellEnvironment(stack, {
+    realtimeDotenv: readDotenv('apps/realtime/.env'),
+    traefikStaticConfig: env.TRAEFIK_STATIC_CONFIG,
+  });
   for (const [name, value] of Object.entries(lines)) console.log(`export ${name}=${quote(value)}`);
   process.exit(0);
 }
@@ -94,7 +108,7 @@ if (action === 'infra') {
   });
   if (setup.status !== 0) process.exit(setup.status ?? 1);
 }
-if (['infra', 'up', 'logs', 'observability'].includes(action))
+if (['infra', 'up', 'logs', 'observability', 'demo', 'load'].includes(action))
   writeTraefikConfig(action === 'logs');
 if (action === 'logs') env.LOGS_OTLP_ENDPOINT = VIEWER_ENDPOINT;
 

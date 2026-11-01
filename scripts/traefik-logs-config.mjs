@@ -49,3 +49,23 @@ export function forStack(yaml, stack) {
       `    constraints: 'Label(\`com.docker.compose.project\`,\`${stack}\`)'`,
     );
 }
+
+/**
+ * The generated static configuration of a stack, or null when the committed file serves (the default stack without the
+ * log export). `withLogs` is `pnpm dev:logs`; without it (`dev:infra`, `dev:stack`, `dev:env`) it is the stack's plain one.
+ * `keep` is for `dev:env`, which only exports the path: a file already generated for this stack, with or without the log
+ * export, stays as it is, so that a shell's next `docker compose` does not recreate a `dev:logs` Traefik without its export.
+ * @param {string} yaml the content of traefik.yml  @param {string} stack the compose project name
+ * @param {{ withLogs?: boolean, endpoint: string, existing?: string, keep?: boolean }} options
+ */
+export function generatedConfig(
+  yaml,
+  stack,
+  { withLogs = false, endpoint, existing, keep = false },
+) {
+  const plain = stack === 'elysion' ? yaml : forStack(yaml, stack);
+  const logged = withOtlpAccessLog(plain, endpoint);
+  if (keep && stack !== 'elysion' && (existing === plain || existing === logged)) return existing;
+  if (withLogs) return logged;
+  return stack === 'elysion' ? null : plain;
+}
