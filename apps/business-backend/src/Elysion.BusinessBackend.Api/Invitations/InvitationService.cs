@@ -3,6 +3,7 @@ using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -35,6 +36,7 @@ public sealed class InvitationService(
     IMembershipRepository boardMemberships,
     IRoomMembershipRepository roomMemberships,
     IAuditLog audit,
+    IWebhookEvents webhooks,
     IUnitOfWork unitOfWork,
     TimeProvider time)
 {
@@ -93,10 +95,21 @@ public sealed class InvitationService(
             if (own is null)
             {
                 boardMemberships.Add(BoardMembership.Create(targetId, userId, invitation.Role, now));
+                await webhooks.RaiseAsync(WebhookEventTypes.MemberAdded,
+                    targetId,
+                    new { userId, role = invitation.Role.ToString() },
+                    cancellationToken,
+                    userId);
             }
             else
             {
+                var previous = own.Role;
                 own.Role = invitation.Role;
+                await webhooks.RaiseAsync(WebhookEventTypes.MemberRoleChanged,
+                    targetId,
+                    new { userId, previousRole = previous.ToString(), role = invitation.Role.ToString() },
+                    cancellationToken,
+                    userId);
             }
         }
         else

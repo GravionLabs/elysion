@@ -12,6 +12,7 @@ import { BoardList } from './board-list/board-list';
 import { Invite } from './invite/invite';
 import { Deactivated } from './deactivated/deactivated';
 import { AdminLayout } from './admin/admin-layout';
+import { AccessTokens } from './settings/access-tokens';
 import { HttpTestingController } from '@angular/common/http/testing';
 
 describe('routes', () => {
@@ -57,6 +58,13 @@ describe('routes', () => {
     TestBed.inject(HttpTestingController).expectOne('/api/rooms').flush([]);
   });
 
+  it('opens the access tokens of the person (#851)', async () => {
+    const page = await harness.navigateByUrl('/settings/tokens', AccessTokens);
+
+    expect(page).toBeInstanceOf(AccessTokens);
+    TestBed.inject(HttpTestingController).expectOne('/api/access-tokens').flush([]);
+  });
+
   it('opens an invitation link with the token as an input', async () => {
     const invite = await harness.navigateByUrl('/invite/abc-_123', Invite);
 
@@ -91,6 +99,19 @@ describe('routes', () => {
       .flush({ items: [], total: 0, page: 1, pageSize: 25 });
 
     expect(harness.routeNativeElement?.querySelector('app-admin-users')).toBeTruthy();
+  });
+
+  it('opens the webhooks of every board in the administration (#853)', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    await harness.navigateByUrl('/admin/webhooks', AdminLayout);
+
+    http.expectOne('/api/auth/me').flush({ id: 'u', isAdministrator: true });
+    await harness.fixture.whenStable();
+    http.expectOne('/api/admin/webhooks').flush([]);
+    await harness.fixture.whenStable();
+
+    expect(harness.routeNativeElement?.querySelector('app-admin-webhooks')).toBeTruthy();
+    expect(harness.routeNativeElement?.textContent).toContain('No webhooks yet.');
   });
 
   it('shows no page of the administration to somebody who is not an administrator', async () => {
@@ -174,7 +195,7 @@ describe('routes', () => {
       const pages = (list: ReturnType<typeof buildRoutes>) =>
         list.filter((route) => route.component || route.loadComponent);
 
-      expect(pages(routes).length).toBe(4);
+      expect(pages(routes).length).toBe(5);
       // Each page is a chunk of its own (#710), not part of the first load.
       expect(pages(routes).every((route) => route.loadComponent && !route.component)).toBe(true);
       for (const route of pages(routes)) {

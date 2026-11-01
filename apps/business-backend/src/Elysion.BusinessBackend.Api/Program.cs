@@ -11,8 +11,10 @@ using Elysion.BusinessBackend.Api.Logging;
 using Elysion.BusinessBackend.Api.Members;
 using Elysion.BusinessBackend.Api.Observability;
 using Elysion.BusinessBackend.Api.Quotas;
+using Elysion.BusinessBackend.Api.Snapshots;
 using Elysion.BusinessBackend.Api.Invitations;
 using Elysion.BusinessBackend.Api.Voting;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -55,8 +57,14 @@ builder.Services.AddScoped<IUnitOfWork>(services => services.GetRequiredService<
 builder.Services.AddScoped<IBoardRepository, BoardRepository>();
 builder.Services.AddScoped<IBoardDocumentRepository, BoardDocumentRepository>();
 builder.Services.AddScoped<IBoardUserStateRepository, BoardUserStateRepository>();
+builder.Services.AddScoped<IBoardSnapshotRepository, BoardSnapshotRepository>();
+// Versions of a board (ADR 0032): made on request and on realtime saves, expired every night.
+builder.Services.AddScoped<BoardSnapshotService>();
+builder.Services.AddSingleton<SnapshotCleanupService>();
+builder.Services.AddHostedService(services => services.GetRequiredService<SnapshotCleanupService>());
 builder.Services.AddScoped<IVotingRepository, VotingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAccessTokenRepository, AccessTokenRepository>();
 builder.Services.AddScoped<IGroupRepository, GroupRepository>();
 builder.Services.AddScoped<IGroupSyncRepository, GroupSyncRepository>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
@@ -82,6 +90,24 @@ builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IRoomMembershipRepository, RoomMembershipRepository>();
 builder.Services.AddScoped<ITemplateRepository, TemplateRepository>();
 builder.Services.AddScoped<BoardMemberService>();
+
+// Webhooks (ADR 0033, #853): events are staged in the outbox with the change, and a worker on every instance sends them.
+builder.Services.AddOptions<WebhookOptions>()
+    .Configure<IConfiguration>((options, configuration) =>
+    {
+        options.AllowHttp = configuration.GetValue(WebhookOptions.AllowHttpSetting, false);
+        options.AllowPrivateNetworks = configuration.GetValue(WebhookOptions.AllowPrivateNetworksSetting, false);
+        options.WorkerEnabled = configuration.GetValue(WebhookOptions.WorkerEnabledSetting, true);
+    });
+builder.Services.AddScoped<IWebhookRepository, WebhookRepository>();
+builder.Services.AddScoped<IWebhookEvents, WebhookEvents>();
+builder.Services.AddSingleton<IWebhookHostResolver, DnsWebhookHostResolver>();
+builder.Services.AddHttpClient<IWebhookSender, WebhookSender>(client => client.Timeout = WebhookSender.Timeout)
+    .ConfigurePrimaryHttpMessageHandler(services => WebhookHttpHandler.Create(
+        services.GetRequiredService<Microsoft.Extensions.Options.IOptions<WebhookOptions>>().Value,
+        services.GetRequiredService<IWebhookHostResolver>()));
+builder.Services.AddSingleton<WebhookDeliveryService>();
+builder.Services.AddHostedService(services => services.GetRequiredService<WebhookDeliveryService>());
 builder.Services.AddScoped<RoomMemberService>();
 
 // The caller as a local user, provisioned from the token once per authenticated request.
@@ -96,6 +122,8 @@ builder.Services.AddOptions<RealtimeOptions>()
     .Configure<IConfiguration>((options, configuration) =>
         options.Url = configuration[RealtimeOptions.UrlSetting] ?? "");
 builder.Services.AddHttpClient<IVotingNotifier, HttpVotingNotifier>();
+builder.Services.AddHttpClient<IRealtimeBoardSaver, HttpRealtimeBoardSaver>();
+builder.Services.AddHttpClient<IRealtimeBoardRestorer, HttpRealtimeBoardRestorer>();
 
 // The optional second source of group members: Microsoft Graph reads the linked groups (#667). Off unless tenant, client and secret are set.
 builder.Services.AddOptions<GraphOptions>()
@@ -163,16 +191,19 @@ app.MapRoomMemberEndpoints();
 app.MapRoomGroupEndpoints();
 app.MapGroupEndpoints();
 app.MapUserEndpoints();
+app.MapAccessTokenEndpoints();
 app.MapAdminEndpoints();
 app.MapHistoryEndpoints();
 app.MapBoardDocumentEndpoints();
 app.MapBoardAccessEndpoints();
 app.MapBoardFileEndpoints();
 app.MapBoardThumbnailEndpoints();
+app.MapBoardSnapshotEndpoints();
 app.MapBoardUserStateEndpoints();
 app.MapVotingEndpoints();
 app.MapInvitationEndpoints();
 app.MapTemplateEndpoints();
+app.MapWebhookEndpoints();
 
 app.Run();
 

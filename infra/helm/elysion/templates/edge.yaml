@@ -48,6 +48,30 @@ spec:
     burst: {{ .Values.edge.rateLimit.burst }}
     period: 1s
 ---
+# The public API (ADR 0033): a flood guard per client address (it also bounds made-up tokens, each of which costs the BFF a
+# lookup) and a body limit. The limit per token, with its RateLimit-* headers, is the BFF's.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $full }}-public-api-ip-rate-limit
+  labels:
+    {{- include "elysion.labels" . | nindent 4 }}
+spec:
+  rateLimit:
+    average: {{ .Values.edge.publicApi.ipRateLimit.average }}
+    burst: {{ .Values.edge.publicApi.ipRateLimit.burst }}
+    period: 1m
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $full }}-public-api-body-limit
+  labels:
+    {{- include "elysion.labels" . | nindent 4 }}
+spec:
+  buffering:
+    maxRequestBodyBytes: {{ .Values.edge.publicApi.maxRequestBodyBytes | int }}
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -94,6 +118,16 @@ spec:
         - name: {{ $full }}-cors
         - name: {{ $full }}-rate-limit
         - name: {{ $full }}-bff-auth
+      services:
+        - name: {{ $full }}-bff
+          port: 3000
+    # The public API (ADR 0033): for scripts, so no CORS; no forwardAuth, the BFF's guard checks every token itself.
+    - kind: Rule
+      match: {{ $host }}PathPrefix(`/public/v1`)
+      middlewares:
+        - name: {{ $full }}-security-headers
+        - name: {{ $full }}-public-api-ip-rate-limit
+        - name: {{ $full }}-public-api-body-limit
       services:
         - name: {{ $full }}-bff
           port: 3000

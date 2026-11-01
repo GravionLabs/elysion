@@ -93,6 +93,23 @@ The business backend got more than 3 errors from Postgres in 2 minutes (critical
 2. The backend's log has the exception; `elysion_backend_db_commands_total{outcome="error"}` shows when it began.
 3. Everything that needs the database fails with 5xx meanwhile: expect `BffErrorRateHigh` and `RealtimeSaveFailing` with it.
 
+### WebhookOutboxGrowing
+
+More than 100 webhook deliveries wait to be sent, and the number kept growing for 30 minutes (warning). The metric is
+`elysion_webhook_outbox_pending` of the business backend (every instance reports the whole outbox); `elysion_webhook_delivery_attempts_total` counts
+the attempts by `outcome` (`succeeded`, `retry`, `failed`). See [webhooks.md](webhooks.md).
+
+1. Is the worker running? The backend logs `A pass of the webhook worker failed` when a pass fails (the database, usually: expect
+   `DatabaseErrors` with it). `WEBHOOKS_WORKER_ENABLED=false` on every instance stops all sending.
+2. Is one receiver slow or down? The log has a line per failed attempt (`Webhook <id> to <host>: <event> failed`), with the host and never the
+   path. A dead receiver's deliveries wait between retries (up to an hour apart) and are given up after 24 hours, when its webhook is
+   switched off: the outbox then shrinks by itself. In SQL: `SELECT "EndpointId", count(*) FROM "WebhookDeliveries" WHERE "Status" = 'Pending'
+GROUP BY 1 ORDER BY 2 DESC;`.
+3. Is it real traffic? Every change of a board with webhooks is an event per webhook (content changes at most once a minute per board). A
+   busy instance with many webhooks may need a higher threshold: change it here and in `alerts.test.yml`.
+4. To stop a receiver at once, switch its webhook off in the board's Share dialog or the administration (or delete it): what waits for it is
+   given up at once, so the gauge drops on the worker's next pass. Switching it on again does not send those deliveries again.
+
 ### CertificateExpiresSoon
 
 A certificate Traefik serves expires in less than 14 days (warning). Traefik reports it only when it serves TLS (the demo does not), so the alert exists for

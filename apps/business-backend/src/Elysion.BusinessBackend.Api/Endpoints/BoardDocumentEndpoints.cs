@@ -1,9 +1,12 @@
 using System.Net.Mime;
 
+using Elysion.BusinessBackend.Api.Authorization;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
 using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Snapshots;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -21,6 +24,14 @@ public static class BoardDocumentEndpoints
     /// <summary>Largest state accepted; the measured large board (3,500 elements) is 2.3 MB.</summary>
     public const int MaxStateBytes = 32 * 1024 * 1024;
 
+    /// <summary>The realtime service sends <c>compaction</c> with the save of a compaction rebuild (ADR 0026, ADR 0032).</summary>
+    public const string SaveReasonHeader = "X-Elysion-Save-Reason";
+
+    public const string CompactionReason = "compaction";
+
+    /// <summary>Optional: how many live elements the saved state has (the backend cannot decode Yjs).</summary>
+    public const string ElementCountHeader = "X-Elysion-Element-Count";
+
     private const string OctetStream = MediaTypeNames.Application.Octet;
 
     public static IEndpointRouteBuilder MapBoardDocumentEndpoints(this IEndpointRouteBuilder routes)
@@ -37,7 +48,23 @@ public static class BoardDocumentEndpoints
             .Accepts<byte[]>(OctetStream)
             .WithMetadata(new RequestSizeLimitAttribute(MaxStateBytes));
         group.MapDelete("", Delete).WithName("DeleteBoardDocument");
+
+        // The public API reads the elements of a board from its stored state (ADR 0033, #852): anybody who may read the board,
+        // as themselves; the BFF decodes the Yjs state. Read-only: writes go through the realtime service.
+        routes.MapGet("/boards/{id:guid}/document", ReadForMember)
+            .WithTags("Board documents")
+            .WithName("ReadBoardDocument")
+            .RequireAuthorization(BoardPolicies.Read);
         return routes;
+    }
+
+    /// <summary>The stored state of a board the caller may read: <c>200</c> with the bytes, or <c>204</c> when it was never saved.</summary>
+    private static async Task<IResult> ReadForMember(Guid id,
+        IBoardDocumentRepository documents,
+        CancellationToken cancellationToken)
+    {
+        var document = await documents.FindAsync(id.ToString(), cancellationToken);
+        return document is null ? TypedResults.NoContent() : new StateResult(document, StatusCodes.Status200OK);
     }
 
     private static async Task<IResult> Get(string boardId,
@@ -55,6 +82,9 @@ public static class BoardDocumentEndpoints
         HttpRequest request,
         IBoardDocumentRepository documents,
         IBoardRepository boards,
+        BoardSnapshotService snapshots,
+        IWebhookEvents webhooks,
+        IUnitOfWork unitOfWork,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -104,11 +134,45 @@ public static class BoardDocumentEndpoints
             return TypedResults.StatusCode(StatusCodes.Status413PayloadTooLarge);
         }
 
+        // Automatic versions (ADR 0032): the state that is about to be overwritten is kept when the newest snapshot is an hour old
+        // and the state changed, and always before a compaction rebuild. Nothing here may fail the save.
+        var compaction = request.Headers[SaveReasonHeader].ToString() == CompactionReason;
+        BoardDocument? previous = null;
+        if (!create && Guid.TryParse(boardId, out var snapshotBoard)
+                    && (compaction || await snapshots.IsAutomaticDueAsync(snapshotBoard, cancellationToken)))
+        {
+            previous = await documents.FindAsync(boardId, cancellationToken);
+            if (previous is null || previous.Version != expected || previous.State.AsSpan().SequenceEqual(state))
+            {
+                previous = null;
+            }
+        }
+
+        // board.content.changed (#853), at most once a minute per board: staged now, so that the save commits it (a refused save
+        // drops it). A compaction rebuild changes nothing a person made, and an id that is no UUID has no board.
+        if (!compaction && Guid.TryParse(boardId, out var changedBoard))
+        {
+            await webhooks.RaiseContentChangedAsync(changedBoard, create ? 1 : expected + 1, cancellationToken);
+        }
+
         var result = await documents.SaveAsync(boardId,
             state,
             create ? null : expected,
             time.GetUtcNow(),
             cancellationToken);
+        if (result.Status == DocumentSaveStatus.NotFound)
+        {
+            unitOfWork.DiscardChanges();
+        }
+
+        if (result.Status == DocumentSaveStatus.Saved && previous is not null)
+        {
+            int? elements = int.TryParse(request.Headers[ElementCountHeader].ToString(), out var count) && count >= 0
+                ? count
+                : null;
+            await snapshots.TryCreateAutomaticAsync(Guid.Parse(boardId), previous.State, elements, cancellationToken);
+        }
+
         return result switch
         {
             { Status: DocumentSaveStatus.Saved, Document: { } saved } => new SavedResult(saved.Version),

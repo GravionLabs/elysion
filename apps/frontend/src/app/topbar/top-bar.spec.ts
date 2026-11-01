@@ -342,11 +342,118 @@ describe('TopBar', () => {
       ]);
     });
 
+    it('makes the avatars buttons that say "Follow <name>" and ask to follow that person', async () => {
+      const followed: string[] = [];
+      fixture.componentInstance.followRequested.subscribe((id) => followed.push(id));
+      fixture.componentRef.setInput('users', users);
+      await fixture.whenStable();
+
+      expect(avatars().map((avatar) => avatar.tagName)).toEqual(['BUTTON', 'BUTTON']);
+      expect(avatars().map((avatar) => avatar.getAttribute('aria-label'))).toEqual([
+        'Follow Ada Lovelace',
+        'Follow guest 4821',
+      ]);
+      avatars()[1].click();
+      expect(followed).toEqual(['b']);
+    });
+
+    it('marks the avatar of the person who is followed as pressed', async () => {
+      fixture.componentRef.setInput('users', users);
+      fixture.componentRef.setInput('followState', {
+        following: { id: 'a', name: 'Ada Lovelace', color: '#14b8a6', reason: 'person' },
+        presenter: null,
+        steppedOut: false,
+      });
+      await fixture.whenStable();
+
+      expect(avatars().map((avatar) => avatar.getAttribute('aria-pressed'))).toEqual([
+        'true',
+        'false',
+      ]);
+    });
+
     it('falls back to a question mark for a name without letters to take', async () => {
       fixture.componentRef.setInput('users', [{ id: 'x', name: '  ', color: '#3b82f6' }]);
       await fixture.whenStable();
 
       expect(avatars()[0].textContent?.trim()).toBe('?');
+    });
+  });
+
+  describe('presenting (#848)', () => {
+    const menu = () => el().querySelector('app-present-menu') as HTMLElement | null;
+    const trigger = () => menu()?.querySelector('button') as HTMLButtonElement;
+    const item = (label: string) =>
+      [...(menu()?.querySelectorAll('[role="menuitem"]') ?? [])].find((button) =>
+        button.textContent?.includes(label),
+      ) as HTMLButtonElement;
+
+    it('has a Present button after Voting for those who may write, and none for a viewer', async () => {
+      expect(trigger().textContent).toContain('Present');
+      expect(menu()?.previousElementSibling?.tagName).toBe('APP-VOTING-MENU');
+
+      fixture.componentRef.setInput('readOnly', true);
+      await fixture.whenStable();
+
+      expect(menu()).toBeNull();
+    });
+
+    it('asks to start presenting, to stop and to bring everyone', async () => {
+      const events: string[] = [];
+      const bar = fixture.componentInstance;
+      bar.presentStart.subscribe(() => events.push('start'));
+      bar.presentStop.subscribe(() => events.push('stop'));
+      bar.presentSummon.subscribe(() => events.push('summon'));
+
+      trigger().click();
+      await fixture.whenStable();
+      item('Start presenting').click();
+      trigger().click();
+      await fixture.whenStable();
+      item('Bring everyone to me').click();
+      fixture.componentRef.setInput('followState', {
+        following: null,
+        presenter: { id: 'me', name: 'Me', color: '#14b8a6', me: true },
+        steppedOut: false,
+      });
+      await fixture.whenStable();
+      trigger().click();
+      await fixture.whenStable();
+      item('Stop presenting').click();
+
+      expect(events).toEqual(['start', 'summon', 'stop']);
+    });
+
+    describe('while somebody else presents', () => {
+      const others = { id: 'x', name: 'Xi', color: '#14b8a6', me: false };
+      const setup = async (canShare: boolean) => {
+        fixture.componentRef.setInput('canShare', canShare);
+        fixture.componentRef.setInput('followState', {
+          following: null,
+          presenter: others,
+          steppedOut: false,
+        });
+        await fixture.whenStable();
+        trigger().click();
+        await fixture.whenStable();
+      };
+
+      it('lets an owner stop it', async () => {
+        const events: string[] = [];
+        fixture.componentInstance.presentStop.subscribe(() => events.push('stop'));
+        await setup(true);
+
+        expect(item('Start presenting')).toBeUndefined();
+        item('Stop presenting').click();
+
+        expect(events).toEqual(['stop']);
+      });
+
+      it('offers an editor who is not the presenter no Stop entry', async () => {
+        await setup(false);
+
+        expect(item('Stop presenting')).toBeUndefined();
+      });
     });
   });
 
@@ -370,7 +477,11 @@ describe('TopBar', () => {
 
       (el().querySelector('.user-button') as HTMLButtonElement).click();
       await fixture.whenStable();
-      (el().querySelector('[role="menuitem"]') as HTMLButtonElement).click();
+      (
+        [...el().querySelectorAll('[role="menuitem"]')].find(
+          (item) => item.textContent?.trim() === 'Log out',
+        ) as HTMLButtonElement
+      ).click();
 
       expect(logouts).toBe(1);
     });

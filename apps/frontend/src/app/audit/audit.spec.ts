@@ -44,6 +44,12 @@ describe('describeAuditEntry', () => {
     ['invitation.created', { role: 'Viewer' }, 'Ada made an invitation link for the role Viewer'],
     ['invitation.revoked', { invitationId: 'i' }, 'Ada revoked an invitation link'],
     ['invitation.accepted', { role: 'Editor' }, 'Ada joined with an invitation link as Editor'],
+    [
+      'snapshot.deleted',
+      { snapshotId: 's', kind: 'Manual' },
+      'Ada deleted a saved version of the board',
+    ],
+    ['snapshot.restored', { snapshotId: 's' }, 'Ada restored a version of the board'],
   ])('says what %s is', (action, details, sentence) => {
     expect(describeAuditEntry(entry(action, details))).toBe(sentence);
   });
@@ -65,5 +71,34 @@ describe('describeAuditEntry', () => {
 
     expect(describeAuditEntry(about('user.deactivated'))).toBe('Ada deactivated Bob');
     expect(describeAuditEntry(about('user.reactivated'))).toBe('Ada reactivated Bob');
+  });
+
+  it('names an access token and, for a revoke, its owner (#851)', () => {
+    const about = (action: string, by: string): AuditEntry => ({
+      ...entry(action, { tokenId: 't1', name: 'CI sync' }),
+      subjectType: 'user',
+      subjectId: 'u2',
+      subjectName: 'Bob',
+      actor: { id: 'u9', displayName: by },
+      target: null,
+    });
+
+    expect(describeAuditEntry(about('token.created', 'Bob'))).toBe(
+      'Bob made the access token “CI sync”',
+    );
+    expect(describeAuditEntry(about('token.revoked', 'Ada'))).toBe(
+      'Ada revoked the access token “CI sync” of Bob',
+    );
+  });
+
+  it('names the host of a webhook that was added or deleted, never its path (#853)', () => {
+    const details = { webhookId: 'w1', host: 'hooks.example.com' };
+
+    expect(describeAuditEntry(entry('webhook.created', details))).toBe(
+      'Ada added a webhook to hooks.example.com',
+    );
+    expect(describeAuditEntry(entry('webhook.deleted', details))).toBe(
+      'Ada deleted the webhook to hooks.example.com',
+    );
   });
 });

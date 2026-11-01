@@ -13,6 +13,7 @@ An open-source alternative to [Mural](https://mural.co): a collaborative whitebo
 - **Realtime:** every change is merged by Yjs CRDTs over WebSockets (several realtime instances stay in step through Valkey); boards are persisted and survive a restart.
 - **Facilitation:** a **shared timer** with a countdown for everybody, and **dot voting** (votes per person, your own dots while it runs, a ranked result in a movable dialog when it ends, by the facilitator or when everybody has voted). The votes are kept on the server and are secret while the voting runs; viewers vote too, and a voting can be started as "named" to show who voted for what.
 - **Identity:** login through Keycloak; the BFF, the realtime service and the business backend each check the token, and a viewer's changes are refused by the server, not only hidden in the interface.
+- **Public API:** a versioned REST API for scripts and integrations at `/public/v1` with personal access tokens and scopes: boards, rooms, members, versions and the elements of a board as Excalidraw JSON, described by an OpenAPI 3.1 document ([docs/api.md](docs/api.md)).
 - **Operations:** Traefik at the edge with CORS and rate limits, metrics and structured logs, a Helm chart ([ADR 0018](docs/adr/0018-kubernetes-packaging.md)).
 
 ## Try it
@@ -35,6 +36,7 @@ Known gaps, so nobody finds them by surprise (the [roadmap](docs/roadmap.md) say
 - **Timer clocks** of two clients may differ by a few seconds (the end is worked out on every client).
 - **Images are PNG, JPEG, GIF or WebP** up to 10 MiB, 200 per board (SVG is refused: it can carry script). They are kept in the object store (RustFS in the stack).
 - **Backup is a service you start** (`docker compose --profile backup up -d backup`, [self-hosting](docs/self-hosting.md#back-up-and-restore)): nightly dumps of the databases and a copy of the images, on the same host unless you point it elsewhere, and an alert (`BackupTooOld`, [operations](docs/operations.md#backuptooold)) when the last good one is older than 36 hours, if you run the alerting of `docker-compose.observability.yml`.
+- **The public API reads elements but does not write them**; webhooks report board, member and version events but not comments ([docs/webhooks.md](docs/webhooks.md)); versions can be listed, saved and read, not restored, through it ([docs/api.md](docs/api.md)).
 - **Browser tests cover the main paths, not every corner:** `apps/e2e` (Playwright, two browsers on one board, against the container stack in CI) covers sharing, the timer, the dot voting, a viewer's limits, images, rooms, templates, import and export, the drawing tools with connectors and undo, and losing and regaining the connection; there is no visual regression test and only Chromium is used.
 
 ## Architecture
@@ -55,14 +57,14 @@ Decisions are recorded as ADRs: [gateway and BFF](docs/adr/0001-gateway-and-bff.
 
 ## Getting started
 
-You need Node.js (see `.nvmrc`), [pnpm](https://pnpm.io) (pinned via `packageManager`, enabled with `corepack enable`), the [.NET 10 SDK](https://dotnet.microsoft.com) and Docker with Compose. Elysion uses pnpm only.
+You need Node.js (see `.nvmrc`), [pnpm](https://pnpm.io) (pinned via `packageManager`; Node 25 and later ship without corepack, so `npm install --global corepack` once, then `corepack enable`), the [.NET 10 SDK](https://dotnet.microsoft.com) and Docker with Compose. Elysion uses pnpm only.
 
 ```sh
 pnpm install      # JS/TS workspace dependencies (frontend, frontend-canvas, bff, realtime)
 pnpm kind:up      # the same services on a local kind cluster with the Helm chart (infra/kind/README.md)
 pnpm dev:infra    # only the infrastructure, for apps on the host: Traefik, Postgres, Keycloak (http://localhost:8081, realm `elysion`, dev user `dev` / `dev`, ADR 0014), Valkey (localhost:6380) and RustFS
 pnpm dev:stack    # the whole stack in containers behind Traefik: http://localhost/
-pnpm dev:logs     # the same, plus a log viewer for all four components: http://localhost:9428/select/vmui
+pnpm dev:logs     # the same, plus a log viewer for all four components: http://localhost:18888 (the Aspire dashboard)
 ```
 
 `pnpm dev:stack` builds and starts the whole stack as containers behind Traefik, the same stack as `docker compose up -d --build` with the host ports of `docker-compose.dev.yml` on top (Postgres on 5432, Valkey on 6380, the Traefik dashboard on 8080); nothing else has to be running. Traefik serves everything on port 80: `/` is the Angular app, `/api` the BFF, `/yjs` the realtime WebSocket; the business backend is only reachable from the BFF. `pnpm dev:stack:down` stops and removes the containers (the data volumes stay). The app asks you to log in (Keycloak, dev user `dev` / `dev`, and `guest` / `guest` to share a board with, see above); boards from before users existed (no owner) are not listed, see docs/specs/business-backend.md. Use `pnpm dev:infra` instead when you run the apps on the host.
@@ -113,7 +115,7 @@ docker build -f apps/bff/Dockerfile -t elysion-bff .
 | `business-backend`    | the .NET API (`dotnet build` first), `Development` environment               | 5174 | coreclr  |
 | `Elysion: full stack` | runs `pnpm dev:infra`, then business-backend, bff, realtime and the frontend | -    | all      |
 
-The BFF reaches the business backend at `BUSINESS_BACKEND_URL` (default `http://localhost:5174`, the port in the table). Run `pnpm install` once, and have Docker running. `ng serve` proxies `/api` to the BFF (3000) and `/yjs` to realtime (3001) through `apps/frontend/proxy.conf.json`, read when it starts, so the Angular app and a second tab on the same board URL work without extra parameters. The frontend configuration starts `canvas: watch element` first, which rebuilds the `<elysion-canvas>` bundle on every change and refreshes `apps/frontend/public/canvas`, so a reload of the Angular app shows the current canvas. Without it that folder is only a copy made at start and goes stale; outside VS Code run `pnpm --filter @elysion/frontend-canvas build:element:watch` next to `pnpm --filter @elysion/frontend start`. The C# configuration needs the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) (recommended in `.vscode/extensions.json`).
+The BFF reaches the business backend at `BUSINESS_BACKEND_URL` (default `http://localhost:5174`, the port in the table). Run `pnpm install` once, and have Docker running. `ng serve` proxies `/api` to the BFF (3000) and `/yjs` to realtime (3001) through `apps/frontend/proxy.conf.mjs`, read when it starts, so the Angular app and a second tab on the same board URL work without extra parameters. The frontend configuration starts `canvas: watch element` first, which rebuilds the `<elysion-canvas>` bundle on every change and refreshes `apps/frontend/public/canvas`, so a reload of the Angular app shows the current canvas. Without it that folder is only a copy made at start and goes stale; outside VS Code run `pnpm --filter @elysion/frontend-canvas build:element:watch` next to `pnpm --filter @elysion/frontend start`. The C# configuration needs the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) (recommended in `.vscode/extensions.json`).
 
 ### Valkey, ports and the other machine-wide services
 
@@ -154,8 +156,7 @@ The repository is a pnpm workspace (`apps/*`, `packages/*`); the root scripts ru
 
 ## Agent skills
 
-Run `apm install` in the repo root before working with an AI agent here. The stack skills (.NET, Angular, TypeScript) are declared in `apm.yml` and deployed to the git-ignored `.agents/skills/` and `.claude/skills/`, so a fresh clone has none until you run it.
-It needs [apm](https://github.com/microsoft/apm).
+The agent skills (.NET, Angular, TypeScript plus the `core` preset) come from [GravionLabs/skills](https://github.com/GravionLabs/skills) and are committed: `skills-lock.json`, `.agents/skills/` and `.claude/skills/`, so a fresh clone has them. Update with `npx skills check` and `npx skills update`; change the set with `/skills-install`.
 
 ## Pre-commit hook
 

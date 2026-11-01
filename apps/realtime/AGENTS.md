@@ -1,6 +1,6 @@
 # apps/realtime — Agent Instructions
 
-NestJS WebSocket gateway for Yjs CRDT sync and Redis-backed presence (cursors/avatars). Board documents are persisted through the business backend (`BUSINESS_BACKEND_URL`, default `http://localhost:5174`): **without the backend running, no board opens** (connections are closed with 1011). TypeScript **6**, not 7 — same reasoning as `apps/bff`, see that app's `AGENTS.md` and `docs/adr/0002-typescript-version-split.md`.
+NestJS WebSocket gateway for Yjs CRDT sync and Redis-backed presence (cursors/avatars). Board documents are persisted through the business backend (`BUSINESS_BACKEND_URL`, default `http://localhost:5174`): **without the backend running, no board opens** (connections are closed with 1011). On the host it runs on 3001 (`PORT`, the port of the Angular proxy) with Valkey on 6380 (`REDIS_URL`); for a second dev stack (`ELYSION_PORT_OFFSET`, AGENTS.md) `pnpm setup:env` writes the moved ports into a new `.env` (`scripts/dev-stack-config.mjs`). TypeScript **6**, not 7 — same reasoning as `apps/bff`, see that app's `AGENTS.md` and `docs/adr/0002-typescript-version-split.md`.
 
 See `docs/specs/realtime.md`.
 
@@ -32,7 +32,7 @@ Every `/yjs` connection needs `?token=` (the BFF's board-scoped WS token): `src/
 
 ## Voting notifications
 
-`src/voting/` (ADR 0029): `InternalVotingController` takes the business backend's `POST /internal/boards/:boardId/voting` (service token checked by `InternalCallVerifier`, iss `elysion-business-backend`, aud `elysion-realtime`), `parseVotingNotification` validates the body, `YjsRoomRegistry.announceVoting` sends message type 5 (`MESSAGE_VOTING`) to the board's sockets and relays it as document-relay type `voting`. `test/voting.e2e-spec.ts` drives it with two instances. Wire format: `docs/specs/realtime.md`.
+`src/voting/` (ADR 0029): `InternalVotingController` takes the business backend's `POST /internal/boards/:boardId/voting` (service token checked by `InternalCallVerifier`, iss `elysion-business-backend`, aud `elysion-realtime`), `parseVotingNotification` validates the body, `YjsRoomRegistry.announceVoting` sends message type 5 (`MESSAGE_VOTING`) to the board's sockets and relays it as document-relay type `voting`. `test/voting.e2e-spec.ts` drives it with two instances. `src/persistence/internal-save.controller.ts` takes `POST /internal/boards/:boardId/save` (same token), which calls `YjsRoomRegistry.saveNow` so the backend's "Save version" holds the last seconds (ADR 0032; `test/internal-save.e2e-spec.ts`). `src/persistence/internal-restore.controller.ts` takes `POST /internal/boards/:boardId/restore` (#847): the version's bytes come from `SnapshotSource` (`HttpSnapshotSource`, the backend's internal snapshot route; `InMemorySnapshotSource` in tests, the 5th argument of `startInstance`), `yjs/restore.ts` merges them forward into the live document, `YjsRoomRegistry.restoreSnapshot` saves and announces it as message type 6. Wire format: `docs/specs/realtime.md`.
 
 ## Persistence
 

@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { MARKER, withOtlpAccessLog } from '../../scripts/traefik-logs-config.mjs';
+import {
+  MARKER,
+  forStack,
+  generatedConfig,
+  withOtlpAccessLog,
+} from '../../scripts/traefik-logs-config.mjs';
 
-const ENDPOINT = 'http://victorialogs:9428/insert/opentelemetry/v1/logs';
+const ENDPOINT = 'aspire-dashboard:18889';
 const base = readFileSync(new URL('../../infra/traefik/traefik.yml', import.meta.url), 'utf8');
 
 describe('Traefik static config with the log viewer', () => {
@@ -20,14 +25,25 @@ describe('Traefik static config with the log viewer', () => {
       generated,
       /\n {2}dualOutput: true\n {2}otlp:\n {4}serviceName: elysion-traefik\n/,
     );
-    assert.match(generated, new RegExp(`endpoint: ${ENDPOINT.replaceAll('/', '\\/')}\\n`));
-    assert.match(generated, /VL-Stream-Fields: service\.name\n/);
+    // gRPC, not HTTP: Traefik gzips its OTLP/HTTP batches and the Aspire dashboard refuses them.
+    assert.match(
+      generated,
+      /\n {4}grpc:\n {6}endpoint: aspire-dashboard:18889\n {6}insecure: true\n/,
+    );
+    assert.doesNotMatch(generated, /\n {4}http:/);
     assert.match(generated, /\nexperimental:\n {2}otlpLogs: true\n$/);
     assert.doesNotMatch(generated, /logs:otlp/);
   });
 
   it('keeps the query parameters dropped, so the WS token of /yjs stays out of the viewer', () => {
     assert.match(withOtlpAccessLog(base, ENDPOINT), /queryParameters:\n {6}defaultMode: drop/);
+  });
+
+  it('drops every request header but X-Request-Id, so a request is found by its id and no credential is logged', () => {
+    assert.match(
+      withOtlpAccessLog(base, ENDPOINT),
+      /\n {4}headers:\n {6}defaultMode: drop\n {6}names:\n {8}X-Request-Id: keep\n {2}dualOutput/,
+    );
   });
 
   it('changes nothing else in the file', () => {
@@ -40,5 +56,70 @@ describe('Traefik static config with the log viewer', () => {
 
   it('refuses a file without the marker instead of silently shipping nothing', () => {
     assert.throws(() => withOtlpAccessLog('accessLog:\n  format: json\n', ENDPOINT), /marker/);
+  });
+});
+
+describe('Traefik static config of a second dev stack (#890)', () => {
+  it('sees only the containers of the default project in the committed file', () => {
+    assert.match(base, /\n {4}network: elysion_elysion\n/);
+    assert.match(base, /\n {4}constraints: 'Label\(`com\.docker\.compose\.project`,`elysion`\)'\n/);
+  });
+
+  it("routes over the other stack's network and sees only its containers", () => {
+    const generated = forStack(base, 'elysion-b');
+    assert.match(generated, /\n {4}network: elysion-b_elysion\n/);
+    assert.match(
+      generated,
+      /\n {4}constraints: 'Label\(`com\.docker\.compose\.project`,`elysion-b`\)'\n/,
+    );
+    assert.doesNotMatch(generated, /elysion_elysion|project`,`elysion`/);
+  });
+
+  it('changes nothing else, and still takes the log export', () => {
+    const generated = forStack(base, 'elysion-b');
+    const others = (text) =>
+      text.split('\n').filter((line) => !/^ {4}(network|constraints):/.test(line));
+    assert.deepEqual(others(generated), others(base));
+    assert.match(withOtlpAccessLog(generated, ENDPOINT), /endpoint: aspire-dashboard:18889/);
+  });
+
+  it('refuses a file without the lines instead of routing to the wrong stack', () => {
+    assert.throws(() => forStack('providers:\n  docker: {}\n', 'b'), /network or the constraints/);
+  });
+});
+
+describe('the generated Traefik config of a dev stack (#890)', () => {
+  const options = { endpoint: ENDPOINT };
+  const plainB = forStack(base, 'elysion-b');
+  const loggedB = withOtlpAccessLog(plainB, ENDPOINT);
+
+  it('is the committed file for the default stack without logs, and a copy with the export for dev:logs', () => {
+    assert.equal(generatedConfig(base, 'elysion', options), null);
+    assert.equal(generatedConfig(base, 'elysion', { ...options, keep: true }), null);
+    assert.equal(
+      generatedConfig(base, 'elysion', { ...options, withLogs: true }),
+      withOtlpAccessLog(base, ENDPOINT),
+    );
+  });
+
+  it("is another stack's plain copy for dev:stack, even over a dev:logs copy", () => {
+    assert.equal(generatedConfig(base, 'elysion-b', { ...options, existing: loggedB }), plainB);
+  });
+
+  it('keeps the log export of a dev:logs stack when dev:env only exports the path', () => {
+    assert.equal(
+      generatedConfig(base, 'elysion-b', { ...options, keep: true, existing: loggedB }),
+      loggedB,
+    );
+    assert.match(loggedB, /otlpLogs: true/);
+  });
+
+  it('writes the plain copy for dev:env when there is none, or one of another stack or an older traefik.yml', () => {
+    for (const existing of [undefined, forStack(base, 'elysion-c'), `${plainB}# old\n`]) {
+      assert.equal(
+        generatedConfig(base, 'elysion-b', { ...options, keep: true, existing }),
+        plainB,
+      );
+    }
   });
 });

@@ -31,7 +31,8 @@ describe('AdminUsers', () => {
       (r) =>
         r.url === '/api/admin/users' &&
         r.params.get('page') === String(pageNumber) &&
-        r.params.get('query') === (query || null),
+        r.params.get('query') === (query || null) &&
+        !r.params.has('kind'),
     );
 
   beforeEach(async () => {
@@ -60,6 +61,25 @@ describe('AdminUsers', () => {
     ]);
     expect(rows()[1].textContent).toContain('never');
     expect(el().querySelectorAll('thead th').length).toBe(5);
+  });
+
+  it('marks an integration and shows only integrations when asked (#851)', async () => {
+    listRequest().flush(page([{ ...user(1), email: null, isIntegration: true }, user(2)]));
+    await settle();
+
+    expect(rows()[0].querySelector('th')?.textContent).toContain('Integration');
+    expect(rows()[1].querySelector('th')?.textContent).not.toContain('Integration');
+
+    const kind = el().querySelector('select[name="kind"]') as HTMLSelectElement;
+    kind.value = 'integration';
+    kind.dispatchEvent(new Event('change'));
+    await settle();
+
+    http
+      .expectOne((r) => r.url === '/api/admin/users' && r.params.get('kind') === 'integration')
+      .flush(page([]));
+    await settle();
+    expect(el().textContent).toContain('No user matches');
   });
 
   it('searches with the text, from the first page', async () => {

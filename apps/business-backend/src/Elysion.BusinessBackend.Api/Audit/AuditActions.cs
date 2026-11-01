@@ -38,6 +38,24 @@ public static class AuditActions
     /// </summary>
     public const string OwnerTransferred = "owner.transferred";
 
+    /// <summary>A snapshot (a version) of a board was deleted by an owner (ADR 0032); details: <c>snapshotId</c>, <c>kind</c>.</summary>
+    public const string SnapshotDeleted = "snapshot.deleted";
+
+    /// <summary>A board was restored to a snapshot (#847); details: <c>snapshotId</c>.</summary>
+    public const string SnapshotRestored = "snapshot.restored";
+
+    /// <summary>A personal access token was made (#851); subject: its owner; details: <c>tokenId</c>, <c>name</c>, <c>scopes</c>, <c>expiresAt</c>.</summary>
+    public const string TokenCreated = "token.created";
+
+    /// <summary>A personal access token was revoked by its owner or an administrator (#851); subject: its owner; details: <c>tokenId</c>, <c>name</c>.</summary>
+    public const string TokenRevoked = "token.revoked";
+
+    /// <summary>A webhook was registered (#853); subject: its board (none for an instance-wide one); details: <c>webhookId</c>, <c>host</c>.</summary>
+    public const string WebhookCreated = "webhook.created";
+
+    /// <summary>A webhook was deleted (#853); subject and details as for <see cref="WebhookCreated"/>.</summary>
+    public const string WebhookDeleted = "webhook.deleted";
+
     public const string InvitationCreated = "invitation.created";
     public const string InvitationRevoked = "invitation.revoked";
     public const string InvitationAccepted = "invitation.accepted";

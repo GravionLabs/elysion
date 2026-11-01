@@ -49,17 +49,15 @@ public static class RequestLogging
                 .WriteTo.Console(json ? new ElysionJsonFormatter(ServiceName) : new ElysionTextFormatter());
             if (viewer is not null)
             {
-                // The log viewer of the dev stack, next to stdout (ADR 0025): OTLP over HTTP, protobuf.
+                // The log viewer of the dev stack, next to stdout (ADR 0025; the Aspire dashboard, ADR 0034): OTLP over
+                // HTTP, protobuf, which the dashboard takes as other OTLP viewers do.
                 configuration.WriteTo.Logger(viewerLogger => viewerLogger
                     .Enrich.With<LevelWordEnricher>()
                     .WriteTo.OpenTelemetry(options =>
                     {
                         options.Endpoint = viewer;
                         options.Protocol = OtlpProtocol.HttpProtobuf;
-                        // Without this header the viewer makes every resource attribute the stream key.
-                        options.Headers = new Dictionary<string, string> { ["VL-Stream-Fields"] = "service.name" }
-                            .Concat(viewerHeaders)
-                            .ToDictionary(pair => pair.Key, pair => pair.Value);
+                        options.Headers = new Dictionary<string, string>(viewerHeaders);
                         options.ResourceAttributes = new Dictionary<string, object> { ["service.name"] = ServiceName };
                     }));
             }

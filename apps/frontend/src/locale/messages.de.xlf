@@ -1915,6 +1915,24 @@
         <target><ph id="0" equiv="actor" disp="actor"/> hat den Besitz an <ph id="1" equiv="target" disp="target"/> übergeben</target>
       </segment>
     </unit>
+    <unit id="audit.webhook.created">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:73</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> added a webhook to <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat einen Webhook an <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/> hinzugefügt</target>
+      </segment>
+    </unit>
+    <unit id="audit.webhook.deleted">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:75</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> deleted the webhook to <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat den Webhook an <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/> gelöscht</target>
+      </segment>
+    </unit>
     <unit id="audit.invitation.created">
       <notes>
         <note category="location">src/app/audit/audit.ts:69</note>
@@ -1940,6 +1958,24 @@
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> joined with an invitation link as <ph id="1" equiv="role" disp="role"/></source>
         <target><ph id="0" equiv="actor" disp="actor"/> ist mit einem Einladungslink als <ph id="1" equiv="role" disp="role"/> beigetreten</target>
+      </segment>
+    </unit>
+    <unit id="audit.snapshot.deleted">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:75</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> deleted a saved version of the board</source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat eine gespeicherte Version des Boards gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="audit.snapshot.restored">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:77</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> restored a version of the board</source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat eine Version des Boards wiederhergestellt</target>
       </segment>
     </unit>
     <unit id="boards.new.aria">
@@ -4586,6 +4622,15 @@
         <target>Kommentare in einem PDF</target>
       </segment>
     </unit>
+    <unit id="topbar.export.agenda">
+      <notes>
+        <note category="location">src/app/topbar/export-menu.html:120,122</note>
+      </notes>
+      <segment>
+        <source>Agenda as the first page of a PDF</source>
+        <target>Agenda als erste Seite eines PDF</target>
+      </segment>
+    </unit>
     <unit id="topbar.export.preparing-file">
       <notes>
         <note category="location">src/app/topbar/export-menu.ts:28</note>
@@ -5559,6 +5604,1322 @@
       <segment>
         <source>Enter a whole number of votes between 1 and <ph id="0" equiv="max" disp="MAX_VOTES"/>.</source>
         <target>Gib eine ganze Zahl von Stimmen zwischen 1 und <ph id="0" equiv="max" disp="MAX_VOTES"/> ein.</target>
+      </segment>
+    </unit>
+    <unit id="topbar.present.button-title">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:7,8</note>
+      </notes>
+      <segment>
+        <source>Present to the board</source>
+        <target>Dem Board präsentieren</target>
+      </segment>
+    </unit>
+    <unit id="topbar.present.button">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:14,18</note>
+      </notes>
+      <segment>
+        <source>Present</source>
+        <target>Präsentieren</target>
+      </segment>
+    </unit>
+    <unit id="topbar.present.menu">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:18</note>
+      </notes>
+      <segment>
+        <source>Present</source>
+        <target>Präsentieren</target>
+      </segment>
+    </unit>
+    <unit id="topbar.present.stop">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:21,23</note>
+      </notes>
+      <segment>
+        <source>Stop presenting</source>
+        <target>Präsentation beenden</target>
+      </segment>
+    </unit>
+    <unit id="topbar.present.start">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:23,25</note>
+      </notes>
+      <segment>
+        <source>Start presenting</source>
+        <target>Präsentation starten</target>
+      </segment>
+    </unit>
+    <unit id="topbar.present.summon">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:27,29</note>
+      </notes>
+      <segment>
+        <source>Bring everyone to me</source>
+        <target>Alle zu mir holen</target>
+      </segment>
+    </unit>
+    <unit id="topbar.presence.follow">
+      <notes>
+        <note category="location">src/app/topbar/top-bar.ts:210</note>
+      </notes>
+      <segment>
+        <source>Follow <ph id="0" equiv="name" disp="name"/></source>
+        <target><ph id="0" equiv="name" disp="name"/> folgen</target>
+      </segment>
+    </unit>
+    <unit id="admin.nav.tokens">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:66,68</note>
+      </notes>
+      <segment>
+        <source>Access tokens</source>
+        <target>Zugriffstokens</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.title">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:1,2</note>
+      </notes>
+      <segment>
+        <source>Access tokens</source>
+        <target>Zugriffstokens</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:3,8</note>
+      </notes>
+      <segment>
+        <source> The personal access tokens people made for the API. A token acts as its owner; revoke one that leaked or is no longer needed. The start of a token is enough to find one reported by a secret scanner.
+</source>
+        <target> Die persönlichen Zugriffstokens, die Personen für die API erstellt haben. Ein Token handelt als die Person, der es gehört; widerrufe eines, das bekannt geworden ist oder nicht mehr gebraucht wird. Der Anfang eines Tokens genügt, um eines zu finden, das ein Secret-Scanner gemeldet hat. </target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.search.placeholder">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:15,16</note>
+      </notes>
+      <segment>
+        <source>Name, start of the token or owner</source>
+        <target>Name, Anfang des Tokens oder Besitzer</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.search">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:17,18</note>
+      </notes>
+      <segment>
+        <source>Search access tokens</source>
+        <target>Zugriffstokens suchen</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.error">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:32,33</note>
+      </notes>
+      <segment>
+        <source>The tokens could not be loaded.</source>
+        <target>Die Tokens konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:43,44</note>
+      </notes>
+      <segment>
+        <source>No token matches.</source>
+        <target>Kein Token passt.</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.caption">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:48,50</note>
+      </notes>
+      <segment>
+        <source> Access tokens </source>
+        <target> Zugriffstokens </target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.name">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:52,53</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.token">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:53,54</note>
+      </notes>
+      <segment>
+        <source>Token</source>
+        <target>Token</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.owner">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:54,55</note>
+      </notes>
+      <segment>
+        <source>Owner</source>
+        <target>Besitzer</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.scopes">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:55,56</note>
+      </notes>
+      <segment>
+        <source>Scopes</source>
+        <target>Bereiche</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.lastUsed">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:56,57</note>
+      </notes>
+      <segment>
+        <source>Last used</source>
+        <target>Zuletzt benutzt</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.expires">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:57,58</note>
+      </notes>
+      <segment>
+        <source>Expires</source>
+        <target>Läuft ab</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.actions">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:59,61</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoked">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:69,70</note>
+      </notes>
+      <segment>
+        <source>revoked</source>
+        <target>widerrufen</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.expired">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:71,73</note>
+      </notes>
+      <segment>
+        <source>expired</source>
+        <target>abgelaufen</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:102,103</note>
+      </notes>
+      <segment>
+        <source> Revoke </source>
+        <target> Widerrufen </target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke.title">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:123,124</note>
+      </notes>
+      <segment>
+        <source>Revoke this token</source>
+        <target>Dieses Token widerrufen</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke.message">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:128,131</note>
+      </notes>
+      <segment>
+        <source> Revoke “<ph id="0" equiv="INTERPOLATION" disp="{{ token.name }}"/>” of <ph id="1" equiv="INTERPOLATION_1" disp="{{ token.owner.displayName }}"/>? Scripts that use it are refused within half a minute. This cannot be undone; the owner can make a new token. </source>
+        <target> „<ph id="0" equiv="INTERPOLATION" disp="{{ token.name }}"/>“ von <ph id="1" equiv="INTERPOLATION_1" disp="{{ token.owner.displayName }}"/> widerrufen? Skripte, die es benutzen, werden innerhalb einer halben Minute abgewiesen. Das lässt sich nicht rückgängig machen; die Person, der es gehört, kann ein neues Token erstellen. </target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke.confirm">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:148,151</note>
+      </notes>
+      <segment>
+        <source> Revoke </source>
+        <target> Widerrufen </target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.ts:36</note>
+      </notes>
+      <segment>
+        <source>Access tokens · Administration · Elysion</source>
+        <target>Zugriffstokens · Administration · Elysion</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke.error">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.ts:81</note>
+      </notes>
+      <segment>
+        <source>The token could not be revoked.</source>
+        <target>Das Token konnte nicht widerrufen werden.</target>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.ts:89</note>
+      </notes>
+      <segment>
+        <source>Revoke <ph id="0" equiv="name" disp="token.name"/> of <ph id="1" equiv="owner" disp="token.owner.displayName"/></source>
+        <target><ph id="0" equiv="name" disp="token.name"/> von <ph id="1" equiv="owner" disp="token.owner.displayName"/> widerrufen</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.kind">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:24</note>
+      </notes>
+      <segment>
+        <source>Show</source>
+        <target>Anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.kind.all">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:28,29</note>
+      </notes>
+      <segment>
+        <source>People and integrations</source>
+        <target>Personen und Integrationen</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.kind.person">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:29,30</note>
+      </notes>
+      <segment>
+        <source>People</source>
+        <target>Personen</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.kind.integration">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:30,32</note>
+      </notes>
+      <segment>
+        <source>Integrations</source>
+        <target>Integrationen</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.integration">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:78,80</note>
+      </notes>
+      <segment>
+        <source>Integration</source>
+        <target>Integration</target>
+      </segment>
+    </unit>
+    <unit id="admin.users.integration.note">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:127,131</note>
+      </notes>
+      <segment>
+        <source> An integration: a client of the identity provider that uses the API with the access it was given on boards and rooms. Deactivating it refuses its next call. </source>
+        <target> Eine Integration: ein Client des Identitätsanbieters, der die API mit dem Zugriff benutzt, den er auf Boards und Räumen bekommen hat. Wird sie deaktiviert, wird ihr nächster Aufruf abgewiesen. </target>
+      </segment>
+    </unit>
+    <unit id="audit.token.created">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:69</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> made the access token “<ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/>”</source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat das Zugriffstoken „<ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/>“ erstellt</target>
+      </segment>
+    </unit>
+    <unit id="audit.token.revoked">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:71</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> revoked the access token “<ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/>” of <ph id="2" equiv="person" disp="entry.subjectName ?? target"/></source>
+        <target><ph id="0" equiv="actor" disp="actor"/> hat das Zugriffstoken „<ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/>“ von <ph id="2" equiv="person" disp="entry.subjectName ?? target"/> widerrufen</target>
+      </segment>
+    </unit>
+    <unit id="tokens.back">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:3,4</note>
+      </notes>
+      <segment>
+        <source>All boards</source>
+        <target>Alle Boards</target>
+      </segment>
+    </unit>
+    <unit id="tokens.headerTitle">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:4,5</note>
+      </notes>
+      <segment>
+        <source>Settings</source>
+        <target>Einstellungen</target>
+      </segment>
+    </unit>
+    <unit id="tokens.title">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:13,14</note>
+      </notes>
+      <segment>
+        <source>Access tokens</source>
+        <target>Zugriffstokens</target>
+      </segment>
+    </unit>
+    <unit id="tokens.lead">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:15,20</note>
+      </notes>
+      <segment>
+        <source> A token lets a script use the Elysion API as you: it sees what you see and can do what you can, within the scopes you give it. Keep it secret, give it only the scopes it needs and revoke it when it is no longer used. </source>
+        <target> Mit einem Token kann ein Skript die Elysion-API in deinem Namen benutzen: Es sieht, was du siehst, und kann, was du kannst, innerhalb der Bereiche, die du ihm gibst. Halte es geheim, gib ihm nur die Bereiche, die es braucht, und widerrufe es, wenn es nicht mehr benutzt wird. </target>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.title">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:22,23</note>
+      </notes>
+      <segment>
+        <source>Your new token “<ph id="0" equiv="INTERPOLATION" disp="{{ token.name }}"/>”</source>
+        <target>Dein neues Token „<ph id="0" equiv="INTERPOLATION" disp="{{ token.name }}"/>“</target>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.once">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:24,26</note>
+      </notes>
+      <segment>
+        <source> Copy it now. It is shown only this once: Elysion does not keep it. </source>
+        <target> Kopiere es jetzt. Es wird nur dieses eine Mal gezeigt: Elysion bewahrt es nicht auf. </target>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.label">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:31,32</note>
+      </notes>
+      <segment>
+        <source>New access token</source>
+        <target>Neues Zugriffstoken</target>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.copied">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:38,39</note>
+      </notes>
+      <segment>
+        <source>Copied</source>
+        <target>Kopiert</target>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.copy">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:40,42</note>
+      </notes>
+      <segment>
+        <source>Copy</source>
+        <target>Kopieren</target>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.done">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:45,47</note>
+      </notes>
+      <segment>
+        <source> I have copied it </source>
+        <target> Ich habe es kopiert </target>
+      </segment>
+    </unit>
+    <unit id="tokens.create.title">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:51,52</note>
+      </notes>
+      <segment>
+        <source>New token</source>
+        <target>Neues Token</target>
+      </segment>
+    </unit>
+    <unit id="tokens.create.name">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:54,56</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
+      </segment>
+    </unit>
+    <unit id="tokens.create.namePlaceholder">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:61,62</note>
+      </notes>
+      <segment>
+        <source>What it is for, e.g. Sprint boards script</source>
+        <target>Wofür es ist, z. B. Skript für Sprint-Boards</target>
+      </segment>
+    </unit>
+    <unit id="tokens.create.scopes">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:69,70</note>
+      </notes>
+      <segment>
+        <source>Scopes</source>
+        <target>Bereiche</target>
+      </segment>
+    </unit>
+    <unit id="tokens.create.expiry">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:83,84</note>
+      </notes>
+      <segment>
+        <source>Expires after</source>
+        <target>Läuft ab nach</target>
+      </segment>
+    </unit>
+    <unit id="tokens.create.button">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:102,104</note>
+      </notes>
+      <segment>
+        <source> Create token </source>
+        <target> Token erstellen </target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.title">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:109,110</note>
+      </notes>
+      <segment>
+        <source>Your tokens</source>
+        <target>Deine Tokens</target>
+      </segment>
+    </unit>
+    <unit id="tokens.loading">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:115,117</note>
+      </notes>
+      <segment>
+        <source>Loading…</source>
+        <target>Wird geladen…</target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.error">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:119,120</note>
+      </notes>
+      <segment>
+        <source>The tokens could not be loaded.</source>
+        <target>Die Tokens konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="tokens.retry">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:121,122</note>
+      </notes>
+      <segment>
+        <source> Try again </source>
+        <target> Erneut versuchen </target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.empty">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:127,129</note>
+      </notes>
+      <segment>
+        <source>You have no access tokens.</source>
+        <target>Du hast keine Zugriffstokens.</target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.caption">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:132,133</note>
+      </notes>
+      <segment>
+        <source> Your access tokens </source>
+        <target> Deine Zugriffstokens </target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.name">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:136,137</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.token">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:137,138</note>
+      </notes>
+      <segment>
+        <source>Token</source>
+        <target>Token</target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.scopes">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:138,139</note>
+      </notes>
+      <segment>
+        <source>Scopes</source>
+        <target>Bereiche</target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.lastUsed">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:139,140</note>
+      </notes>
+      <segment>
+        <source>Last used</source>
+        <target>Zuletzt benutzt</target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.expires">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:140,141</note>
+      </notes>
+      <segment>
+        <source>Expires</source>
+        <target>Läuft ab</target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.actions">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:142,144</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.never">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:164,166</note>
+      </notes>
+      <segment>
+        <source>never</source>
+        <target>nie</target>
+      </segment>
+    </unit>
+    <unit id="tokens.list.expired">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:170,172</note>
+      </notes>
+      <segment>
+        <source>expired</source>
+        <target>abgelaufen</target>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.button">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:181,182</note>
+      </notes>
+      <segment>
+        <source> Revoke </source>
+        <target> Widerrufen </target>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.title">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:197,198</note>
+      </notes>
+      <segment>
+        <source>Revoke this token</source>
+        <target>Dieses Token widerrufen</target>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.message">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:202,205</note>
+      </notes>
+      <segment>
+        <source> Revoke “<ph id="0" equiv="INTERPOLATION" disp="{{ token.name }}"/>”? Scripts that use it are refused from now on (within half a minute). This cannot be undone. </source>
+        <target> „<ph id="0" equiv="INTERPOLATION" disp="{{ token.name }}"/>“ widerrufen? Skripte, die es benutzen, werden von jetzt an abgewiesen (innerhalb einer halben Minute). Das lässt sich nicht rückgängig machen. </target>
+      </segment>
+    </unit>
+    <unit id="tokens.cancel">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:213,215</note>
+      </notes>
+      <segment>
+        <source> Cancel </source>
+        <target> Abbrechen </target>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.confirm">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:222,225</note>
+      </notes>
+      <segment>
+        <source> Revoke </source>
+        <target> Widerrufen </target>
+      </segment>
+    </unit>
+    <unit id="tokens.pageTitle">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:65</note>
+      </notes>
+      <segment>
+        <source>Access tokens · Elysion</source>
+        <target>Zugriffstokens · Elysion</target>
+      </segment>
+    </unit>
+    <unit id="tokens.create.error">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:123</note>
+      </notes>
+      <segment>
+        <source>The token could not be created.</source>
+        <target>Das Token konnte nicht erstellt werden.</target>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.error">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:176</note>
+      </notes>
+      <segment>
+        <source>The token could not be revoked.</source>
+        <target>Das Token konnte nicht widerrufen werden.</target>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.aria">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:188</note>
+      </notes>
+      <segment>
+        <source>Revoke <ph id="0" equiv="name" disp="token.name"/></source>
+        <target><ph id="0" equiv="name" disp="token.name"/> widerrufen</target>
+      </segment>
+    </unit>
+    <unit id="tokens.expiry.year">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:193</note>
+      </notes>
+      <segment>
+        <source>1 year</source>
+        <target>1 Jahr</target>
+      </segment>
+    </unit>
+    <unit id="tokens.expiry.days">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:194</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="days" disp="days"/> days</source>
+        <target><ph id="0" equiv="days" disp="days"/> Tage</target>
+      </segment>
+    </unit>
+    <unit id="tokens.scope.boardsRead">
+      <notes>
+        <note category="location">src/app/settings/scope-labels.ts:5</note>
+      </notes>
+      <segment>
+        <source>Read boards, rooms, members and versions</source>
+        <target>Boards, Räume, Mitglieder und Versionen lesen</target>
+      </segment>
+    </unit>
+    <unit id="tokens.scope.boardsWrite">
+      <notes>
+        <note category="location">src/app/settings/scope-labels.ts:7</note>
+      </notes>
+      <segment>
+        <source>Create, rename, duplicate and delete boards</source>
+        <target>Boards erstellen, umbenennen, duplizieren und löschen</target>
+      </segment>
+    </unit>
+    <unit id="tokens.scope.membersWrite">
+      <notes>
+        <note category="location">src/app/settings/scope-labels.ts:9</note>
+      </notes>
+      <segment>
+        <source>Add, change and remove members</source>
+        <target>Mitglieder hinzufügen, ändern und entfernen</target>
+      </segment>
+    </unit>
+    <unit id="tokens.scope.snapshotsWrite">
+      <notes>
+        <note category="location">src/app/settings/scope-labels.ts:11</note>
+      </notes>
+      <segment>
+        <source>Save versions of boards</source>
+        <target>Versionen von Boards speichern</target>
+      </segment>
+    </unit>
+    <unit id="tokens.scope.webhooksWrite">
+      <notes>
+        <note category="location">src/app/settings/scope-labels.ts:13</note>
+      </notes>
+      <segment>
+        <source>Register webhooks</source>
+        <target>Webhooks registrieren</target>
+      </segment>
+    </unit>
+    <unit id="share.people.integration">
+      <notes>
+        <note category="location">src/app/share/share-dialog.ts:81</note>
+      </notes>
+      <segment>
+        <source>Integration</source>
+        <target>Integration</target>
+      </segment>
+    </unit>
+    <unit id="topbar.user.tokens">
+      <notes>
+        <note category="location">src/app/topbar/user-menu.html:42,44</note>
+      </notes>
+      <segment>
+        <source> Access tokens </source>
+        <target> Zugriffstokens </target>
+      </segment>
+    </unit>
+    <unit id="admin.nav.webhooks">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:76,78</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+        <target>Webhooks</target>
+      </segment>
+    </unit>
+    <unit id="admin.webhooks.title">
+      <notes>
+        <note category="location">src/app/admin/admin-webhooks.ts:15,16</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+        <target>Webhooks</target>
+      </segment>
+    </unit>
+    <unit id="admin.webhooks.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-webhooks.ts:17,20</note>
+      </notes>
+      <segment>
+        <source> These webhooks receive the events of every board of this instance. Board owners add webhooks for their own boards in the board&apos;s Share dialog. </source>
+        <target> Diese Webhooks erhalten die Ereignisse aller Boards dieser Instanz. Besitzer von Boards fügen Webhooks für ihre eigenen Boards im Teilen-Dialog des Boards hinzu. </target>
+      </segment>
+    </unit>
+    <unit id="admin.webhooks.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-webhooks.ts:28</note>
+      </notes>
+      <segment>
+        <source>Webhooks · Administration · Elysion</source>
+        <target>Webhooks · Administration · Elysion</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.title">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:11,12</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+        <target>Webhooks</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.listTitle">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:16,19</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+        <target>Webhooks</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.lead">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:21,25</note>
+      </notes>
+      <segment>
+        <source> Elysion posts a signed JSON message to each URL when something happens: never the content of a board. Only https URLs are accepted. </source>
+        <target> Elysion sendet an jede URL eine signierte JSON-Nachricht, wenn etwas passiert: nie den Inhalt eines Boards. Nur https-URLs sind erlaubt. </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.title">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:28,30</note>
+      </notes>
+      <segment>
+        <source> The signing secret of <ph id="0" equiv="INTERPOLATION" disp="{{ webhook.url }}"/> </source>
+        <target> Das Signatur-Geheimnis von <ph id="0" equiv="INTERPOLATION" disp="{{ webhook.url }}"/> </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.once">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:31,34</note>
+      </notes>
+      <segment>
+        <source> Copy it now. It is shown only this once; the receiver needs it to check the Elysion-Signature header. </source>
+        <target> Kopiere es jetzt. Es wird nur dieses eine Mal gezeigt; der Empfänger braucht es, um den Header Elysion-Signature zu prüfen. </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.label">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:39,40</note>
+      </notes>
+      <segment>
+        <source>Signing secret</source>
+        <target>Signatur-Geheimnis</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.copied">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:46,47</note>
+      </notes>
+      <segment>
+        <source>Copied</source>
+        <target>Kopiert</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.copy">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:48,50</note>
+      </notes>
+      <segment>
+        <source>Copy</source>
+        <target>Kopieren</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.done">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:53,55</note>
+      </notes>
+      <segment>
+        <source> I have copied it </source>
+        <target> Ich habe es kopiert </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.url">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:60,62</note>
+      </notes>
+      <segment>
+        <source>URL</source>
+        <target>URL</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.urlPlaceholder">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:65,66</note>
+      </notes>
+      <segment>
+        <source>https://example.com/elysion</source>
+        <target>https://example.com/elysion</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.events">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:74,76</note>
+      </notes>
+      <segment>
+        <source> Events (none ticked: all of them) </source>
+        <target> Ereignisse (keines angekreuzt: alle) </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.button">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:94,98</note>
+      </notes>
+      <segment>
+        <source> Add webhook </source>
+        <target> Webhook hinzufügen </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.loading">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:107,109</note>
+      </notes>
+      <segment>
+        <source>Loading the webhooks…</source>
+        <target>Webhooks werden geladen…</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.list.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:112,114</note>
+      </notes>
+      <segment>
+        <source>The webhooks could not be loaded.</source>
+        <target>Die Webhooks konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.retry">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:115,116</note>
+        <note category="location">src/app/share/webhooks.html:215,216</note>
+      </notes>
+      <segment>
+        <source> Try again </source>
+        <target> Erneut versuchen </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.list.empty">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:121,123</note>
+      </notes>
+      <segment>
+        <source>No webhooks yet.</source>
+        <target>Noch keine Webhooks.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.state.on">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:129,130</note>
+      </notes>
+      <segment>
+        <source>active</source>
+        <target>aktiv</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.state.off">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:131,133</note>
+      </notes>
+      <segment>
+        <source>off</source>
+        <target>aus</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.disabledReason">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:139,140</note>
+      </notes>
+      <segment>
+        <source>Turned off:</source>
+        <target>Ausgeschaltet:</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.test">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:154,155</note>
+      </notes>
+      <segment>
+        <source> Send test event </source>
+        <target> Testereignis senden </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.disable">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:164,165</note>
+      </notes>
+      <segment>
+        <source> Turn off </source>
+        <target> Ausschalten </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.enable">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:174,175</note>
+      </notes>
+      <segment>
+        <source> Turn on </source>
+        <target> Einschalten </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.toggle">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:184,185</note>
+      </notes>
+      <segment>
+        <source> Deliveries </source>
+        <target> Zustellungen </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.remove">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:193,194</note>
+      </notes>
+      <segment>
+        <source> Delete </source>
+        <target> Löschen </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.loading">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:201,202</note>
+      </notes>
+      <segment>
+        <source> Loading the deliveries… </source>
+        <target> Zustellungen werden geladen… </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:207,208</note>
+      </notes>
+      <segment>
+        <source>The deliveries could not be loaded.</source>
+        <target>Die Zustellungen konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.empty">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:221,223</note>
+      </notes>
+      <segment>
+        <source>Nothing was sent yet.</source>
+        <target>Noch nichts gesendet.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.event">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:227,228</note>
+      </notes>
+      <segment>
+        <source>Event</source>
+        <target>Ereignis</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.status">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:228,229</note>
+      </notes>
+      <segment>
+        <source>Status</source>
+        <target>Status</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.response">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:229,230</note>
+      </notes>
+      <segment>
+        <source>Response</source>
+        <target>Antwort</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.duration">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:230,231</note>
+      </notes>
+      <segment>
+        <source>Duration</source>
+        <target>Dauer</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.attempts">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:231,232</note>
+      </notes>
+      <segment>
+        <source>Attempts</source>
+        <target>Versuche</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.time">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:232,233</note>
+      </notes>
+      <segment>
+        <source>Time</source>
+        <target>Zeit</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.actions">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:235,236</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.redeliver">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:278</note>
+      </notes>
+      <segment>
+        <source> Send again </source>
+        <target> Erneut senden </target>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:120</note>
+      </notes>
+      <segment>
+        <source>The webhook could not be added.</source>
+        <target>Der Webhook konnte nicht hinzugefügt werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.update.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:151</note>
+      </notes>
+      <segment>
+        <source>The webhook could not be changed.</source>
+        <target>Der Webhook konnte nicht geändert werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.remove.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:162</note>
+      </notes>
+      <segment>
+        <source>The webhook could not be deleted.</source>
+        <target>Der Webhook konnte nicht gelöscht werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.test.sent">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:171</note>
+      </notes>
+      <segment>
+        <source>A test event is on its way. Its delivery shows in the list below.</source>
+        <target>Ein Testereignis ist unterwegs. Seine Zustellung erscheint in der Liste unten.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.test.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:175</note>
+      </notes>
+      <segment>
+        <source>The test event could not be sent.</source>
+        <target>Das Testereignis konnte nicht gesendet werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.redeliver.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:199</note>
+      </notes>
+      <segment>
+        <source>The delivery could not be sent again.</source>
+        <target>Die Zustellung konnte nicht erneut gesendet werden.</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.events.all">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:205</note>
+      </notes>
+      <segment>
+        <source>all events</source>
+        <target>alle Ereignisse</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.status.succeeded">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:212</note>
+      </notes>
+      <segment>
+        <source>delivered</source>
+        <target>zugestellt</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.status.failed">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:214</note>
+      </notes>
+      <segment>
+        <source>failed</source>
+        <target>fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.status.pending">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:216</note>
+      </notes>
+      <segment>
+        <source>pending</source>
+        <target>ausstehend</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.boardCreated">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:223</note>
+      </notes>
+      <segment>
+        <source>A board was created</source>
+        <target>Ein Board wurde erstellt</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.boardRenamed">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:225</note>
+      </notes>
+      <segment>
+        <source>The board was renamed</source>
+        <target>Das Board wurde umbenannt</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.boardDeleted">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:227</note>
+      </notes>
+      <segment>
+        <source>The board was deleted</source>
+        <target>Das Board wurde gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.contentChanged">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:229</note>
+      </notes>
+      <segment>
+        <source>The content changed (at most once a minute)</source>
+        <target>Der Inhalt hat sich geändert (höchstens einmal pro Minute)</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.memberAdded">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:231</note>
+      </notes>
+      <segment>
+        <source>A member was added</source>
+        <target>Ein Mitglied wurde hinzugefügt</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.memberRemoved">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:233</note>
+      </notes>
+      <segment>
+        <source>A member was removed</source>
+        <target>Ein Mitglied wurde entfernt</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.memberRoleChanged">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:235</note>
+      </notes>
+      <segment>
+        <source>The role of a member changed</source>
+        <target>Die Rolle eines Mitglieds hat sich geändert</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.snapshotCreated">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:237</note>
+      </notes>
+      <segment>
+        <source>A version was saved</source>
+        <target>Eine Version wurde gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.aria">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:244</note>
+      </notes>
+      <segment>
+        <source>Last deliveries to <ph id="0" equiv="url" disp="webhook.url"/></source>
+        <target>Letzte Zustellungen an <ph id="0" equiv="url" disp="webhook.url"/></target>
       </segment>
     </unit>
   </file>

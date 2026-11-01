@@ -11,3 +11,10 @@ export const MESSAGE_BOARD_FULL = 4;
  * `voting/voting-broadcast.ts`). Server to client only; a client that does not know the type ignores it. A client never sends it.
  */
 export const MESSAGE_VOTING = 5;
+/**
+ * A person restored a version of the board (ADR 0032, #847). Payload: one var string, the JSON
+ * `{ by, at, snapshotId }` (`by` is the display name of the person, `at` the moment the version was made, ISO 8601). The
+ * restore itself reaches the clients as an ordinary document update; this only says who did it. Server to client only; a
+ * client that does not know the type ignores it.
+ */
+export const MESSAGE_RESTORED = 6;

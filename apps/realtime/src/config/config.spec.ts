@@ -19,9 +19,9 @@ describe('loadConfig', () => {
     expect(
       loadConfig({
         ...valid,
-        OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: 'http://victorialogs:9428/insert/opentelemetry/v1/logs',
+        OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: 'http://aspire-dashboard:18890/v1/logs',
       }),
-    ).toMatchObject({ otlpLogsEndpoint: 'http://victorialogs:9428/insert/opentelemetry/v1/logs' });
+    ).toMatchObject({ otlpLogsEndpoint: 'http://aspire-dashboard:18890/v1/logs' });
     expect(() => loadConfig({ ...valid, OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: 'nope' })).toThrow(
       /OTEL_EXPORTER_OTLP_LOGS_ENDPOINT must be an http\(s\) URL/,
     );

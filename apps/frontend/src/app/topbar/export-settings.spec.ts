@@ -50,6 +50,13 @@ describe('parseSettings', () => {
     );
   });
 
+  it('has the agenda page off unless it was switched on (#849)', () => {
+    expect(DEFAULT_EXPORT_SETTINGS.agenda).toBe(false);
+    expect(parseSettings({ agenda: true }).agenda).toBe(true);
+    expect(parseSettings({ agenda: 1 }).agenda).toBe(false);
+    expect(toCanvasOptions({ ...DEFAULT_EXPORT_SETTINGS, agenda: true }, false).agenda).toBe(true);
+  });
+
   it('accepts a background that is switched off', () => {
     expect(parseSettings({ background: false }).background).toBe(false);
   });
@@ -99,6 +106,7 @@ describe('toCanvasOptions', () => {
       pageFormat: 'fit',
       orientation: 'auto',
       comments: false,
+      agenda: false,
     });
   });
 });

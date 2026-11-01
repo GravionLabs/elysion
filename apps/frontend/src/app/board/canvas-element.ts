@@ -59,6 +59,31 @@ export interface BoardVotingApi {
   clear(): Promise<void>;
 }
 
+/** A version of a board in its history (ADR 0032, #846); `author` is null for an automatic one. */
+export interface BoardSnapshotInfo {
+  id: string;
+  kind: 'Manual' | 'Auto' | 'BeforeRestore';
+  name: string | null;
+  author: string | null;
+  createdAt: string;
+  sizeBytes: number;
+  elementCount: number | null;
+}
+
+/** What the canvas calls to reach the versions of a board (`snapshotApi` of `<elysion-canvas>`, #846). A rejection carries the HTTP `status`. */
+export interface BoardSnapshotApi {
+  list(): Promise<BoardSnapshotInfo[]>;
+  create(name?: string): Promise<BoardSnapshotInfo>;
+  rename(id: string, name: string): Promise<BoardSnapshotInfo>;
+  remove(id: string): Promise<void>;
+  /** The Yjs state of a version, for its preview picture. */
+  document(id: string): Promise<Uint8Array>;
+  /** Restores a version onto the board (owners, #847); resolves with the "Before restore" version kept first, or `null`. */
+  restore(id: string): Promise<BoardSnapshotInfo | null>;
+  /** "Open as new board" (#847): the board that was made, with the route that opens it. */
+  openAsNew(id: string): Promise<{ id: string; path: string }>;
+}
+
 /** The `offline` event of the canvas (#735): the connection broke after the board was loaded, or is back. */
 export interface OfflineState {
   offline: boolean;
@@ -68,6 +93,16 @@ export interface OfflineState {
   pending: number;
   /** In the report that ends an outage: how many changes were pending when the connection came back. */
   sent: number;
+}
+
+/**
+ * The canvas's `follow` event (#848): whom this client follows (a person, or the presenter), the presenter while they
+ * are on the board, and whether this client stepped out of that presentation.
+ */
+export interface FollowState {
+  following: { id: string; name: string; color: string; reason: 'person' | 'presenter' } | null;
+  presenter: { id: string; name: string; color: string; me: boolean } | null;
+  steppedOut: boolean;
 }
 
 export interface TimerState {
@@ -107,6 +142,8 @@ export type CanvasElement = HTMLElement & {
       orientation?: 'auto' | 'portrait' | 'landscape';
       /** A PDF gets the board's comments as text pages at the end (#733). */
       comments?: boolean;
+      /** A PDF gets the board's agenda, with planned and spent times, as its first page (#849). */
+      agenda?: boolean;
     },
   ): Promise<Blob | null>;
   /**
@@ -123,6 +160,8 @@ export type CanvasElement = HTMLElement & {
   fileStore?: BoardFileStore;
   /** How the canvas reaches the board's voting on the server (`GET/POST/DELETE` through the BFF, ADR 0029). A property, as an object with methods. */
   votingApi?: BoardVotingApi;
+  /** How the canvas reaches the versions of the board (`GET/POST/PATCH/DELETE` through the BFF, ADR 0032). A property, as an object with methods. */
+  snapshotApi?: BoardSnapshotApi;
   /**
    * The people `@` offers in a comment (#733), asked each time the comments open: `{id, name}`. A property, as a function.
    * The `can-moderate` attribute (the board's owner may delete any comment) goes with the comments.
@@ -158,4 +197,15 @@ export type CanvasElement = HTMLElement & {
   clearVotingResults?(): Promise<void>;
   /** Scrolls the view to an element (a result); rejects when it is not on the board. */
   scrollToElement?(elementId: string): Promise<void>;
+  /**
+   * Follows a person by the `id` of a `presence` entry (#848): the canvas shows what their window shows until they pan, zoom
+   * or press Esc. Rejects when they are not on the board, and before the canvas is up. The canvas announces the state as the
+   * `follow` event.
+   */
+  follow?(userId: string): Promise<void>;
+  /** Presenting: everybody follows the presenter. The first two reject on a read-only canvas; `stopPresenting` is for the presenter and the owner (`can-moderate`). */
+  startPresenting?(): Promise<void>;
+  stopPresenting?(): Promise<void>;
+  /** "Bring everyone to me": everybody else's view jumps once to this one. Rejects on a read-only canvas. */
+  summonEveryone?(): Promise<void>;
 };

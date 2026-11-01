@@ -12,11 +12,19 @@ public sealed class CurrentUserAccessor : ICurrentUser
     public string DisplayName => Current.DisplayName;
     public string? Email => Current.Email;
     public bool IsAdministrator { get; private set; }
+    public bool IsIntegration => Current.IsIntegration;
+    public Guid? AccessTokenId { get; private set; }
+    public IReadOnlyList<string> Scopes { get; private set; } = [];
 
-    internal void Set(User user, bool isAdministrator = false)
+    internal void Set(User user,
+        bool isAdministrator = false,
+        Guid? accessTokenId = null,
+        IReadOnlyList<string>? scopes = null)
     {
         _user = user;
         IsAdministrator = isAdministrator;
+        AccessTokenId = accessTokenId;
+        Scopes = scopes ?? [];
     }
 
     private User Current => _user

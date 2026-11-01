@@ -1,9 +1,10 @@
 import { defineConfig } from '@playwright/test';
+import { BASE_URL } from './tests/stack.js';
 
 /**
  * Browser tests of the running stack (`docker compose up -d`, or `pnpm dev:stack`). They are not part of `pnpm test`.
  *
- * - `E2E_BASE_URL`: where the stack is (default http://localhost).
+ * - `E2E_BASE_URL`: where the stack is (default: this checkout's stack, http://localhost unless ELYSION_PORT_OFFSET moves it, #890).
  * - `E2E_USER_A` / `E2E_USER_B`: two demo users (default dev1 and dev2; the password is the username). A Keycloak
  *   database that was imported before dev1 and dev2 existed has only `dev` and `guest`.
  * - `E2E_CHROME_PATH`: a browser to use instead of Playwright's own (`pnpm exec playwright install chromium`).
@@ -18,7 +19,7 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost',
+    baseURL: BASE_URL,
     viewport: { width: 1280, height: 800 },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

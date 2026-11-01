@@ -22,6 +22,9 @@ providers:
     exposedByDefault: false
     # Route over the stack's own network (the project is called `elysion`), whatever other networks a service joins.
     network: elysion_elysion
+    # Only the containers of this compose project: a second dev stack on the machine (another worktree, #890) has the same
+    # routers. scripts/dev-stack.mjs writes a copy with the other stack's name into both lines.
+    constraints: 'Label(`com.docker.compose.project`,`elysion`)'
   # Middlewares (edge authentication): see dynamic/middlewares.yml.
   file:
     directory: '/etc/traefik/dynamic'
@@ -32,7 +35,9 @@ log:
 
 # One JSON line per request on stdout (docs/specs/gateway.md). The /yjs URL carries the WS token in its query string
 # (`?board=...&token=...`) and Traefik writes `RequestPath` with the query: the query parameters are dropped (Traefik
-# 3.7.3 or later), the path stays. Request headers (Authorization, Cookie) are dropped, which is also the default.
+# 3.7.3 or later), the path stays. Request headers (Authorization, Cookie) are dropped, which is also the default, except
+# `X-Request-Id` (request and response, `request_X-Request-Id`/`downstream_X-Request-Id`): a correlation key, not a secret
+# (ADR 0025), with which a request is found in the access log as in the services' logs (ADR 0034).
 accessLog:
   format: json
   fields:
@@ -45,6 +50,8 @@ accessLog:
       RequestPath: drop
     headers:
       defaultMode: drop
+      names:
+        X-Request-Id: keep
   # logs:otlp (`pnpm dev:logs` replaces this line with the export to the log viewer, scripts/traefik-logs-config.mjs)
 
 # Request counts and durations per entry point, router and service (docs/specs/gateway.md).

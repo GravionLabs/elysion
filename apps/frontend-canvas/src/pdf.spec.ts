@@ -218,6 +218,40 @@ describe('the comments appendix (#733)', () => {
   });
 });
 
+describe('the agenda page (#849)', () => {
+  const cover = {
+    title: 'Agenda',
+    lines: [
+      { text: '1. Intro', bold: true },
+      { text: 'Planned 5 min, spent 4 min', indent: 12 },
+    ],
+  };
+
+  it('is the first page, A4 portrait, with a bookmark, before the board', async () => {
+    const result = await inspect(
+      await svgsToPdf([{ svg: svgOf(400, 200), title: 'Frame' }], {}, null, cover),
+    );
+
+    expect(result.pages).toBe(2);
+    expect(result.width).toBeCloseTo(595, 0); // A4: 794 px, 595 points
+    expect(result.height).toBeCloseTo(842, 0);
+    expect(result.text.indexOf('/Title (Agenda)')).toBeGreaterThan(-1);
+    expect(result.text).toContain('/Title (Frame)');
+  });
+
+  it('runs on to another page when it is long, and comes before an appendix too', async () => {
+    const long = {
+      title: 'Agenda',
+      lines: Array.from({ length: 80 }, (_, index) => ({ text: `${index + 1}. An item` })),
+    };
+    const appendix = { title: 'Comments', sections: [] };
+
+    const result = await inspect(await svgsToPdf([{ svg: svgOf(400, 200) }], {}, appendix, long));
+
+    expect(result.pages).toBe(4); // two of agenda, the board, the appendix
+  });
+});
+
 describe('svgsToPdf', () => {
   const content = '<rect x="10" y="10" width="50" height="30" fill="#ff0000"/>';
 

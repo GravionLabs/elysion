@@ -23,6 +23,8 @@ What follows judges the **design** and the **code**, and says "demo only" where 
 | Templates                        | Postgres; private to their owner, built-in ones are public                                    | Content of the owner                                                                                              |
 | Identities                       | Keycloak (its own database): passwords, refresh tokens, the realm                             | Everything else follows from them. Services never see a password                                                  |
 | Access token                     | The browser's memory (Keycloak JWT, 5 minutes, audience `elysion-bff`)                        | Acts as the person on every `/api` call                                                                           |
+| Personal access token (`elp_`)   | Wherever its owner put it (a script, a CI secret); Postgres has only its SHA-256              | Acts as its owner on `/public/v1`, within its scopes, until it expires (at most a year) or is revoked             |
+| Integration's client secret      | Keycloak, and wherever the integration runs                                                   | Mints Keycloak tokens of the integration: its boards and rooms, through `/public/v1` only                         |
 | Refresh token                    | The browser (30 minutes of session idle in the demo realm)                                    | Mints new access tokens                                                                                           |
 | WS token                         | The browser, the URL of one WebSocket upgrade (HS256, 60 s, one board, one role)              | Opens one board with the role it carries                                                                          |
 | `WS_TOKEN_SECRET`                | BFF and realtime environment                                                                  | Whoever has it mints a WS token for any board with any role                                                       |
@@ -37,6 +39,7 @@ What follows judges the **design** and the **code**, and says "demo only" where 
 | `http://<host>/` (frontend, nginx)                                                         | Anybody who reaches the edge                                                        | None (the app must load to start the login). Static files and the security headers                                      |
 | `/api/*` (BFF, through Traefik)                                                            | Anybody who reaches the edge                                                        | Access token, checked by Traefik's `forwardAuth` (`GET /api/auth/verify`) and again by the BFF and the business backend |
 | `POST /api/csp-report`                                                                     | Anybody who reaches the edge                                                        | **None, on purpose** (a browser sends a report without a token); rate limited, body limited                             |
+| `/public/v1/*` (BFF, through Traefik, ADR 0033)                                            | Anybody who reaches the edge                                                        | Personal access token, integration token or a person's access token, checked by the BFF's guard and the backend         |
 | `/yjs` (realtime, WebSocket)                                                               | Anybody who reaches the edge                                                        | WS token in the query string, checked at the handshake only; no rate limit                                              |
 | `/health` of the services                                                                  | The compose network (not routed)                                                    | None                                                                                                                    |
 | `/metrics` of each service                                                                 | The compose network (not routed)                                                    | None                                                                                                                    |
@@ -57,6 +60,13 @@ What follows judges the **design** and the **code**, and says "demo only" where 
    the compose file does not and is documented as a demo.
 4. **The service to service tokens.** Each service checks the token it acts on: the business backend validates the Keycloak JWT itself and
    authorizes by membership; `/internal` accepts only the realtime service's token (another authentication scheme, another issuer and audience).
+5. **Scripts and integrations on the Internet** ([ADR 0033](adr/0033-public-api-tokens-and-webhooks.md), tokens since #851, the routes
+   since #852, webhooks since #853). The public API at `/public/v1` has its own router without CORS and `forwardAuth`, with a rate
+   limit per client address at the edge, a rate limit per token in the BFF (keyed by the token the backend resolved, so made-up tokens
+   get no buckets of their own) and a body limit of 1 MiB at both. Every route passes the token on to the business backend, which
+   authorizes as for the browser and sees a revoke on that call. Personal access tokens (`elp_`, stored as a hash, with an expiry and scopes) and Keycloak service
+   accounts (role `elysion-integration`) are accepted there only (`401` and `403` on `/api`) and act as their person or integration; a token
+   cannot make, list or revoke tokens. Webhooks are the way out: signed, `https` only, never to a private address (see "Webhooks" below).
 
 ### Attacker positions and what each can do
 
@@ -67,6 +77,7 @@ What follows judges the **design** and the **code**, and says "demo only" where 
 | **A removed or demoted member**         | Keep their open WebSocket for up to `MEMBERSHIP_RECHECK_MS` (15 s) ([finding F1](#confirmed-findings), fixed in #772), then the socket is closed or lowered. Cannot fetch a new WS token (403) or call `/api` for the board.                                                        | Reconnect after the connection drops.                                                                                                      |
 | **Stolen access token**                 | Everything the person can do through `/api` for up to 5 minutes (the token is not revocable: services validate the signature and the expiry, nothing else), and exchange it for WS tokens for the person's boards. No refresh.                                                      | Anything after expiry; access to `/internal` (another scheme, 401 verified).                                                               |
 | **Stolen refresh token**                | Mint access tokens for the rest of the session (30 minutes idle, up to the SSO maximum). The realm decides; services do not see it.                                                                                                                                                 | n/a (Keycloak revokes it with the session).                                                                                                |
+| **Stolen personal access token**        | Everything its owner can do on `/public/v1` within the token's scopes, until it expires (at most a year) or is revoked by the owner or an administrator (refused within 30 s, at once on this instance's backend). Deactivating the owner stops it at once.                         | Use `/api` (401 at the guard), make another token (403), see more than the owner, act after revocation.                                    |
 | **Stolen WS token**                     | Open one board with the role in the token for the remaining seconds of its life; the token was not single-use (two sockets with one token both opened, fixed in #772) and the socket stays open as long as the person has a role (checked every 15 s).                              | Open another board (4403), keep the token past 60 s for a new connection, call `/api`.                                                     |
 | **Leaked `WS_TOKEN_SECRET`**            | Mint a WS token for any board, any role, any `sub` (confirmed: a forged owner token opened a board). The identity is not looked up. The realtime service trusts the claim.                                                                                                          | Read the database or call the backend: the WS token is no credential there.                                                                |
 | **Leaked `INTERNAL_API_SECRET`**        | Read, overwrite and delete the stored document of any board through `/internal` (confirmed from the compose network), and store a document for a board id that does not exist. Users' content is lost or replaced without a trace.                                                  | Use `/api`, and no user identity (no `sub` is checked).                                                                                    |
@@ -157,6 +168,46 @@ Severity is for a production deployment; "demo only" says when the cause is a de
 ## Audit log
 
 Who gave or took away access is written down (#669, [business-backend.md](specs/business-backend.md), "Audit log"): members of boards and rooms, group roles on rooms, groups, the groups a person gets from the identity provider at sign-in, and invitation links. The entry is saved in the same transaction as the change. It holds ids, roles, counts and group names; **never** a token (an invitation link's secret is not in any entry), an email address or what is on a board. It is readable by the instance administrators (metadata only, as everything under `/admin`) and, for one board or room, by its owners. Entries are kept `AUDIT_RETENTION_DAYS` (365 by default). The log is not tamper-proof against someone with write access to the database; for that, ship the structured logs (each entry carries the request id of its log lines) to a store the database operators cannot change.
+
+## Personal access tokens and secret scanning
+
+A personal access token (#851, [ADR 0033](adr/0033-public-api-tokens-and-webhooks.md), [api.md](api.md)) is `elp_` followed by 43
+characters of `[0-9A-Za-z]` (more than 256 random bits), 47 characters in all. The prefix is for **secret scanning**: a token found in a
+repository, a log or a paste can be recognised with the pattern
+
+```regex
+\belp_[0-9A-Za-z]{43}\b
+```
+
+(for example as a custom pattern of GitHub secret scanning, or a rule of gitleaks or trufflehog). Elysion stores the SHA-256 of the token
+and its first twelve characters (`elp_` and eight more), which the person's list and the administration show: search the administration's
+"Access tokens" for the start of a leaked token to find its owner, and revoke it there. Every token expires (at most one year), making and
+revoking one is in the audit log (`token.created`, `token.revoked`), and the logs carry the token's id, never the token.
+
+## Webhooks
+
+Webhooks (#853, [webhooks.md](webhooks.md), [ADR 0033](adr/0033-public-api-tokens-and-webhooks.md)) make the business backend send requests to
+URLs that board owners and administrators choose: the one place where Elysion connects to an address a user gives it.
+
+- **SSRF.** A URL must be `https` (plain `http` only with `WEBHOOKS_ALLOW_HTTP`, for development), without a user name or password, and not
+  an address literal of a refused range or `localhost` (a first answer at registration, `WebhookUrl`). The real check is made by the worker
+  when it connects (`WebhookHttpHandler`): it resolves the host itself, keeps only public unicast addresses (`WebhookAddressPolicy`: not
+  private, loopback, link-local with `169.254.169.254`, shared, unique-local, multicast, documentation or reserved, in IPv4 and IPv6, and
+  an IPv4 address inside an IPv6 one, mapped, compatible, NAT64 or 6to4, is judged as that IPv4 address) and connects the socket to an
+  address it checked, so a second resolution cannot point it elsewhere (DNS rebinding). No redirect is followed, no proxy is used, no
+  cookie kept, the answer's body is not read; each attempt has 10 seconds. `WEBHOOKS_ALLOW_PRIVATE_NETWORKS` lifts the address check for
+  a receiver on a developer's machine and must never be set in production.
+- **Secrets.** Each webhook has its own secret (`whsec_` and 43 random characters), shown once. Unlike a personal access token it is kept
+  as it is, not as a hash, because the backend needs it to sign (HMAC-SHA256 over `<t>.<body>`, `Elysion-Signature`); a copy of the
+  database therefore lets its holder forge deliveries to that webhook's receiver, which has to check the signature anyway. It is never
+  returned again (lists show `whsec_` and four characters), never logged; receivers refuse a timestamp older than five minutes.
+- **What leaves.** A payload has ids, names, roles and a version number, never the content of a board. The URL's path and query (which may
+  carry the receiver's own secret) are not logged, only the host; adding and deleting a webhook are in the audit log with the host.
+- **Who.** Only owners of a board register webhooks for it (the board's administer policy; `404` for a non-member), and only
+  administrators for every board. A webhook ends when it is deleted, when its board is deleted (after `board.deleted` was delivered), or
+  after a day of failures (switched off).
+- **Load.** At most ten webhooks per board and ten for the instance; a delivery is tried for at most 24 hours; `board.content.changed` at most
+  once a minute per board. The outbox has an alert (`WebhookOutboxGrowing`, [operations](operations.md#webhookoutboxgrowing)).
 
 ## Accepted advisories
 

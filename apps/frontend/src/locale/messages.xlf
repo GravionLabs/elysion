@@ -66,7 +66,8 @@
         <note category="location">src/app/admin/admin-groups.html:403,404</note>
         <note category="location">src/app/admin/admin-overview.html:10,12</note>
         <note category="location">src/app/admin/admin-rooms.html:29,31</note>
-        <note category="location">src/app/admin/admin-users.html:29,31</note>
+        <note category="location">src/app/admin/admin-tokens.html:34,36</note>
+        <note category="location">src/app/admin/admin-users.html:40,42</note>
       </notes>
       <segment>
         <source> Try again </source>
@@ -81,9 +82,10 @@
         <note category="location">src/app/admin/admin-groups.html:396,397</note>
         <note category="location">src/app/admin/admin-overview.html:35,38</note>
         <note category="location">src/app/admin/admin-rooms.html:35,37</note>
-        <note category="location">src/app/admin/admin-users.html:35,37</note>
-        <note category="location">src/app/admin/admin-users.html:175,177</note>
-        <note category="location">src/app/admin/admin-users.html:243,245</note>
+        <note category="location">src/app/admin/admin-tokens.html:40,42</note>
+        <note category="location">src/app/admin/admin-users.html:46,48</note>
+        <note category="location">src/app/admin/admin-users.html:195,197</note>
+        <note category="location">src/app/admin/admin-users.html:263,265</note>
       </notes>
       <segment>
         <source>Loading…</source>
@@ -264,8 +266,9 @@
         <note category="location">src/app/admin/admin-groups.html:467,468</note>
         <note category="location">src/app/admin/admin-groups.html:502,503</note>
         <note category="location">src/app/admin/admin-groups.html:537,538</note>
-        <note category="location">src/app/admin/admin-users.html:271,272</note>
-        <note category="location">src/app/admin/admin-users.html:303,304</note>
+        <note category="location">src/app/admin/admin-tokens.html:139,141</note>
+        <note category="location">src/app/admin/admin-users.html:291,292</note>
+        <note category="location">src/app/admin/admin-users.html:323,324</note>
       </notes>
       <segment>
         <source> Cancel </source>
@@ -332,8 +335,9 @@
         <note category="location">src/app/admin/admin-groups.html:92,95</note>
         <note category="location">src/app/admin/admin-groups.html:281,282</note>
         <note category="location">src/app/admin/admin-rooms.html:21,24</note>
-        <note category="location">src/app/admin/admin-users.html:21,24</note>
-        <note category="location">src/app/admin/admin-users.html:171,172</note>
+        <note category="location">src/app/admin/admin-tokens.html:22,25</note>
+        <note category="location">src/app/admin/admin-users.html:32,35</note>
+        <note category="location">src/app/admin/admin-users.html:191,192</note>
       </notes>
       <segment>
         <source>Search</source>
@@ -550,7 +554,7 @@
     <unit id="admin.deactivated">
       <notes>
         <note category="location">src/app/admin/admin-groups.html:358,360</note>
-        <note category="location">src/app/admin/admin-users.html:67,69</note>
+        <note category="location">src/app/admin/admin-users.html:81,83</note>
       </notes>
       <segment>
         <source>deactivated</source>
@@ -877,9 +881,25 @@
         <source>Rooms</source>
       </segment>
     </unit>
+    <unit id="admin.nav.tokens">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:66,68</note>
+      </notes>
+      <segment>
+        <source>Access tokens</source>
+      </segment>
+    </unit>
+    <unit id="admin.nav.webhooks">
+      <notes>
+        <note category="location">src/app/admin/admin-layout.html:76,78</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+      </segment>
+    </unit>
     <unit id="admin.nav.audit">
       <notes>
-        <note category="location">src/app/admin/admin-layout.html:67,68</note>
+        <note category="location">src/app/admin/admin-layout.html:87,88</note>
       </notes>
       <segment>
         <source>Audit</source>
@@ -887,7 +907,7 @@
     </unit>
     <unit id="admin.denied.title">
       <notes>
-        <note category="location">src/app/admin/admin-layout.html:78,79</note>
+        <note category="location">src/app/admin/admin-layout.html:98,99</note>
       </notes>
       <segment>
         <source>You are not an administrator</source>
@@ -895,7 +915,7 @@
     </unit>
     <unit id="admin.denied.message">
       <notes>
-        <note category="location">src/app/admin/admin-layout.html:80,82</note>
+        <note category="location">src/app/admin/admin-layout.html:100,102</note>
       </notes>
       <segment>
         <source> This area is for the administrators of this instance. Ask one of them if you need access. </source>
@@ -903,7 +923,7 @@
     </unit>
     <unit id="admin.denied.back">
       <notes>
-        <note category="location">src/app/admin/admin-layout.html:82,85</note>
+        <note category="location">src/app/admin/admin-layout.html:102,105</note>
       </notes>
       <segment>
         <source>Back to your boards</source>
@@ -911,7 +931,7 @@
     </unit>
     <unit id="admin.checking">
       <notes>
-        <note category="location">src/app/admin/admin-layout.html:86,90</note>
+        <note category="location">src/app/admin/admin-layout.html:106,110</note>
       </notes>
       <segment>
         <source>Checking your access…</source>
@@ -1207,6 +1227,200 @@
         <source>Share the room <ph id="0" equiv="name" disp="room.name"/></source>
       </segment>
     </unit>
+    <unit id="admin.tokens.title">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:1,2</note>
+      </notes>
+      <segment>
+        <source>Access tokens</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:3,8</note>
+      </notes>
+      <segment>
+        <source> The personal access tokens people made for the API. A token acts as its owner; revoke one that leaked or is no longer needed. The start of a token is enough to find one reported by a secret scanner.
+</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.search.placeholder">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:15,16</note>
+      </notes>
+      <segment>
+        <source>Name, start of the token or owner</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.search">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:17,18</note>
+      </notes>
+      <segment>
+        <source>Search access tokens</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.error">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:32,33</note>
+      </notes>
+      <segment>
+        <source>The tokens could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.empty">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:43,44</note>
+      </notes>
+      <segment>
+        <source>No token matches.</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.caption">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:48,50</note>
+      </notes>
+      <segment>
+        <source> Access tokens </source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.name">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:52,53</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.token">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:53,54</note>
+      </notes>
+      <segment>
+        <source>Token</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.owner">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:54,55</note>
+      </notes>
+      <segment>
+        <source>Owner</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.scopes">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:55,56</note>
+      </notes>
+      <segment>
+        <source>Scopes</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.lastUsed">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:56,57</note>
+      </notes>
+      <segment>
+        <source>Last used</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.expires">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:57,58</note>
+      </notes>
+      <segment>
+        <source>Expires</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.actions">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:59,61</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoked">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:69,70</note>
+      </notes>
+      <segment>
+        <source>revoked</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.expired">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:71,73</note>
+      </notes>
+      <segment>
+        <source>expired</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.never">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:89,91</note>
+        <note category="location">src/app/admin/admin-users.html:98,100</note>
+      </notes>
+      <segment>
+        <source>never</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:102,103</note>
+      </notes>
+      <segment>
+        <source> Revoke </source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke.title">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:123,124</note>
+      </notes>
+      <segment>
+        <source>Revoke this token</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke.message">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:128,131</note>
+      </notes>
+      <segment>
+        <source> Revoke “<ph id="0" equiv="INTERPOLATION" disp="{{ token.name }}"/>” of <ph id="1" equiv="INTERPOLATION_1" disp="{{ token.owner.displayName }}"/>? Scripts that use it are refused within half a minute. This cannot be undone; the owner can make a new token. </source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke.confirm">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.html:148,151</note>
+      </notes>
+      <segment>
+        <source> Revoke </source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.ts:36</note>
+      </notes>
+      <segment>
+        <source>Access tokens · Administration · Elysion</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke.error">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.ts:81</note>
+      </notes>
+      <segment>
+        <source>The token could not be revoked.</source>
+      </segment>
+    </unit>
+    <unit id="admin.tokens.revoke.aria">
+      <notes>
+        <note category="location">src/app/admin/admin-tokens.ts:89</note>
+      </notes>
+      <segment>
+        <source>Revoke <ph id="0" equiv="name" disp="token.name"/> of <ph id="1" equiv="owner" disp="token.owner.displayName"/></source>
+      </segment>
+    </unit>
     <unit id="admin.users.title">
       <notes>
         <note category="location">src/app/admin/admin-users.html:1,2</note>
@@ -1227,7 +1441,7 @@
     <unit id="admin.users.search.placeholder">
       <notes>
         <note category="location">src/app/admin/admin-users.html:14,15</note>
-        <note category="location">src/app/admin/admin-users.html:164,165</note>
+        <note category="location">src/app/admin/admin-users.html:184,185</note>
       </notes>
       <segment>
         <source>Name or email</source>
@@ -1241,9 +1455,41 @@
         <source>Search users</source>
       </segment>
     </unit>
+    <unit id="admin.users.kind">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:24</note>
+      </notes>
+      <segment>
+        <source>Show</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.kind.all">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:28,29</note>
+      </notes>
+      <segment>
+        <source>People and integrations</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.kind.person">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:29,30</note>
+      </notes>
+      <segment>
+        <source>People</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.kind.integration">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:30,32</note>
+      </notes>
+      <segment>
+        <source>Integrations</source>
+      </segment>
+    </unit>
     <unit id="admin.users.error">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:27,28</note>
+        <note category="location">src/app/admin/admin-users.html:38,39</note>
       </notes>
       <segment>
         <source>The users could not be loaded.</source>
@@ -1251,8 +1497,8 @@
     </unit>
     <unit id="admin.users.empty">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:38,39</note>
-        <note category="location">src/app/admin/admin-users.html:184,186</note>
+        <note category="location">src/app/admin/admin-users.html:49,50</note>
+        <note category="location">src/app/admin/admin-users.html:204,206</note>
       </notes>
       <segment>
         <source>No user matches.</source>
@@ -1260,7 +1506,7 @@
     </unit>
     <unit id="admin.users.caption">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:43,45</note>
+        <note category="location">src/app/admin/admin-users.html:54,56</note>
       </notes>
       <segment>
         <source> Users </source>
@@ -1268,7 +1514,7 @@
     </unit>
     <unit id="admin.users.name">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:47,48</note>
+        <note category="location">src/app/admin/admin-users.html:58,59</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -1276,7 +1522,7 @@
     </unit>
     <unit id="admin.users.email">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:48,49</note>
+        <note category="location">src/app/admin/admin-users.html:59,60</note>
       </notes>
       <segment>
         <source>Email</source>
@@ -1284,7 +1530,7 @@
     </unit>
     <unit id="admin.users.groups">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:49,50</note>
+        <note category="location">src/app/admin/admin-users.html:60,61</note>
       </notes>
       <segment>
         <source>Groups</source>
@@ -1292,7 +1538,7 @@
     </unit>
     <unit id="admin.users.lastSeen">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:50,51</note>
+        <note category="location">src/app/admin/admin-users.html:61,62</note>
       </notes>
       <segment>
         <source>Last seen</source>
@@ -1300,23 +1546,31 @@
     </unit>
     <unit id="admin.users.created">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:51,53</note>
+        <note category="location">src/app/admin/admin-users.html:62,64</note>
       </notes>
       <segment>
         <source>Created</source>
       </segment>
     </unit>
-    <unit id="admin.users.never">
+    <unit id="admin.users.integration">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:84,86</note>
+        <note category="location">src/app/admin/admin-users.html:78,80</note>
       </notes>
       <segment>
-        <source>never</source>
+        <source>Integration</source>
+      </segment>
+    </unit>
+    <unit id="admin.users.integration.note">
+      <notes>
+        <note category="location">src/app/admin/admin-users.html:127,131</note>
+      </notes>
+      <segment>
+        <source> An integration: a client of the identity provider that uses the API with the access it was given on boards and rooms. Deactivating it refuses its next call. </source>
       </segment>
     </unit>
     <unit id="admin.users.handover.done">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:116,118</note>
+        <note category="location">src/app/admin/admin-users.html:136,138</note>
       </notes>
       <segment>
         <source> Handed over: boards <ph id="0" equiv="INTERPOLATION" disp="{{ moved.boards }}"/>, rooms <ph id="1" equiv="INTERPOLATION_1" disp="{{ moved.rooms }}"/>. </source>
@@ -1324,7 +1578,7 @@
     </unit>
     <unit id="admin.users.status">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:120,121</note>
+        <note category="location">src/app/admin/admin-users.html:140,141</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -1332,7 +1586,7 @@
     </unit>
     <unit id="admin.users.deactivated.since">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:123,125</note>
+        <note category="location">src/app/admin/admin-users.html:143,145</note>
       </notes>
       <segment>
         <source> Deactivated on <ph id="0" equiv="INTERPOLATION" disp="{{ person.deactivatedAt | date: &apos;medium&apos; }}"/>. Every request of this person is refused. </source>
@@ -1340,7 +1594,7 @@
     </unit>
     <unit id="admin.users.reactivate">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:133,135</note>
+        <note category="location">src/app/admin/admin-users.html:153,155</note>
       </notes>
       <segment>
         <source> Reactivate </source>
@@ -1348,7 +1602,7 @@
     </unit>
     <unit id="admin.users.active">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:136,138</note>
+        <note category="location">src/app/admin/admin-users.html:156,158</note>
       </notes>
       <segment>
         <source>This person can use Elysion.</source>
@@ -1356,7 +1610,7 @@
     </unit>
     <unit id="admin.users.deactivate">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:145,147</note>
+        <note category="location">src/app/admin/admin-users.html:165,167</note>
       </notes>
       <segment>
         <source> Deactivate… </source>
@@ -1364,7 +1618,7 @@
     </unit>
     <unit id="admin.users.handover.title">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:151,152</note>
+        <note category="location">src/app/admin/admin-users.html:171,172</note>
       </notes>
       <segment>
         <source>Hand over</source>
@@ -1372,7 +1626,7 @@
     </unit>
     <unit id="admin.users.handover.note">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:153,155</note>
+        <note category="location">src/app/admin/admin-users.html:173,175</note>
       </notes>
       <segment>
         <source> Owned by this person: boards <ph id="0" equiv="INTERPOLATION" disp="{{ owned().boards }}"/>, rooms <ph id="1" equiv="INTERPOLATION_1" disp="{{ owned().rooms }}"/>. Give their ownership to somebody else: the new owner gets the Owner role, this person keeps nothing. </source>
@@ -1380,7 +1634,7 @@
     </unit>
     <unit id="admin.users.handover.find">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:166,167</note>
+        <note category="location">src/app/admin/admin-users.html:186,187</note>
       </notes>
       <segment>
         <source>Find the person who takes over</source>
@@ -1388,7 +1642,7 @@
     </unit>
     <unit id="admin.users.handover.findError">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:179,181</note>
+        <note category="location">src/app/admin/admin-users.html:199,201</note>
       </notes>
       <segment>
         <source> The search did not work. </source>
@@ -1396,7 +1650,7 @@
     </unit>
     <unit id="admin.users.handover.button">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:203,204</note>
+        <note category="location">src/app/admin/admin-users.html:223,224</note>
       </notes>
       <segment>
         <source> Hand over </source>
@@ -1404,7 +1658,7 @@
     </unit>
     <unit id="admin.users.detail.note">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:214,216</note>
+        <note category="location">src/app/admin/admin-users.html:234,236</note>
       </notes>
       <segment>
         <source> The roles this person has directly. Roles through a group or a room are not listed. </source>
@@ -1412,7 +1666,7 @@
     </unit>
     <unit id="admin.users.detail.rooms">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:216,217</note>
+        <note category="location">src/app/admin/admin-users.html:236,237</note>
       </notes>
       <segment>
         <source>Rooms</source>
@@ -1420,7 +1674,7 @@
     </unit>
     <unit id="admin.users.detail.noRooms">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:218,220</note>
+        <note category="location">src/app/admin/admin-users.html:238,240</note>
       </notes>
       <segment>
         <source>No room.</source>
@@ -1428,7 +1682,7 @@
     </unit>
     <unit id="admin.users.detail.boards">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:229,230</note>
+        <note category="location">src/app/admin/admin-users.html:249,250</note>
       </notes>
       <segment>
         <source>Boards</source>
@@ -1436,7 +1690,7 @@
     </unit>
     <unit id="admin.users.detail.noBoards">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:231,233</note>
+        <note category="location">src/app/admin/admin-users.html:251,253</note>
       </notes>
       <segment>
         <source>No board.</source>
@@ -1444,7 +1698,7 @@
     </unit>
     <unit id="admin.users.deactivate.title">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:252,253</note>
+        <note category="location">src/app/admin/admin-users.html:272,273</note>
       </notes>
       <segment>
         <source>Deactivate this person</source>
@@ -1452,7 +1706,7 @@
     </unit>
     <unit id="admin.users.deactivate.message">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:257,260</note>
+        <note category="location">src/app/admin/admin-users.html:277,280</note>
       </notes>
       <segment>
         <source> Deactivate “<ph id="0" equiv="INTERPOLATION" disp="{{ person.displayName }}"/>”? They are refused everywhere from now on and are not offered when somebody is added; they stay in the member lists as deactivated, and what they own stays where it is until you hand it over. Disable the account at the identity provider as well: Elysion cannot do that, and it is what keeps the person from signing in there. </source>
@@ -1460,7 +1714,7 @@
     </unit>
     <unit id="admin.users.deactivate.confirm">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:280,282</note>
+        <note category="location">src/app/admin/admin-users.html:300,302</note>
       </notes>
       <segment>
         <source> Deactivate </source>
@@ -1468,7 +1722,7 @@
     </unit>
     <unit id="admin.users.handover.dialog">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:286,287</note>
+        <note category="location">src/app/admin/admin-users.html:306,307</note>
       </notes>
       <segment>
         <source>Hand over the ownership</source>
@@ -1476,7 +1730,7 @@
     </unit>
     <unit id="admin.users.handover.message">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:291,294</note>
+        <note category="location">src/app/admin/admin-users.html:311,314</note>
       </notes>
       <segment>
         <source> Make “<ph id="0" equiv="INTERPOLATION" disp="{{ to.displayName }}"/>” the owner of what “<ph id="1" equiv="INTERPOLATION_1" disp="{{ person.displayName }}"/>” owns (boards <ph id="2" equiv="INTERPOLATION_2" disp="{{ owned().boards }}"/>, rooms <ph id="3" equiv="INTERPOLATION_3" disp="{{ owned().rooms }}"/>)? “<ph id="4" equiv="INTERPOLATION_1" disp="{{ person.displayName }}"/>” keeps no role on it. You get no role either: you only hand it over. </source>
@@ -1484,7 +1738,7 @@
     </unit>
     <unit id="admin.users.handover.confirm">
       <notes>
-        <note category="location">src/app/admin/admin-users.html:312,314</note>
+        <note category="location">src/app/admin/admin-users.html:332,334</note>
       </notes>
       <segment>
         <source> Hand over </source>
@@ -1492,7 +1746,7 @@
     </unit>
     <unit id="admin.users.pageTitle">
       <notes>
-        <note category="location">src/app/admin/admin-users.ts:53</note>
+        <note category="location">src/app/admin/admin-users.ts:61</note>
       </notes>
       <segment>
         <source>Users · Administration · Elysion</source>
@@ -1500,7 +1754,7 @@
     </unit>
     <unit id="admin.users.detail.error">
       <notes>
-        <note category="location">src/app/admin/admin-users.ts:75</note>
+        <note category="location">src/app/admin/admin-users.ts:88</note>
       </notes>
       <segment>
         <source>The details could not be loaded.</source>
@@ -1508,7 +1762,7 @@
     </unit>
     <unit id="admin.users.deactivate.error">
       <notes>
-        <note category="location">src/app/admin/admin-users.ts:113</note>
+        <note category="location">src/app/admin/admin-users.ts:126</note>
       </notes>
       <segment>
         <source>The person could not be deactivated.</source>
@@ -1516,7 +1770,7 @@
     </unit>
     <unit id="admin.users.reactivate.error">
       <notes>
-        <note category="location">src/app/admin/admin-users.ts:122</note>
+        <note category="location">src/app/admin/admin-users.ts:135</note>
       </notes>
       <segment>
         <source>The person could not be reactivated.</source>
@@ -1524,7 +1778,7 @@
     </unit>
     <unit id="admin.users.handover.error">
       <notes>
-        <note category="location">src/app/admin/admin-users.ts:199</note>
+        <note category="location">src/app/admin/admin-users.ts:212</note>
       </notes>
       <segment>
         <source>The hand-over did not work.</source>
@@ -1532,7 +1786,7 @@
     </unit>
     <unit id="admin.users.deactivate.aria">
       <notes>
-        <note category="location">src/app/admin/admin-users.ts:207</note>
+        <note category="location">src/app/admin/admin-users.ts:220</note>
       </notes>
       <segment>
         <source>Deactivate <ph id="0" equiv="name" disp="person.displayName"/></source>
@@ -1540,7 +1794,7 @@
     </unit>
     <unit id="admin.users.handover.to">
       <notes>
-        <note category="location">src/app/admin/admin-users.ts:211</note>
+        <note category="location">src/app/admin/admin-users.ts:224</note>
       </notes>
       <segment>
         <source>Hand over to <ph id="0" equiv="name" disp="user.displayName"/></source>
@@ -1548,10 +1802,34 @@
     </unit>
     <unit id="admin.users.open">
       <notes>
-        <note category="location">src/app/admin/admin-users.ts:215</note>
+        <note category="location">src/app/admin/admin-users.ts:228</note>
       </notes>
       <segment>
         <source>Show the rooms and boards of <ph id="0" equiv="name" disp="user.displayName"/></source>
+      </segment>
+    </unit>
+    <unit id="admin.webhooks.title">
+      <notes>
+        <note category="location">src/app/admin/admin-webhooks.ts:15,16</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+      </segment>
+    </unit>
+    <unit id="admin.webhooks.lead">
+      <notes>
+        <note category="location">src/app/admin/admin-webhooks.ts:17,20</note>
+      </notes>
+      <segment>
+        <source> These webhooks receive the events of every board of this instance. Board owners add webhooks for their own boards in the board&apos;s Share dialog. </source>
+      </segment>
+    </unit>
+    <unit id="admin.webhooks.pageTitle">
+      <notes>
+        <note category="location">src/app/admin/admin-webhooks.ts:28</note>
+      </notes>
+      <segment>
+        <source>Webhooks · Administration · Elysion</source>
       </segment>
     </unit>
     <unit id="admin.error.forbidden">
@@ -1706,9 +1984,41 @@
         <source><ph id="0" equiv="actor" disp="actor"/> handed the ownership over to <ph id="1" equiv="target" disp="target"/></source>
       </segment>
     </unit>
-    <unit id="audit.invitation.created">
+    <unit id="audit.token.created">
       <notes>
         <note category="location">src/app/audit/audit.ts:69</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> made the access token “<ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/>”</source>
+      </segment>
+    </unit>
+    <unit id="audit.token.revoked">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:71</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> revoked the access token “<ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/>” of <ph id="2" equiv="person" disp="entry.subjectName ?? target"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.webhook.created">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:73</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> added a webhook to <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.webhook.deleted">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:75</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> deleted the webhook to <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.invitation.created">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:77</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> made an invitation link for the role <ph id="1" equiv="role" disp="role"/></source>
@@ -1716,7 +2026,7 @@
     </unit>
     <unit id="audit.invitation.revoked">
       <notes>
-        <note category="location">src/app/audit/audit.ts:71</note>
+        <note category="location">src/app/audit/audit.ts:79</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> revoked an invitation link</source>
@@ -1724,10 +2034,26 @@
     </unit>
     <unit id="audit.invitation.accepted">
       <notes>
-        <note category="location">src/app/audit/audit.ts:73</note>
+        <note category="location">src/app/audit/audit.ts:81</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> joined with an invitation link as <ph id="1" equiv="role" disp="role"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.snapshot.deleted">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:83</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> deleted a saved version of the board</source>
+      </segment>
+    </unit>
+    <unit id="audit.snapshot.restored">
+      <notes>
+        <note category="location">src/app/audit/audit.ts:85</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="actor" disp="actor"/> restored a version of the board</source>
       </segment>
     </unit>
     <unit id="boards.new.aria">
@@ -2684,7 +3010,7 @@
     </unit>
     <unit id="board.import.confirmLabel">
       <notes>
-        <note category="location">src/app/board/board.html:57,58</note>
+        <note category="location">src/app/board/board.html:62,63</note>
       </notes>
       <segment>
         <source>Confirm import</source>
@@ -2692,7 +3018,7 @@
     </unit>
     <unit id="board.import.confirmText">
       <notes>
-        <note category="location">src/app/board/board.html:61,63</note>
+        <note category="location">src/app/board/board.html:66,68</note>
       </notes>
       <segment>
         <source>Replace everything on this board with “<ph id="0" equiv="INTERPOLATION" disp="{{ file.name }}"/>”?</source>
@@ -2700,7 +3026,7 @@
     </unit>
     <unit id="board.import.replace">
       <notes>
-        <note category="location">src/app/board/board.html:69,71</note>
+        <note category="location">src/app/board/board.html:74,76</note>
       </notes>
       <segment>
         <source> Replace </source>
@@ -2708,7 +3034,7 @@
     </unit>
     <unit id="board.import.cancel">
       <notes>
-        <note category="location">src/app/board/board.html:77,79</note>
+        <note category="location">src/app/board/board.html:82,84</note>
       </notes>
       <segment>
         <source> Cancel </source>
@@ -2716,7 +3042,7 @@
     </unit>
     <unit id="board.template.formLabel">
       <notes>
-        <note category="location">src/app/board/board.html:83,84</note>
+        <note category="location">src/app/board/board.html:88,89</note>
       </notes>
       <segment>
         <source>Save as template</source>
@@ -2724,7 +3050,7 @@
     </unit>
     <unit id="board.template.fromSelection">
       <notes>
-        <note category="location">src/app/board/board.html:89,91</note>
+        <note category="location">src/app/board/board.html:94,96</note>
       </notes>
       <segment>
         <source>Template from the selection</source>
@@ -2732,7 +3058,7 @@
     </unit>
     <unit id="board.template.fromBoard">
       <notes>
-        <note category="location">src/app/board/board.html:91,94</note>
+        <note category="location">src/app/board/board.html:96,99</note>
       </notes>
       <segment>
         <source>Template from the board</source>
@@ -2740,7 +3066,7 @@
     </unit>
     <unit id="board.template.nameLabel">
       <notes>
-        <note category="location">src/app/board/board.html:100,101</note>
+        <note category="location">src/app/board/board.html:105,106</note>
       </notes>
       <segment>
         <source>Template name</source>
@@ -2748,7 +3074,7 @@
     </unit>
     <unit id="board.template.descriptionLabel">
       <notes>
-        <note category="location">src/app/board/board.html:115,116</note>
+        <note category="location">src/app/board/board.html:120,121</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -2756,7 +3082,7 @@
     </unit>
     <unit id="board.template.descriptionPlaceholder">
       <notes>
-        <note category="location">src/app/board/board.html:117,118</note>
+        <note category="location">src/app/board/board.html:122,123</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -2764,7 +3090,7 @@
     </unit>
     <unit id="board.template.saving">
       <notes>
-        <note category="location">src/app/board/board.html:130,132</note>
+        <note category="location">src/app/board/board.html:135,137</note>
       </notes>
       <segment>
         <source>Saving…</source>
@@ -2772,7 +3098,7 @@
     </unit>
     <unit id="board.template.save">
       <notes>
-        <note category="location">src/app/board/board.html:132,134</note>
+        <note category="location">src/app/board/board.html:137,139</note>
       </notes>
       <segment>
         <source>Save</source>
@@ -2780,7 +3106,7 @@
     </unit>
     <unit id="board.template.cancel">
       <notes>
-        <note category="location">src/app/board/board.html:141,143</note>
+        <note category="location">src/app/board/board.html:146,148</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -2788,7 +3114,7 @@
     </unit>
     <unit id="board.notice.dismiss">
       <notes>
-        <note category="location">src/app/board/board.html:153,156</note>
+        <note category="location">src/app/board/board.html:158,161</note>
       </notes>
       <segment>
         <source> Dismiss </source>
@@ -2796,7 +3122,7 @@
     </unit>
     <unit id="board.canvas.label">
       <notes>
-        <note category="location">src/app/board/board.html:162,163</note>
+        <note category="location">src/app/board/board.html:167,168</note>
       </notes>
       <segment>
         <source>Board canvas</source>
@@ -2804,7 +3130,7 @@
     </unit>
     <unit id="board.error.canvasNotReady">
       <notes>
-        <note category="location">src/app/board/board.ts:57</note>
+        <note category="location">src/app/board/board.ts:58</note>
       </notes>
       <segment>
         <source>The canvas is not ready yet.</source>
@@ -2812,7 +3138,7 @@
     </unit>
     <unit id="board.error.favoriteFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:166</note>
+        <note category="location">src/app/board/board.ts:172</note>
       </notes>
       <segment>
         <source>The star could not be saved.</source>
@@ -2820,7 +3146,7 @@
     </unit>
     <unit id="board.pageTitle.notFound">
       <notes>
-        <note category="location">src/app/board/board.ts:275</note>
+        <note category="location">src/app/board/board.ts:281</note>
       </notes>
       <segment>
         <source>Board not found · Elysion</source>
@@ -2828,7 +3154,7 @@
     </unit>
     <unit id="board.pageTitle.named">
       <notes>
-        <note category="location">src/app/board/board.ts:277</note>
+        <note category="location">src/app/board/board.ts:283</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> · Elysion</source>
@@ -2836,7 +3162,7 @@
     </unit>
     <unit id="board.error.templateNotApplied">
       <notes>
-        <note category="location">src/app/board/board.ts:308</note>
+        <note category="location">src/app/board/board.ts:314</note>
       </notes>
       <segment>
         <source>The template could not be applied. The board is blank.</source>
@@ -2844,7 +3170,7 @@
     </unit>
     <unit id="board.error.renameFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:321</note>
+        <note category="location">src/app/board/board.ts:327</note>
       </notes>
       <segment>
         <source>The board could not be renamed.</source>
@@ -2852,7 +3178,7 @@
     </unit>
     <unit id="board.error.accessLost">
       <notes>
-        <note category="location">src/app/board/board.ts:338</note>
+        <note category="location">src/app/board/board.ts:344</note>
       </notes>
       <segment>
         <source>You no longer have access to this board.</source>
@@ -2860,7 +3186,7 @@
     </unit>
     <unit id="board.error.timerFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:515</note>
+        <note category="location">src/app/board/board.ts:534</note>
       </notes>
       <segment>
         <source>The timer could not be changed.</source>
@@ -2868,8 +3194,8 @@
     </unit>
     <unit id="board.error.nothingSelected">
       <notes>
-        <note category="location">src/app/board/board.ts:548</note>
-        <note category="location">src/app/board/board.ts:695</note>
+        <note category="location">src/app/board/board.ts:567</note>
+        <note category="location">src/app/board/board.ts:714</note>
       </notes>
       <segment>
         <source>Nothing is selected.</source>
@@ -2877,7 +3203,7 @@
     </unit>
     <unit id="board.error.exportEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:549</note>
+        <note category="location">src/app/board/board.ts:568</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to export.</source>
@@ -2885,7 +3211,7 @@
     </unit>
     <unit id="board.error.exportFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:559</note>
+        <note category="location">src/app/board/board.ts:578</note>
       </notes>
       <segment>
         <source>The export failed.</source>
@@ -2893,8 +3219,8 @@
     </unit>
     <unit id="board.error.importFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:590</note>
-        <note category="location">src/app/board/board.ts:618</note>
+        <note category="location">src/app/board/board.ts:609</note>
+        <note category="location">src/app/board/board.ts:637</note>
       </notes>
       <segment>
         <source>The import failed.</source>
@@ -2902,7 +3228,7 @@
     </unit>
     <unit id="board.notice.imported.one">
       <notes>
-        <note category="location">src/app/board/board.ts:611</note>
+        <note category="location">src/app/board/board.ts:630</note>
       </notes>
       <segment>
         <source>Imported 1 element from <ph id="0" equiv="file" disp="file.name"/>.</source>
@@ -2910,7 +3236,7 @@
     </unit>
     <unit id="board.notice.imported.many">
       <notes>
-        <note category="location">src/app/board/board.ts:612</note>
+        <note category="location">src/app/board/board.ts:631</note>
       </notes>
       <segment>
         <source>Imported <ph id="0" equiv="count" disp="count"/> elements from <ph id="1" equiv="file" disp="file.name"/>.</source>
@@ -2918,7 +3244,7 @@
     </unit>
     <unit id="board.error.templateAddFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:638</note>
+        <note category="location">src/app/board/board.ts:657</note>
       </notes>
       <segment>
         <source>The template could not be added.</source>
@@ -2926,7 +3252,7 @@
     </unit>
     <unit id="board.template.defaultSelectionName">
       <notes>
-        <note category="location">src/app/board/board.ts:649</note>
+        <note category="location">src/app/board/board.ts:668</note>
       </notes>
       <segment>
         <source>Selection</source>
@@ -2934,7 +3260,7 @@
     </unit>
     <unit id="board.template.defaultBoardName">
       <notes>
-        <note category="location">src/app/board/board.ts:650</note>
+        <note category="location">src/app/board/board.ts:669</note>
       </notes>
       <segment>
         <source>Board</source>
@@ -2942,7 +3268,7 @@
     </unit>
     <unit id="board.template.nameRequired">
       <notes>
-        <note category="location">src/app/board/board.ts:679</note>
+        <note category="location">src/app/board/board.ts:698</note>
       </notes>
       <segment>
         <source>Give the template a name.</source>
@@ -2950,7 +3276,7 @@
     </unit>
     <unit id="board.error.templateEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:696</note>
+        <note category="location">src/app/board/board.ts:715</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to save as a template.</source>
@@ -2958,7 +3284,7 @@
     </unit>
     <unit id="board.notice.templateSaved">
       <notes>
-        <note category="location">src/app/board/board.ts:707</note>
+        <note category="location">src/app/board/board.ts:726</note>
       </notes>
       <segment>
         <source>Saved the template “<ph id="0" equiv="name" disp="name"/>”.</source>
@@ -2966,7 +3292,7 @@
     </unit>
     <unit id="board.error.templateSaveFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:718</note>
+        <note category="location">src/app/board/board.ts:737</note>
       </notes>
       <segment>
         <source>The template could not be saved.</source>
@@ -3220,6 +3546,374 @@
         <source>Joining · Elysion</source>
       </segment>
     </unit>
+    <unit id="tokens.back">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:3,4</note>
+      </notes>
+      <segment>
+        <source>All boards</source>
+      </segment>
+    </unit>
+    <unit id="tokens.headerTitle">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:4,5</note>
+      </notes>
+      <segment>
+        <source>Settings</source>
+      </segment>
+    </unit>
+    <unit id="tokens.title">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:13,14</note>
+      </notes>
+      <segment>
+        <source>Access tokens</source>
+      </segment>
+    </unit>
+    <unit id="tokens.lead">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:15,20</note>
+      </notes>
+      <segment>
+        <source> A token lets a script use the Elysion API as you: it sees what you see and can do what you can, within the scopes you give it. Keep it secret, give it only the scopes it needs and revoke it when it is no longer used. </source>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.title">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:22,23</note>
+      </notes>
+      <segment>
+        <source>Your new token “<ph id="0" equiv="INTERPOLATION" disp="{{ token.name }}"/>”</source>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.once">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:24,26</note>
+      </notes>
+      <segment>
+        <source> Copy it now. It is shown only this once: Elysion does not keep it. </source>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.label">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:31,32</note>
+      </notes>
+      <segment>
+        <source>New access token</source>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.copied">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:38,39</note>
+      </notes>
+      <segment>
+        <source>Copied</source>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.copy">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:40,42</note>
+      </notes>
+      <segment>
+        <source>Copy</source>
+      </segment>
+    </unit>
+    <unit id="tokens.secret.done">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:45,47</note>
+      </notes>
+      <segment>
+        <source> I have copied it </source>
+      </segment>
+    </unit>
+    <unit id="tokens.create.title">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:51,52</note>
+      </notes>
+      <segment>
+        <source>New token</source>
+      </segment>
+    </unit>
+    <unit id="tokens.create.name">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:54,56</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+      </segment>
+    </unit>
+    <unit id="tokens.create.namePlaceholder">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:61,62</note>
+      </notes>
+      <segment>
+        <source>What it is for, e.g. Sprint boards script</source>
+      </segment>
+    </unit>
+    <unit id="tokens.create.scopes">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:69,70</note>
+      </notes>
+      <segment>
+        <source>Scopes</source>
+      </segment>
+    </unit>
+    <unit id="tokens.create.expiry">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:83,84</note>
+      </notes>
+      <segment>
+        <source>Expires after</source>
+      </segment>
+    </unit>
+    <unit id="tokens.create.button">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:102,104</note>
+      </notes>
+      <segment>
+        <source> Create token </source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.title">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:109,110</note>
+      </notes>
+      <segment>
+        <source>Your tokens</source>
+      </segment>
+    </unit>
+    <unit id="tokens.loading">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:115,117</note>
+      </notes>
+      <segment>
+        <source>Loading…</source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.error">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:119,120</note>
+      </notes>
+      <segment>
+        <source>The tokens could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="tokens.retry">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:121,122</note>
+      </notes>
+      <segment>
+        <source> Try again </source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.empty">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:127,129</note>
+      </notes>
+      <segment>
+        <source>You have no access tokens.</source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.caption">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:132,133</note>
+      </notes>
+      <segment>
+        <source> Your access tokens </source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.name">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:136,137</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.token">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:137,138</note>
+      </notes>
+      <segment>
+        <source>Token</source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.scopes">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:138,139</note>
+      </notes>
+      <segment>
+        <source>Scopes</source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.lastUsed">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:139,140</note>
+      </notes>
+      <segment>
+        <source>Last used</source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.expires">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:140,141</note>
+      </notes>
+      <segment>
+        <source>Expires</source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.actions">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:142,144</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.never">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:164,166</note>
+      </notes>
+      <segment>
+        <source>never</source>
+      </segment>
+    </unit>
+    <unit id="tokens.list.expired">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:170,172</note>
+      </notes>
+      <segment>
+        <source>expired</source>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.button">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:181,182</note>
+      </notes>
+      <segment>
+        <source> Revoke </source>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.title">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:197,198</note>
+      </notes>
+      <segment>
+        <source>Revoke this token</source>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.message">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:202,205</note>
+      </notes>
+      <segment>
+        <source> Revoke “<ph id="0" equiv="INTERPOLATION" disp="{{ token.name }}"/>”? Scripts that use it are refused from now on (within half a minute). This cannot be undone. </source>
+      </segment>
+    </unit>
+    <unit id="tokens.cancel">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:213,215</note>
+      </notes>
+      <segment>
+        <source> Cancel </source>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.confirm">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.html:222,225</note>
+      </notes>
+      <segment>
+        <source> Revoke </source>
+      </segment>
+    </unit>
+    <unit id="tokens.pageTitle">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:65</note>
+      </notes>
+      <segment>
+        <source>Access tokens · Elysion</source>
+      </segment>
+    </unit>
+    <unit id="tokens.create.error">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:123</note>
+      </notes>
+      <segment>
+        <source>The token could not be created.</source>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.error">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:176</note>
+      </notes>
+      <segment>
+        <source>The token could not be revoked.</source>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke.aria">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:188</note>
+      </notes>
+      <segment>
+        <source>Revoke <ph id="0" equiv="name" disp="token.name"/></source>
+      </segment>
+    </unit>
+    <unit id="tokens.expiry.year">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:193</note>
+      </notes>
+      <segment>
+        <source>1 year</source>
+      </segment>
+    </unit>
+    <unit id="tokens.expiry.days">
+      <notes>
+        <note category="location">src/app/settings/access-tokens.ts:194</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="days" disp="days"/> days</source>
+      </segment>
+    </unit>
+    <unit id="tokens.scope.boardsRead">
+      <notes>
+        <note category="location">src/app/settings/scope-labels.ts:5</note>
+      </notes>
+      <segment>
+        <source>Read boards, rooms, members and versions</source>
+      </segment>
+    </unit>
+    <unit id="tokens.scope.boardsWrite">
+      <notes>
+        <note category="location">src/app/settings/scope-labels.ts:7</note>
+      </notes>
+      <segment>
+        <source>Create, rename, duplicate and delete boards</source>
+      </segment>
+    </unit>
+    <unit id="tokens.scope.membersWrite">
+      <notes>
+        <note category="location">src/app/settings/scope-labels.ts:9</note>
+      </notes>
+      <segment>
+        <source>Add, change and remove members</source>
+      </segment>
+    </unit>
+    <unit id="tokens.scope.snapshotsWrite">
+      <notes>
+        <note category="location">src/app/settings/scope-labels.ts:11</note>
+      </notes>
+      <segment>
+        <source>Save versions of boards</source>
+      </segment>
+    </unit>
+    <unit id="tokens.scope.webhooksWrite">
+      <notes>
+        <note category="location">src/app/settings/scope-labels.ts:13</note>
+      </notes>
+      <segment>
+        <source>Register webhooks</source>
+      </segment>
+    </unit>
     <unit id="share.error.ownerOnlyRoom">
       <notes>
         <note category="location">src/app/share/error-message.ts:17</note>
@@ -3300,7 +3994,7 @@
         <note category="location">src/app/share/invite-links.html:9,11</note>
         <note category="location">src/app/share/invite-links.ts:172</note>
         <note category="location">src/app/share/room-groups.ts:198</note>
-        <note category="location">src/app/share/share-dialog.ts:249</note>
+        <note category="location">src/app/share/share-dialog.ts:261</note>
       </notes>
       <segment>
         <source> Viewer </source>
@@ -3311,7 +4005,7 @@
         <note category="location">src/app/share/invite-links.html:12,14</note>
         <note category="location">src/app/share/invite-links.ts:171</note>
         <note category="location">src/app/share/room-groups.ts:196</note>
-        <note category="location">src/app/share/share-dialog.ts:247</note>
+        <note category="location">src/app/share/share-dialog.ts:259</note>
       </notes>
       <segment>
         <source> Editor </source>
@@ -3763,7 +4457,7 @@
     <unit id="share.role.owner">
       <notes>
         <note category="location">src/app/share/room-groups.ts:194</note>
-        <note category="location">src/app/share/share-dialog.ts:245</note>
+        <note category="location">src/app/share/share-dialog.ts:257</note>
       </notes>
       <segment>
         <source>Owner</source>
@@ -3867,7 +4561,7 @@
     </unit>
     <unit id="share.hint.login">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:125,127</note>
+        <note category="location">src/app/share/share-dialog.html:129,131</note>
       </notes>
       <segment>
         <source>Someone has to log in to Elysion once before they can be added.</source>
@@ -3875,7 +4569,7 @@
     </unit>
     <unit id="share.hint.room">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:129,131</note>
+        <note category="location">src/app/share/share-dialog.html:133,135</note>
       </notes>
       <segment>
         <source>A member gets this role on every board in the room. Viewers can look at them but not change them.</source>
@@ -3883,15 +4577,23 @@
     </unit>
     <unit id="share.hint.board">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:134,136</note>
+        <note category="location">src/app/share/share-dialog.html:138,140</note>
       </notes>
       <segment>
         <source>Viewers can look at the board but not change it.</source>
       </segment>
     </unit>
+    <unit id="share.people.integration">
+      <notes>
+        <note category="location">src/app/share/share-dialog.ts:86</note>
+      </notes>
+      <segment>
+        <source>Integration</source>
+      </segment>
+    </unit>
     <unit id="share.error.loadFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:116</note>
+        <note category="location">src/app/share/share-dialog.ts:128</note>
       </notes>
       <segment>
         <source>The members could not be loaded.</source>
@@ -3899,7 +4601,7 @@
     </unit>
     <unit id="share.error.personRequired">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:176</note>
+        <note category="location">src/app/share/share-dialog.ts:188</note>
       </notes>
       <segment>
         <source>Search for a person by name or email, or enter an email address.</source>
@@ -3907,7 +4609,7 @@
     </unit>
     <unit id="share.error.pickPerson">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:181</note>
+        <note category="location">src/app/share/share-dialog.ts:193</note>
       </notes>
       <segment>
         <source>Choose a person from the list, or enter a full email address.</source>
@@ -3915,7 +4617,7 @@
     </unit>
     <unit id="share.error.addFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:187</note>
+        <note category="location">src/app/share/share-dialog.ts:199</note>
       </notes>
       <segment>
         <source>The member could not be added.</source>
@@ -3923,7 +4625,7 @@
     </unit>
     <unit id="share.error.roleFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:202</note>
+        <note category="location">src/app/share/share-dialog.ts:214</note>
       </notes>
       <segment>
         <source>The role could not be changed.</source>
@@ -3931,7 +4633,7 @@
     </unit>
     <unit id="share.error.removeFailed">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:215</note>
+        <note category="location">src/app/share/share-dialog.ts:227</note>
       </notes>
       <segment>
         <source>The member could not be removed.</source>
@@ -3939,7 +4641,7 @@
     </unit>
     <unit id="share.remove.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:256</note>
+        <note category="location">src/app/share/share-dialog.ts:268</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="name" disp="member.displayName"/></source>
@@ -3947,7 +4649,7 @@
     </unit>
     <unit id="share.roleOf.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.ts:260</note>
+        <note category="location">src/app/share/share-dialog.ts:272</note>
       </notes>
       <segment>
         <source>Role of <ph id="0" equiv="name" disp="member.displayName"/></source>
@@ -3975,6 +4677,447 @@
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="count"/> matches. Use the arrow keys to choose.</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.title">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:11,12</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.listTitle">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:16,19</note>
+      </notes>
+      <segment>
+        <source>Webhooks</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.lead">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:21,25</note>
+      </notes>
+      <segment>
+        <source> Elysion posts a signed JSON message to each URL when something happens: never the content of a board. Only https URLs are accepted. </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.title">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:28,30</note>
+      </notes>
+      <segment>
+        <source> The signing secret of <ph id="0" equiv="INTERPOLATION" disp="{{ webhook.url }}"/> </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.once">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:31,34</note>
+      </notes>
+      <segment>
+        <source> Copy it now. It is shown only this once; the receiver needs it to check the Elysion-Signature header. </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.label">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:39,40</note>
+      </notes>
+      <segment>
+        <source>Signing secret</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.copied">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:46,47</note>
+      </notes>
+      <segment>
+        <source>Copied</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.copy">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:48,50</note>
+      </notes>
+      <segment>
+        <source>Copy</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.secret.done">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:53,55</note>
+      </notes>
+      <segment>
+        <source> I have copied it </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.url">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:60,62</note>
+      </notes>
+      <segment>
+        <source>URL</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.urlPlaceholder">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:65,66</note>
+      </notes>
+      <segment>
+        <source>https://example.com/elysion</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.events">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:74,76</note>
+      </notes>
+      <segment>
+        <source> Events (none ticked: all of them) </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.button">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:94,98</note>
+      </notes>
+      <segment>
+        <source> Add webhook </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.loading">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:107,109</note>
+      </notes>
+      <segment>
+        <source>Loading the webhooks…</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.list.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:112,114</note>
+      </notes>
+      <segment>
+        <source>The webhooks could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.retry">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:115,116</note>
+        <note category="location">src/app/share/webhooks.html:215,216</note>
+      </notes>
+      <segment>
+        <source> Try again </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.list.empty">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:121,123</note>
+      </notes>
+      <segment>
+        <source>No webhooks yet.</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.state.on">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:129,130</note>
+      </notes>
+      <segment>
+        <source>active</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.state.off">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:131,133</note>
+      </notes>
+      <segment>
+        <source>off</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.disabledReason">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:139,140</note>
+      </notes>
+      <segment>
+        <source>Turned off:</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.test">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:154,155</note>
+      </notes>
+      <segment>
+        <source> Send test event </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.disable">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:164,165</note>
+      </notes>
+      <segment>
+        <source> Turn off </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.enable">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:174,175</note>
+      </notes>
+      <segment>
+        <source> Turn on </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.toggle">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:184,185</note>
+      </notes>
+      <segment>
+        <source> Deliveries </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.remove">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:193,194</note>
+      </notes>
+      <segment>
+        <source> Delete </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.loading">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:201,202</note>
+      </notes>
+      <segment>
+        <source> Loading the deliveries… </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:207,208</note>
+      </notes>
+      <segment>
+        <source>The deliveries could not be loaded.</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.empty">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:221,223</note>
+      </notes>
+      <segment>
+        <source>Nothing was sent yet.</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.event">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:227,228</note>
+      </notes>
+      <segment>
+        <source>Event</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.status">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:228,229</note>
+      </notes>
+      <segment>
+        <source>Status</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.response">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:229,230</note>
+      </notes>
+      <segment>
+        <source>Response</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.duration">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:230,231</note>
+      </notes>
+      <segment>
+        <source>Duration</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.attempts">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:231,232</note>
+      </notes>
+      <segment>
+        <source>Attempts</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.time">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:232,233</note>
+      </notes>
+      <segment>
+        <source>Time</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.actions">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:235,236</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.redeliver">
+      <notes>
+        <note category="location">src/app/share/webhooks.html:278</note>
+      </notes>
+      <segment>
+        <source> Send again </source>
+      </segment>
+    </unit>
+    <unit id="webhooks.create.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:120</note>
+      </notes>
+      <segment>
+        <source>The webhook could not be added.</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.update.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:151</note>
+      </notes>
+      <segment>
+        <source>The webhook could not be changed.</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.remove.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:162</note>
+      </notes>
+      <segment>
+        <source>The webhook could not be deleted.</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.test.sent">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:171</note>
+      </notes>
+      <segment>
+        <source>A test event is on its way. Its delivery shows in the list below.</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.test.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:175</note>
+      </notes>
+      <segment>
+        <source>The test event could not be sent.</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.redeliver.error">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:199</note>
+      </notes>
+      <segment>
+        <source>The delivery could not be sent again.</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.events.all">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:205</note>
+      </notes>
+      <segment>
+        <source>all events</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.status.succeeded">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:212</note>
+      </notes>
+      <segment>
+        <source>delivered</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.status.failed">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:214</note>
+      </notes>
+      <segment>
+        <source>failed</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.status.pending">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:216</note>
+      </notes>
+      <segment>
+        <source>pending</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.boardCreated">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:223</note>
+      </notes>
+      <segment>
+        <source>A board was created</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.boardRenamed">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:225</note>
+      </notes>
+      <segment>
+        <source>The board was renamed</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.boardDeleted">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:227</note>
+      </notes>
+      <segment>
+        <source>The board was deleted</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.contentChanged">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:229</note>
+      </notes>
+      <segment>
+        <source>The content changed (at most once a minute)</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.memberAdded">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:231</note>
+      </notes>
+      <segment>
+        <source>A member was added</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.memberRemoved">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:233</note>
+      </notes>
+      <segment>
+        <source>A member was removed</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.memberRoleChanged">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:235</note>
+      </notes>
+      <segment>
+        <source>The role of a member changed</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.event.snapshotCreated">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:237</note>
+      </notes>
+      <segment>
+        <source>A version was saved</source>
+      </segment>
+    </unit>
+    <unit id="webhooks.deliveries.aria">
+      <notes>
+        <note category="location">src/app/share/webhooks.ts:244</note>
+      </notes>
+      <segment>
+        <source>Last deliveries to <ph id="0" equiv="url" disp="webhook.url"/></source>
       </segment>
     </unit>
     <unit id="app.brand.label">
@@ -4079,6 +5222,14 @@
       </notes>
       <segment>
         <source>Comments in a PDF</source>
+      </segment>
+    </unit>
+    <unit id="topbar.export.agenda">
+      <notes>
+        <note category="location">src/app/topbar/export-menu.html:120,122</note>
+      </notes>
+      <segment>
+        <source>Agenda as the first page of a PDF</source>
       </segment>
     </unit>
     <unit id="topbar.export.preparing-file">
@@ -4199,6 +5350,54 @@
       </notes>
       <segment>
         <source>Preparing <ph id="0" equiv="format" disp="PREPARING[format]"/>…</source>
+      </segment>
+    </unit>
+    <unit id="topbar.present.button-title">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:7,8</note>
+      </notes>
+      <segment>
+        <source>Present to the board</source>
+      </segment>
+    </unit>
+    <unit id="topbar.present.button">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:14,18</note>
+      </notes>
+      <segment>
+        <source>Present</source>
+      </segment>
+    </unit>
+    <unit id="topbar.present.menu">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:18</note>
+      </notes>
+      <segment>
+        <source>Present</source>
+      </segment>
+    </unit>
+    <unit id="topbar.present.stop">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:21,23</note>
+      </notes>
+      <segment>
+        <source>Stop presenting</source>
+      </segment>
+    </unit>
+    <unit id="topbar.present.start">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:23,25</note>
+      </notes>
+      <segment>
+        <source>Start presenting</source>
+      </segment>
+    </unit>
+    <unit id="topbar.present.summon">
+      <notes>
+        <note category="location">src/app/topbar/present-menu.html:27,29</note>
+      </notes>
+      <segment>
+        <source>Bring everyone to me</source>
       </segment>
     </unit>
     <unit id="topbar.templates.button-title">
@@ -4525,7 +5724,7 @@
     </unit>
     <unit id="topbar.share-title">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:136,137</note>
+        <note category="location">src/app/topbar/top-bar.html:145,146</note>
       </notes>
       <segment>
         <source>Share this board</source>
@@ -4533,7 +5732,7 @@
     </unit>
     <unit id="topbar.share">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:145,147</note>
+        <note category="location">src/app/topbar/top-bar.html:154,156</note>
       </notes>
       <segment>
         <source>Share</source>
@@ -4541,7 +5740,7 @@
     </unit>
     <unit id="topbar.library-title">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:164,165</note>
+        <note category="location">src/app/topbar/top-bar.html:187,188</note>
       </notes>
       <segment>
         <source>Show or hide the shape library</source>
@@ -4549,7 +5748,7 @@
     </unit>
     <unit id="topbar.library">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:173,175</note>
+        <note category="location">src/app/topbar/top-bar.html:196,198</note>
       </notes>
       <segment>
         <source>Library</source>
@@ -4557,7 +5756,7 @@
     </unit>
     <unit id="topbar.theme.light">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:190,192</note>
+        <note category="location">src/app/topbar/top-bar.html:213,215</note>
       </notes>
       <segment>
         <source>Light</source>
@@ -4565,7 +5764,7 @@
     </unit>
     <unit id="topbar.theme.dark">
       <notes>
-        <note category="location">src/app/topbar/top-bar.html:195,198</note>
+        <note category="location">src/app/topbar/top-bar.html:218,221</note>
       </notes>
       <segment>
         <source>Dark</source>
@@ -4573,7 +5772,7 @@
     </unit>
     <unit id="topbar.status.connecting">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:33</note>
+        <note category="location">src/app/topbar/top-bar.ts:34</note>
       </notes>
       <segment>
         <source>Connecting…</source>
@@ -4581,7 +5780,7 @@
     </unit>
     <unit id="topbar.status.connected">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:34</note>
+        <note category="location">src/app/topbar/top-bar.ts:35</note>
       </notes>
       <segment>
         <source>Connected</source>
@@ -4589,7 +5788,7 @@
     </unit>
     <unit id="topbar.status.offline">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:35</note>
+        <note category="location">src/app/topbar/top-bar.ts:36</note>
       </notes>
       <segment>
         <source>Offline</source>
@@ -4597,7 +5796,7 @@
     </unit>
     <unit id="topbar.favorite-on">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:106</note>
+        <note category="location">src/app/topbar/top-bar.ts:130</note>
       </notes>
       <segment>
         <source>Add to favorites</source>
@@ -4605,7 +5804,7 @@
     </unit>
     <unit id="topbar.favorite-off">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:107</note>
+        <note category="location">src/app/topbar/top-bar.ts:131</note>
       </notes>
       <segment>
         <source>Remove from favorites</source>
@@ -4613,7 +5812,7 @@
     </unit>
     <unit id="topbar.rename.blank">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:160</note>
+        <note category="location">src/app/topbar/top-bar.ts:184</note>
       </notes>
       <segment>
         <source>A board needs a name.</source>
@@ -4621,7 +5820,7 @@
     </unit>
     <unit id="topbar.presence.one">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:187</note>
+        <note category="location">src/app/topbar/top-bar.ts:211</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="names[0]"/> is on this board</source>
@@ -4629,15 +5828,23 @@
     </unit>
     <unit id="topbar.presence.many">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:188</note>
+        <note category="location">src/app/topbar/top-bar.ts:212</note>
       </notes>
       <segment>
         <source>On this board: <ph id="0" equiv="names" disp="names.join(&apos;, &apos;)"/></source>
       </segment>
     </unit>
+    <unit id="topbar.presence.follow">
+      <notes>
+        <note category="location">src/app/topbar/top-bar.ts:216</note>
+      </notes>
+      <segment>
+        <source>Follow <ph id="0" equiv="name" disp="name"/></source>
+      </segment>
+    </unit>
     <unit id="topbar.rename-aria">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:204</note>
+        <note category="location">src/app/topbar/top-bar.ts:236</note>
       </notes>
       <segment>
         <source>Rename the board <ph id="0" equiv="title" disp="this.title()"/></source>
@@ -4645,7 +5852,7 @@
     </unit>
     <unit id="topbar.status.connected.hint">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:213</note>
+        <note category="location">src/app/topbar/top-bar.ts:245</note>
       </notes>
       <segment>
         <source>Connected to the board server: changes reach everyone at once.</source>
@@ -4653,7 +5860,7 @@
     </unit>
     <unit id="topbar.status.offline.hint">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:216</note>
+        <note category="location">src/app/topbar/top-bar.ts:248</note>
       </notes>
       <segment>
         <source>No connection. Your changes are kept on this device and sent when it is back.</source>
@@ -4661,7 +5868,7 @@
     </unit>
     <unit id="topbar.status.connecting.hint">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:217</note>
+        <note category="location">src/app/topbar/top-bar.ts:249</note>
       </notes>
       <segment>
         <source>Connecting to the board server.</source>
@@ -4669,7 +5876,7 @@
     </unit>
     <unit id="topbar.theme.to-light">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:221</note>
+        <note category="location">src/app/topbar/top-bar.ts:253</note>
       </notes>
       <segment>
         <source>Switch to the light theme</source>
@@ -4677,7 +5884,7 @@
     </unit>
     <unit id="topbar.theme.to-dark">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:222</note>
+        <note category="location">src/app/topbar/top-bar.ts:254</note>
       </notes>
       <segment>
         <source>Switch to the dark theme</source>
@@ -4691,9 +5898,17 @@
         <source>Account</source>
       </segment>
     </unit>
+    <unit id="topbar.user.tokens">
+      <notes>
+        <note category="location">src/app/topbar/user-menu.html:42,44</note>
+      </notes>
+      <segment>
+        <source> Access tokens </source>
+      </segment>
+    </unit>
     <unit id="topbar.user.admin">
       <notes>
-        <note category="location">src/app/topbar/user-menu.html:43,46</note>
+        <note category="location">src/app/topbar/user-menu.html:52,55</note>
       </notes>
       <segment>
         <source> Administration </source>
@@ -4701,7 +5916,7 @@
     </unit>
     <unit id="topbar.user.logout">
       <notes>
-        <note category="location">src/app/topbar/user-menu.html:53,57</note>
+        <note category="location">src/app/topbar/user-menu.html:62,66</note>
       </notes>
       <segment>
         <source> Log out </source>

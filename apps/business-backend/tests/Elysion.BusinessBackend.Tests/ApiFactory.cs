@@ -7,7 +7,9 @@ using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Contracts;
 using Elysion.BusinessBackend.Api.Files;
 using Elysion.BusinessBackend.Api.Identity;
+using Elysion.BusinessBackend.Api.Snapshots;
 using Elysion.BusinessBackend.Api.Voting;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
@@ -48,6 +50,20 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     /// <summary>What the voting endpoints told the realtime service, in order; nothing is sent anywhere.</summary>
     public RecordingVotingNotifier Notifications { get; } = new();
+
+    /// <summary>The boards "Save version" asked the realtime service to save; nothing is sent anywhere.</summary>
+    public RecordingRealtimeBoardSaver RealtimeSaves { get; } = new();
+
+    /// <summary>The restores the endpoints asked the realtime service for; nothing is sent anywhere.</summary>
+    public RecordingRealtimeBoardRestorer RealtimeRestores { get; } = new();
+
+    /// <summary>What the webhook worker posted; nothing is sent anywhere unless <see cref="RealWebhooks"/> is set.</summary>
+    public RecordingWebhookSender WebhookSender { get; } = new();
+
+    /// <summary>
+    /// The real webhook sender, with plain http and the loopback address allowed, for a test with a receiver on this machine.
+    /// </summary>
+    public bool RealWebhooks { get; init; }
 
     private readonly string _databaseName = Guid.NewGuid().ToString();
     private readonly TimeProvider? _time;
@@ -137,9 +153,20 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // No file watchers on appsettings.json: the suite makes hundreds of hosts, and on macOS the watchers run out (the
+        // reload callback then fires in a loop and a later host never finishes starting). The tests never change the files.
+        builder.UseSetting("hostBuilder:reloadConfigOnChange", "false");
         builder.UseSetting(OidcOptions.IssuerSetting, Issuer);
         builder.UseSetting(OidcOptions.AudienceSetting, Audience);
         builder.UseSetting(InternalApiOptions.SecretSetting, InternalSecret);
+        // The webhook worker does not poll in the tests: a test runs its passes itself (WebhookDeliveryService.RunOnceAsync).
+        builder.UseSetting(Api.Webhooks.WebhookOptions.WorkerEnabledSetting, "false");
+        if (RealWebhooks)
+        {
+            builder.UseSetting(Api.Webhooks.WebhookOptions.AllowHttpSetting, "true");
+            builder.UseSetting(Api.Webhooks.WebhookOptions.AllowPrivateNetworksSetting, "true");
+        }
+
         builder.UseSetting(Api.Files.FileOptions.EndpointSetting, "http://s3.test");
         builder.UseSetting(Api.Files.FileOptions.AccessKeySetting, "test");
         builder.UseSetting(Api.Files.FileOptions.SecretKeySetting, "test-secret");
@@ -172,6 +199,18 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IVotingNotifier>();
             services.AddSingleton<IVotingNotifier>(Notifications);
 
+            services.RemoveAll<IRealtimeBoardSaver>();
+            services.AddSingleton<IRealtimeBoardSaver>(RealtimeSaves);
+
+            services.RemoveAll<IRealtimeBoardRestorer>();
+            services.AddSingleton<IRealtimeBoardRestorer>(RealtimeRestores);
+
+            if (!RealWebhooks)
+            {
+                services.RemoveAll<IWebhookSender>();
+                services.AddSingleton<IWebhookSender>(WebhookSender);
+            }
+
             services.RemoveAll<IFileStore>();
             services.AddSingleton<IFileStore>(Files);
 
@@ -200,5 +239,71 @@ public sealed class RecordingVotingNotifier : IVotingNotifier
         }
 
         return Task.CompletedTask;
+    }
+}
+
+/// <summary>Remembers the restores that were asked for and answers with <see cref="Answer"/>.</summary>
+public sealed class RecordingRealtimeBoardRestorer : IRealtimeBoardRestorer
+{
+    public List<(Guid BoardId, Guid SnapshotId, string By, DateTimeOffset At)> Asked { get; } = [];
+
+    public RealtimeRestoreStatus Answer { get; set; } = RealtimeRestoreStatus.Restored;
+
+    public Task<RealtimeRestoreStatus> RestoreAsync(Guid boardId,
+        Guid snapshotId,
+        string by,
+        DateTimeOffset at,
+        CancellationToken cancellationToken)
+    {
+        lock (Asked)
+        {
+            Asked.Add((boardId, snapshotId, by, at));
+        }
+
+        return Task.FromResult(Answer);
+    }
+}
+
+/// <summary>Remembers which boards were asked to save; <see cref="OnSave"/> stands in for what the realtime service stores meanwhile.</summary>
+public sealed class RecordingRealtimeBoardSaver : IRealtimeBoardSaver
+{
+    public List<Guid> Asked { get; } = [];
+
+    public Func<Guid, Task>? OnSave { get; set; }
+
+    /// <summary>What the call answers; the default is a success.</summary>
+    public RealtimeSaveResult Answer { get; set; } = RealtimeSaveResult.Saved;
+
+    public async Task<RealtimeSaveResult> SaveNowAsync(Guid boardId, CancellationToken cancellationToken)
+    {
+        lock (Asked)
+        {
+            Asked.Add(boardId);
+        }
+
+        if (OnSave is not null)
+        {
+            await OnSave(boardId);
+        }
+
+        return Answer;
+    }
+}
+
+/// <summary>Remembers the webhooks the worker posted and answers with <see cref="Answer"/> (a success by default).</summary>
+public sealed class RecordingWebhookSender : IWebhookSender
+{
+    public List<WebhookMessage> Sent { get; } = [];
+
+    public Func<WebhookMessage, WebhookAttempt> Answer { get; set; } = _ => new WebhookAttempt(true, 200, 12, null);
+
+    public Task<WebhookAttempt> SendAsync(WebhookMessage message, CancellationToken cancellationToken)
+    {
+        lock (Sent)
+        {
+            Sent.Add(message);
+        }
+
+        return Task.FromResult(Answer(message));
     }
 }

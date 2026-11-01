@@ -4,6 +4,7 @@ using Elysion.BusinessBackend.Api.Audit;
 using Elysion.BusinessBackend.Api.Data;
 using Elysion.BusinessBackend.Api.Data.Repositories;
 using Elysion.BusinessBackend.Api.Entities;
+using Elysion.BusinessBackend.Api.Webhooks;
 
 namespace Elysion.BusinessBackend.Api.Members;
 
@@ -60,6 +61,7 @@ public sealed class BoardMemberService(
     IMembershipRepository memberships,
     IUserRepository users,
     IAuditLog audit,
+    IWebhookEvents webhooks,
     IUnitOfWork unitOfWork,
     TimeProvider time)
 {
@@ -130,6 +132,10 @@ public sealed class BoardMemberService(
             AuditActions.Board,
             boardId,
             new { userId = user.Id, role = role.ToString() });
+        await webhooks.RaiseAsync(WebhookEventTypes.MemberAdded,
+            boardId,
+            new { userId = user.Id, role = role.ToString() },
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new(MemberOutcome.Done, View(user, role));
     }
@@ -151,6 +157,14 @@ public sealed class BoardMemberService(
             AuditActions.Board,
             boardId,
             new { userId, from = before.ToString(), to = role.ToString() });
+        if (before != role)
+        {
+            await webhooks.RaiseAsync(WebhookEventTypes.MemberRoleChanged,
+                boardId,
+                new { userId, previousRole = before.ToString(), role = role.ToString() },
+                cancellationToken);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
         var user = (await users.FindAsync(userId, cancellationToken))!;
         return new(MemberOutcome.Done, View(user, role));
@@ -168,6 +182,10 @@ public sealed class BoardMemberService(
             AuditActions.Board,
             boardId,
             new { userId, role = membership.Role.ToString() });
+        await webhooks.RaiseAsync(WebhookEventTypes.MemberRemoved,
+            boardId,
+            new { userId, role = membership.Role.ToString() },
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new(MemberOutcome.Done);
     }

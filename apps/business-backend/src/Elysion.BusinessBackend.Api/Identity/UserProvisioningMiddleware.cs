@@ -44,7 +44,10 @@ public sealed class UserProvisioningMiddleware(RequestDelegate next)
             }
 
             var adminRole = oidc.Value.AdminRole;
-            accessor.Set(user, !string.IsNullOrWhiteSpace(adminRole) && context.User.IsInRole(adminRole.Trim()));
+            accessor.Set(user,
+                !string.IsNullOrWhiteSpace(adminRole) && context.User.IsInRole(adminRole.Trim()),
+                CallerCredential.AccessTokenIdOf(context.User),
+                CallerCredential.ScopesOf(context.User, user));
         }
 
         await next(context);

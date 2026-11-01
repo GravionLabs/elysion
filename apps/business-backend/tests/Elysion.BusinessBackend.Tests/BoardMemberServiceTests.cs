@@ -43,6 +43,7 @@ public class BoardMemberServiceTests
             new MembershipRepository(db),
             new UserRepository(db),
             TestAudit.For(db, _ada.Id),
+            TestAudit.Webhooks(db, _ada.Id),
             db,
             TimeProvider.System);
         return await action(service);

@@ -65,12 +65,24 @@ export function describeAuditEntry(entry: AuditEntry): string {
       return $localize`:@@audit.user.reactivated:${actor}:actor: reactivated ${entry.subjectName ?? target}:person:`;
     case 'owner.transferred':
       return $localize`:@@audit.owner.transferred:${actor}:actor: handed the ownership over to ${target}:target:`;
+    case 'token.created':
+      return $localize`:@@audit.token.created:${actor}:actor: made the access token “${text(entry, 'name')}:name:”`;
+    case 'token.revoked':
+      return $localize`:@@audit.token.revoked:${actor}:actor: revoked the access token “${text(entry, 'name')}:name:” of ${entry.subjectName ?? target}:person:`;
+    case 'webhook.created':
+      return $localize`:@@audit.webhook.created:${actor}:actor: added a webhook to ${text(entry, 'host')}:host:`;
+    case 'webhook.deleted':
+      return $localize`:@@audit.webhook.deleted:${actor}:actor: deleted the webhook to ${text(entry, 'host')}:host:`;
     case 'invitation.created':
       return $localize`:@@audit.invitation.created:${actor}:actor: made an invitation link for the role ${role}:role:`;
     case 'invitation.revoked':
       return $localize`:@@audit.invitation.revoked:${actor}:actor: revoked an invitation link`;
     case 'invitation.accepted':
       return $localize`:@@audit.invitation.accepted:${actor}:actor: joined with an invitation link as ${role}:role:`;
+    case 'snapshot.deleted':
+      return $localize`:@@audit.snapshot.deleted:${actor}:actor: deleted a saved version of the board`;
+    case 'snapshot.restored':
+      return $localize`:@@audit.snapshot.restored:${actor}:actor: restored a version of the board`;
     default:
       return `${actor}: ${entry.action}`;
   }

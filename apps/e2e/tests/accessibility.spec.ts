@@ -99,6 +99,17 @@ test('the new board dialog and the board page with its menus', async () => {
   await a.getByTestId('elysion-sticky-color').click();
   await expectAccessible(a, 'the sticky note menu');
   await a.keyboard.press('Escape');
+
+  // The history panel (#846), opened with its shortcut and with a version saved by the keyboard.
+  await a.keyboard.press('Alt+h');
+  await expect(a.getByRole('complementary', { name: 'History' })).toBeVisible();
+  await a.getByRole('button', { name: 'Save version' }).click();
+  await a.getByRole('textbox', { name: 'Version name (optional)' }).fill('E2E version');
+  await a.keyboard.press('Enter');
+  await expect(a.getByText('E2E version')).toBeVisible();
+  await expectAccessible(a, 'the history panel');
+  await a.keyboard.press('Escape');
+  await expect(a.getByRole('complementary', { name: 'History' })).toHaveCount(0);
 });
 
 test('the board page in the dark theme', async () => {

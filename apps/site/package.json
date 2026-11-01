@@ -13,7 +13,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.6",
     "vitepress": "^1.6.4",
     "vitest": "^5"
   }

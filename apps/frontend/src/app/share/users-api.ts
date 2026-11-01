@@ -7,6 +7,8 @@ export interface DirectoryUser {
   id: string;
   displayName: string;
   email: string | null;
+  /** An integration (a Keycloak service account, #851), not a person: shown as "Integration" (it has no email). */
+  isIntegration?: boolean;
 }
 
 /** The shortest text the backend searches for. */

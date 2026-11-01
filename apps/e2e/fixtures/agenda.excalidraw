@@ -1,0 +1,81 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "elysion-e2e",
+  "elements": [
+    {
+      "id": "frame-warmup",
+      "type": "frame",
+      "x": 1500,
+      "y": 1200,
+      "width": 400,
+      "height": 300,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 1,
+      "version": 1,
+      "versionNonce": 1,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1,
+      "link": null,
+      "locked": false,
+      "name": "Warm-up"
+    },
+    {
+      "id": "frame-ideas",
+      "type": "frame",
+      "x": -1500,
+      "y": -900,
+      "width": 600,
+      "height": 300,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 1,
+      "version": 1,
+      "versionNonce": 1,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1,
+      "link": null,
+      "locked": false,
+      "name": "Ideas"
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {},
+  "elysionAgenda": [
+    {
+      "id": "item-warmup",
+      "title": "Warm-up",
+      "durationMin": 3,
+      "frameId": "frame-warmup"
+    },
+    {
+      "id": "item-ideas",
+      "title": "Ideas",
+      "durationMin": 10,
+      "frameId": "frame-ideas"
+    }
+  ]
+}

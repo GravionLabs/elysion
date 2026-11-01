@@ -78,7 +78,8 @@ h1 {
 }
 
 input[type='text'],
-input[type='search'] {
+input[type='search'],
+select {
   box-sizing: border-box;
   height: 32px;
   padding: 0 10px;

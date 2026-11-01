@@ -3,7 +3,8 @@
 //
 //   node scripts/build-realm.mjs [out-file]     (default: stdout; CI writes realm-elysion.production.json and attaches it to the release)
 //
-// The result has no users, no direct password grant, `sslRequired: external`, and Keycloak `${VAR}` placeholders (substituted from the
+// The result has no example clients (a `clientId` ending in `-example`, such as `elysion-integration-example`: demo-only, its secret is in
+// the docs, and without the dropped users its service account would lose its role), no users, no direct password grant, `sslRequired: external`, and Keycloak `${VAR}` placeholders (substituted from the
 // environment at import) for the address of the application and the secret of the BFF's client:
 //   ELYSION_APP_URL             https://elysion.example   (no trailing slash)
 //   ELYSION_BFF_CLIENT_SECRET   a long random string, also what the BFF is configured with
@@ -14,26 +15,31 @@ import { fileURLToPath } from 'node:url';
 export const APP_URL = '${ELYSION_APP_URL}';
 export const BFF_SECRET = '${ELYSION_BFF_CLIENT_SECRET}';
 
+/** @param {{ clientId: string }} client */
+export const isExampleClient = (client) => client.clientId.endsWith('-example');
+
 /** @param {Record<string, any>} realm the parsed development realm */
 export function buildProductionRealm(realm) {
   const production = structuredClone(realm);
   delete production.users;
   production.sslRequired = 'external';
-  production.clients = production.clients.map((client) => {
-    const next = { ...client, directAccessGrantsEnabled: false };
-    if (client.publicClient) {
-      next.redirectUris = [`${APP_URL}/*`];
-      next.webOrigins = [APP_URL];
-      if (client.attributes?.['post.logout.redirect.uris'] !== undefined) {
-        next.attributes = {
-          ...client.attributes,
-          'post.logout.redirect.uris': `${APP_URL}/*`,
-        };
+  production.clients = production.clients
+    .filter((client) => !isExampleClient(client))
+    .map((client) => {
+      const next = { ...client, directAccessGrantsEnabled: false };
+      if (client.publicClient) {
+        next.redirectUris = [`${APP_URL}/*`];
+        next.webOrigins = [APP_URL];
+        if (client.attributes?.['post.logout.redirect.uris'] !== undefined) {
+          next.attributes = {
+            ...client.attributes,
+            'post.logout.redirect.uris': `${APP_URL}/*`,
+          };
+        }
       }
-    }
-    if (client.secret !== undefined) next.secret = BFF_SECRET;
-    return next;
-  });
+      if (client.secret !== undefined) next.secret = BFF_SECRET;
+      return next;
+    });
   return production;
 }
 

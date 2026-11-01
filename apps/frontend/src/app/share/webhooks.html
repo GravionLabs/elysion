@@ -1,0 +1,297 @@
+<section class="webhooks" aria-labelledby="webhooks-title">
+  @if (collapsible()) {
+    <h3 id="webhooks-title">
+      <button
+        type="button"
+        class="toggle"
+        [attr.aria-expanded]="expanded()"
+        aria-controls="webhooks-body"
+        (click)="toggle()"
+      >
+        <ng-container i18n="@@webhooks.title">Webhooks</ng-container>
+        <span aria-hidden="true">{{ expanded() ? '▾' : '▸' }}</span>
+      </button>
+    </h3>
+  } @else {
+    <h2 id="webhooks-title" class="visually-hidden" i18n="@@webhooks.listTitle">Webhooks</h2>
+  }
+
+  <div id="webhooks-body" class="body" [hidden]="!open()">
+    <p class="note" i18n="@@webhooks.lead">
+      Elysion posts a signed JSON message to each URL when something happens: never the content of a
+      board. Only https URLs are accepted.
+    </p>
+
+    @if (created(); as webhook) {
+      <div class="secret" role="group" aria-labelledby="webhook-secret-title">
+        <p id="webhook-secret-title" class="secret-title" i18n="@@webhooks.secret.title">
+          The signing secret of {{ webhook.url }}
+        </p>
+        <p class="warning" role="status" i18n="@@webhooks.secret.once">
+          Copy it now. It is shown only this once; the receiver needs it to check the
+          Elysion-Signature header.
+        </p>
+        <div class="secret-line">
+          <input
+            class="secret-value"
+            type="text"
+            readonly
+            aria-label="Signing secret"
+            i18n-aria-label="@@webhooks.secret.label"
+            [value]="webhook.secret"
+            (focus)="selectAll($event)"
+          />
+          <button type="button" class="primary" (click)="copy(webhook.secret)">
+            @if (copied()) {
+              <ng-container i18n="@@webhooks.secret.copied">Copied</ng-container>
+            } @else {
+              <ng-container i18n="@@webhooks.secret.copy">Copy</ng-container>
+            }
+          </button>
+        </div>
+        <button type="button" class="link" (click)="dismissCreated()" i18n="@@webhooks.secret.done">
+          I have copied it
+        </button>
+      </div>
+    }
+
+    <form class="create" (submit)="$event.preventDefault(); create()">
+      <label class="field">
+        <span class="field-label" i18n="@@webhooks.create.url">URL</span>
+        <input
+          type="url"
+          name="url"
+          autocomplete="off"
+          placeholder="https://example.com/elysion"
+          i18n-placeholder="@@webhooks.create.urlPlaceholder"
+          [value]="url()"
+          [disabled]="creating()"
+          (input)="updateUrl($event)"
+        />
+      </label>
+      <fieldset class="events">
+        <legend class="field-label" i18n="@@webhooks.create.events">
+          Events (none ticked: all of them)
+        </legend>
+        @for (type of events; track type) {
+          <label class="event">
+            <input
+              type="checkbox"
+              [checked]="chosen().has(type)"
+              (change)="toggleEvent(type, $event)"
+            />
+            <code>{{ type }}</code>
+            <span class="subtle">{{ describeEvent(type) }}</span>
+          </label>
+        }
+      </fieldset>
+      <button
+        type="submit"
+        class="primary"
+        [disabled]="!canCreate()"
+        i18n="@@webhooks.create.button"
+      >
+        Add webhook
+      </button>
+    </form>
+
+    @if (error(); as message) {
+      <p class="note error" role="alert">{{ message }}</p>
+    }
+    @if (notice(); as message) {
+      <p class="note" role="status">{{ message }}</p>
+    }
+
+    @switch (state()) {
+      @case ('loading') {
+        <p class="note" role="status" i18n="@@webhooks.loading">Loading the webhooks…</p>
+      }
+      @case ('error') {
+        <p class="note error" role="alert">
+          <ng-container i18n="@@webhooks.list.error"
+            >The webhooks could not be loaded.</ng-container
+          >
+          <button type="button" class="link" (click)="load()" i18n="@@webhooks.retry">
+            Try again
+          </button>
+        </p>
+      }
+      @case ('ready') {
+        @if (webhooks().length === 0) {
+          <p class="note" i18n="@@webhooks.list.empty">No webhooks yet.</p>
+        } @else {
+          <ul class="list">
+            @for (webhook of webhooks(); track webhook.id) {
+              <li class="webhook">
+                <div class="webhook-head">
+                  <span class="webhook-url">{{ webhook.url }}</span>
+                  @if (webhook.enabled) {
+                    <span class="chip" i18n="@@webhooks.state.on">active</span>
+                  } @else {
+                    <span class="chip off" i18n="@@webhooks.state.off">off</span>
+                  }
+                </div>
+                <span class="subtle">
+                  {{ eventsText(webhook) }} · <code>{{ webhook.secretPrefix }}…</code>
+                </span>
+                @if (webhook.disabledReason) {
+                  <p class="note error disabled-reason">
+                    <ng-container i18n="@@webhooks.disabledReason">Turned off:</ng-container>
+                    {{ webhook.disabledReason }}
+                    @if (webhook.disabledAt) {
+                      ({{ webhook.disabledAt | date: 'medium' }})
+                    }
+                  </p>
+                }
+                <div class="actions">
+                  <button
+                    type="button"
+                    class="small"
+                    [disabled]="busy() || !webhook.enabled"
+                    (click)="sendTest(webhook)"
+                    i18n="@@webhooks.test"
+                  >
+                    Send test event
+                  </button>
+                  @if (webhook.enabled) {
+                    <button
+                      type="button"
+                      class="small"
+                      [disabled]="busy()"
+                      (click)="setEnabled(webhook, false)"
+                      i18n="@@webhooks.disable"
+                    >
+                      Turn off
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="small"
+                      [disabled]="busy()"
+                      (click)="setEnabled(webhook, true)"
+                      i18n="@@webhooks.enable"
+                    >
+                      Turn on
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="small"
+                    [attr.aria-expanded]="!!deliveries()[webhook.id]"
+                    (click)="toggleDeliveries(webhook)"
+                    i18n="@@webhooks.deliveries.toggle"
+                  >
+                    Deliveries
+                  </button>
+                  <button
+                    type="button"
+                    class="small danger"
+                    [disabled]="busy()"
+                    (click)="remove(webhook)"
+                    i18n="@@webhooks.remove"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                @if (deliveries()[webhook.id]; as list) {
+                  @switch (list.state) {
+                    @case ('loading') {
+                      <p class="note" role="status" i18n="@@webhooks.deliveries.loading">
+                        Loading the deliveries…
+                      </p>
+                    }
+                    @case ('error') {
+                      <p class="note error" role="alert">
+                        <ng-container i18n="@@webhooks.deliveries.error"
+                          >The deliveries could not be loaded.</ng-container
+                        >
+                        <button
+                          type="button"
+                          class="link"
+                          (click)="loadDeliveries(webhook)"
+                          i18n="@@webhooks.retry"
+                        >
+                          Try again
+                        </button>
+                      </p>
+                    }
+                    @default {
+                      @if (list.items.length === 0) {
+                        <p class="note" i18n="@@webhooks.deliveries.empty">Nothing was sent yet.</p>
+                      } @else {
+                        <div class="table-wrap">
+                          <table class="deliveries" [attr.aria-label]="deliveriesLabel(webhook)">
+                            <thead>
+                              <tr>
+                                <th scope="col" i18n="@@webhooks.deliveries.event">Event</th>
+                                <th scope="col" i18n="@@webhooks.deliveries.status">Status</th>
+                                <th scope="col" i18n="@@webhooks.deliveries.response">Response</th>
+                                <th scope="col" i18n="@@webhooks.deliveries.duration">Duration</th>
+                                <th scope="col" i18n="@@webhooks.deliveries.attempts">Attempts</th>
+                                <th scope="col" i18n="@@webhooks.deliveries.time">Time</th>
+                                <th scope="col">
+                                  <span class="visually-hidden" i18n="@@webhooks.deliveries.actions"
+                                    >Actions</span
+                                  >
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (delivery of list.items; track delivery.id) {
+                                <tr>
+                                  <td>
+                                    <code>{{ delivery.eventType }}</code>
+                                  </td>
+                                  <td>
+                                    <span [class]="'status ' + delivery.status">{{
+                                      statusLabel(delivery)
+                                    }}</span>
+                                    @if (delivery.error) {
+                                      <span class="subtle delivery-error">{{
+                                        delivery.error
+                                      }}</span>
+                                    }
+                                  </td>
+                                  <td>{{ delivery.responseStatus ?? '–' }}</td>
+                                  <td>
+                                    @if (delivery.durationMs !== null) {
+                                      {{ delivery.durationMs }} ms
+                                    } @else {
+                                      –
+                                    }
+                                  </td>
+                                  <td>{{ delivery.attempts }}</td>
+                                  <td>
+                                    {{
+                                      delivery.lastAttemptAt ?? delivery.createdAt | date: 'medium'
+                                    }}
+                                  </td>
+                                  <td>
+                                    <button
+                                      type="button"
+                                      class="small"
+                                      [disabled]="busy() || delivery.status === 'pending'"
+                                      (click)="redeliver(webhook, delivery)"
+                                      i18n="@@webhooks.redeliver"
+                                    >
+                                      Send again
+                                    </button>
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+                      }
+                    }
+                  }
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+    }
+  </div>
+</section>

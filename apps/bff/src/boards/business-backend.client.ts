@@ -12,6 +12,7 @@ import {
   Injectable,
   NotFoundException,
   PayloadTooLargeException,
+  ServiceUnavailableException,
   UnauthorizedException,
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
@@ -33,6 +34,22 @@ export interface Board {
   lastOpenedAt?: string | null;
   /** Whether the caller starred the board (#730). */
   isFavorite?: boolean;
+}
+
+/** A version of a board in its history (ADR 0032); `author` is null for an automatic one. */
+export interface BoardSnapshot {
+  id: string;
+  kind: 'Manual' | 'Auto' | 'BeforeRestore';
+  name: string | null;
+  author: string | null;
+  createdAt: string;
+  sizeBytes: number;
+  elementCount: number | null;
+}
+
+/** The answer to a restore (ADR 0032, #847): the "Before restore" version that was kept first, or `null`. */
+export interface RestoreSnapshotResult {
+  before: BoardSnapshot | null;
 }
 
 /** A person in a voting: `id` is the identity-provider subject, the id the canvas knows (#732). */
@@ -140,6 +157,8 @@ export interface DirectoryUser {
   id: string;
   displayName: string;
   email: string | null;
+  /** An integration (a Keycloak service account, #851), not a person. */
+  isIntegration?: boolean;
 }
 
 export interface RoomGroup {
@@ -187,16 +206,20 @@ export class BusinessBackendClient {
 
   /** Records that the caller opened the board (the backend writes at most every few minutes). */
   openBoard(token: string, id: string): Promise<void> {
-    return this.request<void>(token, 'POST', `/boards/${id}/open`);
+    return this.request<void>(token, 'POST', backendPath`/boards/${id}/open`);
   }
 
   /** Stars the board for the caller, or takes the star away. */
   setFavorite(token: string, id: string, favorite: boolean): Promise<void> {
-    return this.request<void>(token, favorite ? 'PUT' : 'DELETE', `/boards/${id}/favorite`);
+    return this.request<void>(
+      token,
+      favorite ? 'PUT' : 'DELETE',
+      backendPath`/boards/${id}/favorite`,
+    );
   }
 
   getBoard(token: string, id: string): Promise<Board> {
-    return this.request<Board>(token, 'GET', `/boards/${id}`);
+    return this.request<Board>(token, 'GET', backendPath`/boards/${id}`);
   }
 
   createBoard(token: string, name: string): Promise<Board> {
@@ -204,28 +227,37 @@ export class BusinessBackendClient {
   }
 
   renameBoard(token: string, id: string, name: string): Promise<Board> {
-    return this.request<Board>(token, 'PATCH', `/boards/${id}`, { name });
+    return this.request<Board>(token, 'PATCH', backendPath`/boards/${id}`, { name });
   }
 
   duplicateBoard(token: string, id: string): Promise<Board> {
-    return this.request<Board>(token, 'POST', `/boards/${id}/duplicate`);
+    return this.request<Board>(token, 'POST', backendPath`/boards/${id}/duplicate`);
   }
 
   /** The board's current voting (the open one, else the last closed) as the caller sees it, or `null` when it has none. */
   async getVoting(token: string, boardId: string): Promise<Voting | null> {
     return (
-      (await this.request<Voting | undefined>(token, 'GET', `/boards/${boardId}/voting`)) ?? null
+      (await this.request<Voting | undefined>(
+        token,
+        'GET',
+        backendPath`/boards/${boardId}/voting`,
+      )) ?? null
     );
   }
 
   startVoting(token: string, boardId: string, input: StartVotingInput): Promise<Voting> {
-    return this.request<Voting>(token, 'POST', `/boards/${boardId}/votings`, input);
+    return this.request<Voting>(token, 'POST', backendPath`/boards/${boardId}/votings`, input);
   }
 
   castVote(token: string, boardId: string, votingId: string, elementId: string): Promise<Voting> {
-    return this.request<Voting>(token, 'POST', `/boards/${boardId}/votings/${votingId}/votes`, {
-      elementId,
-    });
+    return this.request<Voting>(
+      token,
+      'POST',
+      backendPath`/boards/${boardId}/votings/${votingId}/votes`,
+      {
+        elementId,
+      },
+    );
   }
 
   /** Takes back one of the caller's votes on an element; the voting after it, or `null` when they had none there. */
@@ -239,28 +271,32 @@ export class BusinessBackendClient {
       (await this.request<Voting | undefined>(
         token,
         'DELETE',
-        `/boards/${boardId}/votings/${votingId}/votes/${encodeURIComponent(elementId)}`,
+        backendPath`/boards/${boardId}/votings/${votingId}/votes/${elementId}`,
       )) ?? null
     );
   }
 
   closeVoting(token: string, boardId: string, votingId: string): Promise<Voting> {
-    return this.request<Voting>(token, 'POST', `/boards/${boardId}/votings/${votingId}/close`);
+    return this.request<Voting>(
+      token,
+      'POST',
+      backendPath`/boards/${boardId}/votings/${votingId}/close`,
+    );
   }
 
   /** Removes the board's closed votings; an open one stays. */
   async clearVotings(token: string, boardId: string): Promise<void> {
-    await this.request<void>(token, 'DELETE', `/boards/${boardId}/votings`);
+    await this.request<void>(token, 'DELETE', backendPath`/boards/${boardId}/votings`);
   }
 
   /** Puts a board in a room, or takes it out of its room (`roomId: null`). */
   moveBoard(token: string, id: string, roomId: string | null): Promise<Board> {
-    return this.request<Board>(token, 'PUT', `/boards/${id}/room`, { roomId });
+    return this.request<Board>(token, 'PUT', backendPath`/boards/${id}/room`, { roomId });
   }
 
   /** The invitation links of a board (`scope` `boards`) or room (`rooms`) that still work. */
   listInvitations(token: string, scope: 'boards' | 'rooms', id: string): Promise<Invitation[]> {
-    return this.request<Invitation[]>(token, 'GET', `/${scope}/${id}/invitations`);
+    return this.request<Invitation[]>(token, 'GET', backendPath`/${scope}/${id}/invitations`);
   }
 
   createInvitation(
@@ -269,7 +305,12 @@ export class BusinessBackendClient {
     id: string,
     input: CreateInvitationInput,
   ): Promise<CreatedInvitation> {
-    return this.request<CreatedInvitation>(token, 'POST', `/${scope}/${id}/invitations`, input);
+    return this.request<CreatedInvitation>(
+      token,
+      'POST',
+      backendPath`/${scope}/${id}/invitations`,
+      input,
+    );
   }
 
   revokeInvitation(
@@ -278,7 +319,11 @@ export class BusinessBackendClient {
     id: string,
     invitationId: string,
   ): Promise<void> {
-    return this.request<void>(token, 'DELETE', `/${scope}/${id}/invitations/${invitationId}`);
+    return this.request<void>(
+      token,
+      'DELETE',
+      backendPath`/${scope}/${id}/invitations/${invitationId}`,
+    );
   }
 
   /** Follows a link as the caller. The link's token is in the path and never in a log: the request line has the route pattern only. */
@@ -286,7 +331,7 @@ export class BusinessBackendClient {
     return this.request<AcceptedInvitation>(
       token,
       'POST',
-      `/invitations/${encodeURIComponent(invitationToken)}/accept`,
+      backendPath`/invitations/${invitationToken}/accept`,
     );
   }
 
@@ -299,15 +344,15 @@ export class BusinessBackendClient {
   }
 
   renameRoom(token: string, id: string, name: string): Promise<Room> {
-    return this.request<Room>(token, 'PATCH', `/rooms/${id}`, { name });
+    return this.request<Room>(token, 'PATCH', backendPath`/rooms/${id}`, { name });
   }
 
   async deleteRoom(token: string, id: string): Promise<void> {
-    await this.request<void>(token, 'DELETE', `/rooms/${id}`);
+    await this.request<void>(token, 'DELETE', backendPath`/rooms/${id}`);
   }
 
   listRoomMembers(token: string, roomId: string): Promise<BoardMember[]> {
-    return this.request<BoardMember[]>(token, 'GET', `/rooms/${roomId}/members`);
+    return this.request<BoardMember[]>(token, 'GET', backendPath`/rooms/${roomId}/members`);
   }
 
   addRoomMember(
@@ -316,7 +361,10 @@ export class BusinessBackendClient {
     who: { email?: string; userId?: string },
     role: string,
   ): Promise<BoardMember> {
-    return this.request<BoardMember>(token, 'POST', `/rooms/${roomId}/members`, { ...who, role });
+    return this.request<BoardMember>(token, 'POST', backendPath`/rooms/${roomId}/members`, {
+      ...who,
+      role,
+    });
   }
 
   changeRoomMemberRole(
@@ -325,13 +373,18 @@ export class BusinessBackendClient {
     userId: string,
     role: string,
   ): Promise<BoardMember> {
-    return this.request<BoardMember>(token, 'PATCH', `/rooms/${roomId}/members/${userId}`, {
-      role,
-    });
+    return this.request<BoardMember>(
+      token,
+      'PATCH',
+      backendPath`/rooms/${roomId}/members/${userId}`,
+      {
+        role,
+      },
+    );
   }
 
   async removeRoomMember(token: string, roomId: string, userId: string): Promise<void> {
-    await this.request<void>(token, 'DELETE', `/rooms/${roomId}/members/${userId}`);
+    await this.request<void>(token, 'DELETE', backendPath`/rooms/${roomId}/members/${userId}`);
   }
 
   /** The groups whose name contains `query` (at least two characters; the backend answers 400 otherwise). */
@@ -345,7 +398,7 @@ export class BusinessBackendClient {
   }
 
   listRoomGroups(token: string, roomId: string): Promise<RoomGroup[]> {
-    return this.request<RoomGroup[]>(token, 'GET', `/rooms/${roomId}/groups`);
+    return this.request<RoomGroup[]>(token, 'GET', backendPath`/rooms/${roomId}/groups`);
   }
 
   setRoomGroupRole(
@@ -354,11 +407,13 @@ export class BusinessBackendClient {
     groupId: string,
     role: string,
   ): Promise<RoomGroup> {
-    return this.request<RoomGroup>(token, 'PUT', `/rooms/${roomId}/groups/${groupId}`, { role });
+    return this.request<RoomGroup>(token, 'PUT', backendPath`/rooms/${roomId}/groups/${groupId}`, {
+      role,
+    });
   }
 
   async removeRoomGroup(token: string, roomId: string, groupId: string): Promise<void> {
-    await this.request<void>(token, 'DELETE', `/rooms/${roomId}/groups/${groupId}`);
+    await this.request<void>(token, 'DELETE', backendPath`/rooms/${roomId}/groups/${groupId}`);
   }
 
   listTemplates(token: string): Promise<TemplateSummary[]> {
@@ -366,7 +421,7 @@ export class BusinessBackendClient {
   }
 
   getTemplate(token: string, id: string): Promise<Template> {
-    return this.request<Template>(token, 'GET', `/templates/${id}`);
+    return this.request<Template>(token, 'GET', backendPath`/templates/${id}`);
   }
 
   createTemplate(
@@ -377,11 +432,11 @@ export class BusinessBackendClient {
   }
 
   async deleteTemplate(token: string, id: string): Promise<void> {
-    await this.request<void>(token, 'DELETE', `/templates/${id}`);
+    await this.request<void>(token, 'DELETE', backendPath`/templates/${id}`);
   }
 
   listMembers(token: string, boardId: string): Promise<BoardMember[]> {
-    return this.request<BoardMember[]>(token, 'GET', `/boards/${boardId}/members`);
+    return this.request<BoardMember[]>(token, 'GET', backendPath`/boards/${boardId}/members`);
   }
 
   addMember(
@@ -390,7 +445,10 @@ export class BusinessBackendClient {
     who: { email?: string; userId?: string },
     role: string,
   ): Promise<BoardMember> {
-    return this.request<BoardMember>(token, 'POST', `/boards/${boardId}/members`, { ...who, role });
+    return this.request<BoardMember>(token, 'POST', backendPath`/boards/${boardId}/members`, {
+      ...who,
+      role,
+    });
   }
 
   /** People whose name or email contains the text (2 to 100 characters, at most 10 answers; the backend decides). */
@@ -404,13 +462,18 @@ export class BusinessBackendClient {
     userId: string,
     role: string,
   ): Promise<BoardMember> {
-    return this.request<BoardMember>(token, 'PATCH', `/boards/${boardId}/members/${userId}`, {
-      role,
-    });
+    return this.request<BoardMember>(
+      token,
+      'PATCH',
+      backendPath`/boards/${boardId}/members/${userId}`,
+      {
+        role,
+      },
+    );
   }
 
   async removeMember(token: string, boardId: string, userId: string): Promise<void> {
-    await this.request<void>(token, 'DELETE', `/boards/${boardId}/members/${userId}`);
+    await this.request<void>(token, 'DELETE', backendPath`/boards/${boardId}/members/${userId}`);
   }
 
   /**
@@ -422,7 +485,7 @@ export class BusinessBackendClient {
       const membership = await this.request<{ role: string }>(
         token,
         'GET',
-        `/boards/${boardId}/membership/me`,
+        backendPath`/boards/${boardId}/membership/me`,
       );
       return toBoardRole(membership.role);
     } catch (error) {
@@ -443,7 +506,7 @@ export class BusinessBackendClient {
     fileId: string,
     file: { contentType: string; length: number; body: Readable },
   ): Promise<void> {
-    return this.putStream(token, `/boards/${boardId}/files/${fileId}`, file);
+    return this.putStream(token, backendPath`/boards/${boardId}/files/${fileId}`, file);
   }
 
   /** The preview picture of a board (#729), streamed like a file. */
@@ -452,7 +515,7 @@ export class BusinessBackendClient {
     boardId: string,
     file: { contentType: string; length: number; body: Readable },
   ): Promise<void> {
-    return this.putStream(token, `/boards/${boardId}/thumbnail`, file);
+    return this.putStream(token, backendPath`/boards/${boardId}/thumbnail`, file);
   }
 
   private async putStream(
@@ -486,7 +549,7 @@ export class BusinessBackendClient {
     boardId: string,
     ifNoneMatch?: string,
   ): Promise<BackendFile | 'not-modified'> {
-    const response = await this.fetchBackend(`/boards/${boardId}/thumbnail`, {
+    const response = await this.fetchBackend(backendPath`/boards/${boardId}/thumbnail`, {
       method: 'GET',
       headers: {
         ...this.headers(token),
@@ -502,7 +565,7 @@ export class BusinessBackendClient {
 
   /** A file of a board; the body is a stream, to be piped to the caller and not read into memory. */
   async getFile(token: string, boardId: string, fileId: string): Promise<BackendFile> {
-    const response = await this.fetchBackend(`/boards/${boardId}/files/${fileId}`, {
+    const response = await this.fetchBackend(backendPath`/boards/${boardId}/files/${fileId}`, {
       method: 'GET',
       headers: this.headers(token),
       signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
@@ -528,8 +591,111 @@ export class BusinessBackendClient {
     };
   }
 
+  // The versions of a board (ADR 0032, #846): the backend decides who may list, save, rename and delete.
+
+  listSnapshots(token: string, boardId: string): Promise<BoardSnapshot[]> {
+    return this.request<BoardSnapshot[]>(token, 'GET', backendPath`/boards/${boardId}/snapshots`);
+  }
+
+  createSnapshot(token: string, boardId: string, name?: string): Promise<BoardSnapshot> {
+    return this.request<BoardSnapshot>(
+      token,
+      'POST',
+      backendPath`/boards/${boardId}/snapshots`,
+      name === undefined ? {} : { name },
+    );
+  }
+
+  renameSnapshot(
+    token: string,
+    boardId: string,
+    snapshotId: string,
+    name: string,
+  ): Promise<BoardSnapshot> {
+    return this.request<BoardSnapshot>(
+      token,
+      'PATCH',
+      backendPath`/boards/${boardId}/snapshots/${snapshotId}`,
+      {
+        name,
+      },
+    );
+  }
+
+  /** Restores a version onto the board (owners): the backend keeps the current state first, then the realtime service applies it. */
+  restoreSnapshot(
+    token: string,
+    boardId: string,
+    snapshotId: string,
+  ): Promise<RestoreSnapshotResult> {
+    return this.request<RestoreSnapshotResult>(
+      token,
+      'POST',
+      backendPath`/boards/${boardId}/snapshots/${snapshotId}/restore`,
+    );
+  }
+
+  /** "Open as new board": a new board of the caller with the state of the version. */
+  openSnapshotAsNewBoard(token: string, boardId: string, snapshotId: string): Promise<Board> {
+    return this.request<Board>(
+      token,
+      'POST',
+      backendPath`/boards/${boardId}/snapshots/${snapshotId}/copy`,
+    );
+  }
+
+  async deleteSnapshot(token: string, boardId: string, snapshotId: string): Promise<void> {
+    await this.request<void>(
+      token,
+      'DELETE',
+      backendPath`/boards/${boardId}/snapshots/${snapshotId}`,
+    );
+  }
+
+  /** The Yjs state of a version, for the preview picture; a stream to pipe on. */
+  async getSnapshotDocument(
+    token: string,
+    boardId: string,
+    snapshotId: string,
+  ): Promise<BackendFile> {
+    const response = await this.fetchBackend(
+      backendPath`/boards/${boardId}/snapshots/${snapshotId}/document`,
+      { method: 'GET', headers: this.headers(token), signal: AbortSignal.timeout(FILE_TIMEOUT_MS) },
+    );
+    return this.fileOf(response);
+  }
+
+  /**
+   * The stored Yjs state of a board the caller may read (the public API's elements, ADR 0033), or `null` when the board was never
+   * saved (`204`). A board the caller cannot see is a 404, like every board route.
+   */
+  async getBoardDocument(token: string, boardId: string): Promise<Uint8Array | null> {
+    const response = await this.fetchBackend(backendPath`/boards/${boardId}/document`, {
+      method: 'GET',
+      headers: this.headers(token),
+      signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
+    });
+    if (response.status === 204) return null;
+    if (!response.ok) return this.fail(response);
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
+  /** The Yjs state of a version (ADR 0032), read whole: the public API decodes it. */
+  async readSnapshotDocument(
+    token: string,
+    boardId: string,
+    snapshotId: string,
+  ): Promise<Uint8Array> {
+    const response = await this.fetchBackend(
+      backendPath`/boards/${boardId}/snapshots/${snapshotId}/document`,
+      { method: 'GET', headers: this.headers(token), signal: AbortSignal.timeout(FILE_TIMEOUT_MS) },
+    );
+    if (!response.ok) return this.fail(response);
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
   async deleteBoard(token: string, id: string): Promise<void> {
-    await this.request<void>(token, 'DELETE', `/boards/${id}`);
+    await this.request<void>(token, 'DELETE', backendPath`/boards/${id}`);
   }
 
   // The administration area (ADR 0027, #656): one method per call, with a fixed path. The only variable parts are ids that passed
@@ -543,25 +709,40 @@ export class BusinessBackendClient {
     return this.request<unknown>(token, 'GET', `/admin/users${adminQuery(list)}`);
   }
 
+  /** Every personal access token of the instance (#851): names, owners and dates, never a secret. */
+  adminListAccessTokens(token: string, list: AdminList): Promise<unknown> {
+    return this.request<unknown>(token, 'GET', `/admin/access-tokens${adminQuery(list)}`);
+  }
+
+  async adminRevokeAccessToken(token: string, id: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', backendPath`/admin/access-tokens/${id}`);
+  }
+
+  /** The caller's personal access tokens that are not revoked (#851). */
+  listAccessTokens(token: string): Promise<AccessTokenSummary[]> {
+    return this.request<AccessTokenSummary[]>(token, 'GET', '/access-tokens');
+  }
+
+  /** Makes a personal access token: the one answer that carries the secret. The backend checks name, scopes and expiry (400). */
+  createAccessToken(token: string, input: CreateAccessTokenInput): Promise<CreatedAccessToken> {
+    return this.request<CreatedAccessToken>(token, 'POST', '/access-tokens', input);
+  }
+
+  async revokeAccessToken(token: string, id: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', backendPath`/access-tokens/${id}`);
+  }
+
   adminGetUser(token: string, id: string): Promise<unknown> {
-    return this.request<unknown>(token, 'GET', `/admin/users/${encodeURIComponent(id)}`);
+    return this.request<unknown>(token, 'GET', backendPath`/admin/users/${id}`);
   }
 
   /** Deactivates a person (#668); the answer is their detail. */
   adminDeactivateUser(token: string, id: string): Promise<unknown> {
-    return this.request<unknown>(
-      token,
-      'POST',
-      `/admin/users/${encodeURIComponent(id)}/deactivate`,
-    );
+    return this.request<unknown>(token, 'POST', backendPath`/admin/users/${id}/deactivate`);
   }
 
   adminReactivateUser(token: string, id: string): Promise<unknown> {
-    return this.request<unknown>(
-      token,
-      'POST',
-      `/admin/users/${encodeURIComponent(id)}/reactivate`,
-    );
+    return this.request<unknown>(token, 'POST', backendPath`/admin/users/${id}/reactivate`);
   }
 
   /** Hands what a deactivated person owned over to another person (#668); the answer says how many boards and rooms moved. */
@@ -579,18 +760,18 @@ export class BusinessBackendClient {
 
   /** `externalId: null` unlinks the group, a string links it; a key that is left out is not sent. */
   adminPatchGroup(token: string, id: string, patch: AdminGroupPatch): Promise<unknown> {
-    return this.request<unknown>(token, 'PATCH', `/admin/groups/${encodeURIComponent(id)}`, patch);
+    return this.request<unknown>(token, 'PATCH', backendPath`/admin/groups/${id}`, patch);
   }
 
   async adminDeleteGroup(token: string, id: string): Promise<void> {
-    await this.request<void>(token, 'DELETE', `/admin/groups/${encodeURIComponent(id)}`);
+    await this.request<void>(token, 'DELETE', backendPath`/admin/groups/${id}`);
   }
 
   adminListGroupMembers(token: string, id: string, list: AdminList): Promise<unknown> {
     return this.request<unknown>(
       token,
       'GET',
-      `/admin/groups/${encodeURIComponent(id)}/members${adminQuery(list)}`,
+      backendPath`/admin/groups/${id}/members` + adminQuery(list),
     );
   }
 
@@ -598,7 +779,7 @@ export class BusinessBackendClient {
     return this.request<unknown>(
       token,
       'GET',
-      `/admin/groups/${encodeURIComponent(id)}/pending${adminQuery(list)}`,
+      backendPath`/admin/groups/${id}/pending` + adminQuery(list),
     );
   }
 
@@ -607,19 +788,11 @@ export class BusinessBackendClient {
   }
 
   async adminAddGroupMember(token: string, id: string, userId: string): Promise<void> {
-    await this.request<void>(
-      token,
-      'PUT',
-      `/admin/groups/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`,
-    );
+    await this.request<void>(token, 'PUT', backendPath`/admin/groups/${id}/members/${userId}`);
   }
 
   async adminRemoveGroupMember(token: string, id: string, userId: string): Promise<void> {
-    await this.request<void>(
-      token,
-      'DELETE',
-      `/admin/groups/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`,
-    );
+    await this.request<void>(token, 'DELETE', backendPath`/admin/groups/${id}/members/${userId}`);
   }
 
   adminListRooms(token: string, list: AdminList): Promise<unknown> {
@@ -641,12 +814,73 @@ export class BusinessBackendClient {
 
   /** The last entries of the audit log about a board, for its owners (#669). */
   boardHistory(token: string, id: string): Promise<unknown> {
-    return this.request<unknown>(token, 'GET', `/boards/${encodeURIComponent(id)}/history`);
+    return this.request<unknown>(token, 'GET', backendPath`/boards/${id}/history`);
   }
 
   /** The last entries of the audit log about a room, for its owners (#669). */
   roomHistory(token: string, id: string): Promise<unknown> {
-    return this.request<unknown>(token, 'GET', `/rooms/${encodeURIComponent(id)}/history`);
+    return this.request<unknown>(token, 'GET', backendPath`/rooms/${id}/history`);
+  }
+
+  // Webhooks (ADR 0033, #853): a board's under `/boards/{id}/webhooks` (its owners), the instance-wide ones under `/admin/webhooks`
+  // (administrators). `boardId` null is the admin's; every id passed the UUID check of the controller and is encoded anyway.
+
+  listWebhooks(token: string, boardId: string | null): Promise<Webhook[]> {
+    return this.request<Webhook[]>(token, 'GET', webhookPath(boardId));
+  }
+
+  /** Registers a webhook: the one answer that carries its secret. */
+  createWebhook(
+    token: string,
+    boardId: string | null,
+    input: WebhookInput,
+  ): Promise<CreatedWebhook> {
+    return this.request<CreatedWebhook>(token, 'POST', webhookPath(boardId), input);
+  }
+
+  getWebhook(token: string, boardId: string | null, id: string): Promise<Webhook> {
+    return this.request<Webhook>(token, 'GET', webhookPath(boardId, id));
+  }
+
+  updateWebhook(
+    token: string,
+    boardId: string | null,
+    id: string,
+    patch: WebhookPatch,
+  ): Promise<Webhook> {
+    return this.request<Webhook>(token, 'PATCH', webhookPath(boardId, id), patch);
+  }
+
+  async deleteWebhook(token: string, boardId: string | null, id: string): Promise<void> {
+    await this.request<void>(token, 'DELETE', webhookPath(boardId, id));
+  }
+
+  /** "Send test event": a `webhook.test` delivery for this endpoint, sent by the backend's worker. */
+  testWebhook(token: string, boardId: string | null, id: string): Promise<WebhookDelivery> {
+    return this.request<WebhookDelivery>(token, 'POST', `${webhookPath(boardId, id)}/test`);
+  }
+
+  /** The last 50 deliveries of an endpoint, newest first. */
+  listWebhookDeliveries(
+    token: string,
+    boardId: string | null,
+    id: string,
+  ): Promise<WebhookDelivery[]> {
+    return this.request<WebhookDelivery[]>(token, 'GET', `${webhookPath(boardId, id)}/deliveries`);
+  }
+
+  /** "Send again": the same event once more, as a new delivery. */
+  redeliverWebhook(
+    token: string,
+    boardId: string | null,
+    id: string,
+    deliveryId: string,
+  ): Promise<WebhookDelivery> {
+    return this.request<WebhookDelivery>(
+      token,
+      'POST',
+      webhookPath(boardId, id) + backendPath`/deliveries/${deliveryId}/redeliver`,
+    );
   }
 
   /** The headers of every call: the caller's token and the id of the request being handled, so the backend's lines carry it (ADR 0025). */
@@ -659,8 +893,14 @@ export class BusinessBackendClient {
   }
 
   private async fetchBackend(path: string, init: RequestInit): Promise<Response> {
+    const base = new URL(this.baseUrl);
+    const url = resolveBackendUrl(base, path);
+    // The guard CodeQL reads as a sanitizer for js/request-forgery (#898): never another origin.
+    if (url.origin !== base.origin) {
+      throw new BadRequestException('The request does not name a valid resource.');
+    }
     try {
-      return await fetch(new URL(path, this.baseUrl), init);
+      return await fetch(url, init);
     } catch {
       throw new BadGatewayException('The business backend is not reachable.');
     }
@@ -722,6 +962,10 @@ export class BusinessBackendClient {
     if (response.status === 415) {
       throw new UnsupportedMediaTypeException();
     }
+    if (response.status === 503) {
+      // The object store of the versions is down (ADR 0032): say so instead of "bad gateway".
+      throw new ServiceUnavailableException(await problemDetail(response));
+    }
     if (response.status === 400) {
       throw new BadRequestException(await validationMessage(response));
     }
@@ -774,8 +1018,33 @@ async function validationMessage(response: Response): Promise<string> {
   }
 }
 
+/** A personal access token in its owner's list (#851): never the secret. */
+export interface AccessTokenSummary {
+  id: string;
+  name: string;
+  prefix: string;
+  scopes: string[];
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string;
+}
+
+/** The answer to making a token: the one time `token`, the secret, is shown. */
+export interface CreatedAccessToken extends AccessTokenSummary {
+  token: string;
+}
+
+/** What the caller sends to make a token; the rules (1 to 100 characters, known scopes, 1 to 365 days) belong to the backend. */
+export interface CreateAccessTokenInput {
+  name: string;
+  scopes: string[];
+  expiresInDays: number;
+}
+
 /** What a list of the administration area is asked for: a search text and a page, all checked by the controller. */
 export interface AdminList {
+  /** Users only: `person` or `integration` (#851). */
+  kind?: 'person' | 'integration';
   query?: string;
   page?: number;
   pageSize?: number;
@@ -797,12 +1066,108 @@ export interface AdminGroupPatch {
   externalId?: string | null;
 }
 
+/**
+ * A backend path from a template whose every interpolated value is encoded as one path segment, so that an id
+ * with `/`, `?`, `#` or `%` in it cannot reach another route (#898). A query string is appended after it.
+ */
+function backendPath(parts: TemplateStringsArray, ...values: Array<string | number>): string {
+  return parts.reduce(
+    (path, part, index) =>
+      index < values.length ? path + part + encodeURIComponent(values[index]) : path + part,
+    '',
+  );
+}
+
+/**
+ * The URL of a backend path under the base URL, its base path kept. Throws before any request when the result
+ * would leave the base URL's origin or not be exactly that path (an id of `.` or `..` makes the URL parser drop
+ * segments), so that nothing a caller sends can steer the call elsewhere (#898).
+ */
+function resolveBackendUrl(base: URL, path: string): URL {
+  const basePath = base.pathname.replace(/\/+$/, '');
+  const url = new URL(basePath + path, base.origin);
+  if (
+    !path.startsWith('/') ||
+    url.origin !== base.origin ||
+    url.pathname !== basePath + path.split('?', 1)[0]
+  ) {
+    throw new BadRequestException('The request does not name a valid resource.');
+  }
+  return url;
+}
+
+/** The path of a board's webhooks (or one of them), or of the instance-wide ones for `boardId` null. */
+function webhookPath(boardId: string | null, id?: string): string {
+  const base = boardId === null ? '/admin/webhooks' : backendPath`/boards/${boardId}/webhooks`;
+  return id === undefined ? base : base + backendPath`/${id}`;
+}
+
 /** `?query=..&page=..&pageSize=..` from the three allowed values, encoded; empty when none is given. */
 function adminQuery(list: AdminList): string {
   const params = new URLSearchParams();
+  if (list.kind !== undefined) params.append('kind', list.kind);
   if (list.query !== undefined) params.append('query', list.query);
   if (list.page !== undefined) params.append('page', String(list.page));
   if (list.pageSize !== undefined) params.append('pageSize', String(list.pageSize));
   const text = params.toString();
   return text === '' ? '' : `?${text}`;
+}
+
+/** The events a webhook can subscribe to (ADR 0033, #853); an empty list is all of them. */
+export const WEBHOOK_EVENTS = [
+  'board.created',
+  'board.renamed',
+  'board.deleted',
+  'board.content.changed',
+  'member.added',
+  'member.removed',
+  'member.role_changed',
+  'snapshot.created',
+] as const;
+
+/** A webhook endpoint as its owners see it (#853): never its secret, only the secret's first characters. */
+export interface Webhook {
+  id: string;
+  /** The board whose events it receives, or null for every board (an administrator's). */
+  boardId: string | null;
+  url: string;
+  events: string[];
+  enabled: boolean;
+  disabledAt: string | null;
+  disabledReason: string | null;
+  createdAt: string;
+  secretPrefix: string;
+}
+
+/** The answer to registering a webhook: the one time its `secret` is shown. */
+export interface CreatedWebhook extends Webhook {
+  secret: string;
+}
+
+/** One delivery of a webhook: its event and how it went; never the body or the receiver's answer. */
+export interface WebhookDelivery {
+  id: string;
+  eventId: string;
+  eventType: string;
+  status: 'pending' | 'succeeded' | 'failed';
+  attempts: number;
+  responseStatus: number | null;
+  durationMs: number | null;
+  error: string | null;
+  createdAt: string;
+  lastAttemptAt: string | null;
+  nextAttemptAt: string | null;
+}
+
+/** What a new webhook is: a URL and the events (none: all). The backend checks both (400). */
+export interface WebhookInput {
+  url: string;
+  events: string[];
+}
+
+/** A change of a webhook: a key that is left out stays as it is. */
+export interface WebhookPatch {
+  url?: string;
+  events?: string[];
+  enabled?: boolean;
 }

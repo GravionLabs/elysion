@@ -131,6 +131,8 @@ spec:
               value: http://localhost:8081/realms/elysion
             - name: OIDC_AUDIENCE
               value: elysion-bff
+            - name: PUBLIC_API_RATE_LIMIT_PER_MINUTE
+              value: "600"
             - name: WS_TOKEN_SECRET
               valueFrom:
                 secretKeyRef:
@@ -502,6 +504,16 @@ spec:
       services:
         - name: elysion-bff
           port: 3000
+    # The public API (ADR 0033): for scripts, so no CORS; no forwardAuth, the BFF's guard checks every token itself.
+    - kind: Rule
+      match: PathPrefix(`/public/v1`)
+      middlewares:
+        - name: elysion-security-headers
+        - name: elysion-public-api-ip-rate-limit
+        - name: elysion-public-api-body-limit
+      services:
+        - name: elysion-bff
+          port: 3000
     # WebSocket: the token in the URL is checked by the realtime service itself, so no forwardAuth, no rate limit.
     - kind: Rule
       match: PathPrefix(`/yjs`)
@@ -575,6 +587,40 @@ spec:
     average: 50
     burst: 100
     period: 1s
+
+---
+# Source: elysion/templates/edge.yaml
+# The public API (ADR 0033): a flood guard per client address (it also bounds made-up tokens, each of which costs the BFF a
+# lookup) and a body limit. The limit per token, with its RateLimit-* headers, is the BFF's.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: elysion-public-api-ip-rate-limit
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  rateLimit:
+    average: 1200
+    burst: 120
+    period: 1m
+
+---
+# Source: elysion/templates/edge.yaml
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: elysion-public-api-body-limit
+  labels:
+    app.kubernetes.io/name: elysion
+    app.kubernetes.io/instance: elysion
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: elysion-0.1.0
+spec:
+  buffering:
+    maxRequestBodyBytes: 1048576
 
 ---
 # Source: elysion/templates/edge.yaml

@@ -16,6 +16,33 @@ interface FakeRoom {
   role: string;
 }
 
+interface FakeWebhook {
+  id: string;
+  boardId: string | null;
+  url: string;
+  events: string[];
+  enabled: boolean;
+  disabledAt: string | null;
+  disabledReason: string | null;
+  createdAt: string;
+  secretPrefix: string;
+  secret: string;
+}
+
+interface FakeDelivery {
+  id: string;
+  eventId: string;
+  eventType: string;
+  status: 'pending' | 'succeeded' | 'failed';
+  attempts: number;
+  responseStatus: number | null;
+  durationMs: number | null;
+  error: string | null;
+  createdAt: string;
+  lastAttemptAt: string | null;
+  nextAttemptAt: string | null;
+}
+
 interface FakeMember {
   userId: string;
   displayName: string;
@@ -50,6 +77,12 @@ export class FakeBusinessBackend {
   lastVotingRequest: { method: string; path: string; body: unknown } | null = null;
   /** What the voting routes answer; a test sets it. `body` undefined is an empty answer (204 for "none"). */
   votingAnswer: { status: number; body?: unknown } = { status: 200, body: undefined };
+  /** The last request to a snapshot route (#846): method, path and parsed body. */
+  lastSnapshotRequest: { method: string; path: string; body: unknown } | null = null;
+  /** What the snapshot routes answer; a test sets it. `body` undefined is an empty answer. */
+  snapshotAnswer: { status: number; body?: unknown } = { status: 200, body: undefined };
+  /** The bytes the document route of a snapshot serves. */
+  snapshotDocument = Buffer.from([1, 2, 3]);
   requests = 0;
   /** The role per board id the caller has (`Owner`, `Editor`, `Viewer`); a board that is not in here: 404, as for a non-member. */
   readonly roles = new Map<string, string>();
@@ -104,6 +137,31 @@ export class FakeBusinessBackend {
   /** The last `/admin...` request (#656): what the BFF passed on, and what the fake answers with. */
   lastAdminRequest: { method: string; path: string; body: unknown } | null = null;
   adminAnswer: { status: number; body?: unknown } = { status: 200, body: { ok: true } };
+  /**
+   * What `GET /me/credential` answers per bearer token (ADR 0033, #851): a credential (200) or a status; a token that is not in
+   * here is unknown (401). `credentialCalls` counts the calls, so a test sees the BFF's cache.
+   */
+  readonly credentials = new Map<string, { status: number; body?: unknown }>();
+  credentialCalls = 0;
+  /**
+   * Tokens the backend refuses (`401`) on every route but `/me/credential`: a revoke the BFF's 30-second cache has not seen yet,
+   * which the backend's own lookup sees (ADR 0033, #852).
+   */
+  readonly revoked = new Set<string>();
+  /** The stored Yjs state per board id, served by `GET /boards/:id/document` (#852); a known board without one answers 204. */
+  readonly documents = new Map<string, Uint8Array>();
+  /** The last `/access-tokens` request (#851): method, path and parsed body; and what the fake answers with. */
+  lastAccessTokenRequest: { method: string; path: string; body: unknown } | null = null;
+  accessTokenAnswer: { status: number; body?: unknown } = { status: 200, body: [] };
+  /**
+   * The webhooks of the boards (#853), by id, as the backend keeps them (with the secret, which only the answer to the creation
+   * carries), and their deliveries. A board's routes answer 404 for a board that is not in `boards` and 403 when `roles` gives the
+   * caller a role below Owner, as the backend's policy does.
+   */
+  readonly webhooks = new Map<string, FakeWebhook>();
+  readonly webhookDeliveries = new Map<string, FakeDelivery[]>();
+  /** The last request to a board's webhook route: method, path and parsed body. */
+  lastWebhookRequest: { method: string; path: string; body: unknown } | null = null;
   #server: Server | null = null;
 
   get url(): string {
@@ -124,6 +182,109 @@ export class FakeBusinessBackend {
       server.close(() => resolve());
       server.closeAllConnections();
     });
+  }
+
+  /** A board's webhooks, as `WebhookEndpoints` of the business backend answers them (#853). */
+  async #handleWebhooks(
+    req: IncomingMessage,
+    route: RegExpExecArray,
+    send: (status: number, body?: unknown) => void,
+  ): Promise<void> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString()) : undefined;
+    this.lastWebhookRequest = { method: req.method ?? '', path: req.url ?? '', body };
+    const [, boardId, webhookId, action, deliveryId] = route;
+    if (!this.boards.has(boardId!)) return send(404);
+    const role = this.roles.get(boardId!);
+    if (role !== undefined && role !== 'Owner') return send(403);
+    const shown = ({ secret: _secret, ...webhook }: FakeWebhook) => webhook;
+    const notFound = () => send(404, { status: 404, detail: 'There is no such webhook.' });
+    if (webhookId === undefined) {
+      if (req.method === 'GET') {
+        return send(
+          200,
+          [...this.webhooks.values()].filter((w) => w.boardId === boardId).map(shown),
+        );
+      }
+      if (typeof body?.url !== 'string' || !body.url.startsWith('https://')) {
+        return send(400, { title: 'Invalid', errors: { url: ['Only https URLs are allowed.'] } });
+      }
+      const secret = `whsec_${'s'.repeat(43)}`;
+      const webhook: FakeWebhook = {
+        id: randomUUID(),
+        boardId: boardId!,
+        url: body.url,
+        events: body.events ?? [],
+        enabled: true,
+        disabledAt: null,
+        disabledReason: null,
+        createdAt: new Date().toISOString(),
+        secretPrefix: secret.slice(0, 10),
+        secret,
+      };
+      this.webhooks.set(webhook.id, webhook);
+      this.webhookDeliveries.set(webhook.id, []);
+      return send(201, webhook);
+    }
+    const webhook = this.webhooks.get(webhookId);
+    if (webhook === undefined || webhook.boardId !== boardId) return notFound();
+    const deliveries = this.webhookDeliveries.get(webhook.id)!;
+    const delivery = (eventType: string, eventId = randomUUID()): FakeDelivery => ({
+      id: randomUUID(),
+      eventId,
+      eventType,
+      status: 'pending',
+      attempts: 0,
+      responseStatus: null,
+      durationMs: null,
+      error: null,
+      createdAt: new Date().toISOString(),
+      lastAttemptAt: null,
+      nextAttemptAt: new Date().toISOString(),
+    });
+    const switchedOff = () =>
+      send(409, {
+        status: 409,
+        detail: 'This webhook is switched off. Switch it on to send to it.',
+      });
+    if (action === 'test') {
+      if (!webhook.enabled) return switchedOff();
+      const made = delivery('webhook.test');
+      deliveries.unshift(made);
+      return send(202, made);
+    }
+    if (action === 'deliveries' && deliveryId !== undefined) {
+      const original = deliveries.find((d) => d.id === deliveryId);
+      if (original === undefined)
+        return send(404, { status: 404, detail: 'There is no such delivery.' });
+      if (original.status === 'pending') {
+        return send(409, { status: 409, detail: 'This delivery is still being sent.' });
+      }
+      if (!webhook.enabled) return switchedOff();
+      const again = delivery(original.eventType, original.eventId);
+      deliveries.unshift(again);
+      return send(202, again);
+    }
+    if (action === 'deliveries') return send(200, deliveries);
+    if (req.method === 'GET') return send(200, shown(webhook));
+    if (req.method === 'DELETE') {
+      this.webhooks.delete(webhook.id);
+      return send(204);
+    }
+    if (body?.url !== undefined) webhook.url = body.url;
+    if (body?.events !== undefined) webhook.events = body.events;
+    if (body?.enabled === false) {
+      webhook.enabled = false;
+      webhook.disabledAt = new Date().toISOString();
+      webhook.disabledReason = 'Switched off by a person.';
+    }
+    if (body?.enabled === true) {
+      webhook.enabled = true;
+      webhook.disabledAt = null;
+      webhook.disabledReason = null;
+    }
+    return send(200, shown(webhook));
   }
 
   async #handle(req: IncomingMessage, res: import('node:http').ServerResponse): Promise<void> {
@@ -167,6 +328,41 @@ export class FakeBusinessBackend {
         );
       const template = this.templates.find((t) => t.id === id);
       return template ? send(200, template) : send(404);
+    }
+    const bearerToken = /^Bearer (\S+)$/.exec(req.headers.authorization ?? '')?.[1];
+    if (
+      bearerToken !== undefined &&
+      this.revoked.has(bearerToken) &&
+      req.url !== '/me/credential'
+    ) {
+      return send(401);
+    }
+    const webhookRoute =
+      /^\/boards\/([^/]+)\/webhooks(?:\/([^/]+)(?:\/(test|deliveries)(?:\/([^/]+)\/redeliver)?)?)?$/.exec(
+        req.url ?? '',
+      );
+    if (webhookRoute) return this.#handleWebhooks(req, webhookRoute, send);
+    const documentRoute = /^\/boards\/([^/]+)\/document$/.exec(req.url ?? '');
+    if (documentRoute && req.method === 'GET') {
+      if (!this.boards.has(documentRoute[1]!)) return send(404);
+      const state = this.documents.get(documentRoute[1]!);
+      if (state === undefined) return send(204);
+      res.writeHead(200, { 'content-type': 'application/octet-stream', etag: '"1"' });
+      return void res.end(Buffer.from(state));
+    }
+    if (req.url === '/me/credential' && req.method === 'GET') {
+      this.credentialCalls += 1;
+      const token = /^Bearer (\S+)$/.exec(req.headers.authorization ?? '')?.[1] ?? '';
+      const answer = this.credentials.get(token) ?? { status: 401 };
+      return send(answer.status, answer.body);
+    }
+    if (/^\/access-tokens(?:\/[^/]+)?$/.test(req.url ?? '')) {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(chunk as Buffer);
+      const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString()) : undefined;
+      this.lastAccessTokenRequest = { method: req.method ?? '', path: req.url ?? '', body };
+      const answer = this.accessTokenAnswer;
+      return send(answer.status, answer.body);
     }
     if (
       /^\/admin(?:[/?]|$)/.test(req.url ?? '') ||
@@ -258,6 +454,30 @@ export class FakeBusinessBackend {
         body: text ? JSON.parse(text) : null,
       };
       const { status, body } = this.invitationAnswer;
+      return body === undefined ? send(status) : send(status, body);
+    }
+    const snapshotRoute =
+      /^\/boards\/([^/]+)\/snapshots(?:\/([^/]+)(\/document|\/restore|\/copy)?)?$/.exec(
+        req.url ?? '',
+      );
+    if (snapshotRoute) {
+      const parts: Buffer[] = [];
+      for await (const chunk of req) parts.push(chunk as Buffer);
+      const text = Buffer.concat(parts).toString();
+      this.lastSnapshotRequest = {
+        method: req.method ?? '',
+        path: req.url ?? '',
+        body: text ? JSON.parse(text) : null,
+      };
+      if (snapshotRoute[3] === '/document' && this.snapshotAnswer.status === 200) {
+        res.writeHead(200, {
+          'content-type': 'application/octet-stream',
+          'content-length': this.snapshotDocument.length,
+          'x-internal': 'must-not-be-passed-on',
+        });
+        return void res.end(this.snapshotDocument);
+      }
+      const { status, body } = this.snapshotAnswer;
       return body === undefined ? send(status) : send(status, body);
     }
     const votingRoute = /^\/boards\/([^/]+)\/votings?(?:\/|$)/.exec(req.url ?? '');

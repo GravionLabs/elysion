@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isReadAsJson } from './http-limits.js';
+import { isReadAsJson, isReadAsPublicJson } from './http-limits.js';
 
 const json = { 'content-type': 'application/json' };
 
@@ -24,5 +24,25 @@ describe('isReadAsJson', () => {
       false,
     );
     expect(isReadAsJson({ url: '/api/templates', headers: {} })).toBe(false);
+  });
+});
+
+describe('the public API body', () => {
+  it('is read by its own parser (1 MiB), not by the global one', () => {
+    expect(isReadAsJson({ url: '/public/v1/boards', headers: json })).toBe(false);
+    expect(isReadAsPublicJson({ url: '/public/v1/boards', headers: json })).toBe(true);
+    expect(
+      isReadAsPublicJson({
+        url: '/public/v1/boards/x?y=1',
+        headers: { 'content-type': 'application/merge-patch+json' },
+      }),
+    ).toBe(true);
+  });
+
+  it('is read only under /public and only as JSON', () => {
+    expect(isReadAsPublicJson({ url: '/api/boards', headers: json })).toBe(false);
+    expect(
+      isReadAsPublicJson({ url: '/public/v1/boards', headers: { 'content-type': 'text/plain' } }),
+    ).toBe(false);
   });
 });
