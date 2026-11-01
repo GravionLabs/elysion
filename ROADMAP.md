@@ -14,7 +14,6 @@ What was built so far, phase by phase, is in [docs/roadmap.md](docs/roadmap.md).
 | #842 Workshops and integrations                   | open: Features #843, #844 | milestone 0.5.0                          |
 | #843 Running a workshop                           | open: #845–#849           | starts with the snapshot decision (#845) |
 | #844 Integrations: a public REST API and webhooks | open: #850–#853           | starts with the API decision (#850)      |
-| #867 Aspire AppHost for local development         | `needs-decision`, PR #868 | out of 0.5.0 until decided               |
 
 ## 0.5.0 — Workshops and integrations
 
@@ -32,12 +31,14 @@ Milestone 0.5.0 (formerly M16). `release/next` is cut from `main` at `3add5dc`.
 | 4     | #847  | restore a snapshot or open it as a new board                           | #846                  |
 | 4     | #852  | public REST API v1 with an OpenAPI description                         | #851, #846            |
 | 5     | #853  | signed webhooks for board and membership events                        | #852                  |
+| 6     | #889  | the Aspire dashboard replaces VictoriaLogs as the dev log viewer       | — (replaces #867)     |
+| 7     | #890  | one dev stack per worktree with its own name and ports                 | #889                  |
 
 The same order number means the PBIs do not depend on each other. Feature #843 closes with #845–#849, Feature #844 with #850–#853, and
-Epic #842 with both.
+Epic #842 with both. #889 and #890 are developer tooling without a parent feature; the owner decided against an Aspire
+AppHost (#867, closed) and for the standalone Aspire dashboard ([ADR 0034](docs/adr/0034-aspire-dashboard-as-the-dev-log-viewer.md)).
 
 ## Later
 
-- **Aspire AppHost** (#867, PR #868): waits for its decision; it gets a release milestone once accepted.
 - **Checks by hand that CI cannot do:** a real Entra tenant, the Helm chart on a managed cluster, the weekly load workflow
   ([docs/roadmap.md](docs/roadmap.md#what-is-next)).

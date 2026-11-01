@@ -52,11 +52,11 @@ describe('validateEnv', () => {
     expect(
       validateEnv({
         ...valid,
-        OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: 'http://victorialogs:9428/insert/opentelemetry/v1/logs',
+        OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: 'http://aspire-dashboard:18890/v1/logs',
         OTEL_EXPORTER_OTLP_LOGS_HEADERS: 'a=b',
       }),
     ).toMatchObject({
-      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: 'http://victorialogs:9428/insert/opentelemetry/v1/logs',
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: 'http://aspire-dashboard:18890/v1/logs',
       OTEL_EXPORTER_OTLP_LOGS_HEADERS: 'a=b',
     });
     expect(messageOf({ ...valid, OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: 'not a url' })).toContain(
