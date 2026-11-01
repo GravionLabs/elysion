@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { type Browser, type BrowserContextOptions, type Page, expect } from '@playwright/test';
+import { BASE_URL, COMPOSE_ENV } from './stack.js';
 
 export const USER_A = process.env.E2E_USER_A ?? 'dev1';
 export const USER_B = process.env.E2E_USER_B ?? 'dev2';
@@ -162,22 +163,24 @@ export const canUseCompose = !process.env.E2E_NO_COMPOSE;
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
-/** Runs `docker compose <args>` in the repository root, with extra environment variables for the call. */
+/**
+ * Runs `docker compose <args>` in the repository root against this checkout's stack (its project name and ports, #890), with
+ * extra environment variables for the call.
+ */
 export async function compose(args: string[], env: Record<string, string> = {}): Promise<void> {
   await promisify(execFile)('docker', ['compose', ...args], {
     cwd: REPO_ROOT,
-    env: { ...process.env, ...env },
+    env: { ...process.env, ...COMPOSE_ENV, ...env },
   });
 }
 
 /** Waits until the API answers (an anonymous request is refused with a 4xx) after a service was started again. */
 export async function waitForApi(): Promise<void> {
-  const base = process.env.E2E_BASE_URL ?? 'http://localhost';
   await expect
     .poll(
       async () => {
         try {
-          return (await fetch(`${base}/api/boards`)).status;
+          return (await fetch(`${BASE_URL}/api/boards`)).status;
         } catch {
           return 0;
         }
