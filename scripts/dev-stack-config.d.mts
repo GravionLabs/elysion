@@ -40,4 +40,9 @@ export function composeEnvironment(stack: Stack): Record<string, string>;
 export function hostAppSettings(
   stack: Stack,
 ): Record<'bff' | 'realtime' | 'backend', Record<string, string>>;
+export function usesUserSecrets(stack: Stack): boolean;
+export function shellEnvironment(
+  stack: Stack,
+  context?: { realtimeDotenv?: Record<string, string>; traefikStaticConfig?: string },
+): Record<string, string>;
 export function currentStack(root?: string): Stack;

@@ -8,7 +8,9 @@ import {
   currentStack,
   hostAppSettings,
   readDotenv,
+  shellEnvironment,
   stackSettings,
+  usesUserSecrets,
 } from '../../scripts/dev-stack-config.mjs';
 
 const ALL_PORTS = (stack) => Object.values(stack.ports);
@@ -112,6 +114,63 @@ describe('the dev stack of a checkout (#890)', () => {
     );
     assert.equal(apps.backend.S3_ENDPOINT, 'http://localhost:9110');
     assert.equal(apps.backend.ASPNETCORE_URLS, 'http://localhost:5184');
+  });
+
+  it('gives the backend what its launch profile sets, since dev:env runs it with --no-launch-profile', () => {
+    const launch = JSON.parse(
+      readFileSync(
+        new URL(
+          '../../apps/business-backend/src/Elysion.BusinessBackend.Api/Properties/launchSettings.json',
+          import.meta.url,
+        ),
+        'utf8',
+      ).replace(/^\uFEFF/, ''),
+    ).profiles.http;
+    const backend = hostAppSettings(
+      stackSettings({ ELYSION_STACK: 'elysion-b', ELYSION_PORT_OFFSET: '10' }),
+    ).backend;
+    assert.equal(backend.ASPNETCORE_ENVIRONMENT, 'Development');
+    assert.equal(backend.Database__MigrateOnStartup, 'true');
+    assert.deepEqual(
+      Object.fromEntries(
+        Object.keys(launch.environmentVariables).map((name) => [name, backend[name]]),
+      ),
+      launch.environmentVariables,
+    );
+  });
+
+  it('keeps the user secrets for the default stack only', () => {
+    assert.equal(usesUserSecrets(stackSettings({})), true);
+    assert.equal(usesUserSecrets(stackSettings({ ELYSION_STACK: 'ci' })), false);
+    assert.equal(
+      usesUserSecrets(stackSettings({ ELYSION_STACK: 'elysion-b', ELYSION_PORT_OFFSET: '10' })),
+      false,
+    );
+  });
+
+  it("exports for another stack's backend the internal secret of the worktree's realtime .env", () => {
+    const stack = stackSettings({ ELYSION_STACK: 'elysion-b', ELYSION_PORT_OFFSET: '10' });
+    const env = shellEnvironment(stack, {
+      realtimeDotenv: { INTERNAL_API_SECRET: 'secret-of-worktree-b', PORT: '3011' },
+      traefikStaticConfig: './infra/traefik/.traefik.generated.yml',
+    });
+    assert.equal(env.INTERNAL_API_SECRET, 'secret-of-worktree-b');
+    assert.equal(env.COMPOSE_PROJECT_NAME, 'elysion-b');
+    assert.equal(env.TRAEFIK_STATIC_CONFIG, './infra/traefik/.traefik.generated.yml');
+    assert.equal(env.E2E_BASE_URL, 'http://localhost:90');
+    assert.equal(env.ASPNETCORE_ENVIRONMENT, 'Development');
+    assert.equal(env.Database__MigrateOnStartup, 'true');
+    assert.equal(env.PORT, undefined);
+    assert.equal(shellEnvironment(stack).INTERNAL_API_SECRET, undefined);
+  });
+
+  it('exports no internal secret for the default stack, whose backend has it in the user secrets', () => {
+    const env = shellEnvironment(stackSettings({}), {
+      realtimeDotenv: { INTERNAL_API_SECRET: 'secret' },
+    });
+    assert.equal(env.INTERNAL_API_SECRET, undefined);
+    assert.equal(env.TRAEFIK_STATIC_CONFIG, undefined);
+    assert.equal(env.COMPOSE_PROJECT_NAME, undefined);
   });
 
   for (const offset of ['5', '1000', '-10', 'ten', '1e1']) {

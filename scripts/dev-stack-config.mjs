@@ -149,12 +149,44 @@ export function hostAppSettings(stack) {
       BUSINESS_BACKEND_URL: urls.backend,
     },
     // ASP.NET Core reads these from the environment over appsettings.Development.json (`__` is the section separator).
+    // `dotnet run --no-launch-profile` skips the `http` launch profile (Properties/launchSettings.json), so its two
+    // variables come from here: Development loads appsettings.Development.json (S3 keys, OIDC audience) and the user
+    // secrets, and MigrateOnStartup migrates the new stack's empty database.
     backend: {
+      ASPNETCORE_ENVIRONMENT: 'Development',
+      Database__MigrateOnStartup: 'true',
       ASPNETCORE_URLS: urls.backend,
       ConnectionStrings__Elysion: `Host=localhost;Port=${ports.postgres};Database=elysion;Username=elysion;Password=elysion`,
       S3_ENDPOINT: `http://localhost:${ports.rustfsS3}`,
       OIDC_ISSUER_URL: urls.issuer,
     },
+  };
+}
+
+/**
+ * Whether `pnpm setup:env` stores the backend's INTERNAL_API_SECRET in .NET user secrets. Those are per user, shared by
+ * every worktree, so only the default stack keeps them; another stack's backend gets the secret of its worktree's
+ * `apps/realtime/.env` through `dev:env` (`shellEnvironment`), and a second worktree never overwrites the first one's.
+ * @param {ReturnType<typeof stackSettings>} stack
+ */
+export const usesUserSecrets = (stack) => stack.isDefault;
+
+/**
+ * What `pnpm dev:env` exports for a shell (`eval "$(pnpm --silent dev:env)"`): the compose variables (so a plain
+ * `docker compose` acts on this stack), the browser tests' addresses and the business backend's settings on the host.
+ * @param {ReturnType<typeof stackSettings>} stack
+ * @param {{ realtimeDotenv?: Record<string, string>, traefikStaticConfig?: string }} [context] the values of the worktree's
+ *   `apps/realtime/.env` and the generated Traefik configuration compose mounts, if any
+ */
+export function shellEnvironment(stack, { realtimeDotenv = {}, traefikStaticConfig } = {}) {
+  const secret = usesUserSecrets(stack) ? undefined : realtimeDotenv.INTERNAL_API_SECRET;
+  return {
+    ...composeEnvironment(stack),
+    ...(traefikStaticConfig ? { TRAEFIK_STATIC_CONFIG: traefikStaticConfig } : {}),
+    E2E_BASE_URL: stack.urls.app,
+    E2E_KEYCLOAK_URL: stack.urls.keycloak,
+    ...hostAppSettings(stack).backend,
+    ...(secret ? { INTERNAL_API_SECRET: secret } : {}),
   };
 }
 
