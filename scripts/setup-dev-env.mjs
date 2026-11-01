@@ -5,11 +5,15 @@
 // - WS_TOKEN_SECRET is shared by the BFF and the realtime service (a new one, or the BFF's if its `.env` exists).
 // - INTERNAL_API_SECRET is shared by the realtime service and the business backend (ADR 0017). The backend reads it
 //   from .NET user secrets (the `UserSecretsId` of its project), which win over `appsettings.Development.json`.
+// - A stack with a port offset (ELYSION_PORT_OFFSET, scripts/dev-stack-config.mjs, #890) also gets its ports and addresses:
+//   the apps' PORT, the backend's URL, Keycloak's issuer and Valkey's port. The backend's own settings are environment
+//   variables there (`eval "$(pnpm --silent dev:env)"`, AGENTS.md), since user secrets are shared by every worktree.
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { currentStack, hostAppSettings } from './dev-stack-config.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const bffEnv = join(root, 'apps/bff/.env');
@@ -45,12 +49,19 @@ function createEnv(file, values) {
   return true;
 }
 
+const stack = currentStack(root);
+const hostApps = stack.offset === 0 ? { bff: {}, realtime: {} } : hostAppSettings(stack);
+
 const wsTokenSecret = readSetting(bffEnv, 'WS_TOKEN_SECRET') ?? secret();
-createEnv(bffEnv, { WS_TOKEN_SECRET: wsTokenSecret });
+createEnv(bffEnv, { ...hostApps.bff, WS_TOKEN_SECRET: wsTokenSecret });
 
 const internalApiSecret = secret();
 if (
-  createEnv(realtimeEnv, { WS_TOKEN_SECRET: wsTokenSecret, INTERNAL_API_SECRET: internalApiSecret })
+  createEnv(realtimeEnv, {
+    ...hostApps.realtime,
+    WS_TOKEN_SECRET: wsTokenSecret,
+    INTERNAL_API_SECRET: internalApiSecret,
+  })
 ) {
   // The realtime service signs with this secret and the backend verifies it, so the backend gets the same value.
   const result = spawnSync(

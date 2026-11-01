@@ -22,6 +22,9 @@ providers:
     exposedByDefault: false
     # Route over the stack's own network (the project is called `elysion`), whatever other networks a service joins.
     network: elysion_elysion
+    # Only the containers of this compose project: a second dev stack on the machine (another worktree, #890) has the same
+    # routers. scripts/dev-stack.mjs writes a copy with the other stack's name into both lines.
+    constraints: 'Label(`com.docker.compose.project`,`elysion`)'
   # Middlewares (edge authentication): see dynamic/middlewares.yml.
   file:
     directory: '/etc/traefik/dynamic'

@@ -19,7 +19,8 @@ services:
     command:
       - '--configFile=/etc/traefik/traefik.yml'
     ports:
-      - '80:80'
+      # TRAEFIK_PORT: a second dev stack (#890) publishes another one (scripts/dev-stack-config.mjs).
+      - '${TRAEFIK_PORT:-80}:80'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # `pnpm dev:logs` points this at a generated copy that also ships the access log to the log viewer (ADR 0025).
@@ -148,11 +149,16 @@ services:
       ENTRA_ENABLED: ${ENTRA_ENABLED:-true}
       ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:-elysion-broker}
       ENTRA_CLIENT_SECRET: ${ENTRA_CLIENT_SECRET:-elysion-broker-dev-secret}
-      ENTRA_ISSUER_URL: ${ENTRA_ISSUER_URL:-http://localhost:8081/realms/entra-stub}
-      ENTRA_AUTH_URL: ${ENTRA_AUTH_URL:-http://localhost:8081/realms/entra-stub/protocol/openid-connect/auth}
+      ENTRA_ISSUER_URL: ${ENTRA_ISSUER_URL:-http://localhost:${KEYCLOAK_PORT:-8081}/realms/entra-stub}
+      ENTRA_AUTH_URL: ${ENTRA_AUTH_URL:-http://localhost:${KEYCLOAK_PORT:-8081}/realms/entra-stub/protocol/openid-connect/auth}
       ENTRA_TOKEN_URL: ${ENTRA_TOKEN_URL:-http://keycloak:8080/realms/entra-stub/protocol/openid-connect/token}
       ENTRA_JWKS_URL: ${ENTRA_JWKS_URL:-http://keycloak:8080/realms/entra-stub/protocol/openid-connect/certs}
       ENTRA_ADMIN_GROUP_ID: ${ENTRA_ADMIN_GROUP_ID:-22222222-2222-4222-8222-222222222222}
+      # The addresses the browser uses, in the dev realms' redirect URIs and web origins (the frontend client of `elysion`, the
+      # broker of `entra-stub`). A second dev stack (#890) has other ports; the defaults are those of the one stack.
+      ELYSION_DEV_APP_URL: ${ELYSION_DEV_APP_URL:-http://localhost}
+      ELYSION_DEV_FRONTEND_URL: ${ELYSION_DEV_FRONTEND_URL:-http://localhost:4200}
+      ELYSION_DEV_KEYCLOAK_URL: http://localhost:${KEYCLOAK_PORT:-8081}
     ports:
       # Loopback only: the admin console has the development password. Set KEYCLOAK_BIND=0.0.0.0 to reach it from elsewhere.
       - '${KEYCLOAK_BIND:-127.0.0.1}:${KEYCLOAK_PORT:-8081}:8080'
@@ -214,7 +220,7 @@ services:
       GRAPH_SYNC_INTERVAL: ${GRAPH_SYNC_INTERVAL:-60}
       # Access tokens come from Keycloak (docs/specs/identity.md). The issuer is the address the browser used;
       # the keys are fetched over the compose network.
-      OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
+      OIDC_ISSUER_URL: http://localhost:${KEYCLOAK_PORT:-8081}/realms/elysion
       OIDC_AUDIENCE: elysion-bff
       OIDC_JWKS_URI: http://keycloak:8080/realms/elysion/protocol/openid-connect/certs
       # The realtime service's token for the internal document API is checked with this (ADR 0017). Development value only.
@@ -239,6 +245,7 @@ services:
     environment:
       BUSINESS_BACKEND_URL: http://business-backend:8080
       # Keycloak is `keycloak:8080` here, while tokens carry the issuer the browser used (localhost:8081).
+      OIDC_ISSUER_URL: http://localhost:${KEYCLOAK_PORT:-8081}/realms/elysion
       OIDC_JWKS_URI: http://keycloak:8080/realms/elysion/protocol/openid-connect/certs
       WS_TOKEN_SECRET: dev-only-ws-token-secret-change-me-0123456789 # development value only
       # How long a WS token is good for to open a connection; the browser tests shorten it (apps/e2e, reconnect.spec.ts).
@@ -340,7 +347,7 @@ services:
       dockerfile: apps/frontend/Dockerfile
     environment:
       # Where the browser logs in (the address the browser uses, so localhost:8081) and as which client.
-      OIDC_ISSUER_URL: http://localhost:8081/realms/elysion
+      OIDC_ISSUER_URL: http://localhost:${KEYCLOAK_PORT:-8081}/realms/elysion
       OIDC_CLIENT_ID: elysion-frontend
       # Optional: the alias of the realm's identity provider (`microsoft`): the login goes straight to the company's page.
       AUTH_IDP_HINT: ${AUTH_IDP_HINT:-}

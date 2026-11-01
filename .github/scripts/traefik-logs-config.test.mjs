@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { MARKER, withOtlpAccessLog } from '../../scripts/traefik-logs-config.mjs';
+import { MARKER, forStack, withOtlpAccessLog } from '../../scripts/traefik-logs-config.mjs';
 
 const ENDPOINT = 'aspire-dashboard:18889';
 const base = readFileSync(new URL('../../infra/traefik/traefik.yml', import.meta.url), 'utf8');
@@ -51,5 +51,34 @@ describe('Traefik static config with the log viewer', () => {
 
   it('refuses a file without the marker instead of silently shipping nothing', () => {
     assert.throws(() => withOtlpAccessLog('accessLog:\n  format: json\n', ENDPOINT), /marker/);
+  });
+});
+
+describe('Traefik static config of a second dev stack (#890)', () => {
+  it('sees only the containers of the default project in the committed file', () => {
+    assert.match(base, /\n {4}network: elysion_elysion\n/);
+    assert.match(base, /\n {4}constraints: 'Label\(`com\.docker\.compose\.project`,`elysion`\)'\n/);
+  });
+
+  it("routes over the other stack's network and sees only its containers", () => {
+    const generated = forStack(base, 'elysion-b');
+    assert.match(generated, /\n {4}network: elysion-b_elysion\n/);
+    assert.match(
+      generated,
+      /\n {4}constraints: 'Label\(`com\.docker\.compose\.project`,`elysion-b`\)'\n/,
+    );
+    assert.doesNotMatch(generated, /elysion_elysion|project`,`elysion`/);
+  });
+
+  it('changes nothing else, and still takes the log export', () => {
+    const generated = forStack(base, 'elysion-b');
+    const others = (text) =>
+      text.split('\n').filter((line) => !/^ {4}(network|constraints):/.test(line));
+    assert.deepEqual(others(generated), others(base));
+    assert.match(withOtlpAccessLog(generated, ENDPOINT), /endpoint: aspire-dashboard:18889/);
+  });
+
+  it('refuses a file without the lines instead of routing to the wrong stack', () => {
+    assert.throws(() => forStack('providers:\n  docker: {}\n', 'b'), /network or the constraints/);
   });
 });

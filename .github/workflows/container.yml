@@ -18,6 +18,7 @@ on:
       - infra/helm/**
       - infra/kind/**
       - scripts/demo-smoke.sh
+      - scripts/dev-stack-config.mjs
       - scripts/fill-stack.mjs
       - pnpm-lock.yaml
       - package.json

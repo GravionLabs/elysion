@@ -1,4 +1,4 @@
-// The Traefik static configuration for `pnpm dev:logs`: infra/traefik/traefik.yml plus the export of the access log to the
+// The Traefik static configuration for `pnpm dev:logs` and for a second dev stack (`forStack`, below): infra/traefik/traefik.yml plus the export of the access log to the
 // log viewer (ADR 0025; the Aspire dashboard since ADR 0034). Traefik reads its static configuration from one source only,
 // so this cannot be an environment variable next to the file; and a copy of the file would drift. Instead the file has a
 // marker line and this inserts the OTLP block at it, writing a generated copy that compose mounts in place of the original.
@@ -27,4 +27,25 @@ export function withOtlpAccessLog(yaml, endpoint) {
     '      insecure: true',
   ].join('\n');
   return `${yaml.replace(MARKER, block).trimEnd()}\n\nexperimental:\n  otlpLogs: true\n`;
+}
+
+// A second dev stack (#890): Traefik routes over that project's network and sees only that project's containers, because
+// every stack's services carry the same router names. The committed file names the default project, `elysion`.
+export const STACK_NETWORK = /^ {4}network: elysion_elysion$/m;
+export const STACK_CONSTRAINT =
+  /^ {4}constraints: 'Label\(`com\.docker\.compose\.project`,`elysion`\)'$/m;
+
+/** @param {string} yaml the content of traefik.yml  @param {string} stack the compose project name */
+export function forStack(yaml, stack) {
+  if (!STACK_NETWORK.test(yaml) || !STACK_CONSTRAINT.test(yaml)) {
+    throw new Error(
+      'infra/traefik/traefik.yml has lost the network or the constraints line of the stack `elysion` in providers.docker',
+    );
+  }
+  return yaml
+    .replace(STACK_NETWORK, `    network: ${stack}_elysion`)
+    .replace(
+      STACK_CONSTRAINT,
+      `    constraints: 'Label(\`com.docker.compose.project\`,\`${stack}\`)'`,
+    );
 }
