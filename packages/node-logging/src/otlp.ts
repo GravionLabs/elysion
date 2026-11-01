@@ -3,7 +3,7 @@ import { Writable } from 'node:stream';
 export interface OtlpOptions {
   /** `elysion-bff` or `elysion-realtime`: the `service.name` of the resource, which the viewer groups by. */
   service: string;
-  /** The OTLP/HTTP logs endpoint, e.g. `http://victorialogs:9428/insert/opentelemetry/v1/logs`. */
+  /** The OTLP/HTTP logs endpoint, e.g. `http://aspire-dashboard:18890/v1/logs` (the Aspire dashboard, ADR 0034). */
   endpoint: string;
   /** Extra request headers, from `OTEL_EXPORTER_OTLP_LOGS_HEADERS` (`name=value,name2=value2`). */
   headers?: Record<string, string>;
@@ -68,10 +68,11 @@ export function toAttributes(
 }
 
 /**
- * A writable that sends each JSON log line it is given to an OTLP/HTTP logs endpoint (protobuf: VictoriaLogs and Seq
- * refuse JSON, ADR 0025) and keeps nothing else. It is the second destination next to stdout; when the viewer is down
- * the lines are dropped, never queued without bound and never a reason for the service to fail. The OpenTelemetry
- * packages are loaded when the stream is created, not when this module is imported.
+ * A writable that sends each JSON log line it is given to an OTLP/HTTP logs endpoint and keeps nothing else. It sends
+ * protobuf: the Aspire dashboard takes protobuf and JSON, but other viewers (Seq, for one) take protobuf only,
+ * so protobuf keeps the viewer a matter of the URL (ADR 0025, ADR 0034). It is the second destination next to stdout;
+ * when the viewer is down the lines are dropped, never queued without bound and never a reason for the service to fail.
+ * The OpenTelemetry packages are loaded when the stream is created, not when this module is imported.
  */
 export function createOtlpStream(options: OtlpOptions): Writable {
   let emit: (line: Record<string, unknown>) => void = () => undefined;
@@ -97,8 +98,7 @@ export function createOtlpStream(options: OtlpOptions): Writable {
             new BatchLogRecordProcessor({
               exporter: new OTLPLogExporter({
                 url: options.endpoint,
-                // Without this header the viewer makes the detected host and process attributes the stream key.
-                headers: { 'VL-Stream-Fields': 'service.name', ...options.headers },
+                headers: options.headers,
               }),
               scheduledDelayMillis: 1000,
               // A viewer that is down must not make the service hold on to lines: a bounded queue, then drop.

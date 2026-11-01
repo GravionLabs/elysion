@@ -281,8 +281,8 @@ public class LoggingTests
     {
         RequestLogging.ViewerEndpoint(null).ShouldBeNull();
         RequestLogging.ViewerEndpoint("  ").ShouldBeNull();
-        RequestLogging.ViewerEndpoint("http://victorialogs:9428/insert/opentelemetry/v1/logs")
-            .ShouldBe("http://victorialogs:9428/insert/opentelemetry/v1/logs");
+        RequestLogging.ViewerEndpoint("http://aspire-dashboard:18890/v1/logs")
+            .ShouldBe("http://aspire-dashboard:18890/v1/logs");
         Should.Throw<InvalidOperationException>(() => RequestLogging.ViewerEndpoint("not a url"))
             .Message.ShouldContain("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT");
         Should.Throw<InvalidOperationException>(() => RequestLogging.ViewerEndpoint("ftp://host/x"));
