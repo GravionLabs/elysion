@@ -79,3 +79,41 @@ describe('the production realm', () => {
     assert.equal(dev.sslRequired, 'none');
   });
 });
+
+describe('the development realms on a second dev stack (#890)', () => {
+  const stub = readFileSync(
+    new URL('../../infra/keycloak/realm-entra-stub.json', import.meta.url),
+    'utf8',
+  );
+  const frontend = dev.clients.find((c) => c.clientId === 'elysion-frontend');
+
+  it("take the browser's addresses from the environment at import, with the one stack's as the default", () => {
+    assert.deepEqual(frontend.redirectUris, [
+      '${ELYSION_DEV_FRONTEND_URL:http://localhost:4200}/*',
+      '${ELYSION_DEV_APP_URL:http://localhost}/*',
+    ]);
+    assert.deepEqual(frontend.webOrigins, [
+      '${ELYSION_DEV_FRONTEND_URL:http://localhost:4200}',
+      '${ELYSION_DEV_APP_URL:http://localhost}',
+    ]);
+    assert.equal(
+      frontend.attributes['post.logout.redirect.uris'],
+      '${ELYSION_DEV_FRONTEND_URL:http://localhost:4200}/*##${ELYSION_DEV_APP_URL:http://localhost}/*',
+    );
+  });
+
+  it("put Keycloak's own address into the stand-in for Microsoft Entra ID the same way", () => {
+    const realm = JSON.parse(stub);
+    assert.equal(realm.attributes.frontendUrl, '${ELYSION_DEV_KEYCLOAK_URL:http://localhost:8081}');
+    assert.ok(
+      realm.clients[0].redirectUris.includes(
+        '${ELYSION_DEV_KEYCLOAK_URL:http://localhost:8081}/realms/elysion/broker/microsoft/endpoint',
+      ),
+    );
+    assert.doesNotMatch(stub, /"http:\/\/localhost:8081/);
+  });
+
+  it('leave none of these placeholders in the production realm', () => {
+    assert.doesNotMatch(text, /ELYSION_DEV_/);
+  });
+});
