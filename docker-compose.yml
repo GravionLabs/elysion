@@ -164,21 +164,21 @@ services:
     networks:
       - elysion
 
-  # The log viewer of the dev stack (ADR 0025): VictoriaLogs, Apache-2.0, one container. Not part of `docker compose up` or
-  # `pnpm demo` (the `logs` profile); `pnpm dev:logs` starts it with the stack and points the three services and Traefik at it.
-  # Its web UI is http://localhost:9428/select/vmui (docker-compose.dev.yml publishes the port on the loopback).
-  victorialogs:
-    image: victoriametrics/victoria-logs:v1.53.0
+  # The log viewer of the dev stack (ADR 0034): the standalone Aspire dashboard, MIT, one container, telemetry in memory only
+  # (gone when the container stops, so no volume). Not part of `docker compose up` or `pnpm demo` (the `logs` profile);
+  # `pnpm dev:logs` starts it with the stack and points the three services and Traefik at its OTLP/HTTP port (18890).
+  # Its UI is http://localhost:18888 (docker-compose.dev.yml publishes the UI and the OTLP/HTTP port on the loopback).
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.6.2
     profiles: ['logs']
-    command:
-      - '-storageDataPath=/victoria-logs-data'
-      - '-retentionPeriod=7d'
-      - '-httpListenAddr=:9428'
-    mem_limit: 256m
-    volumes:
-      - victorialogs-data:/victoria-logs-data
-    # No health check: the image holds the one binary, without a shell or wget. Nothing waits for the viewer; a service
-    # that cannot reach it drops its lines (ADR 0025).
+    environment:
+      # Anonymous access to the UI, the OTLP endpoints and the telemetry API, without the login token the dashboard would
+      # otherwise print. Acceptable only because this is a dev-only service: it is in the `logs` profile, never in the Helm
+      # chart, its ports are published on 127.0.0.1 only, and what it holds is the dev stack's own logs, without tokens
+      # or secrets (ADR 0025, section 4).
+      ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: 'true'
+    mem_limit: 512m
+    # No health check: nothing waits for the viewer; a service that cannot reach it drops its lines (ADR 0025).
     networks:
       - elysion
 
@@ -365,4 +365,3 @@ volumes:
   backup-data:
   rustfs-data:
   valkey-data:
-  victorialogs-data:

@@ -27,10 +27,12 @@ services:
     ports:
       - '127.0.0.1:${VALKEY_PORT:-6380}:6379'
 
-  # The log viewer (profile `logs`, `pnpm dev:logs`): http://localhost:9428/select/vmui
-  victorialogs:
+  # The log viewer (profile `logs`, `pnpm dev:logs`, ADR 0034): the UI on http://localhost:18888 and OTLP/HTTP on 18890, for
+  # apps run on the host (`OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` in their .env). Loopback only: the dashboard allows anonymous access.
+  aspire-dashboard:
     ports:
-      - '127.0.0.1:${VICTORIALOGS_PORT:-9428}:9428'
+      - '127.0.0.1:${ASPIRE_DASHBOARD_PORT:-18888}:18888' # UI and telemetry API
+      - '127.0.0.1:${ASPIRE_DASHBOARD_OTLP_PORT:-18890}:18890' # OTLP/HTTP
 
   # RustFS (in docker-compose.yml, ADR 0007) on the host: 9100 and 9101 because Portainer from local-infra may own 9000.
   rustfs:
