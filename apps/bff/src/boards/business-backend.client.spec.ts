@@ -461,4 +461,72 @@ describe('BusinessBackendClient', () => {
       );
     });
   });
+
+  // #898: an id from a request never leaves the backend's path or host.
+  describe('ids in the path', () => {
+    it.each([
+      ['a slash', 'a/b', 'http://backend.test:5174/templates/a%2Fb'],
+      ['a question mark', 'x?admin=1', 'http://backend.test:5174/templates/x%3Fadmin%3D1'],
+      ['a hash', 'x#y', 'http://backend.test:5174/templates/x%23y'],
+      ['a host', '//evil.example', 'http://backend.test:5174/templates/%2F%2Fevil.example'],
+      ['a climb', '../admin/stats', 'http://backend.test:5174/templates/..%2Fadmin%2Fstats'],
+      ['a percent', '%2e%2e', 'http://backend.test:5174/templates/%252e%252e'],
+    ])('encodes %s as one segment', async (_, id, expected) => {
+      fetchMock.mockResolvedValue(respond(200, {}));
+
+      await client.getTemplate(TOKEN, id);
+
+      expect(lastCall().url).toBe(expected);
+      expect(new URL(lastCall().url).host).toBe('backend.test:5174');
+    });
+
+    it('encodes every segment of a nested path', async () => {
+      fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+
+      await client.removeRoomMember(TOKEN, '../boards', '//evil.example/x?y#z');
+
+      expect(lastCall().url).toBe(
+        'http://backend.test:5174/rooms/..%2Fboards/members/%2F%2Fevil.example%2Fx%3Fy%23z',
+      );
+    });
+
+    it('keeps a query string after an encoded id', async () => {
+      fetchMock.mockResolvedValue(respond(200, []));
+
+      await client.adminListGroupMembers(TOKEN, 'g/1', { query: 'a b', page: 2 });
+
+      expect(lastCall().url).toBe(
+        'http://backend.test:5174/admin/groups/g%2F1/members?query=a+b&page=2',
+      );
+    });
+
+    it('encodes the ids of a webhook path', async () => {
+      fetchMock.mockResolvedValue(respond(200, {}));
+
+      await client.redeliverWebhook(TOKEN, 'b/1', 'w?1', '#d');
+
+      expect(lastCall().url).toBe(
+        'http://backend.test:5174/boards/b%2F1/webhooks/w%3F1/deliveries/%23d/redeliver',
+      );
+    });
+
+    it.each(['..', '.'])(
+      'refuses the id %j, which would drop a segment, before calling the backend',
+      async (id) => {
+        await expect(client.getTemplate(TOKEN, id)).rejects.toThrow(BadRequestException);
+        expect(fetchMock).not.toHaveBeenCalled();
+      },
+    );
+
+    it('keeps the base path of the configured base URL', async () => {
+      fetchMock.mockResolvedValue(respond(200, {}));
+      const prefixed = new BusinessBackendClient('http://backend.test:5174/api/');
+
+      await prefixed.getTemplate(TOKEN, board.id);
+      expect(lastCall().url).toBe(`http://backend.test:5174/api/templates/${board.id}`);
+
+      await expect(prefixed.getTemplate(TOKEN, '..')).rejects.toThrow(BadRequestException);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  });
 });
