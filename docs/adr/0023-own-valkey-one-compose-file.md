@@ -42,3 +42,14 @@ The real nuisance of local-infra is host port 6379.
   The Keycloak realm is imported only into an empty Keycloak database: an existing one does not get `dev1` and `dev2` until it is dropped.
 - The realtime end-to-end tests locally need `REDIS_URL=redis://:dev-only-valkey-password@localhost:6380` (CI has a service container on 6379); the realtime service's default stays `redis://localhost:6379`.
 - The identity provider's address is still `localhost` in the file; a host name variable for a real deployment is a separate change (see [self-hosting](../self-hosting.md)).
+
+## Addendum: one stack per worktree (#890)
+
+The project name `elysion` and the host ports stay the defaults, but they are no longer the only choice: `ELYSION_STACK` (the project name) and
+`ELYSION_PORT_OFFSET` (added to every host port) in a worktree's `.env` give it a stack of its own, with its own containers, network and volumes, next to
+the default one. One module derives everything from the two settings (`scripts/dev-stack-config.mjs`); the compose files read each port as a variable
+with today's port as its default, and without the settings the scripts set none of them, so `docker compose up` and `pnpm demo` are unchanged. Traefik
+routes over its project's network and sees only its project's containers (`providers.docker.constraints`, a generated copy of `traefik.yml` for another
+name), because every stack has the same router names. The dev realms take the browser's addresses from Keycloak's environment at import
+(`${ELYSION_DEV_APP_URL:http://localhost}` and the like), with today's addresses as the default; the production realm (`scripts/build-realm.mjs`) is
+unchanged.

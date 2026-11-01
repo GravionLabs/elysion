@@ -269,7 +269,7 @@ _Decision: client-side export (#212, #234)._ PNG, SVG, PDF and `.excalidraw` are
 
 **Layout.** The canvas root is `position: absolute; inset: 0` and fills the element it is in; the element needs a size of its own. `Board` is a flex column (top bar, then `<elysion-canvas>` with `flex: 1`); the standalone dev entry gives `#root` the viewport. Excalidraw's own UI (hamburger, Library) therefore sits below the bar.
 
-**Dev proxy.** `apps/frontend/proxy.conf.json` (wired in angular.json) forwards `/api` to the BFF (3000) and `/yjs` (WebSocket) to realtime (3001), so the Angular app talks to both through its own origin as it will behind Traefik, and two tabs on one board URL sync without extra parameters. It is read when `ng serve` starts.
+**Dev proxy.** `apps/frontend/proxy.conf.mjs` (wired in angular.json) forwards `/api` to the BFF (3000) and `/yjs` (WebSocket) to realtime (3001), or their ports moved by `ELYSION_PORT_OFFSET` for a second dev stack (`scripts/dev-stack-config.mjs`), so the Angular app talks to both through its own origin as it will behind Traefik, and two tabs on one board URL sync without extra parameters. It is read when `ng serve` starts.
 
 ## Board files (images)
 

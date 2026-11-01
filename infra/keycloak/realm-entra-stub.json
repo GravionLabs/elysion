@@ -5,7 +5,7 @@
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
   "attributes": {
-    "frontendUrl": "http://localhost:8081"
+    "frontendUrl": "${ELYSION_DEV_KEYCLOAK_URL:http://localhost:8081}"
   },
   "clients": [
     {
@@ -18,7 +18,7 @@
       "directAccessGrantsEnabled": false,
       "protocol": "openid-connect",
       "redirectUris": [
-        "http://localhost:8081/realms/elysion/broker/microsoft/endpoint",
+        "${ELYSION_DEV_KEYCLOAK_URL:http://localhost:8081}/realms/elysion/broker/microsoft/endpoint",
         "http://keycloak:8080/realms/elysion/broker/microsoft/endpoint"
       ],
       "protocolMappers": [

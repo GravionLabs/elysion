@@ -1,5 +1,6 @@
 import { type Page, expect, test } from '@playwright/test';
 import { USER_A, expectAccessible, login } from './helpers.js';
+import { BASE_URL as BASE, KEYCLOAK_URL as KEYCLOAK } from './stack.js';
 
 /**
  * Personal access tokens and integrations (#851, ADR 0033). A person makes a token on "Access tokens" (the secret is shown once),
@@ -11,8 +12,6 @@ test.describe.configure({ mode: 'serial' });
 
 const ADMIN = 'dev';
 const NAME = `E2E token ${Date.now()}`;
-const BASE = process.env.E2E_BASE_URL ?? 'http://localhost';
-const KEYCLOAK = process.env.E2E_KEYCLOAK_URL ?? 'http://localhost:8081';
 
 let person: Page;
 let admin: Page;

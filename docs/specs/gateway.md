@@ -89,7 +89,8 @@ The BFF's route label is the route pattern (`/api/boards/:id`), never the URL, s
   - Scripts read the same records as OTLP JSON from `http://localhost:18888/api/telemetry/logs` (anonymous, loopback only).
 
 In the dev stack (`pnpm dev:stack`) the routes are Docker labels in `docker-compose.yml`; Traefik
-routes over the `elysion_elysion` network, the compose project's own.
+routes over the `elysion_elysion` network, the compose project's own, and sees only the containers of that project
+(`providers.docker.constraints`), so a second dev stack of another worktree (#890) is invisible to it and has its own Traefik.
 
 ## TLS
 
