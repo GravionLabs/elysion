@@ -1,6 +1,7 @@
 # ADR 0025: Structured logs with a request id, and VictoriaLogs as the local log viewer
 
 - Status: Accepted
+- Superseded in part by: [ADR 0034](0034-aspire-dashboard-as-the-dev-log-viewer.md) (the log viewer, section 5 and the checks: the standalone Aspire dashboard replaces VictoriaLogs)
 - Date: 2026-10-09
 - Issues: #625, #626; implemented in #627 (the three services) and #628 (the viewer), which are written for the recommended options
 - Builds on: [ADR 0017](0017-internal-api-authentication.md), "Logs and metrics" in [gateway.md](../specs/gateway.md)
