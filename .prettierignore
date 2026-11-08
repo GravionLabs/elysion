@@ -13,3 +13,8 @@ infra/helm/*/templates/
 apps/e2e/test-results
 apps/e2e/playwright-report
 infra/helm/snapshots/
+
+# Skills installed by `npx skills` (GravionLabs/skills and others)
+.agents/skills/
+.claude/skills/
+skills-lock.json

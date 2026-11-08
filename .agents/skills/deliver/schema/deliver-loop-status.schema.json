@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "deliver loop status",
+  "description": "Deprecated (removed in the next minor release): read the run events and their projection (deliver-run-state.schema.json) instead. Live state of a deliver loop, the projection of its progress events plus schemaVersion, written by the loop to .agents/deliver-loop/status.json of the repository (raw URL on main: https://raw.githubusercontent.com/GravionLabs/skills/main/skills/delivery/deliver/schema/deliver-loop-status.schema.json). Rules: (1) the loop writes the file atomically: a temp file next to it, then rename over status.json; readers never see a partial file. (2) updatedAt is set on every write. (3) Unknown fields are allowed at every level: readers ignore what they do not know, writers may add fields without a schemaVersion bump; a breaking change bumps schemaVersion. (4) A reader treats a file whose updatedAt is older than 1 hour while result is running as stale (the loop died or was killed), not as running. (5) PR and issue numbers are GitHub numbers; URLs are the full GitHub URLs. (6) needsYou lists what a human must decide or do; blocked and paused carry the reason from the progress line.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "run",
+    "harness",
+    "model",
+    "repository",
+    "milestone",
+    "closed",
+    "total",
+    "current",
+    "delivered",
+    "blocked",
+    "paused",
+    "needsYou",
+    "release",
+    "startedAt",
+    "updatedAt",
+    "result"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "run": { "type": "string", "minLength": 1, "description": "Run id, the name of the run folder under .agents/deliver-loop/." },
+    "harness": { "enum": ["claude", "copilot"] },
+    "model": { "type": "string", "minLength": 1 },
+    "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$", "description": "owner/name." },
+    "milestone": {
+      "type": "object",
+      "required": ["key", "title", "url"],
+      "properties": {
+        "key": { "type": "string", "pattern": "^M[0-9]+(\\.[0-9]+)?$", "description": "M<n> or M<n>.<k>; stable across the close rename." },
+        "title": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "minLength": 1 }
+      }
+    },
+    "closed": { "description": "Closed `pbi` and `bug` issues of the milestone (the stop-rule set), Features and Epics excluded.", "type": "integer", "minimum": 0 },
+    "total": { "description": "All `pbi` and `bug` issues of the milestone (the stop-rule set), Features and Epics excluded.", "type": "integer", "minimum": 0 },
+    "current": {
+      "description": "The PBI the loop works on now, null between items and when the loop has ended.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["number", "title", "url", "step", "prUrl"],
+          "properties": {
+            "number": { "type": "integer", "minimum": 1 },
+            "title": { "type": "string", "minLength": 1 },
+            "url": { "type": "string", "minLength": 1 },
+            "step": {
+              "type": "object",
+              "required": ["n", "total", "text"],
+              "properties": {
+                "n": { "type": "integer", "minimum": 1, "maximum": 7 },
+                "total": { "const": 7 },
+                "text": { "type": "string", "description": "Short step text, for example review: clean." }
+              }
+            },
+            "prUrl": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] }
+          }
+        }
+      ]
+    },
+    "delivered": {
+      "type": "array",
+      "description": "PBIs merged in this run, in order.",
+      "items": {
+        "type": "object",
+        "required": ["pbi", "url", "prUrl"],
+        "properties": {
+          "pbi": { "type": "integer", "minimum": 1 },
+          "url": { "type": "string", "minLength": 1 },
+          "prUrl": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "blocked": { "$ref": "#/$defs/items" },
+    "paused": { "$ref": "#/$defs/items" },
+    "needsYou": {
+      "type": "array",
+      "description": "What a human must decide or do.",
+      "items": {
+        "type": "object",
+        "required": ["number", "url", "reason"],
+        "properties": {
+          "number": { "type": "integer", "minimum": 1 },
+          "url": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "required": ["reviewRound", "prUrl"],
+      "properties": {
+        "reviewRound": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }] },
+        "prUrl": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] }
+      }
+    },
+    "startedAt": { "$ref": "#/$defs/timestamp" },
+    "updatedAt": { "$ref": "#/$defs/timestamp" },
+    "result": { "enum": ["running", "done", "max reached", "blocked", "no progress"] }
+  },
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$",
+      "description": "ISO 8601 date-time, UTC with Z or an offset."
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["number", "url", "reason"],
+        "properties": {
+          "number": { "type": "integer", "minimum": 1 },
+          "url": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
