@@ -16,11 +16,91 @@
         }
       ]
     },
+    "lint": {
+      "description": "false disables every lint call; a map replaces the built-in lint command per language.",
+      "oneOf": [
+        { "const": false },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/lintEntry" }
+        }
+      ]
+    },
+    "governance": {
+      "description": "Architecture decisions and specs; read by adr, github-issue, planner, implementation, code-review, deliver, detect-techstack and the CI checks adr and spec of GravionLabs/ci.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "adrDir": { "type": "string", "minLength": 1, "default": "docs/adr" },
+        "adrPaths": {
+          "description": "Globs of paths whose change needs an ADR.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "default": []
+        },
+        "specDir": { "type": "string", "minLength": 1, "default": "docs/specs" },
+        "specMap": {
+          "description": "Glob of source paths -> spec file.",
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "specMode": { "enum": ["warn", "require"], "default": "warn" },
+        "skipLabels": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "default": ["skip-adr"]
+        }
+      }
+    },
+    "release": {
+      "description": "Release candidate and RC test; read by deliver (step 9) and github-release finish.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prerelease": {
+          "description": "Command that cuts a release candidate, e.g. gh workflow run release.yml --ref release/next -f prerelease=true.",
+          "type": "string",
+          "minLength": 1
+        },
+        "test": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "platforms": {
+              "description": "Platforms of the RC test, e.g. [\"macOS\", \"Linux\", \"Windows\"]; with template, github-milestone create/insert makes the release-test issue.",
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "minItems": 1
+            },
+            "template": {
+              "description": "Body template of the release-test issue ({milestone}, {platforms}), e.g. docs/manual-acceptance.md or .github/release-test.md.",
+              "type": "string",
+              "minLength": 1
+            },
+            "gate": {
+              "description": "true: no release PR while the release-test issue is open (default false).",
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      }
+    },
     "deliver": {
       "description": "Settings of the deliver workflow.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "loopThreshold": {
+          "description": "An interactive /deliver run with more PBIs than this starts the loop and stays a control session (default 3).",
+          "type": "integer",
+          "minimum": 1
+        },
+        "controlContextTokens": {
+          "description": "Context size at which the control session prints the status block and the resume command and stops (default 200000).",
+          "type": "integer",
+          "minimum": 1000
+        },
         "roles": {
           "description": "Model and effort per role; unset keys keep the defaults.",
           "type": "object",
@@ -33,6 +113,7 @@
             "fix": { "$ref": "#/$defs/tieredRole" },
             "gate": { "$ref": "#/$defs/role" },
             "review": { "$ref": "#/$defs/role" },
+            "release-review": { "$ref": "#/$defs/role" },
             "pr": { "$ref": "#/$defs/role" },
             "ci": { "$ref": "#/$defs/role" }
           }
@@ -71,6 +152,15 @@
         { "type": "string", "minLength": 1 },
         { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
       ]
+    },
+    "lintEntry": {
+      "type": "object",
+      "required": ["command"],
+      "additionalProperties": false,
+      "properties": {
+        "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "command": { "$ref": "#/$defs/commands" }
+      }
     },
     "formatEntry": {
       "type": "object",

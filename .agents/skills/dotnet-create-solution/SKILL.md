@@ -30,15 +30,15 @@ Parameters: `-SolutionName` (required), `-ProjectType` (classlib/console/webapi/
 
 ## Templates
 
-| File                               | Purpose                                                                                                                                      |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Directory.Build.props`            | Shared MSBuild: `LangVersion=Latest`, `GenerateDocumentationFile`, `NoWarn`; multi-target for libraries, single `<TargetFramework>` for apps |
-| `Directory.Packages.props`         | CPM stub with the NUnit, NUnit.Analyzers, NSubstitute, Shouldly and coverlet test packages plus `Microsoft.SourceLink.GitHub`                |
-| `src/Directory.Build.props`        | Imports root props, sets `OutputPath`                                                                                                        |
-| `test/Directory.Build.props`       | Imports root, `IsPackable=false`, test `PackageReference`s without versions, global `Using NUnit.Framework`                                  |
-| `.editorconfig`                    | C# style: file-scoped namespaces, primary constructors, `_camelCase` fields, analyzer severities                                             |
-| `.github/workflows/ci-library.yml` | NuGet library CI via the `GravionLabs/ci` reusable workflow (build, test, pack, publish)                                                     |
-| `.github/workflows/ci-app.yml`     | Application CI: `dotnet build` + `dotnet test` with test results reporter                                                                    |
+| File                               | Purpose                                                                                                                                                                                  |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Directory.Build.props`            | Shared MSBuild: `LangVersion=Latest`, `GenerateDocumentationFile`, `NoWarn`; multi-target for libraries, single `<TargetFramework>` for apps                                             |
+| `Directory.Packages.props`         | CPM stub with the NUnit, NUnit.Analyzers, NSubstitute, Shouldly and coverlet test packages plus `Microsoft.SourceLink.GitHub`                                                            |
+| `src/Directory.Build.props`        | Imports root props, sets `OutputPath`                                                                                                                                                    |
+| `test/Directory.Build.props`       | Imports root, `IsPackable=false`, test `PackageReference`s without versions, global `Using NUnit.Framework`                                                                              |
+| `.editorconfig`                    | From `project-setup` (`templates/dotnet.editorconfig`; its warning when not installed): C# style: file-scoped namespaces, primary constructors, `_camelCase` fields, analyzer severities |
+| `.github/workflows/ci-library.yml` | NuGet library CI via the `GravionLabs/ci` reusable workflow (build, test, pack, publish)                                                                                                 |
+| `.github/workflows/ci-app.yml`     | Application CI: `dotnet build` + `dotnet test` with test results reporter                                                                                                                |
 
 ## Constraints
 
@@ -47,5 +47,6 @@ Parameters: `-SolutionName` (required), `-ProjectType` (classlib/console/webapi/
 - Generated `.csproj` files must not repeat properties already in `Directory.Build.props`
 - Libraries multi-target; applications use a single target framework
 - The solution must build cleanly before the task is complete
+- Workflows reference `GravionLabs/ci` at the major tag `@v<major>` (today `@v1`), never `@main` or a commit SHA; third-party actions stay SHA-pinned where the repository requires it
 
 Report: summary, files created, verify command (`dotnet build`).

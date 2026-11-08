@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "deliver progress event",
+  "description": "One line of <git-common-dir>/.agents/events/<run>.jsonl (or $AGENT_EVENTS_DIR/<run>.jsonl), written by scripts/Report-Progress.ps1. Fields are only added; readers ignore unknown fields and unknown types; a change in meaning bumps v. `tone` is decided once by the emitter, each display maps it to its own palette. Tone table: attention kind pr_opened -> success; review_fix, paused, needs_you, release_test -> warning; ci_red, blocked -> danger. step.finished: step done, pr, merge or merged -> success; review with result containing 'fix' -> warning; ci with result matching red or fail -> danger; step or result paused -> warning; step or result blocked -> danger. issue.finished outcome: delivered -> success, paused -> warning, blocked -> danger, skipped -> neutral. run.finished result: done -> success, no progress -> warning, blocked -> danger, other -> neutral. Every other event is neutral. needs_you and release_test also set needsYou: true.",
+  "type": "object",
+  "required": ["v", "seq", "ts", "run", "type", "tone"],
+  "properties": {
+    "v": { "const": 1 },
+    "seq": { "type": "integer", "minimum": 1, "description": "per run, gapless" },
+    "ts": { "type": "string", "format": "date-time" },
+    "run": { "type": "string", "minLength": 1 },
+    "type": {
+      "type": "string",
+      "description": "Known: run.started, milestone.progress, issue.started, step.finished, attention, issue.finished, release.updated, run.finished. Readers ignore unknown types."
+    },
+    "tone": { "enum": ["neutral", "info", "success", "warning", "danger"] },
+    "needsYou": { "type": "boolean" },
+    "issue": {
+      "type": "object",
+      "required": ["number"],
+      "properties": {
+        "number": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string" },
+        "url": { "type": "string" }
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "n": { "type": "integer", "minimum": 1 },
+        "total": { "type": "integer", "minimum": 1 },
+        "text": { "type": "string" }
+      }
+    },
+    "prUrl": { "type": "string" },
+    "kind": {
+      "type": "string",
+      "description": "attention: pr_opened, review_fix, ci_red, paused, blocked, needs_you, release_test"
+    },
+    "reason": { "type": "string" },
+    "outcome": { "type": "string", "description": "issue.finished: delivered, blocked, paused, skipped" },
+    "closed": { "type": "integer", "minimum": 0 },
+    "total": { "type": "integer", "minimum": 0 },
+    "result": { "type": "string", "description": "run.finished: done, max reached, blocked, no progress, ..." },
+    "source": { "type": "string", "description": "run.started: loop or session" },
+    "harness": { "type": "string" },
+    "model": { "type": "string" },
+    "repository": { "type": "string" },
+    "milestone": {
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "title": { "type": "string" },
+        "url": { "type": "string" }
+      }
+    },
+    "pid": { "type": "integer" },
+    "host": {
+      "type": "object",
+      "properties": {
+        "poimenTerminal": { "type": "string" },
+        "herdrPane": { "type": "string" }
+      }
+    },
+    "reviewRound": { "type": "integer", "minimum": 1, "description": "release.updated: round of the release review" },
+    "rcUrl": { "type": "string" },
+    "rcVersion": { "type": "string" },
+    "testIssue": {
+      "type": "object",
+      "required": ["number"],
+      "properties": {
+        "number": { "type": "integer", "minimum": 1 },
+        "url": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": true
+}
