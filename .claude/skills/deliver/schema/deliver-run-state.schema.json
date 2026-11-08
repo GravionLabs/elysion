@@ -1,0 +1,330 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "deliver run state",
+  "description": "State of one deliver run, the fold of its progress events (<run>.jsonl, schema/progress-event.schema.json) by the reference reducer scripts/ConvertFrom-ProgressEvents.ps1 (ADR 0001, \"Projection\"; raw URL on main: https://raw.githubusercontent.com/GravionLabs/skills/main/skills/delivery/deliver/schema/deliver-run-state.schema.json). Rules: (1) current comes from the last issue.started and step.finished, issue.finished resets it, and it is null once the run has ended. (2) delivered, blocked and paused come from issue.finished (the latest outcome of an issue wins); needsYou from attention with needsYou: true, plus the open RC test of release.updated testIssue (reason RC test) until an issue.finished for the test issue. (3) closed and total come from milestone.progress, release from release.updated, result from run.finished. (4) Without run.finished the result is running, or abandoned when the pid of run.started no longer lives or the last ts is older than one hour. (5) Unknown event types and fields are ignored, an incomplete last line is skipped, a gap in seq is reported and folded anyway. (6) Unknown fields are allowed at every level of the state. (7) PR and issue numbers are GitHub numbers; URLs are the full GitHub URLs.",
+  "type": "object",
+  "required": [
+    "run",
+    "harness",
+    "model",
+    "repository",
+    "milestone",
+    "closed",
+    "total",
+    "current",
+    "delivered",
+    "blocked",
+    "paused",
+    "needsYou",
+    "release",
+    "startedAt",
+    "updatedAt",
+    "result"
+  ],
+  "properties": {
+    "run": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Run id, the name of the event file <run>.jsonl."
+    },
+    "harness": {
+      "enum": [
+        "claude",
+        "copilot"
+      ]
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[^/\\s]+/[^/\\s]+$",
+      "description": "owner/name."
+    },
+    "milestone": {
+      "type": "object",
+      "required": [
+        "key",
+        "title",
+        "url"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^M[0-9]+(\\.[0-9]+)?$",
+          "description": "M<n> or M<n>.<k>; stable across the close rename."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "closed": {
+      "description": "Closed `pbi` and `bug` issues of the milestone (the stop-rule set), Features and Epics excluded.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "total": {
+      "description": "All `pbi` and `bug` issues of the milestone (the stop-rule set), Features and Epics excluded.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "current": {
+      "description": "The issue the run works on now, null between items and when the run has ended.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "number",
+            "title",
+            "url",
+            "step",
+            "prUrl"
+          ],
+          "properties": {
+            "number": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "url": {
+              "type": "string",
+              "minLength": 1
+            },
+            "step": {
+              "type": "object",
+              "required": [
+                "n",
+                "total",
+                "text"
+              ],
+              "properties": {
+                "n": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "total": {
+                  "const": 7
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Short step text, for example review: clean."
+                }
+              }
+            },
+            "prUrl": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "delivered": {
+      "type": "array",
+      "description": "Issues delivered in this run, in order.",
+      "items": {
+        "type": "object",
+        "required": [
+          "pbi",
+          "url",
+          "prUrl"
+        ],
+        "properties": {
+          "pbi": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "prUrl": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "blocked": {
+      "$ref": "#/$defs/items"
+    },
+    "paused": {
+      "$ref": "#/$defs/items"
+    },
+    "needsYou": {
+      "type": "array",
+      "description": "What a human must decide or do.",
+      "items": {
+        "type": "object",
+        "required": [
+          "number",
+          "url",
+          "reason"
+        ],
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "required": [
+        "reviewRound",
+        "prUrl"
+      ],
+      "properties": {
+        "reviewRound": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prUrl": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rcUrl": {
+          "description": "Pre-release URL of the release candidate.",
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rcVersion": {
+          "description": "Version of the release candidate, for example 1.2.0-rc.1.",
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "testIssue": {
+          "description": "The release-test issue the RC is posted on.",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "number",
+                "url"
+              ],
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "url": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "startedAt": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "result": {
+      "enum": [
+        "running",
+        "done",
+        "max reached",
+        "blocked",
+        "no progress",
+        "abandoned"
+      ]
+    }
+  },
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$",
+      "description": "ISO 8601 date-time, UTC with Z or an offset."
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "number",
+          "url",
+          "reason"
+        ],
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

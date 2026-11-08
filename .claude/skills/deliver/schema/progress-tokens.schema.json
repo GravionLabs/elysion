@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "deliver progress tokens",
+  "description": "Token fixture <case>.tokens.json next to <case>.jsonl (test/skills/delivery/fixtures/progress-events/): what a display shows after each event of the file. One entry per complete line, in file order; an incomplete last line has no entry. Unknown event types and fields change nothing, so their entry repeats the one before. A run that turns abandoned (no run.finished, ADR 0001 rule) ends with one more entry without seq, `abandoned: true`, all tokens cleared and the agent released. The source of the tokens is `deliver` (TTL one hour), of the agent state `deliver-loop` with agent `deliver`. The same event file always yields the same entries.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["tokens", "agent", "pane"],
+    "oneOf": [{ "required": ["seq"] }, { "required": ["abandoned"] }],
+    "properties": {
+      "seq": { "type": "integer", "minimum": 1, "description": "seq of the event this entry follows" },
+      "abandoned": {
+        "const": true,
+        "description": "the run turned abandoned after its last event; only as the final entry"
+      },
+      "tokens": {
+        "type": "object",
+        "description": "The five tokens after the event; null: not set on the pane (never set, or cleared).",
+        "required": ["deliver", "deliver_step", "deliver_pr", "deliver_progress", "deliver_tone"],
+        "additionalProperties": false,
+        "properties": {
+          "deliver": {
+            "type": ["string", "null"],
+            "pattern": "^#[0-9]+$",
+            "description": "#<issue> of the last step.finished"
+          },
+          "deliver_step": {
+            "type": ["string", "null"],
+            "maxLength": 80,
+            "description": "[<n>/<total> ]<step>[: <text>] of the last step.finished, cut at 80 characters"
+          },
+          "deliver_pr": {
+            "type": ["string", "null"],
+            "pattern": "^#[0-9]+$",
+            "description": "#<pr> from the prUrl of the last step.finished that had one"
+          },
+          "deliver_progress": {
+            "type": ["string", "null"],
+            "pattern": "^[0-9]+/[0-9]+$",
+            "description": "<closed>/<total> of the last milestone.progress"
+          },
+          "deliver_tone": {
+            "enum": ["neutral", "info", "success", "warning", "danger", null],
+            "description": "tone of the last step.finished"
+          }
+        }
+      },
+      "agent": {
+        "enum": ["working", "blocked", "idle", "released", null],
+        "description": "Agent state of the pane after the event: working (issue.started), blocked (attention paused or blocked), released (run.finished, after idle or blocked); null: never reported."
+      },
+      "pane": {
+        "type": ["string", "null"],
+        "description": "host.herdrPane of run.started, the pane the tokens and the state are set on; null without one"
+      }
+    }
+  }
+}

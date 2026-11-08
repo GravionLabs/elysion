@@ -8,6 +8,7 @@ Without `-Language`, `-Extensions` and `-Command` the script detects the formatt
 pwsh scripts/Format-Changed.ps1                      # detect from the changed files
 pwsh scripts/Format-Changed.ps1 -Language ts
 pwsh scripts/Format-Changed.ps1 -Language ts -Check
+pwsh scripts/Format-Changed.ps1 -Language ts -Check -Staged   # only the staged files (pre-commit hook)
 pwsh scripts/Format-Changed.ps1 -Extensions .ts,.tsx -Command 'npx prettier --write {files}'   # any other tool
 ```
 

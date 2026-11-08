@@ -33,6 +33,7 @@ Runner config, test file naming, mocking and coverage live in `ts-test`.
 
 ## Review rules
 
+- 🔴 Lint run (`Format-Changed.ps1 -Lint -Language ts`, ESLint or Biome) exits non-zero: error-level findings; 🟡 warning-level findings
 - No `any` — use `unknown` and narrow; `strict: true` in `tsconfig.json`
 - No floating promises; async functions propagate or handle errors
 - ESM `import` only; `path.join`/`path.resolve` for file paths

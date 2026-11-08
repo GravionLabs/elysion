@@ -228,7 +228,6 @@ try {
         $filesToCopy = @(
             'Directory.Build.props',
             'Directory.Packages.props',
-            '.editorconfig',
             'src/Directory.Build.props',
             'test/Directory.Build.props'
         )
@@ -242,6 +241,17 @@ try {
                 Copy-Item -Path $src -Destination $dest -Force
                 Write-Host "  Copied $file" -ForegroundColor Gray
             }
+        }
+
+        # .editorconfig: the template belongs to project-setup (sibling skill; same layout in the repository and installed)
+        $ecSrc = @('../../project-setup/templates/dotnet.editorconfig', '../../../shared/project-setup/templates/dotnet.editorconfig') |
+            ForEach-Object { Join-Path $PSScriptRoot $_ } | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if ($ecSrc) {
+            Copy-Item -Path $ecSrc -Destination (Join-Path $solutionRoot '.editorconfig') -Force
+            Write-Host "  Copied .editorconfig" -ForegroundColor Gray
+        }
+        else {
+            Write-Warning 'project-setup not installed: no .editorconfig written; run /skills-manage shared, then /project-setup'
         }
 
         # CI workflow

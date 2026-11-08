@@ -18,6 +18,7 @@ The official `dotnet` plugin skills (dependency `dotnet/skills`) cover general C
 - Logging: `ILogger<T>` with structured templates, never `Console.WriteLine`
 - XML docs on public API; `<summary>` is one sentence starting with a third-person verb
 - Upgrades: bump versions centrally in `Directory.Build.props` / `Directory.Packages.props`; no prerelease unless requested; build and test after each step
+- **Aspire**: only when `detect-techstack` reports `frameworks: ["aspire"]`, load `dotnet-aspire`
 
 ## Format
 
@@ -38,6 +39,7 @@ Runner, layout, naming, structure and mocking live in `dotnet-test`.
 
 ## Review rules
 
+- 🔴 Lint run (`Format-Changed.ps1 -Lint -Language dotnet`, analyzer) exits non-zero: error-level findings; 🟡 warning-level findings
 - No `.Result`, `.Wait()`, or `async void` (except event handlers)
 - `CancellationToken` propagated through async call chains
 - Nullable reference types respected; no swallowed exceptions
