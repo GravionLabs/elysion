@@ -2,7 +2,7 @@
 
 Order of work and release assignment for the open issues. Written 2026-10-31 with the move to the rolling release branch
 ([ADR 0030](docs/adr/0030-rolling-release-branch.md)). Last release `v0.1.0-beta.216`. Work runs on `release/next`; the release pull request
-into `main` is the human review point, and each release has a GitHub milestone of the same name. `/deliver --milestone 0.5.0` delivers
+into `main` is the human review point, and each release has a GitHub milestone `M<nnn> <name>`. `/deliver --milestone M016` delivers
 the PBIs below in this order.
 
 What was built so far, phase by phase, is in [docs/roadmap.md](docs/roadmap.md).
@@ -11,13 +11,14 @@ What was built so far, phase by phase, is in [docs/roadmap.md](docs/roadmap.md).
 
 | Epic / Feature                                    | State                     | Note                                     |
 | ------------------------------------------------- | ------------------------- | ---------------------------------------- |
-| #842 Workshops and integrations                   | open: Features #843, #844 | milestone 0.5.0                          |
+| #842 Workshops and integrations                   | open: Features #843, #844 | milestone M016                           |
 | #843 Running a workshop                           | open: #845–#849           | starts with the snapshot decision (#845) |
 | #844 Integrations: a public REST API and webhooks | open: #850–#853           | starts with the API decision (#850)      |
 
 ## 0.5.0 — Workshops and integrations
 
-Milestone 0.5.0 (formerly M16). `release/next` is cut from `main` at `3add5dc`.
+Milestone `M016 Workshops and integrations` (named `0.5.0` until 2026-11-12); it becomes `M016 Workshops and integrations (0.5.0)` when
+the release is tagged. `release/next` is cut from `main` at `3add5dc`.
 
 | Order | Issue | Title                                                                  | Depends on / decision |
 | ----- | ----- | ---------------------------------------------------------------------- | --------------------- |
