@@ -23,7 +23,7 @@ A Deployment and its Service for one component. Arguments: root (the chart conte
 image (key in values.images / replicas / resources), port, probe (path), env (a list of environment variables, YAML),
 runAsUser (the numeric user of the image: Kubernetes cannot check `runAsNonRoot` against a user name), writable (more
 paths than /tmp that the process writes to; the root file system is read-only), startupSeconds (how long the process may take
-to start), grace (terminationGracePeriodSeconds when the default 30 is too short).
+to start), grace (seconds the process needs to stop after SIGTERM when the default 30 is too short; the preStop sleep is added).
 */}}
 {{- define "elysion.component" -}}
 {{- $root := .root -}}
@@ -49,10 +49,10 @@ spec:
         {{- include "elysion.labels" $root | nindent 8 }}
         app.kubernetes.io/component: {{ .name }}
     spec:
-      {{- with .grace }}
-      # The realtime service saves every board with unsaved changes when it gets SIGTERM (ADR 0011): give it the time.
-      terminationGracePeriodSeconds: {{ . }}
-      {{- end }}
+      # The pod sleeps in preStop first (the endpoint is removed from Traefik meanwhile), then gets SIGTERM: the grace period
+      # is the sleep plus the time the process needs. The realtime service saves every board with unsaved changes on
+      # SIGTERM (ADR 0011), so it needs more than the default 30 s.
+      terminationGracePeriodSeconds: {{ add (int $root.Values.shutdown.preStopSeconds) (int (.grace | default 30)) }}
       {{- if or (gt (int (index $root.Values.replicas .image)) 1) (and (eq .image "realtime") $root.Values.autoscaling.realtime.enabled) }}
       # Replicas of one component go to different nodes when they can (a node that fails takes one, not all).
       topologySpreadConstraints:
@@ -96,6 +96,13 @@ spec:
             httpGet: { path: {{ .probe }}, port: http }
             periodSeconds: 10
             failureThreshold: 6
+          {{- if gt (int $root.Values.shutdown.preStopSeconds) 0 }}
+          # A rolling update must not route a request to a pod that is stopping: keep serving until the endpoint is gone.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", {{ $root.Values.shutdown.preStopSeconds | quote }}]
+          {{- end }}
           resources:
             {{- toYaml (index $root.Values.resources .image) | nindent 12 }}
           securityContext:
