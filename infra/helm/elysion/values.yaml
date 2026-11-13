@@ -8,6 +8,11 @@ images:
   realtime: { repository: elysion/realtime, tag: latest, pullPolicy: IfNotPresent }
   businessBackend: { repository: elysion/business-backend, tag: latest, pullPolicy: IfNotPresent }
 
+shutdown:
+  # A stopping pod sleeps this long before SIGTERM, so Traefik and the Service endpoints drop it first (a rolling update
+  # then never routes a request to it). It is added to the grace period. 0 switches the sleep off.
+  preStopSeconds: 5
+
 replicas:
   frontend: 1
   bff: 1
