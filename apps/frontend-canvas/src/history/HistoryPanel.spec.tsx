@@ -459,6 +459,6 @@ describe('HistoryPanel', () => {
 
     expect(await screen.findByRole('heading', { name: 'Verlauf' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Version speichern' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Heute' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Heute' })).toBeTruthy();
   });
 });
