@@ -166,6 +166,25 @@ describe('YjsRoomRegistry persistence', () => {
       expect(await registry.saveNow('b')).toBe(true); // the retry-pending state is saved now
     });
 
+    it('saveNow answers false when a save that is already running gives up', async () => {
+      const room = await registry.getOrLoad('b');
+      room.doc.getMap('elements').set('a', '1');
+      let fail: (error: Error) => void = () => undefined;
+      store.saveResult = () =>
+        new Promise<SaveResult>((_, reject) => {
+          fail = reject;
+        });
+      const running = registry.saveNow('b');
+      await vi.advanceTimersByTimeAsync(0);
+      const concurrent = registry.saveNow('b'); // waits for the save in flight
+      await vi.advanceTimersByTimeAsync(0);
+
+      fail(new DocumentRejectedError(404, 'Document store answered 404, expected 204'));
+
+      expect(await running).toBe(false);
+      expect(await concurrent).toBe(false);
+    });
+
     it('saves a changed room once, a debounce after its last change, based on the loaded version', async () => {
       store.loadResult = async () => ({ state: stateOf({ a: '1' }), version: '7' });
       const room = await registry.getOrLoad('b');
