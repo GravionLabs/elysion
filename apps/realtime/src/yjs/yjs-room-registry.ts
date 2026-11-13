@@ -90,6 +90,8 @@ interface SaveState {
   timer: NodeJS.Timeout | null;
   saving: Promise<boolean> | null;
   failures: number;
+  /** True when the last save attempt failed and the unsaved state was given up (not dirty, yet not stored). */
+  lost?: boolean;
   evictionTimer: NodeJS.Timeout | null;
   /** Bumped whenever someone asks for the room, so an eviction that was already under way notices and stops. */
   usage: number;
@@ -615,7 +617,8 @@ export class YjsRoomRegistry implements OnModuleDestroy {
       await state.saving;
     }
     if (!state.dirty) {
-      return true;
+      // A save we waited for may have given up: the state is then neither dirty nor stored.
+      return !state.lost;
     }
 
     if (state.timer) clearTimeout(state.timer);
@@ -644,6 +647,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
           room.sizeBytes = encoded.byteLength;
           state.version = result.version;
           state.failures = 0;
+          state.lost = false;
           return true;
         }
         // Another instance saved first. Yjs merges are lossless: take its state in, then save the union.
@@ -688,6 +692,7 @@ export class YjsRoomRegistry implements OnModuleDestroy {
    * the BFF for a token and is told what is true), and the room is unloaded once the last one is gone.
    */
   private giveUp(room: YjsRoom, state: SaveState, reason: string): void {
+    state.lost = true;
     state.dirty = false;
     state.firstDirtyAt = null;
     if (state.timer) clearTimeout(state.timer);
