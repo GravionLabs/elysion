@@ -19,12 +19,15 @@ Test behavior through the public interface, never internals; expected values com
 - [ ] Full suite: one full run before the pull request, and again after the last fix round
 - [ ] Every item of an Invariants section in the PBI or Bug body has a test that exercises it
 - [ ] Changed files formatted: `scripts/Format-Changed.ps1` formats them, detecting the formatter from the file extensions when no `-Language` is given (`references/format.md`); a `format.<lang>` entry in `.agents/config.json` overrides it (`"format": false` disables)
+- [ ] Changed files linted: `scripts/Format-Changed.ps1 -Lint` runs the linter of the language on them (`references/lint.md`); a `lint.<lang>` entry in `.agents/config.json` overrides it (`"lint": false` disables); findings are fixed before the commit
+- [ ] `governance.specMap` in `.agents/config.json`: spec updated with the code, new service gets a spec (`references/specs.md`)
+- [ ] Workflows reference `GravionLabs/ci` at the major tag `@v<major>` (today `@v1`), never `@main` or a commit SHA; third-party actions stay SHA-pinned where the repository requires it
 - [ ] Never commit red
 - [ ] No debug output left in code
 
 ## Language dispatch
 
-Run `detect-techstack`, then load each `<lang>-implementation` and `<lang>-test` skill from the report. A listed skill that is not installed: say "run `/skills-install <stack>` in this project" once and continue with these rules.
+Run `detect-techstack`, then load each `<lang>-implementation` and `<lang>-test` skill from the report. A listed skill that is not installed: say "run `/skills-manage <stack>` in this project" once and continue with these rules.
 
 ## Lessons
 

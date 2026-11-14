@@ -24,10 +24,14 @@ Issues follow this hierarchy (the repository's `.github/ISSUE_TEMPLATE/` holds t
 | `pbi`     | `[PBI] feat(scope): …`, `[PBI] refactor: …` | —          |
 | `bug`     | `[Bug] fix: <symptom>`                      | —          |
 
+Label `release-test` (together with `pbi`, usually `interactive`) marks the RC test of a milestone: one per milestone, always the last item (`references/milestones.md`).
+
 Titles are always written with the bracket prefix. Legacy titles (`Epic: …`, `Feature: …`, `[EPIC] …`) are still recognized when reading, never written. `[Task]` issues (label `task`) of older plans are read and closed together with their PBI, never created (`references/sub-issues.md`, "Legacy Task issues").
 
 Parent/child links are **native GitHub sub-issues** — see `references/sub-issues.md` for how to
 read, create, move and verify them. Markdown checklists are not used.
+
+Milestones: a PBI and a Bug always have one; a Feature only when all its PBIs are in that milestone; an Epic never (`references/milestones.md`).
 
 ## Routing
 
@@ -44,4 +48,5 @@ read, create, move and verify them. Markdown checklists are not used.
 - Commit and PR titles reference the issue: `<type>: <description> (#<nr>)`; the PR body contains `Closes #<nr>` for every issue it completes (only partly delivered: `Refs #<nr>` and `## Not delivered`, see `github-pull-request`).
 - Verify per `implementation` (targeted tests per commit, one full run before the pull request); never commit or move on with a red run.
 - Never merge a PR with failing checks.
+- `.agents/config.json` has `governance`: an issue whose outcome is a decision follows `references/decisions.md`.
 - Closing a child is all that's needed — the native sub-issue link updates the parent's progress automatically. There is no checklist to tick. If a child turns out not to be linked to its parent, link it (`references/sub-issues.md`) instead of adding a checklist.

@@ -307,6 +307,10 @@ spec:
         helm.sh/chart: elysion-0.1.0
         app.kubernetes.io/component: bff
     spec:
+      # The pod sleeps in preStop first (the endpoint is removed from Traefik meanwhile), then gets SIGTERM: the grace period
+      # is the sleep plus the time the process needs. The realtime service saves every board with unsaved changes on
+      # SIGTERM (ADR 0011), so it needs more than the default 30 s.
+      terminationGracePeriodSeconds: 35
       # Replicas of one component go to different nodes when they can (a node that fails takes one, not all).
       topologySpreadConstraints:
         - maxSkew: 1
@@ -359,6 +363,11 @@ spec:
             httpGet: { path: /health, port: http }
             periodSeconds: 10
             failureThreshold: 6
+          # A rolling update must not route a request to a pod that is stopping: keep serving until the endpoint is gone.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
           resources:
             limits:
               memory: 256Mi
@@ -403,6 +412,10 @@ spec:
         helm.sh/chart: elysion-0.1.0
         app.kubernetes.io/component: business-backend
     spec:
+      # The pod sleeps in preStop first (the endpoint is removed from Traefik meanwhile), then gets SIGTERM: the grace period
+      # is the sleep plus the time the process needs. The realtime service saves every board with unsaved changes on
+      # SIGTERM (ADR 0011), so it needs more than the default 30 s.
+      terminationGracePeriodSeconds: 35
       # Replicas of one component go to different nodes when they can (a node that fails takes one, not all).
       topologySpreadConstraints:
         - maxSkew: 1
@@ -484,6 +497,11 @@ spec:
             httpGet: { path: /health, port: http }
             periodSeconds: 10
             failureThreshold: 6
+          # A rolling update must not route a request to a pod that is stopping: keep serving until the endpoint is gone.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
           resources:
             limits:
               memory: 512Mi
@@ -528,6 +546,10 @@ spec:
         helm.sh/chart: elysion-0.1.0
         app.kubernetes.io/component: frontend
     spec:
+      # The pod sleeps in preStop first (the endpoint is removed from Traefik meanwhile), then gets SIGTERM: the grace period
+      # is the sleep plus the time the process needs. The realtime service saves every board with unsaved changes on
+      # SIGTERM (ADR 0011), so it needs more than the default 30 s.
+      terminationGracePeriodSeconds: 35
       # Replicas of one component go to different nodes when they can (a node that fails takes one, not all).
       topologySpreadConstraints:
         - maxSkew: 1
@@ -575,6 +597,11 @@ spec:
             httpGet: { path: /, port: http }
             periodSeconds: 10
             failureThreshold: 6
+          # A rolling update must not route a request to a pod that is stopping: keep serving until the endpoint is gone.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
           resources:
             limits:
               memory: 128Mi
@@ -621,8 +648,10 @@ spec:
         helm.sh/chart: elysion-0.1.0
         app.kubernetes.io/component: realtime
     spec:
-      # The realtime service saves every board with unsaved changes when it gets SIGTERM (ADR 0011): give it the time.
-      terminationGracePeriodSeconds: 60
+      # The pod sleeps in preStop first (the endpoint is removed from Traefik meanwhile), then gets SIGTERM: the grace period
+      # is the sleep plus the time the process needs. The realtime service saves every board with unsaved changes on
+      # SIGTERM (ADR 0011), so it needs more than the default 30 s.
+      terminationGracePeriodSeconds: 65
       # Replicas of one component go to different nodes when they can (a node that fails takes one, not all).
       topologySpreadConstraints:
         - maxSkew: 1
@@ -685,6 +714,11 @@ spec:
             httpGet: { path: /health, port: http }
             periodSeconds: 10
             failureThreshold: 6
+          # A rolling update must not route a request to a pod that is stopping: keep serving until the endpoint is gone.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
           resources:
             limits:
               memory: 512Mi

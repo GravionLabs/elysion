@@ -48,6 +48,7 @@ Load `ng-test` for TestBed setup, signal testing, mocking and async patterns.
 
 ## Review rules
 
+- 🔴 Lint run (`Format-Changed.ps1 -Lint -Language ng`, ESLint) exits non-zero: error-level findings; 🟡 warning-level findings
 - `OnPush`; signals for state, `computed()` for derived values
 - `effect()` only for side effects, never for state updates (use `computed` or `linkedSignal`)
 - `@if` / `@for` (with `track`) / `@switch`; `input()` / `output()`
@@ -64,5 +65,5 @@ Load `ng-test` for TestBed setup, signal testing, mocking and async patterns.
 
 ## Related Skills
 
-- `ng-ag-grid-developer` — AG Grid Enterprise integration
+- `ng-ag-grid` — AG Grid Enterprise integration
 - `ng-create-project` — new application or workspace

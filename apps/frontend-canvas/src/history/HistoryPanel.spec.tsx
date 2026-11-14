@@ -11,8 +11,8 @@ vi.mock('./snapshot-preview', () => ({
   ),
 }));
 
-const today = new Date();
-today.setHours(12, 0, 0, 0);
+// A fixed local noon, also the pinned clock below, so a run across midnight cannot regroup "today".
+const today = new Date(2026, 5, 15, 12, 0, 0, 0);
 const earlier = new Date(today);
 earlier.setDate(today.getDate() - 1);
 const older = new Date(today);
@@ -84,11 +84,16 @@ async function loaded() {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(today);
   URL.createObjectURL = vi.fn((blob: Blob) => `blob:preview-${blob.size}`);
   URL.revokeObjectURL = vi.fn();
 });
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 describe('HistoryPanel', () => {
   it('lists the versions grouped by day, newest first, with a heading per day', async () => {
@@ -458,7 +463,7 @@ describe('HistoryPanel', () => {
     );
 
     expect(await screen.findByRole('heading', { name: 'Verlauf' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Version speichern' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Heute' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Version speichern' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Heute' })).toBeTruthy();
   });
 });
