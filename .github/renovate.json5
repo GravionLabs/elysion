@@ -6,11 +6,13 @@
     'config:recommended',
     ':semanticCommits',
     ':dependencyDashboard',
-    // Every action in .github/workflows is pinned to a commit SHA; Renovate moves SHA and comment together.
-    'helpers:pinGitHubActionDigests',
+    // 7 days minimum release age (security fixes exempt); every foreign action in .github/workflows is pinned to a
+    // commit SHA, and Renovate moves SHA and comment together.
+    'github>GravionLabs/ci',
   ],
   // `chore(deps): …` keeps dependency updates out of the release notes (cliff.toml leaves `chore` out).
   // Issue titles start with their level (AGENTS.md): the dashboard is a PBI.
+  dependencyDashboard: true,
   dependencyDashboardTitle: '[PBI] chore: Dependency Dashboard',
   semanticCommitType: 'chore',
   semanticCommitScope: 'deps',
@@ -83,8 +85,11 @@
       allowedVersions: '<27',
     },
     {
-      // The shared workflows of the organisation are followed on `main` on purpose.
-      matchPackageNames: ['GravionLabs/ci/**'],
+      // Workflows follow the major tag of the shared workflows on purpose: no digest pin, no major bump.
+      matchManagers: ['github-actions'],
+      matchPackageNames: ['GravionLabs/ci', 'GravionLabs/ci/**'],
+      pinDigests: false,
+      matchUpdateTypes: ['major'],
       enabled: false,
     },
     {
