@@ -1,7 +1,7 @@
 name: Renovate
 
-# Runs Renovate from here instead of through the Renovate GitHub app (ADR 0024). It needs the repository secret
-# RENOVATE_TOKEN: pull requests opened with the default GITHUB_TOKEN do not start CI.
+# Runs Renovate from here instead of through the Renovate GitHub app (ADR 0024), with a token of the GravionLabs CI app
+# (repository secrets CI_APP_ID and CI_APP_PRIVATE_KEY): pull requests opened with the default GITHUB_TOKEN do not start CI.
 on:
   schedule:
     # Weekly, ahead of the "before 6am on monday" schedule of the configuration (Zurich time);
@@ -28,10 +28,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        id: app
+        with:
+          app-id: ${{ secrets.CI_APP_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
       - uses: renovatebot/github-action@230ce922b08968d0a4f6f70f295601daff09ef1d # v46.3.7
         with:
-          token: ${{ secrets.RENOVATE_TOKEN }}
+          token: ${{ steps.app.outputs.token }}
           configurationFile: .github/renovate.json5
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}

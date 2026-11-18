@@ -26,6 +26,9 @@ onlyBuiltDependencies:
   - 'lmdb'
   - 'msgpackr-extract'
 
+# 7 days, in minutes: a younger release reaches neither the lockfile nor an install (GravionLabs/ci#239).
+minimumReleaseAge: 10080
+
 # Transitive dependencies with advisories (pnpm audit --prod): the patched release inside the same major, until the
 # packages that pull them in (NestJS, Excalidraw, mermaid, jspdf) update. Remove an entry when audit no longer needs it.
 overrides:
