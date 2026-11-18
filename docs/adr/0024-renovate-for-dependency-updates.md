@@ -15,12 +15,13 @@ Renovate with a configuration made for the same stack (Angular, pnpm, SHA-pinned
 ## Decision
 
 1. **Renovate** (`.github/renovate.json5`) replaces Dependabot for npm, NuGet, the Dockerfiles and GitHub Actions. It is run from a
-   workflow (`renovate.yml`, Mondays, or by hand with a dry-run option), like ariadne's, with the repository secret `RENOVATE_TOKEN`
-   (pull requests opened with the default `GITHUB_TOKEN` do not start CI). `renovate-config.yml` validates the configuration in a pull request.
+   workflow (`renovate.yml`, Mondays, or by hand with a dry-run option), like ariadne's, with a token of the GravionLabs CI app (repository secrets `CI_APP_ID` and `CI_APP_PRIVATE_KEY`, #914; before that a secret `RENOVATE_TOKEN`
+   that was never set; pull requests opened with the default `GITHUB_TOKEN` do not start CI). `renovate-config.yml` validates the configuration in a pull request.
 2. **Groups** that move together: Angular with TypeScript and `zone.js`, NestJS, Excalidraw with React, build and test tooling, types, NuGet,
    GitHub Actions. A major update is a pull request of its own with the label `major`; nothing is merged automatically.
 3. **Rules that encode decisions:** `typescript` stays below 7, and the Docker `node` image below 27 (Node 26, the LTS since October 2026; it was 25 while Node 24 was the line) until somebody changes
-   the rule on purpose. The shared `GravionLabs/ci` actions follow `main` and are not touched. Actions stay pinned to a commit SHA, with the version in a comment.
+   the rule on purpose. The shared `GravionLabs/ci` workflows and actions follow the major tag `@v1` (#914; `main` before) and are not pinned. Every other action stays pinned to a commit SHA, with the full version in a comment.
+   The shared preset `github>GravionLabs/ci` holds a release back for 7 days (#914; security fixes exempt), and `minimumReleaseAge` in `pnpm-workspace.yaml` does the same for an install.
 4. **Commits are `chore(deps): ...`,** which `cliff.toml` leaves out of the release notes. A known vulnerability gets a pull request at once, outside the schedule
    (`osvVulnerabilityAlerts`), labelled `security`.
 5. One Dependency Dashboard issue lists what is waiting.
@@ -28,7 +29,7 @@ Renovate with a configuration made for the same stack (Angular, pnpm, SHA-pinned
 ## Consequences
 
 - Fewer, grouped pull requests on a schedule, and the decisions about TypeScript and Node are written down where the updates are made.
-- The setup needs a secret that only the owner can add (`RENOVATE_TOKEN`, a personal access token with `repo` and `workflow` scope, or a Renovate app
-  installation instead). Until it is set the workflow fails and nothing is updated; the failure is visible in Actions.
+- The setup needs secrets that only the owner can add (`CI_APP_ID` and `CI_APP_PRIVATE_KEY` of the GravionLabs CI app since #914). Without them the
+  workflow fails and nothing is updated; the failure is visible in Actions.
 - GitHub's own **Dependabot alerts** (and security updates, if switched on in the settings) are separate from `dependabot.yml` and may still open
   a pull request for a vulnerability; switch security updates off in the repository settings if Renovate's `security` pull requests are enough.

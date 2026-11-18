@@ -20,7 +20,7 @@ jobs:
     name: Format, lint, test, build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -69,7 +69,7 @@ jobs:
     name: .NET coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.x
@@ -99,7 +99,7 @@ jobs:
           --health-timeout 3s
           --health-retries 10
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -132,9 +132,9 @@ jobs:
       matrix:
         image: [frontend, bff, realtime, business-backend]
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
-      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: ${{ matrix.image == 'business-backend' && 'apps/business-backend' || '.' }}
           file: apps/${{ matrix.image }}/Dockerfile
@@ -164,7 +164,7 @@ jobs:
     name: Dependency audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       # No `cache: pnpm`: this job installs nothing (the audit reads the lockfile), so there is no store to save, and the post step
       # of the cache fails the job with "Path Validation Error" as soon as the lockfile has changed and no cache exists for it.
@@ -202,11 +202,11 @@ jobs:
       minor: ${{ steps.version.outputs.minor }}
       pre-release-label: ${{ steps.version.outputs.pre-release-label }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
       - id: version
-        uses: GravionLabs/ci/versioning/determine-version@f2bce90da1f215b8da4da9fba22881e9255921d2 # main
+        uses: GravionLabs/ci/versioning/determine-version@v1
         with:
           gitversion-config-file: GitVersion.yml
 
@@ -222,10 +222,10 @@ jobs:
       matrix:
         image: [frontend, bff, realtime, business-backend]
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -254,7 +254,7 @@ jobs:
             fi
             echo "TAGS_EOF"
           } >> "$GITHUB_OUTPUT"
-      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: ${{ matrix.image == 'business-backend' && 'apps/business-backend' || '.' }}
           file: apps/${{ matrix.image }}/Dockerfile
@@ -279,14 +279,14 @@ jobs:
       pull-requests: read
     steps:
       # Tags the commit and creates the GitHub release; it is marked as a pre-release when the version has a label.
-      - uses: GravionLabs/ci/versioning/gh-release@00709dd2314435cd8ad4a132718e5d285ccd128d # main
+      - uses: GravionLabs/ci/versioning/gh-release@v1
         with:
           version: ${{ needs.version.outputs.semver }}
           cliff-config: cliff.toml
           # Merging the release PR deletes release/next (delete_branch_on_merge); recreated here at the released commit.
           recreate-branch: release/next
       # The realm an operator imports into their Keycloak (ADR 0028): derived from the development realm, no users, no direct grant.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - run: node scripts/build-realm.mjs realm-elysion.production.json
       - run: gh release upload "v$SEMVER" realm-elysion.production.json --clobber
         env:
