@@ -119,7 +119,8 @@ export async function fileIdOf(blob: Blob): Promise<string> {
 export function readAsDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
+    // `readAsDataURL` makes the result a string.
+    reader.onload = () => resolve(reader.result as string);
     reader.onerror = () => reject(reader.error ?? new Error('The file could not be read.'));
     reader.readAsDataURL(blob);
   });
@@ -155,7 +156,7 @@ export async function rasterizeSvg(file: File): Promise<File> {
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (!blob) throw new Error('The image could not be converted.');
-  return new File([blob], file.name.replace(/\.svg$/i, '') + '.png', { type: 'image/png' });
+  return new File([blob], `${file.name.replace(/\.svg$/i, '')}.png`, { type: 'image/png' });
 }
 
 /** What {@link insertImages} needs from the host canvas. */
@@ -226,7 +227,7 @@ export async function insertImages(
     placed.map((box, index) => ({
       type: 'image' as const,
       ...box,
-      fileId: prepared[index]!.id as BinaryFileData['id'],
+      fileId: prepared[index].id as BinaryFileData['id'],
       status: 'saved' as const,
       scale: [1, 1] as [number, number],
     })),

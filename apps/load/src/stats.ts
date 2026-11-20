@@ -20,7 +20,7 @@ export class Samples {
       this.#sorted = true;
     }
     const index = Math.min(this.#values.length - 1, Math.ceil(fraction * this.#values.length) - 1);
-    return this.#values[Math.max(0, index)]!;
+    return this.#values[Math.max(0, index)];
   }
 
   get max(): number {

@@ -115,7 +115,7 @@ test('a rectangle snaps to the grid by default, with no line grid showing while 
   await page.mouse.up();
 
   await expect.poll(async () => (await firstRectangle())?.x).not.toBeUndefined();
-  const rectangle = (await firstRectangle())!;
+  const rectangle = await firstRectangle();
   expect(rectangle.x % 20).toBe(0);
   expect(rectangle.y % 20).toBe(0);
 });
@@ -126,7 +126,7 @@ test('a dragged rectangle aligns its center with another one by default, with a 
   await page.getByRole('menuitemcheckbox', { name: 'Snap to grid' }).click();
   await page.keyboard.press('Escape');
 
-  const first = (await rectangles())[0]!;
+  const first = (await rectangles())[0];
   const target = first.x + first.width / 2;
   await page.getByRole('button', { name: 'Rectangle' }).click();
   await page.mouse.move(700, 150);
@@ -135,7 +135,7 @@ test('a dragged rectangle aligns its center with another one by default, with a 
   await page.mouse.move(850, 230, { steps: 4 });
   await page.mouse.up();
   await expect.poll(async () => (await rectangles()).length).toBe(2);
-  const second = (await rectangles())[1]!;
+  const second = (await rectangles())[1];
   expect(Math.abs(second.x + second.width / 2 - target)).toBeGreaterThan(50); // far from the first one's center
 
   // Drag it by its top edge so that its center ends 2 px from the first one's: the guide pulls it the rest of the way. The
@@ -152,7 +152,7 @@ test('a dragged rectangle aligns its center with another one by default, with a 
 
   await expect
     .poll(async () => {
-      const moved = (await rectangles())[1]!;
+      const moved = (await rectangles())[1];
       return Math.abs(moved.x + moved.width / 2 - target);
     })
     .toBeLessThan(0.01);

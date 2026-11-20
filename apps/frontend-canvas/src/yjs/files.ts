@@ -32,7 +32,8 @@ export function dataUrlToBlob(dataUrl: string): Blob {
 export function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
+    // `readAsDataURL` makes the result a string.
+    reader.onload = () => resolve(reader.result as string);
     reader.onerror = () => reject(reader.error ?? new Error('The file could not be read.'));
     reader.readAsDataURL(blob);
   });

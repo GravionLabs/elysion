@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { catchError, map, of } from 'rxjs';
 
 /** A board as the BFF's `/api/boards` returns it. */
 export interface BoardInfo {

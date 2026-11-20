@@ -515,7 +515,7 @@ export interface I18n {
   locale: Locale;
   t: Messages;
   /** A zoom factor as a percentage in the locale's own notation ("100%", "100 %"). */
-  percent(value: number): string;
+  percent: (value: number) => string;
 }
 
 export function createI18n(locale: Locale): I18n {

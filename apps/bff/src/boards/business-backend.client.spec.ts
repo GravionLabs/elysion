@@ -40,7 +40,7 @@ describe('BusinessBackendClient', () => {
 
   const lastCall = () => {
     const [url, init] = fetchMock.mock.calls.at(-1)!;
-    return { url: String(url), init: init! };
+    return { url: url instanceof Request ? url.url : url.toString(), init: init! };
   };
 
   it('lists boards with GET /boards', async () => {
@@ -76,7 +76,10 @@ describe('BusinessBackendClient', () => {
     await client.createInvitation(TOKEN, 'boards', board.id, { role: 'Viewer', expiresInHours: 2 });
     expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/invitations`);
     expect(lastCall().init.method).toBe('POST');
-    expect(JSON.parse(String(lastCall().init.body))).toEqual({ role: 'Viewer', expiresInHours: 2 });
+    expect(JSON.parse(lastCall().init.body as string)).toEqual({
+      role: 'Viewer',
+      expiresInHours: 2,
+    });
 
     fetchMock.mockResolvedValue(respond(200, []));
     await client.listInvitations(TOKEN, 'rooms', 'r1');
@@ -110,7 +113,7 @@ describe('BusinessBackendClient', () => {
     fetchMock.mockImplementation(async () => respond(201, voting));
     await client.startVoting(TOKEN, board.id, { votesPerPerson: 3 });
     expect(lastCall().url).toBe(`http://backend.test:5174/boards/${board.id}/votings`);
-    expect(JSON.parse(String(lastCall().init.body))).toEqual({ votesPerPerson: 3 });
+    expect(JSON.parse(lastCall().init.body as string)).toEqual({ votesPerPerson: 3 });
 
     fetchMock.mockImplementation(async () => respond(200, voting));
     await client.castVote(TOKEN, board.id, 'v1', 'e 1');

@@ -1,4 +1,5 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TimerState } from '../board/canvas-element';
 import {
@@ -29,7 +30,7 @@ describe('TimerMenu', () => {
   const chip = () => el().querySelector('[role="timer"]');
   const clock = () => el().querySelector('.clock')?.textContent?.trim();
   const button = (label: string) =>
-    el().querySelector(`button[aria-label="${label}"]`) as HTMLButtonElement | null;
+    el().querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
   const events = { start: [] as number[], pause: 0, resume: 0, extend: [] as number[], stop: 0 };
 
   /** Moves the clock and lets the component see it. */

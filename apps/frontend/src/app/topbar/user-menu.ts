@@ -29,7 +29,7 @@ export class UserMenu {
   protected readonly isAdministrator = inject(Account).isAdministrator;
 
   readonly user = input.required<SessionUser>();
-  readonly logoutRequested = output<void>();
+  readonly logoutRequested = output();
 
   protected readonly open = signal(false);
   protected readonly initials = computed(
@@ -38,6 +38,8 @@ export class UserMenu {
         .name.split(/\s+/)
         .filter(Boolean)
         .slice(0, 2)
+        // The first code point is the initial; only names that start with a composed emoji would need graphemes.
+        // oxlint-disable-next-line typescript/no-misused-spread
         .map((word) => [...word][0].toUpperCase())
         .join('') || '?',
   );

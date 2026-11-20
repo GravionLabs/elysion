@@ -1,4 +1,5 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { Typeahead, type TypeaheadOption } from './typeahead';
 
 const ADA: TypeaheadOption = { id: 'u1', label: 'Ada Lovelace', detail: 'ada@example.com' };
@@ -36,7 +37,7 @@ describe('Typeahead', () => {
     fixture.componentRef.setInput('emptyText', 'Nobody found.');
     searches = [];
     picks = [];
-    fixture.componentInstance.search.subscribe((text) => searches.push(text));
+    fixture.componentInstance.searchFor.subscribe((text) => searches.push(text));
     fixture.componentInstance.pick.subscribe((option) => picks.push(option));
     await settle();
   });

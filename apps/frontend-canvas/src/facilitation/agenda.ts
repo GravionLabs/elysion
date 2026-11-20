@@ -316,7 +316,7 @@ export function runNext(
       started = result.next;
       return result.items;
     });
-    const item = started as AgendaItem | null;
+    const item = started;
     if (item) startTimer(doc, item.durationMin * 60_000, startedBy, now);
     else stopTimer(doc);
   });

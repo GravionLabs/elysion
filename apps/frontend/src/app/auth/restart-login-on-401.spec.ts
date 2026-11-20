@@ -4,7 +4,8 @@ import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LAST_RESTART_KEY, RESTART_COOLDOWN_MS, restartLoginOn401 } from './restart-login-on-401';
 import { SessionService } from './session.service';
-import { FakeSession, provideFakeSession } from './testing';
+import type { FakeSession } from './testing';
+import { provideFakeSession } from './testing';
 
 describe('restartLoginOn401', () => {
   let http: HttpClient;

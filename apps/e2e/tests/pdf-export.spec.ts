@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type Download, type Page, expect, test } from '@playwright/test';
+import { type Page, expect, test } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 import {
   USER_A,
@@ -37,7 +37,7 @@ async function exportPdf(page: Page): Promise<PDFDocument> {
   const menu = await openMenu(page);
   const download = page.waitForEvent('download');
   await menu.getByRole('menuitem', { name: 'PDF document' }).click();
-  const path = await ((await download) as Download).path();
+  const path = await (await download).path();
   return PDFDocument.load(await readFile(path));
 }
 

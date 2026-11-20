@@ -41,7 +41,7 @@ export class AuthGuard implements CanActivate {
     if (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, targets)) {
       return true;
     }
-    const publicApi = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_API, targets) === true;
+    const publicApi = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_API, targets);
 
     const http = context.switchToHttp();
     const request = http.getRequest<AuthenticatedRequest>();

@@ -28,7 +28,7 @@ describe('TokenSafeStorage', () => {
   afterEach(() => vi.restoreAllMocks());
 
   const allPageStorage = () =>
-    JSON.stringify({ ...sessionStorage }) + JSON.stringify({ ...localStorage });
+    JSON.stringify(Object.entries(sessionStorage)) + JSON.stringify(Object.entries(localStorage));
 
   it('hands back exactly what the library wrote', () => {
     storage.write('0-config', JSON.stringify(STATE));

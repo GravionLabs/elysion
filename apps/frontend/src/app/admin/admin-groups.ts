@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, ElementRef, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import type { ElementRef } from '@angular/core';
+import { Component, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { AUTH_SETTINGS_URL } from '../auth/auth-settings';
 import {
@@ -67,10 +68,12 @@ export class AdminGroups {
 
   // The members of the group in the detail dialog
   protected readonly members = new PagedList<GroupMember>((_query, page, size) =>
+    // oxlint-disable-next-line typescript/no-non-null-assertion -- the detail dialog loads it only for an open group
     this.#api.members(this.target()!.id, page, size),
   );
   /** The people the directory lists in a linked group who have not signed in yet (#667), in the detail dialog. */
   protected readonly pending = new PagedList<PendingMember>((_query, page, size) =>
+    // oxlint-disable-next-line typescript/no-non-null-assertion -- the detail dialog loads it only for an open group
     this.#api.pending(this.target()!.id, page, size),
   );
   /** The state of the Graph sync for the line above the table; `null` while it loads or when the call failed. */

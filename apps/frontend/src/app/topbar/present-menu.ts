@@ -18,9 +18,9 @@ export class PresentMenu {
   /** Somebody presents, this person or another: the button is marked. */
   readonly active = input(false);
 
-  readonly startRequested = output<void>();
-  readonly stopRequested = output<void>();
-  readonly summonRequested = output<void>();
+  readonly startRequested = output();
+  readonly stopRequested = output();
+  readonly summonRequested = output();
 
   protected readonly open = signal(false);
 

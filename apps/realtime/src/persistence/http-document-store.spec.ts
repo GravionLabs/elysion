@@ -1,4 +1,4 @@
-import { createServer, type IncomingMessage, type Server } from 'node:http';
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { INTERNAL_TOKEN_AUDIENCE, INTERNAL_TOKEN_ISSUER } from '@elysion/shared-types';
 import { jwtVerify } from 'jose';
@@ -25,7 +25,7 @@ describe('HttpDocumentStore', () => {
   beforeEach(async () => {
     requests = [];
     respond = () => ({ status: 404 });
-    server = createServer(async (request, response) => {
+    const handle = async (request: IncomingMessage, response: ServerResponse) => {
       const chunks: Buffer[] = [];
       for await (const chunk of request) chunks.push(chunk as Buffer);
       const recorded: Recorded = {
@@ -39,7 +39,8 @@ describe('HttpDocumentStore', () => {
       response.statusCode = answer.status;
       if (answer.etag) response.setHeader('etag', answer.etag);
       response.end(answer.body);
-    });
+    };
+    server = createServer((request, response) => void handle(request, response));
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     store = new HttpDocumentStore(
       new InternalTokenSigner(SECRET),

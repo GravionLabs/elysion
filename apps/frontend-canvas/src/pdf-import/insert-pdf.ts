@@ -78,7 +78,7 @@ export async function insertPdfPages(options: InsertPdfOptions): Promise<number>
     })),
   );
   const skeletons = rendered.flatMap((entry, index) => {
-    const cell = cells[index]!;
+    const cell = cells[index];
     return [
       {
         type: 'image' as const,
@@ -105,8 +105,8 @@ export async function insertPdfPages(options: InsertPdfOptions): Promise<number>
   // Pairs of (image, frame): the images belong to their frames, and come before them in the order (a frame clips what is below it).
   const created: ExcalidrawElement[] = [];
   for (let i = 0; i < converted.length; i += 2) {
-    const frame = converted[i + 1]!;
-    created.push(newElementWith(converted[i]!, { frameId: frame.id }), frame);
+    const frame = converted[i + 1];
+    created.push(newElementWith(converted[i], { frameId: frame.id }), frame);
   }
   api.updateScene({
     elements: [...api.getSceneElementsIncludingDeleted(), ...created],

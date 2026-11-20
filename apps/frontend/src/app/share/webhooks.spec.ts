@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { Webhooks } from './webhooks';
 import type { CreatedWebhook, Webhook, WebhookDelivery } from './webhooks-api';
 
@@ -43,9 +44,7 @@ describe('Webhooks', () => {
   const settle = () => fixture.whenStable();
   const items = () => [...el().querySelectorAll('.webhook')];
   const button = (text: string, root: Element = el()) =>
-    [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === text) as
-      | HTMLButtonElement
-      | undefined;
+    [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === text);
 
   const create = async (collapsible: boolean) => {
     fixture = TestBed.createComponent(Webhooks);

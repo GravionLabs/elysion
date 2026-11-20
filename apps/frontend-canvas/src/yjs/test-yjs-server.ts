@@ -63,13 +63,14 @@ export function startTestYjsServer(): Promise<TestYjsServer> {
       const awareness = new awarenessProtocol.Awareness(doc);
       // The server has no presence of its own.
       awareness.setLocalState(null);
-      room = { doc, awareness, clients: new Set(), owned: new Map() };
+      const created: Room = { doc, awareness, clients: new Set(), owned: new Map() };
+      room = created;
       doc.on('update', (update: Uint8Array, origin: unknown) => {
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, MESSAGE_SYNC);
         syncProtocol.writeUpdate(encoder, update);
         const message = encoding.toUint8Array(encoder);
-        for (const client of room!.clients) {
+        for (const client of created.clients) {
           if (client !== origin && client.readyState === client.OPEN) {
             client.send(message);
           }

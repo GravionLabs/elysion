@@ -1,0 +1,6 @@
+// The frontend's rules for the lint probe: `../.oxlintrc.json` ignores this folder, the ignore patterns of an extended
+// config do not carry over.
+{
+  "$schema": "../../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../.oxlintrc.json"]
+}

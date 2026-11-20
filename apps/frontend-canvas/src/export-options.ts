@@ -57,6 +57,8 @@ export function framesInOrder<T extends FrameLike>(frames: readonly T[]): T[] {
   };
   const numbered = frames.every((frame) => pageNumberOf(frame.name) !== null);
   return [...frames].sort((a, b) =>
-    numbered ? pageNumberOf(a.name)! - pageNumberOf(b.name)! || byPosition(a, b) : byPosition(a, b),
+    numbered
+      ? (pageNumberOf(a.name) ?? 0) - (pageNumberOf(b.name) ?? 0) || byPosition(a, b)
+      : byPosition(a, b),
   );
 }

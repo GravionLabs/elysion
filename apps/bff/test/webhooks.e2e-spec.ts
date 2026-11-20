@@ -112,7 +112,7 @@ describe('webhooks in the shell and on the public API (e2e, #853)', () => {
         .post(`${base}/deliveries/${test.body.id}/redeliver`)
         .set('Authorization', browser)
         .expect(409);
-      upstream.webhookDeliveries.get(webhook.id)![0]!.status = 'succeeded';
+      upstream.webhookDeliveries.get(webhook.id)![0].status = 'succeeded';
       const again = await server()
         .post(`${base}/deliveries/${test.body.id}/redeliver`)
         .set('Authorization', browser)

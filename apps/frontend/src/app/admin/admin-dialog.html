@@ -1,0 +1,27 @@
+<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- a click on the backdrop closes the dialog for the mouse; the keyboard closes it with Escape -->
+<div class="backdrop" (click)="closed.emit()">
+  <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- only stops a click inside from reaching the backdrop -->
+  <div
+    #panel
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+    [attr.aria-labelledby]="titleId"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="dialog-header">
+      <h2 [id]="titleId">{{ heading() }}</h2>
+      <button
+        type="button"
+        class="close"
+        aria-label="Close"
+        i18n-aria-label="@@admin.dialog.close"
+        (click)="closed.emit()"
+      >
+        ×
+      </button>
+    </header>
+    <ng-content />
+  </div>
+</div>

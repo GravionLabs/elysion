@@ -1,0 +1,7 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../.oxlintrc.json"],
+  "plugins": ["typescript", "unicorn", "oxc", "vitest", "node"],
+  "env": { "node": true, "browser": true, "es2022": true },
+  "ignorePatterns": [".vitepress/cache", ".vitepress/dist", "public"]
+}

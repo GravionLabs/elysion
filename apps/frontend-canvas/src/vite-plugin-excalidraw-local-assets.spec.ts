@@ -3,6 +3,7 @@ import { replaceAssetsFallback } from '../vite-plugin-excalidraw-local-assets';
 
 describe('replaceAssetsFallback', () => {
   const minified =
+    // oxlint-disable-next-line no-template-curly-in-string -- a piece of Excalidraw's minified bundle, kept verbatim
     'var x=1;P(jn,"ASSETS_FALLBACK_URL",`https://esm.sh/${M.PKG_NAME?`${M.PKG_NAME}@${M.PKG_VERSION}`:"@excalidraw/excalidraw"}/dist/prod/`);var Xo=jn;';
 
   it('points the fallback at the folder of the chunk', () => {

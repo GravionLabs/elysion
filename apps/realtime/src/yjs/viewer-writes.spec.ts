@@ -286,7 +286,7 @@ describe('viewerMayApply', () => {
     const updates: Uint8Array[] = [];
     lonely.on('update', (u: Uint8Array) => updates.push(u));
     (lonely.getMap('elements').get('only-here') as Y.Map<unknown>).set('a', 1);
-    expect(viewerMayApply(new Y.Doc(), updates[0]!)).toBe(false);
+    expect(viewerMayApply(new Y.Doc(), updates[0])).toBe(false);
     expect(viewerMayApply(server, new Uint8Array([1, 2, 3, 4, 5]))).toBe(false);
   });
 

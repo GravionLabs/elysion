@@ -197,6 +197,7 @@ export class FollowController {
 
     let following: FollowState['following'] = null;
     if (this.#mode) {
+      // oxlint-disable-next-line typescript/no-non-null-assertion -- the `presenter` mode is cleared above without a live presenter
       const personId = this.#mode.kind === 'person' ? this.#mode.id : live!.entry.userId;
       const clients = this.#clientsOf(personId);
       if (clients.length === 0) {

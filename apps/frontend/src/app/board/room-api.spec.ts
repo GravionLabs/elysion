@@ -2,7 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
-import { RoomApi, RoomInfo, canAdministerRoom, canWriteInRoom } from './room-api';
+import type { RoomInfo } from './room-api';
+import { RoomApi, canAdministerRoom, canWriteInRoom } from './room-api';
 
 const id = '0197a8d2-1c3e-7a10-8000-0000000000b1';
 const room: RoomInfo = { id, name: 'Sprint', createdAt: '2026-10-05T00:00:00Z', role: 'Owner' };

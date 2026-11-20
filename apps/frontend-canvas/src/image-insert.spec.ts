@@ -95,8 +95,8 @@ describe('layoutRow', () => {
     );
 
     const total = 100 + ROW_GAP + 200;
-    expect(row[0]!.x).toBe(-total / 2);
-    expect(row[1]!.x).toBe(-total / 2 + 100 + ROW_GAP);
+    expect(row[0].x).toBe(-total / 2);
+    expect(row[1].x).toBe(-total / 2 + 100 + ROW_GAP);
     expect(row.map((r) => r.y + r.height / 2)).toEqual([0, 0]);
   });
 
@@ -107,11 +107,11 @@ describe('layoutRow', () => {
       view,
     );
 
-    const left = row[0]!.x;
-    const right = row[3]!.x + row[3]!.width;
+    const left = row[0].x;
+    const right = row[3].x + row[3].width;
     expect(right - left).toBeLessThanOrEqual(900.0001);
-    expect(row[0]!.width).toBeLessThan(500);
-    expect(row[0]!.width / row[0]!.height).toBeCloseTo(5);
+    expect(row[0].width).toBeLessThan(500);
+    expect(row[0].width / row[0].height).toBeCloseTo(5);
   });
 });
 

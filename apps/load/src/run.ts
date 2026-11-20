@@ -70,7 +70,7 @@ async function main(): Promise<number> {
   };
   const clients: LoadClient[] = [];
   for (let i = 0; i < scenario.clients; i++) {
-    const boardId = boardIds[i % boardIds.length]!;
+    const boardId = boardIds[i % boardIds.length];
     clients.push(
       new LoadClient({
         boardId,
@@ -124,7 +124,7 @@ async function main(): Promise<number> {
             setTimeout(() => client.reconnectNow(), Math.random() * event.withinMs),
           );
         } else {
-          const victim = realtime[0]!;
+          const victim = realtime[0];
           log(`killing ${victim}`);
           killed.push(victim);
           void docker(['kill', victim]).catch((error: unknown) =>
@@ -160,12 +160,12 @@ async function main(): Promise<number> {
     for (let read = 0; read < 4; read++) {
       snapshots.push(await readDocument(wsUrl, boardId, await session.wsToken(boardId)));
     }
-    const first = JSON.stringify(sortKeys(snapshots[0]!));
+    const first = JSON.stringify(sortKeys(snapshots[0]));
     if (snapshots.some((snapshot) => JSON.stringify(sortKeys(snapshot)) !== first))
       divergent.push(boardId);
     clients.forEach((client, i) => {
       if (boardIds[i % boardIds.length] !== boardId) return;
-      const stored = snapshots[0]![`c${i}`]?.n ?? 0;
+      const stored = snapshots[0][`c${i}`]?.n ?? 0;
       if (stored < client.written)
         lost.push(`client ${i}: wrote ${client.written}, the board has ${stored}`);
     });

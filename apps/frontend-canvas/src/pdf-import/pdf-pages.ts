@@ -56,23 +56,23 @@ export function gridCells(aspects: readonly number[], center: { x: number; y: nu
   aspects.forEach((_, index) => {
     (rows[Math.floor(index / columns)] ??= []).push(index);
   });
-  const rowHeights = rows.map((row) => Math.max(...row.map((index) => heights[index]!)));
+  const rowHeights = rows.map((row) => Math.max(...row.map((index) => heights[index])));
   const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0) + GRID_GAP * (rows.length - 1);
   const usedColumns = Math.min(columns, aspects.length);
   const totalWidth = usedColumns * PAGE_BOARD_WIDTH + GRID_GAP * (usedColumns - 1);
   const left = center.x - totalWidth / 2;
   let top = center.y - totalHeight / 2;
-  const cells: Cell[] = new Array<Cell>(aspects.length);
+  const cells: Cell[] = [];
   rows.forEach((row, rowIndex) => {
     row.forEach((index, column) => {
       cells[index] = {
         x: left + column * (PAGE_BOARD_WIDTH + GRID_GAP),
         y: top,
         width: PAGE_BOARD_WIDTH,
-        height: heights[index]!,
+        height: heights[index],
       };
     });
-    top += rowHeights[rowIndex]! + GRID_GAP;
+    top += rowHeights[rowIndex] + GRID_GAP;
   });
   return cells;
 }

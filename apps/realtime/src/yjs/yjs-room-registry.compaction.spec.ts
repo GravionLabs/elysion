@@ -196,7 +196,7 @@ describe('compaction of an idle board (ADR 0026)', () => {
 
     await a.registry.getOrLoad('board');
     // a reset from another instance
-    new FakeRedisClient(bus).publish(
+    await new FakeRedisClient(bus).publish(
       'elysion:doc:board',
       JSON.stringify({ from: 'other', type: 'reset', data: '' }),
     );

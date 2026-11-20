@@ -172,9 +172,9 @@ describe('comments on the canvas', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Comments' }));
     press(canvas, [600, 400]);
 
-    const box = (await screen.findByPlaceholderText(
+    const box = await screen.findByPlaceholderText<HTMLTextAreaElement>(
       'Write a comment… (@ mentions someone)',
-    )) as HTMLTextAreaElement;
+    );
     fireEvent.change(box, { target: { value: 'hi @b' } });
     box.setSelectionRange(5, 5);
     fireEvent.change(box, { target: { value: 'hi @b' } });

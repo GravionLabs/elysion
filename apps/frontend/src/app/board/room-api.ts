@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { MAX_BOARD_NAME_LENGTH } from './board-api';
 
 /** What the user may do in a room, as the BFF names it (ADR 0019): the same three roles as on a board. */

@@ -90,7 +90,7 @@ Other commands (each runs across the whole workspace):
 ```sh
 pnpm build           # build every app, including the .NET solution
 pnpm test            # unit tests: Vitest, NUnit, and the repo scripts' node tests
-pnpm lint            # oxlint, and the JetBrains formatter check (`jb cleanupcode`) for the backend's C#
+pnpm lint            # oxlint (type-aware), ESLint for the Angular templates, and the JetBrains formatter check (`jb cleanupcode`) for the backend's C#
 pnpm format:dotnet  # formats the backend's C# with the JetBrains tools (oxfmt does the rest: `pnpm format`)
 pnpm format:check    # oxfmt (pnpm format fixes)
 ```
@@ -160,7 +160,7 @@ The agent skills (.NET, Angular, TypeScript plus the `core` preset) come from [G
 
 ## Pre-commit hook
 
-`pnpm install` installs a git pre-commit hook (`simple-git-hooks`, configured in the root `package.json`) that runs [lint-staged](lint-staged.config.mjs) on the staged files only: oxfmt rewrites them, and oxlint with the app's own `oxlint.json` checks staged TypeScript files and blocks the commit on any finding. It takes a second or two. C# files are not checked in the hook, because the JetBrains formatter needs about 40 seconds for the solution; `pnpm lint` and CI cover them.
+`pnpm install` installs a git pre-commit hook (`simple-git-hooks`, configured in the root `package.json`) that runs [lint-staged](lint-staged.config.mjs) on the staged files only: oxfmt rewrites them, oxlint with the project's own `.oxlintrc.json` checks staged TypeScript files and ESLint the staged Angular templates, and any finding blocks the commit. It takes a second or two. C# files are not checked in the hook, because the JetBrains formatter needs about 40 seconds for the solution; `pnpm lint` and CI cover them.
 
 In an emergency, skip the hook with `git commit --no-verify`; CI runs the same checks, so the problem will show up there.
 

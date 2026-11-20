@@ -1,7 +1,7 @@
+import type { ElementRef } from '@angular/core';
 import {
   CUSTOM_ELEMENTS_SCHEMA,
   Component,
-  ElementRef,
   HostListener,
   computed,
   effect,
@@ -16,11 +16,14 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Title } from '@angular/platform-browser';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom, startWith, switchMap } from 'rxjs';
-import { Theme, ThemeService } from '../theme/theme.service';
-import { SyncStatus, TopBar } from '../topbar/top-bar';
+import type { Theme } from '../theme/theme.service';
+import { ThemeService } from '../theme/theme.service';
+import type { SyncStatus } from '../topbar/top-bar';
+import { TopBar } from '../topbar/top-bar';
 import { Router, RouterLink } from '@angular/router';
 import { AppBrand } from '../shared/app-brand';
-import { BoardApi, BoardLookup, BoardRole, isStoredBoardId } from './board-api';
+import type { BoardLookup, BoardRole } from './board-api';
+import { BoardApi, isStoredBoardId } from './board-api';
 import { FilesApi } from './files-api';
 import { SnapshotApi } from './snapshot-api';
 import { VotingApi } from './voting-api';
@@ -28,9 +31,9 @@ import { ThumbnailUploader } from './thumbnail-uploader';
 import { ShareDialog } from '../share/share-dialog';
 import { MembersApi } from '../share/members-api';
 import { MIN_USER_QUERY, UsersApi } from '../share/users-api';
-import { CanvasElement } from './canvas-element';
+import type { CanvasElement } from './canvas-element';
 import { downloadBlob, exportFilename, type ExportFormat } from './download';
-import { ExportRequest } from '../topbar/export-menu';
+import type { ExportRequest } from '../topbar/export-menu';
 import { loadSettings, toCanvasOptions } from '../topbar/export-settings';
 import { CANVAS_ELEMENT_SRC, CanvasElementLoader } from './canvas-element-loader';
 import { SessionService } from '../auth/session.service';
@@ -183,7 +186,7 @@ export class Board {
           .pipe(startWith(ROLE_PENDING as BoardRole | typeof ROLE_PENDING | null)),
       ),
     ),
-    { initialValue: ROLE_PENDING as BoardRole | typeof ROLE_PENDING | null },
+    { initialValue: ROLE_PENDING },
   );
 
   /** The user's role, or `null` while it loads and for a room without a board record. */
@@ -452,7 +455,7 @@ export class Board {
   @HostListener('document:visibilitychange')
   protected onVisibilityChange(): void {
     if (document.visibilityState === 'hidden') {
-      this.#saveThumbnail();
+      void this.#saveThumbnail();
     }
   }
 

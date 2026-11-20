@@ -32,7 +32,7 @@ export class Account {
       .get(HttpClient)
       .get<Me>('/api/auth/me')
       .subscribe({
-        next: (me) => this.isAdministrator.set(me.isAdministrator === true),
+        next: (me) => this.isAdministrator.set(me.isAdministrator),
         error: () => this.isAdministrator.set(false),
       });
   }

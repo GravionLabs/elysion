@@ -650,7 +650,7 @@ describe('the public REST API v1 (e2e, ADR 0033, #852)', () => {
       const foreignRoom = `/public/v1/rooms/${randomUUID()}`;
       // The backend answers a non-member's snapshot calls 404, as every board route (ADR 0032).
       upstream.snapshotAnswer = { status: 404 };
-      const routes: Array<[method: 'get' | 'post' | 'patch' | 'delete', path: string]> = [
+      const foreignRoutes: Array<[method: 'get' | 'post' | 'patch' | 'delete', path: string]> = [
         ['get', foreign],
         ['patch', foreign],
         ['delete', foreign],
@@ -671,7 +671,7 @@ describe('the public REST API v1 (e2e, ADR 0033, #852)', () => {
         ['delete', `${foreignRoom}/members/${USER_A}`],
       ];
 
-      for (const [method, path] of routes) {
+      for (const [method, path] of foreignRoutes) {
         const response = await call(method, path, ALL)
           .set('If-Match', '*')
           .send({ name: 'x', email: 'bob@example.com', role: 'Editor' })
@@ -745,17 +745,17 @@ describe('the public REST API v1 (e2e, ADR 0033, #852)', () => {
       for (let i = 0; i < 4; i += 1) answers.push(await call('get', '/public/v1/boards', READ));
 
       expect(answers.map((a) => a.status)).toEqual([200, 200, 200, 429]);
-      expect(answers[0]!.headers).toMatchObject({
+      expect(answers[0].headers).toMatchObject({
         'ratelimit-limit': '3',
         'ratelimit-remaining': '2',
         'ratelimit-policy': '3;w=60',
       });
-      expect(Number(answers[0]!.headers['ratelimit-reset'])).toBeGreaterThan(0);
-      expect(answers[3]!.headers['retry-after']).toMatch(/^\d+$/);
-      expect(answers[3]!.headers['content-type']).toMatch(PROBLEM);
-      expect(answers[3]!.body.status).toBe(429);
-      expectContract('get', '/public/v1/boards', answers[0]!);
-      expectContract('get', '/public/v1/boards', answers[3]!);
+      expect(Number(answers[0].headers['ratelimit-reset'])).toBeGreaterThan(0);
+      expect(answers[3].headers['retry-after']).toMatch(/^\d+$/);
+      expect(answers[3].headers['content-type']).toMatch(PROBLEM);
+      expect(answers[3].body.status).toBe(429);
+      expectContract('get', '/public/v1/boards', answers[0]);
+      expectContract('get', '/public/v1/boards', answers[3]);
     });
 
     it('counts each token on its own', async () => {

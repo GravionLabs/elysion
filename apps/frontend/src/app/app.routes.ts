@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, CanDeactivateFn, Router, Routes, UrlMatcher } from '@angular/router';
+import type { CanActivateFn, CanDeactivateFn, Routes, UrlMatcher } from '@angular/router';
+import { Router } from '@angular/router';
 import type { Board } from './board/board';
 import { autoLoginPartialRoutesGuard } from 'angular-auth-oidc-client';
 

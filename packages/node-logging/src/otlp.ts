@@ -81,17 +81,12 @@ export function createOtlpStream(options: OtlpOptions): Writable {
   return new Writable({
     async construct(callback) {
       try {
-        const [
-          { SeverityNumber },
-          { LoggerProvider, BatchLogRecordProcessor },
-          { OTLPLogExporter },
-          resources,
-        ] = await Promise.all([
-          import('@opentelemetry/api-logs'),
-          import('@opentelemetry/sdk-logs'),
-          import('@opentelemetry/exporter-logs-otlp-proto'),
-          import('@opentelemetry/resources'),
-        ]);
+        const [{ LoggerProvider, BatchLogRecordProcessor }, { OTLPLogExporter }, resources] =
+          await Promise.all([
+            import('@opentelemetry/sdk-logs'),
+            import('@opentelemetry/exporter-logs-otlp-proto'),
+            import('@opentelemetry/resources'),
+          ]);
         const provider = new LoggerProvider({
           resource: resources.resourceFromAttributes({ 'service.name': options.service }),
           processors: [
@@ -113,8 +108,9 @@ export function createOtlpStream(options: OtlpOptions): Writable {
           logger.emit({
             timestamp: Number.isNaN(time.getTime()) ? new Date() : time,
             severityText: level,
-            severityNumber: (SEVERITY[level] ??
-              SEVERITY.info) as (typeof SeverityNumber)[keyof typeof SeverityNumber],
+            // The OTLP severity numbers; the SDK's `SeverityNumber` enum is loaded lazily, so it is not at hand here.
+            // oxlint-disable-next-line typescript/no-unsafe-enum-assignment
+            severityNumber: SEVERITY[level] ?? SEVERITY.info,
             body: typeof line.message === 'string' ? line.message : '',
             attributes: toAttributes(line),
           });

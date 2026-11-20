@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "oxc.oxc-vscode",
+    "dbaeumer.vscode-eslint",
     "editorconfig.editorconfig",
     "angular.ng-template",
     "ms-dotnettools.csdevkit",

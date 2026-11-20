@@ -170,6 +170,7 @@ export class PublicSnapshotsController {
       throw new NotFoundException();
     }
     const state = await this.backend.readSnapshotDocument(token, id, snapshotId);
+    // oxlint-disable-next-line typescript/no-misused-spread -- `toSnapshot` returns a plain object of the DTO class's shape
     return { ...toSnapshot(snapshot), scene: sceneOf(state, (fileId) => fileUrl(id, fileId)) };
   }
 }

@@ -17,7 +17,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepare": "pnpm run build",
-    "lint": "oxlint src/",
+    "lint": "oxlint --deny-warnings src/",
     "test": "vitest run"
   },
   "dependencies": {
@@ -33,7 +33,6 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
-    "oxlint": "^1.86.0",
     "typescript": "^6.0.3",
     "vitest": "^5"
   }

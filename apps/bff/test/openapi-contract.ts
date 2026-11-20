@@ -32,15 +32,15 @@ export function expectContract(
   const where = `${method.toUpperCase()} ${path} ${response.status}`;
   const operation = document.paths[path]?.[method.toLowerCase()];
   expect(operation, `${where}: not in the OpenAPI document`).toBeDefined();
-  const documented = operation!.responses[String(response.status)];
+  const documented = operation.responses[String(response.status)];
   expect(documented, `${where}: status not documented`).toBeDefined();
-  if (documented!.content === undefined) {
+  if (documented.content === undefined) {
     expect(response.headers['content-type'], `${where}: documented without a body`).toBeUndefined();
     return;
   }
-  const mediaType = (response.headers['content-type'] ?? '').split(';')[0]!.trim();
+  const mediaType = (response.headers['content-type'] ?? '').split(';')[0].trim();
   const [type, media] =
-    Object.entries(documented!.content).find(([documentedType]) =>
+    Object.entries(documented.content).find(([documentedType]) =>
       documentedType.endsWith('/*')
         ? mediaType.startsWith(documentedType.slice(0, -1))
         : documentedType === mediaType,

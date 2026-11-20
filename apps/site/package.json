@@ -10,6 +10,7 @@
     "dev": "pnpm prepare:site && vitepress dev",
     "build": "pnpm prepare:site && vitepress build",
     "preview": "vitepress preview",
+    "lint": "oxlint --deny-warnings .vitepress scripts tests",
     "test": "vitest run"
   },
   "devDependencies": {

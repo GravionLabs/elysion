@@ -32,14 +32,15 @@ export class InternalCallVerifier {
     const match = /^Bearer ([^\s]+)$/.exec(authorization ?? '');
     if (!match) throw new InvalidInternalCallError('missing');
     try {
-      const { payload } = await jwtVerify(match[1]!, this.key, {
+      const { payload } = await jwtVerify(match[1], this.key, {
         algorithms: ['HS256'],
         issuer: REALTIME_CALL_ISSUER,
         audience: REALTIME_CALL_AUDIENCE,
         requiredClaims: ['exp', 'iat'],
         clockTolerance: CLOCK_TOLERANCE_SECONDS,
       });
-      if (payload.exp! - payload.iat! > REALTIME_CALL_MAX_LIFETIME_SECONDS) {
+      // `requiredClaims` above makes jose refuse a token without either claim.
+      if ((payload.exp ?? 0) - (payload.iat ?? 0) > REALTIME_CALL_MAX_LIFETIME_SECONDS) {
         throw new InvalidInternalCallError('lifetime');
       }
     } catch (error) {

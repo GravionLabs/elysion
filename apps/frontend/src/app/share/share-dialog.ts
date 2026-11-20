@@ -53,7 +53,7 @@ export class ShareDialog {
   readonly scope = input<MemberScope>('board');
   /** For a board: the room it is in, whose people and groups also have access (shown, not changed here). */
   readonly roomId = input<string | null>(null);
-  readonly closed = output<void>();
+  readonly closed = output();
 
   /** Where the board's webhooks are (#853): its owners manage them in this dialog. */
   protected readonly webhooksBase = computed(() => boardWebhooksBase(this.boardId()));

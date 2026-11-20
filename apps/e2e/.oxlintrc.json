@@ -1,0 +1,7 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../.oxlintrc.json"],
+  "plugins": ["typescript", "unicorn", "oxc", "node"],
+  "env": { "node": true, "browser": true, "es2022": true },
+  "ignorePatterns": ["playwright-report", "test-results"]
+}

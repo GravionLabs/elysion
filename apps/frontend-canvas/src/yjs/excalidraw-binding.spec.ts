@@ -372,7 +372,7 @@ describe('ExcalidrawYjsBinding files (#702)', () => {
     const { store, stored } = memoryStore();
     const binding = new ExcalidrawYjsBinding(doc, { fileStore: () => store });
 
-    binding.onLocalChange([image()], { [FILE_ID]: fileData() } as BinaryFiles);
+    binding.onLocalChange([image()], { [FILE_ID]: fileData() });
 
     await vi.waitFor(() => expect(doc.getMap('files').get(FILE_ID)).toBeDefined());
     expect(stored.get(FILE_ID)?.type).toBe('image/png');
@@ -405,8 +405,8 @@ describe('ExcalidrawYjsBinding files (#702)', () => {
     const { store } = memoryStore();
     const binding = new ExcalidrawYjsBinding(doc, { fileStore: () => store });
 
-    binding.onLocalChange([image()], { [FILE_ID]: fileData() } as BinaryFiles);
-    binding.onLocalChange([rectangle()], { other0000: fileData('other0000') } as BinaryFiles);
+    binding.onLocalChange([image()], { [FILE_ID]: fileData() });
+    binding.onLocalChange([rectangle()], { other0000: fileData('other0000') });
     await Promise.resolve();
 
     expect(store.put).not.toHaveBeenCalled();
@@ -416,7 +416,7 @@ describe('ExcalidrawYjsBinding files (#702)', () => {
     const doc = new Y.Doc();
     const binding = new ExcalidrawYjsBinding(doc);
 
-    binding.onLocalChange([image()], { [FILE_ID]: fileData() } as BinaryFiles);
+    binding.onLocalChange([image()], { [FILE_ID]: fileData() });
 
     expect(doc.getMap('files').size).toBe(0);
   });
@@ -433,7 +433,7 @@ describe('ExcalidrawYjsBinding files (#702)', () => {
     const { api, elements } = createMockApi([element]);
     binding.attach(api);
 
-    binding.onLocalChange([element], { [FILE_ID]: fileData() } as BinaryFiles);
+    binding.onLocalChange([element], { [FILE_ID]: fileData() });
 
     await vi.waitFor(() => expect(onError).toHaveBeenCalled());
     expect(onError.mock.calls[0][0].message).toBe('A file is at most 10485760 bytes.');
@@ -562,7 +562,7 @@ describe('ExcalidrawYjsBinding files (#702)', () => {
     b.attach(apiB.api);
 
     const element = image();
-    a.onLocalChange([element], { [FILE_ID]: fileData() } as BinaryFiles);
+    a.onLocalChange([element], { [FILE_ID]: fileData() });
 
     await vi.waitFor(() => expect(apiB.files[FILE_ID]?.dataURL).toBe(PNG));
   });

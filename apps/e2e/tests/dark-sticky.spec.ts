@@ -54,7 +54,7 @@ async function paperPixel(page: Page): Promise<string> {
     source.getContext('2d')!.putImageData(pixel, 0, 0);
     context.drawImage(source, 0, 0);
     const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
-    return `#${[red, green, blue].map((value) => value!.toString(16).padStart(2, '0')).join('')}`;
+    return `#${[red, green, blue].map((value) => value.toString(16).padStart(2, '0')).join('')}`;
   });
 }
 
@@ -109,9 +109,9 @@ test('a yellow note drawn in the dark theme shows the dark palette, and the othe
 
 test('the document keeps the light colors, for the person in the dark theme as well', async () => {
   const [note] = (await boardElements(a)).filter((element) => element.type === 'rectangle');
-  expect(note!.backgroundColor).toBe(STORED_PAPER);
+  expect(note.backgroundColor).toBe(STORED_PAPER);
   const [theirs] = (await boardElements(b)).filter((element) => element.type === 'rectangle');
-  expect(theirs!.backgroundColor).toBe(STORED_PAPER);
+  expect(theirs.backgroundColor).toBe(STORED_PAPER);
 });
 
 test('switching back to the light theme shows the stored paper again', async () => {
@@ -125,5 +125,5 @@ test('switching back to the light theme shows the stored paper again', async () 
     .poll(async () => distance(await paperPixel(a), STORED_PAPER), { timeout: 10_000 })
     .toBeLessThanOrEqual(8);
   const [note] = (await boardElements(a)).filter((element) => element.type === 'rectangle');
-  expect(note!.backgroundColor).toBe(STORED_PAPER);
+  expect(note.backgroundColor).toBe(STORED_PAPER);
 });

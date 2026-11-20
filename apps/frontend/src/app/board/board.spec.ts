@@ -1,12 +1,14 @@
 import { Location } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { DeferBlockState, TestBed } from '@angular/core/testing';
 import { By, Title } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 import { TopBar } from '../topbar/top-bar';
 import { ShareDialog } from '../share/share-dialog';
-import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
+import type { FakeSession } from '../auth/testing';
+import { FAKE_USER, provideFakeSession } from '../auth/testing';
 import { SessionService } from '../auth/session.service';
 import { ThemeService } from '../theme/theme.service';
 import { DEFAULT_EXPORT_SETTINGS, toCanvasOptions } from '../topbar/export-settings';
@@ -407,7 +409,7 @@ describe('Board', () => {
         );
         expect(importFile).not.toHaveBeenCalled();
 
-        (banner()!.querySelectorAll('button')[1] as HTMLButtonElement).click(); // Cancel
+        banner()!.querySelectorAll('button')[1].click(); // Cancel
         await settle();
 
         expect(importFile).not.toHaveBeenCalled();
@@ -420,7 +422,7 @@ describe('Board', () => {
         component.chooseImport(file);
         await settle();
 
-        (banner()!.querySelectorAll('button')[0] as HTMLButtonElement).click(); // Replace
+        banner()!.querySelectorAll('button')[0].click(); // Replace
         await settle();
 
         expect(importFile).toHaveBeenCalledWith(file);

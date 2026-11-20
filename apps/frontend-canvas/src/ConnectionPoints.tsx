@@ -125,8 +125,9 @@ export function ConnectionPoints({ apiRef, rootRef, store }: ConnectionPointsPro
   };
 
   const move = (event: PointerEvent<HTMLElement>) => {
-    const pointer = dragRef.current && sceneAt(event.clientX, event.clientY);
-    if (pointer) setDrag({ ...dragRef.current!, pointer });
+    const current = dragRef.current;
+    const pointer = current && sceneAt(event.clientX, event.clientY);
+    if (current && pointer) setDrag({ ...current, pointer });
   };
 
   const finish = (event: PointerEvent<HTMLElement>) => {
@@ -145,7 +146,8 @@ export function ConnectionPoints({ apiRef, rootRef, store }: ConnectionPointsPro
     const target = dropTarget(elements, source, point, view.zoom);
     // Released on empty canvas: a new sticky note there (the color of the source if that is a note), connected.
     const note = target ? null : createStickyNote(stickyColorOf(source), point);
-    const end = target ?? note![0];
+    const end = target ?? note?.[0];
+    if (!end) return;
     const { arrow, updated } = createConnector([...elements, ...(note ?? [])], source.id, end.id, {
       sourceSide: dragging.side,
       targetSide: target
@@ -180,6 +182,7 @@ export function ConnectionPoints({ apiRef, rootRef, store }: ConnectionPointsPro
   }
 
   const circleAt = (shape: ExcalidrawElement, side: Side) => {
+    // oxlint-disable-next-line typescript/no-non-null-assertion -- `connectionPoints` returns one point for every side
     const point = connectionPoints(shape, view.zoom).find((candidate) => candidate.side === side)!;
     return toScreen(point, view);
   };

@@ -1,4 +1,4 @@
-import { ExportFormat } from './download';
+import type { ExportFormat } from './download';
 import type { BoardFileStore } from './files-api';
 
 /** The board's shared timer (ADR 0020), as the canvas announces it in its `timer` event. */

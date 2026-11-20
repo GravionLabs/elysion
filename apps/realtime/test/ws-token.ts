@@ -11,7 +11,8 @@ export const TEST_WS_TOKEN_SECRET = 'test-only-ws-token-secret-0123456789abcdef'
 
 export interface WsTokenOptions {
   sub?: string;
-  role?: BoardRole | string;
+  /** A role the service knows, or any other string to test the refusal. */
+  role?: BoardRole | (string & {});
   /** Seconds from now until expiry; negative: already expired. */
   expiresIn?: number;
   secret?: string;

@@ -129,7 +129,7 @@
     @if (!readOnly()) {
       <app-present-menu
         [presenting]="canStopPresenting()"
-        [active]="followState()?.presenter != null"
+        [active]="(followState()?.presenter ?? null) !== null"
         (startRequested)="presentStart.emit()"
         (stopRequested)="presentStop.emit()"
         (summonRequested)="presentSummon.emit()"

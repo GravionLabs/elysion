@@ -7,7 +7,7 @@ import type {
   DataURL,
   ExcalidrawImperativeAPI,
 } from '@excalidraw/excalidraw/types';
-import * as Y from 'yjs';
+import type * as Y from 'yjs';
 import { sceneToStored, storedToScene, recolor, wouldRecolor } from '../sticky-dark.js';
 import { type FileReference, type FileStore, blobToDataUrl, dataUrlToBlob } from './files.js';
 

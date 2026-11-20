@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { DEFAULT_EXPORT_SETTINGS } from './export-settings';
 import { TopBar } from './top-bar';
@@ -159,14 +160,12 @@ describe('TopBar', () => {
     expect(requests).toEqual([
       { format: 'png', selectionOnly: false, settings: DEFAULT_EXPORT_SETTINGS },
     ]);
-    expect(
-      (el().querySelector('input[type="checkbox"]') as HTMLInputElement | null)?.disabled,
-    ).not.toBe(true);
+    expect(el().querySelector<HTMLInputElement>('input[type="checkbox"]')?.disabled).not.toBe(true);
   });
 
   describe('renaming', () => {
-    const titleButton = () => el().querySelector('.title-button') as HTMLButtonElement | null;
-    const field = () => el().querySelector('.title-input') as HTMLInputElement | null;
+    const titleButton = () => el().querySelector<HTMLButtonElement>('.title-button');
+    const field = () => el().querySelector<HTMLInputElement>('.title-input');
     const emitted = () => {
       const names: string[] = [];
       fixture.componentInstance.renameRequested.subscribe((name) => names.push(name));
@@ -381,7 +380,7 @@ describe('TopBar', () => {
   });
 
   describe('presenting (#848)', () => {
-    const menu = () => el().querySelector('app-present-menu') as HTMLElement | null;
+    const menu = () => el().querySelector<HTMLElement>('app-present-menu');
     const trigger = () => menu()?.querySelector('button') as HTMLButtonElement;
     const item = (label: string) =>
       [...(menu()?.querySelectorAll('[role="menuitem"]') ?? [])].find((button) =>

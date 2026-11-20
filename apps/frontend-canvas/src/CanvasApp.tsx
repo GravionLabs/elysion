@@ -69,7 +69,6 @@ import { OfflineWork, type OfflineState } from './yjs/offline-work.js';
 import { createSessionIdentity, withHostIdentity } from './presence/identity';
 import type { PresentUser } from './presence/collaborators';
 import type { Awareness } from 'y-protocols/awareness';
-import type { VotableElement } from './facilitation/voting';
 import { PresenceSync } from './presence/presence';
 import { FollowController, NOT_FOLLOWING, type FollowState } from './presence/follow';
 import { FollowOverlay } from './presence/FollowOverlay';
@@ -673,7 +672,7 @@ export function CanvasApp({
     // The voting lives on the server (ADR 0029): this follows it for the person, through the host's `votingApi`.
     const votingSync = new VotingController({
       api: () => votingApiRef.current,
-      elements: () => (apiRef.current?.getSceneElements() ?? []) as readonly VotableElement[],
+      elements: () => apiRef.current?.getSceneElements() ?? [],
       onChange: (snapshot) => {
         setVoting(snapshot);
         votingCallback.current?.(snapshot.view);

@@ -6,7 +6,7 @@
   "type": "module",
   "description": "Browser tests of the running stack (Playwright). Not part of `pnpm test`: they need the stack, see AGENTS.md.",
   "scripts": {
-    "lint": "oxlint -c oxlint.json .",
+    "lint": "oxlint --deny-warnings .",
     "typecheck": "tsc --noEmit",
     "test:browser": "playwright test"
   },
