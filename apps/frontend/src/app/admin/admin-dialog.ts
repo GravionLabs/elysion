@@ -20,39 +20,13 @@ const FOCUSABLE =
 @Component({
   selector: 'app-admin-dialog',
   styleUrl: './admin-shared.scss',
-  template: `
-    <div class="backdrop" (click)="closed.emit()">
-      <div
-        #panel
-        class="dialog"
-        role="dialog"
-        aria-modal="true"
-        tabindex="-1"
-        [attr.aria-labelledby]="titleId"
-        (click)="$event.stopPropagation()"
-      >
-        <header class="dialog-header">
-          <h2 [id]="titleId">{{ heading() }}</h2>
-          <button
-            type="button"
-            class="close"
-            aria-label="Close"
-            i18n-aria-label="@@admin.dialog.close"
-            (click)="closed.emit()"
-          >
-            ×
-          </button>
-        </header>
-        <ng-content />
-      </div>
-    </div>
-  `,
+  templateUrl: './admin-dialog.html',
 })
 export class AdminDialog {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly heading = input.required<string>();
-  readonly closed = output<void>();
+  readonly closed = output();
 
   protected readonly titleId = `admin-dialog-title-${nextId++}`;
 

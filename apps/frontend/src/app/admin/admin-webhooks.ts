@@ -11,14 +11,7 @@ import { ADMIN_WEBHOOKS_BASE } from '../share/webhooks-api';
   imports: [Webhooks],
   selector: 'app-admin-webhooks',
   styleUrl: './admin-shared.scss',
-  template: `
-    <h1 i18n="@@admin.webhooks.title">Webhooks</h1>
-    <p class="lead" i18n="@@admin.webhooks.lead">
-      These webhooks receive the events of every board of this instance. Board owners add webhooks
-      for their own boards in the board's Share dialog.
-    </p>
-    <app-webhooks [base]="base" [collapsible]="false" />
-  `,
+  templateUrl: './admin-webhooks.html',
 })
 export class AdminWebhooks {
   protected readonly base = ADMIN_WEBHOOKS_BASE;

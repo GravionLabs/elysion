@@ -20,9 +20,7 @@ import { firstValueFrom } from 'rxjs';
 @Component({
   selector: 'app-board-thumbnail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `@if (url(); as src) {
-    <img [src]="src" alt="" width="480" height="300" />
-  }`,
+  templateUrl: './board-thumbnail.html',
   styles: `
     :host {
       display: block;
