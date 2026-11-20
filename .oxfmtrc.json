@@ -1,0 +1,35 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "sortPackageJson": false,
+  "associations": [
+    {
+      "files": ["apps/frontend/src/**/*.html"],
+      "language": "angular-html"
+    }
+  ],
+  "ignorePatterns": [
+    "**/node_modules",
+    "**/dist",
+    "**/dist-element",
+    "**/coverage",
+    "**/.angular",
+    "pnpm-lock.yaml",
+    "CHANGELOG.md",
+    "**/*.toml",
+    "apps/frontend/public/canvas",
+    "apps/business-backend",
+    "apps/site/.vitepress/cache",
+    "apps/site/.vitepress/dist",
+    "infra/docker/data",
+    "infra/helm/*/templates/",
+    "infra/helm/snapshots/",
+    "apps/e2e/test-results",
+    "apps/e2e/playwright-report",
+    ".agents/**",
+    ".claude/**",
+    "docs/api/openapi.v1.json"
+  ]
+}

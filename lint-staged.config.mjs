@@ -10,7 +10,8 @@ const OXLINT_APPS = [
 ];
 
 export default {
-  '*': 'prettier --write --ignore-unknown',
+  // oxfmt skips the files it does not format (C#, images) and those of .oxfmtrc.json's ignorePatterns.
+  '*': 'oxfmt --no-error-on-unmatched-pattern',
   ...Object.fromEntries(
     OXLINT_APPS.map((app) => [
       `${app}/**/*.{ts,tsx}`,
