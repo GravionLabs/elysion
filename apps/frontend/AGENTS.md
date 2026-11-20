@@ -19,6 +19,8 @@ pnpm --filter @elysion/frontend exec ng test --watch=false
 ## Conventions
 
 - Standalone components only (no NgModules) — this is the Angular CLI default for new components; keep it that way.
+- A component's template is a `.html` file next to it (`templateUrl`), never an inline `template:` (oxlint's `@angular-eslint/component-max-inline-declarations` with `template: 0`; test hosts in `*.spec.ts` may keep theirs). Inline `styles` are fine.
+- **Lint** (`pnpm --filter @elysion/frontend lint`): oxlint with `.oxlintrc.json` (the root rules plus the Angular class rules through the `@angular-eslint/eslint-plugin` JS plugin), then ESLint on `src/**/*.html` (`eslint.config.mjs`, the template and accessibility rules; ESLint never reads `.ts`), then the **lint probe**: `lint-probe/` holds a component and a template with deliberate violations (ignored by the regular run and the build) and `lint-probe/probe.test.mjs` fails when oxlint or ESLint stops reporting one of them, for example after an update of oxlint, its JS plugin support or oxlint-tsgolint. Change the probe and the expected rules together. A template finding that does not apply gets `<!-- eslint-disable-next-line <rule> -- <reason> -->` above the element.
 - Package name is `@elysion/frontend`, not `frontend` — the workspace filter and Dockerfile depend on this.
 - TypeScript stays on 6.x — see the root `AGENTS.md` and `docs/adr/0002-typescript-version-split.md` before bumping.
 - Don't add SSR — this app is scaffolded with `--ssr=false` and the Dockerfile serves a static build through nginx (`nginx.conf` has the SPA `try_files` fallback).
