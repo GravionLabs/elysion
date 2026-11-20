@@ -62,7 +62,7 @@
         'vite-tsconfig-paths',
         'jsdom',
         'oxlint',
-        'oxfmt',
+        'prettier',
         'simple-git-hooks',
         'lint-staged',
         'playwright',
