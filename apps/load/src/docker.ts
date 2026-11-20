@@ -44,7 +44,7 @@ export async function containerUse(names: string[]): Promise<ContainerUse[]> {
       return {
         name: row.Name,
         cpuPercent: Number.parseFloat(row.CPUPerc),
-        memoryMiB: toMiB(row.MemUsage.split('/')[0]!.trim()),
+        memoryMiB: toMiB(row.MemUsage.split('/')[0].trim()),
       };
     });
 }

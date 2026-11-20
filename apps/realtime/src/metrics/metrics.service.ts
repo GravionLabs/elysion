@@ -17,6 +17,7 @@ export class MetricsService {
     private readonly saveMetrics: SaveMetrics,
   ) {
     collectDefaultMetrics({ register: this.registry });
+    // oxlint-disable-next-line no-new -- a gauge registers itself in `registers` and is read by its `collect`
     new Gauge({
       name: 'elysion_realtime_websocket_connections',
       help: 'Open WebSocket connections that were admitted to a room.',
@@ -25,6 +26,7 @@ export class MetricsService {
         this.set(rooms.stats().connections);
       },
     });
+    // oxlint-disable-next-line no-new -- a gauge registers itself in `registers` and is read by its `collect`
     new Gauge({
       name: 'elysion_realtime_rooms',
       help: 'Boards whose document is held in memory.',

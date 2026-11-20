@@ -88,7 +88,7 @@ describe('the sidebar', () => {
 
     expect(items.length).toBeGreaterThanOrEqual(21);
     expect(items[0]?.link).toBe('/adr/0001-gateway-and-bff');
-    expect(items.map((item) => item.link)).toEqual([...items.map((item) => item.link)].sort());
+    expect(items.map((item) => item.link)).toEqual(items.map((item) => item.link).sort());
     expect(items.at(-1)?.link).toMatch(/^\/adr\/\d{4}-/);
   });
 });

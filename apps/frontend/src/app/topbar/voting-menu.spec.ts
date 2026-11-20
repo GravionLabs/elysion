@@ -1,4 +1,5 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VotingSession } from '../board/canvas-element';
 import { VOTE_PRESETS, VotingMenu, type VotingRequest } from './voting-menu';
@@ -37,7 +38,7 @@ describe('VotingMenu', () => {
     for (const [name, value] of Object.entries(inputs)) fixture.componentRef.setInput(name, value);
     fixture.detectChanges();
   };
-  const button = () => el().querySelector('.menu-button') as HTMLButtonElement | null;
+  const button = () => el().querySelector<HTMLButtonElement>('.menu-button');
   const openMenu = () => {
     button()!.click();
     fixture.detectChanges();
@@ -359,7 +360,7 @@ describe('VotingMenu', () => {
   });
 
   describe('the results dialog', () => {
-    const dialog = () => el().querySelector('.results-dialog') as HTMLElement | null;
+    const dialog = () => el().querySelector<HTMLElement>('.results-dialog');
     const header = () => el().querySelector('.dialog-header') as HTMLElement;
     const pointer = (type: string, x: number, y: number, target: Element = header()) =>
       target.dispatchEvent(

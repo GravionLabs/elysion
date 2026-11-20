@@ -124,7 +124,7 @@ describe('canvas Yjs sync (two CanvasApp-style peers)', () => {
     const [rect] = convertToExcalidrawElements([
       { type: 'rectangle', x: 0, y: 0, width: 10, height: 10 },
     ]);
-    peerA.setElements([rect as unknown as OrderedExcalidrawElement]);
+    peerA.setElements([rect]);
     peerA.binding.onLocalChange(peerA.getElements());
     await waitUntil(() => peerB.getElements().some((element) => element.id === rect.id));
 

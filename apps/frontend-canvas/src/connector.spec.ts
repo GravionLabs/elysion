@@ -351,8 +351,6 @@ describe('findConnector', () => {
 
     expect(findConnector([a, b, arrow], a.id, b.id)).toBe(arrow);
     expect(findConnector([a, b, arrow], b.id, a.id)).toBeUndefined();
-    expect(
-      findConnector([a, b, { ...arrow, isDeleted: true } as ExcalidrawElement], a.id, b.id),
-    ).toBeUndefined();
+    expect(findConnector([a, b, { ...arrow, isDeleted: true }], a.id, b.id)).toBeUndefined();
   });
 });

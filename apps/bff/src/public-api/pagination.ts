@@ -78,7 +78,7 @@ export function decodeCursor(value: unknown): SortKey {
   ) {
     throw invalid();
   }
-  return key as SortKey;
+  return key;
 }
 
 function compareKeys(a: SortKey, b: SortKey, directions: Array<'asc' | 'desc'>): number {

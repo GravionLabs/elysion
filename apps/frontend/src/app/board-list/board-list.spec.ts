@@ -1,11 +1,13 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { BoardInfo } from '../board/board-api';
-import { RoomInfo } from '../board/room-api';
-import { TemplateInfo } from '../board/template-api';
-import { FAKE_USER, FakeSession, provideFakeSession } from '../auth/testing';
+import type { BoardInfo } from '../board/board-api';
+import type { RoomInfo } from '../board/room-api';
+import type { TemplateInfo } from '../board/template-api';
+import type { FakeSession } from '../auth/testing';
+import { FAKE_USER, provideFakeSession } from '../auth/testing';
 import { SessionService } from '../auth/session.service';
 import { BoardList, boardInitials, boardTint, sortBoards } from './board-list';
 import { RoomPdfExporter } from './room-pdf-export';
@@ -231,7 +233,7 @@ describe('BoardList', () => {
 
   describe('the New board button in the header', () => {
     const headerButton = () =>
-      el().querySelector('.page-header button.new-board') as HTMLButtonElement | null;
+      el().querySelector<HTMLButtonElement>('.page-header button.new-board');
 
     it('is there while the boards load', () => {
       expect(headerButton()?.getAttribute('aria-label')).toBe('New board');
@@ -473,7 +475,7 @@ describe('BoardList', () => {
       (el().querySelector(`button[aria-label="Delete the board ${name}"]`) as HTMLElement).click();
       await fixture.whenStable();
     };
-    const confirm = () => el().querySelector('[role="alertdialog"]') as HTMLElement | null;
+    const confirm = () => el().querySelector<HTMLElement>('[role="alertdialog"]');
     const confirmButton = (selector: string) =>
       (confirm() as HTMLElement).querySelector(selector) as HTMLElement;
     const names = () =>
@@ -657,9 +659,7 @@ describe('BoardList', () => {
       await fixture.whenStable();
     };
     const button = (label: string) =>
-      [...el().querySelectorAll('button')].find((b) => b.textContent?.trim() === label) as
-        | HTMLButtonElement
-        | undefined;
+      [...el().querySelectorAll('button')].find((b) => b.textContent?.trim() === label);
     const clickButton = async (label: string) => {
       button(label)!.click();
       await fixture.whenStable();
@@ -1039,7 +1039,7 @@ describe('BoardList', () => {
           el().querySelector('[role="dialog"][aria-label="Exporting the room"]')?.textContent,
         ).toContain('Retro');
         expect(button('Export room')!.disabled).toBe(true);
-        expect(spy.mock.calls[0]![0]).toEqual([{ id: 'b1', name: 'Retro' }]);
+        expect(spy.mock.calls[0][0]).toEqual([{ id: 'b1', name: 'Retro' }]);
 
         await clickButton('Cancel');
         release();

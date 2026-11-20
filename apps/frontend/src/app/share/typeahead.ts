@@ -1,7 +1,7 @@
+import type { ElementRef } from '@angular/core';
 import {
   Component,
   DestroyRef,
-  ElementRef,
   computed,
   inject,
   input,
@@ -23,7 +23,7 @@ let nextId = 0;
 /**
  * A text field that offers matches while the person types (the ARIA combobox pattern with a listbox, 1.2): the field keeps the
  * focus, Arrow keys move through the options, Enter picks the active one, Escape closes the list (and only that: the dialog
- * around it stays), a click picks too. It searches nothing itself: after a short pause it announces what was typed (`search`,
+ * around it stays), a click picks too. It searches nothing itself: after a short pause it announces what was typed (`searchFor`,
  * an empty text when it is too short) and shows the `options` the parent hands back. Typing again takes the pick back.
  */
 @Component({
@@ -40,7 +40,7 @@ export class Typeahead {
   readonly label = input.required<string>();
   readonly placeholder = input('');
   readonly disabled = input(false);
-  /** How many characters make a search; with fewer, `search` is announced with an empty text and no list is shown. */
+  /** How many characters make a search; with fewer, `searchFor` is announced with an empty text and no list is shown. */
   readonly minLength = input(2);
   readonly debounceMs = input(250);
   /** What the search found, best first. */
@@ -53,7 +53,7 @@ export class Typeahead {
   readonly value = model('');
 
   /** The person stopped typing: the trimmed text, or `''` when it is too short to search for. */
-  readonly search = output<string>();
+  readonly searchFor = output<string>();
   /** An option was chosen. */
   readonly pick = output<TypeaheadOption>();
 
@@ -99,12 +99,12 @@ export class Typeahead {
     clearTimeout(this.#timer);
     const trimmed = text.trim();
     if (trimmed.length < this.minLength()) {
-      this.search.emit('');
+      this.searchFor.emit('');
       return;
     }
     this.#timer = setTimeout(() => {
       this.searched.set(true);
-      this.search.emit(trimmed);
+      this.searchFor.emit(trimmed);
     }, this.debounceMs());
   }
 

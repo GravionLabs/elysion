@@ -96,6 +96,7 @@ export function publicBodyErrors(
       ? error.status
       : HttpStatus.BAD_REQUEST;
   const detail =
+    // oxlint-disable-next-line typescript/no-unsafe-enum-comparison -- body-parser's status is a plain number
     status === HttpStatus.PAYLOAD_TOO_LARGE
       ? 'The body is larger than 1 MiB.'
       : 'The body is not valid JSON.';

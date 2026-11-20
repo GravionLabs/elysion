@@ -51,8 +51,11 @@ describe('the Connector tool', () => {
     expect(arrow.elbowed).toBe(true);
     expect(arrow.endArrowhead).toBe('arrow');
     expect(arrow.startArrowhead).toBeNull();
-    expect([arrow.startBinding?.elementId, arrow.endBinding?.elementId].sort()).toEqual(
-      shapes.map((s: { id: string }) => s.id).sort(),
-    );
+    const byId = (a: string, b: string) => a.localeCompare(b);
+    const bound: string[] = [
+      arrow.startBinding?.elementId ?? '',
+      arrow.endBinding?.elementId ?? '',
+    ];
+    expect(bound.sort(byId)).toEqual(shapes.map((s: { id: string }) => s.id).sort(byId));
   }, 20000);
 });

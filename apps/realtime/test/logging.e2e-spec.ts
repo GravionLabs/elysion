@@ -7,7 +7,11 @@ import type { SaveResult, StoredDocument } from '../src/persistence/document-sto
 import { SyncClient, startInstance, waitUntil } from './helpers.js';
 import { boardUrl, signWsToken } from './ws-token.js';
 
-type Line = Record<string, any>;
+/** A parsed log line: the fields the tests read are typed, the rest is checked by value. */
+interface Line {
+  [field: string]: unknown;
+  http?: { route?: string; [field: string]: unknown };
+}
 
 /** An in-memory store that remembers which request id each call was made for (what the backend would receive). */
 class RecordingStore extends InMemoryDocumentStore {

@@ -109,8 +109,8 @@ test('two PNGs dropped together become a row at the drop point, and the other pe
 
   await expect.poll(async () => (await images(a)).length).toBe(2);
   const [first, second] = (await images(a)).sort((p, q) => p.x - q.x);
-  expect(second!.x).toBeGreaterThan(first!.x + first!.width); // side by side with a gap
-  expect(Math.abs(first!.y + first!.height / 2 - (second!.y + second!.height / 2))).toBeLessThan(1); // one line
+  expect(second.x).toBeGreaterThan(first.x + first.width); // side by side with a gap
+  expect(Math.abs(first.y + first.height / 2 - (second.y + second.height / 2))).toBeLessThan(1); // one line
   await expect.poll(async () => (await images(b)).length).toBe(2);
   expect(uploads).toEqual(['image/png', 'image/png']);
 });

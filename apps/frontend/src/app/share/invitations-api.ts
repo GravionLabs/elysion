@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 import type { MemberScope } from './members-api';
 
 /** The roles a link can give: an owner is never made by a link. */

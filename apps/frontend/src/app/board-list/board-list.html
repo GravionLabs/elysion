@@ -358,6 +358,7 @@
       }
 
       @if (createState() !== 'closed') {
+        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- a click on the backdrop closes the dialog for the mouse; the keyboard closes it with Escape -->
         <div class="backdrop" (click)="closeOnBackdrop($event)">
           <form
             class="create"
@@ -601,6 +602,7 @@
                           </svg>
                         </button>
                         @if (moveMenuFor() === board.id) {
+                          <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -- the focus is on the menu's buttons; Escape bubbles up to the list -->
                           <ul class="move-menu" role="menu" (keydown.escape)="closeMoveMenu()">
                             @for (option of moveOptions(board); track option.roomId) {
                               <li role="none">

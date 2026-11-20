@@ -56,7 +56,10 @@ export class HttpDocumentStore extends DocumentStore {
     this.expect(response, 204);
   }
 
-  private async request(boardId: string, init: RequestInit): Promise<Response> {
+  private async request(
+    boardId: string,
+    init: Omit<RequestInit, 'headers'> & { headers?: Record<string, string> },
+  ): Promise<Response> {
     const url = `${this.baseUrl}/internal/boards/${encodeURIComponent(boardId)}/document`;
     // The id of the connection this call is made for, so the backend's lines for it carry the same id (ADR 0025).
     const requestId = currentRequestId();

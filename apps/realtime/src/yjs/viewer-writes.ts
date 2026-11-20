@@ -72,6 +72,7 @@ function isInside(type: unknown, root: unknown): boolean {
   let current: unknown = type;
   while (current) {
     if (current === root) return true;
+    // oxlint-disable-next-line no-underscore-dangle -- Yjs keeps the parent of a type only in its internal `_item`
     current = (current as Nested)._item?.parent ?? null;
   }
   return false;

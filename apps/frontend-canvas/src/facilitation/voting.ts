@@ -136,13 +136,18 @@ export function tally(
 ): TallyEntry[] {
   const alive = new Map(elements.filter((e) => !e.isDeleted).map((e) => [e.id, e]));
   return result
-    .filter((entry) => alive.has(entry.elementId) && entry.count > 0)
-    .map((entry) => ({
-      elementId: entry.elementId,
-      count: entry.count,
-      label: elementLabel(alive.get(entry.elementId)!, elements),
-      ...(entry.voters ? { voters: entry.voters } : {}),
-    }))
+    .flatMap((entry) => {
+      const element = alive.get(entry.elementId);
+      if (!element || entry.count <= 0) return [];
+      return [
+        {
+          elementId: entry.elementId,
+          count: entry.count,
+          label: elementLabel(element, elements),
+          ...(entry.voters ? { voters: entry.voters } : {}),
+        },
+      ];
+    })
     .sort(
       (a, b) =>
         b.count - a.count ||

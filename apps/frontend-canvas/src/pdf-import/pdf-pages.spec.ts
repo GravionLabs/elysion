@@ -61,19 +61,19 @@ describe('gridCells', () => {
     const cells = gridCells([1, 1, 1], { x: 0, y: 0 });
 
     // 3 pages: 2 columns, 2 rows
-    expect(cells[1]!.x - cells[0]!.x).toBe(PAGE_BOARD_WIDTH + GRID_GAP);
-    expect(cells[2]!.x).toBe(cells[0]!.x);
-    expect(cells[2]!.y - cells[0]!.y).toBe(PAGE_BOARD_WIDTH + GRID_GAP);
-    const left = cells[0]!.x;
-    const right = cells[1]!.x + PAGE_BOARD_WIDTH;
+    expect(cells[1].x - cells[0].x).toBe(PAGE_BOARD_WIDTH + GRID_GAP);
+    expect(cells[2].x).toBe(cells[0].x);
+    expect(cells[2].y - cells[0].y).toBe(PAGE_BOARD_WIDTH + GRID_GAP);
+    const left = cells[0].x;
+    const right = cells[1].x + PAGE_BOARD_WIDTH;
     expect(left + right).toBe(0);
   });
 
   it('lets a row be as high as its highest page and starts the pages of a row at the top', () => {
     const cells = gridCells([1, 2, 1], { x: 0, y: 0 });
 
-    expect(cells[0]!.y).toBe(cells[1]!.y);
-    expect(cells[2]!.y).toBe(cells[0]!.y + PAGE_BOARD_WIDTH * 2 + GRID_GAP);
+    expect(cells[0].y).toBe(cells[1].y);
+    expect(cells[2].y).toBe(cells[0].y + PAGE_BOARD_WIDTH * 2 + GRID_GAP);
   });
 
   it('does not overlap any two frames', () => {

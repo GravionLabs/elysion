@@ -89,7 +89,7 @@ describe('CommentPanel', () => {
       throw new CommentError('too-long');
     });
     setup({ onReply });
-    const box = screen.getByPlaceholderText('Reply…') as HTMLTextAreaElement;
+    const box = screen.getByPlaceholderText<HTMLTextAreaElement>('Reply…');
 
     fireEvent.change(box, { target: { value: 'Too much' } });
     fireEvent.click(screen.getByRole('button', { name: 'Reply' }));
@@ -100,7 +100,7 @@ describe('CommentPanel', () => {
 
   it('offers the people after @, stores the id of the one picked and shows the name', () => {
     const props = setup();
-    const box = screen.getByPlaceholderText('Reply…') as HTMLTextAreaElement;
+    const box = screen.getByPlaceholderText<HTMLTextAreaElement>('Reply…');
 
     fireEvent.change(box, { target: { value: 'ask @cy', selectionStart: 7 } });
     box.setSelectionRange(7, 7);
@@ -119,7 +119,7 @@ describe('CommentPanel', () => {
 
   describe('the host search for @', () => {
     const type = (value: string) => {
-      const box = screen.getByPlaceholderText('Reply…') as HTMLTextAreaElement;
+      const box = screen.getByPlaceholderText<HTMLTextAreaElement>('Reply…');
       fireEvent.change(box, { target: { value, selectionStart: value.length } });
       box.setSelectionRange(value.length, value.length);
       fireEvent.change(box, { target: { value } });

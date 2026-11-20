@@ -125,7 +125,7 @@ export function createPinoHttpOptions(
   params: LoggerParams,
 ): Options | [Options, DestinationStream] {
   const quiet = params.quietPaths ?? [];
-  const format = resolveLogFormat(params.format, process.stdout.isTTY === true);
+  const format = resolveLogFormat(params.format, process.stdout.isTTY);
   const options: Options = {
     level: parseLogLevel(params.level),
     base: { service: params.service },
@@ -173,9 +173,9 @@ export function createPinoHttpOptions(
       return quiet.includes(sanitizeUrl(request.url)) ? 'debug' : 'info';
     },
     customSuccessMessage: (request, response) =>
-      `HTTP ${request.method} ${routeOf(request as ExpressLikeRequest)} responded ${response.statusCode}`,
+      `HTTP ${request.method} ${routeOf(request)} responded ${response.statusCode}`,
     customErrorMessage: (request, response) =>
-      `HTTP ${request.method} ${routeOf(request as ExpressLikeRequest)} failed with ${response.statusCode}`,
+      `HTTP ${request.method} ${routeOf(request)} failed with ${response.statusCode}`,
   };
 
   const endpoint = params.otlpEndpoint?.trim();

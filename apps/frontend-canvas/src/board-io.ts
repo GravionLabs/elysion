@@ -104,10 +104,8 @@ export function elementsToExport(
   if (!selectedIds) return elements;
   return elements.filter(
     (element) =>
-      selectedIds[element.id] === true ||
-      (element.type === 'text' &&
-        !!element.containerId &&
-        selectedIds[element.containerId] === true),
+      selectedIds[element.id] ||
+      (element.type === 'text' && !!element.containerId && selectedIds[element.containerId]),
   );
 }
 
@@ -135,7 +133,7 @@ export function replaceScene(
         version: Math.max(replacement.version, element.version + 1),
         versionNonce: nonce(),
         updated: Date.now(),
-      } as ExcalidrawElement);
+      });
     } else if (element.isDeleted) {
       next.push(element);
     } else {
@@ -145,7 +143,7 @@ export function replaceScene(
         version: element.version + 1,
         versionNonce: nonce(),
         updated: Date.now(),
-      } as ExcalidrawElement);
+      });
     }
   }
   return [...next, ...incoming.values()];
@@ -160,7 +158,7 @@ function framesToExport(
     (element): element is ExcalidrawFrameLikeElement =>
       element.type === 'frame' || element.type === 'magicframe',
   );
-  const chosen = selectedIds ? frames.filter((frame) => selectedIds[frame.id] === true) : frames;
+  const chosen = selectedIds ? frames.filter((frame) => selectedIds[frame.id]) : frames;
   return framesInOrder(chosen);
 }
 
@@ -192,7 +190,7 @@ export async function exportBoard(
     ...(theme === 'current' ? {} : { exportWithDarkMode: theme === 'dark' }),
   };
   // The notes in the colors of the export's theme, not of the screen's (a file always has the stored ones).
-  const darkExport = format !== 'excalidraw' && exportState.exportWithDarkMode === true;
+  const darkExport = format !== 'excalidraw' && exportState.exportWithDarkMode;
   const elements = colorsForExport(elementsToExport(scene, selected), darkExport);
   if (elements.length === 0) return null;
   const sceneForExport = colorsForExport(scene, darkExport);
@@ -293,7 +291,11 @@ export function cloneForInsertion(
   const ids = new Map(elements.map((element) => [element.id, freshId()]));
   const groups = new Map<string, string>();
   const mapId = (id: string | null | undefined) => (id ? (ids.get(id) ?? null) : null);
-  const mapGroup = (id: string) => groups.get(id) ?? groups.set(id, freshId()).get(id)!;
+  const mapGroup = (id: string) => {
+    const mapped = groups.get(id) ?? freshId();
+    groups.set(id, mapped);
+    return mapped;
+  };
 
   const [minX, minY, maxX, maxY] = getCommonBounds(elements);
   const dx = center.x - (minX + maxX) / 2;
@@ -380,12 +382,12 @@ export function clearScene(existing: readonly ExcalidrawElement[]): ExcalidrawEl
   return existing.map((element) =>
     element.isDeleted
       ? element
-      : ({
+      : {
           ...element,
           isDeleted: true,
           version: element.version + 1,
           versionNonce: nonce(),
           updated: Date.now(),
-        } as ExcalidrawElement),
+        },
   );
 }

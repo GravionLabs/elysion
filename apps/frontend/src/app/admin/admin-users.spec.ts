@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import type { AdminUser, Page } from './admin-api';
 import { AdminUsers } from './admin-users';
 
@@ -182,9 +183,7 @@ describe('AdminUsers', () => {
     };
     const dialogs = () => [...el().querySelectorAll('[role="dialog"]')];
     const button = (root: Element, text: RegExp) =>
-      [...root.querySelectorAll('button')].find((b) => text.test((b.textContent ?? '').trim())) as
-        | HTMLButtonElement
-        | undefined;
+      [...root.querySelectorAll('button')].find((b) => text.test((b.textContent ?? '').trim()));
 
     it('marks a deactivated person in the list', async () => {
       listRequest().flush(page([{ ...user(1), deactivatedAt: '2026-10-10T10:00:00Z' }, user(2)]));

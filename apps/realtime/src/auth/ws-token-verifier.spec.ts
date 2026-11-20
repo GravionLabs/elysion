@@ -99,19 +99,19 @@ describe('WsTokenVerifier', () => {
 
     it('remembers an id for as long as the token could still be accepted', async () => {
       const ttls: number[] = [];
-      const verifier = new WsTokenVerifier(TEST_WS_TOKEN_SECRET, {
+      const remembering = new WsTokenVerifier(TEST_WS_TOKEN_SECRET, {
         claim: (_jti, ttl) => Promise.resolve(!!ttls.push(ttl)),
       });
 
-      await verifier.verify(signWsToken(BOARD, { jti: 'x', expiresIn: 60 }));
+      await remembering.verify(signWsToken(BOARD, { jti: 'x', expiresIn: 60 }));
 
       expect(ttls[0]).toBeGreaterThanOrEqual(60);
       expect(ttls[0]).toBeLessThanOrEqual(70);
     });
 
     it('does not ask about a token without an id', async () => {
-      await guarded.verify(signWsToken(BOARD));
-      await guarded.verify(signWsToken(BOARD));
+      await expect(guarded.verify(signWsToken(BOARD))).resolves.toBeDefined();
+      await expect(guarded.verify(signWsToken(BOARD))).resolves.toBeDefined();
     });
 
     it('does not use up the id of a token it refuses for another reason', async () => {

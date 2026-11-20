@@ -24,7 +24,7 @@ export class OfflineBar {
   readonly backSent = input<number | null>(null);
 
   /** The person wants a copy of the board as a file. */
-  readonly downloadCopy = output<void>();
+  readonly downloadCopy = output();
 
   protected readonly now = signal(Date.now());
 

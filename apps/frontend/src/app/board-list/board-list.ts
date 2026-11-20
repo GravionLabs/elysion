@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
+import type { ElementRef } from '@angular/core';
 import {
   Component,
-  ElementRef,
   HostListener,
   computed,
   effect,
@@ -17,22 +17,26 @@ import { AppBrand } from '../shared/app-brand';
 import { SessionService } from '../auth/session.service';
 import { UserMenu } from '../topbar/user-menu';
 import { ThemeService } from '../theme/theme.service';
-import { BoardApi, BoardInfo, MAX_BOARD_NAME_LENGTH } from '../board/board-api';
-import { TEMPLATE_STATE_KEY, TemplateApi, TemplateInfo } from '../board/template-api';
+import type { BoardInfo } from '../board/board-api';
+import { BoardApi, MAX_BOARD_NAME_LENGTH } from '../board/board-api';
+import type { TemplateInfo } from '../board/template-api';
+import { TEMPLATE_STATE_KEY, TemplateApi } from '../board/template-api';
+import type { RoomInfo } from '../board/room-api';
 import {
   MAX_ROOM_NAME_LENGTH,
   RoomApi,
-  RoomInfo,
   canAdministerRoom,
   canWriteInRoom,
 } from '../board/room-api';
 import { describeError, ShareDialog } from '../share/share-dialog';
 import { BoardThumbnail } from './board-thumbnail';
-import { RoomSidebar, RoomsState } from './room-sidebar';
+import type { RoomsState } from './room-sidebar';
+import { RoomSidebar } from './room-sidebar';
 import { RoomPdfExporter } from './room-pdf-export';
 import { downloadBlob, exportFilename } from '../board/download';
 import { loadSettings } from '../topbar/export-settings';
-import { BOARD_SORTS, BoardSort, loadSort, saveSort } from './list-preferences';
+import type { BoardSort } from './list-preferences';
+import { BOARD_SORTS, loadSort, saveSort } from './list-preferences';
 
 /** The design tokens the preview placeholders are tinted with; a board always gets the same one. */
 const PREVIEW_TINTS = [
@@ -512,13 +516,11 @@ export class BoardList {
           error: (error: unknown) => {
             this.createState.set('closed');
             this.roomError.set(
-              $localize`:@@boards.error.created:The board “${board.name}:board:” was created, but could not be put in the room “${room.name}:room:”.` +
-                ' ' +
-                describeError(
-                  error,
-                  $localize`:@@boards.error.createdFallback:Move it from its card.`,
-                  'room',
-                ),
+              `${$localize`:@@boards.error.created:The board “${board.name}:board:” was created, but could not be put in the room “${room.name}:room:”.`} ${describeError(
+                error,
+                $localize`:@@boards.error.createdFallback:Move it from its card.`,
+                'room',
+              )}`,
             );
             this.load();
           },
@@ -777,9 +779,11 @@ export class BoardList {
         this.boards.update((boards) => boards.map((b) => (b.id === moved.id ? moved : b))),
       error: (error: unknown) =>
         this.roomError.set(
-          $localize`:@@boards.error.move:The board “${board.name}:board:” could not be moved.` +
-            ' ' +
-            describeError(error, $localize`:@@boards.error.moveFallback:Try again.`, 'room'),
+          `${$localize`:@@boards.error.move:The board “${board.name}:board:” could not be moved.`} ${describeError(
+            error,
+            $localize`:@@boards.error.moveFallback:Try again.`,
+            'room',
+          )}`,
         ),
     });
   }

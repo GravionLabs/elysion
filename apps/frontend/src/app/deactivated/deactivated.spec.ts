@@ -1,9 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { SessionService } from '../auth/session.service';
-import { FakeSession, provideFakeSession } from '../auth/testing';
+import type { FakeSession } from '../auth/testing';
+import { provideFakeSession } from '../auth/testing';
 import { Deactivated } from './deactivated';
 
 describe('Deactivated', () => {

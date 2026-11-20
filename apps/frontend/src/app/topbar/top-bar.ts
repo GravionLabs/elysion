@@ -1,6 +1,6 @@
+import type { ElementRef } from '@angular/core';
 import {
   Component,
-  ElementRef,
   computed,
   effect,
   input,
@@ -12,10 +12,11 @@ import {
 import { RouterLink } from '@angular/router';
 import { MAX_BOARD_NAME_LENGTH } from '../board/board-api';
 import { AppBrand } from '../shared/app-brand';
-import { Theme } from '../theme/theme.service';
-import { ExportFormat } from '../board/download';
+import type { Theme } from '../theme/theme.service';
+import type { ExportFormat } from '../board/download';
 import type { PresentUser } from '../board/presence-store';
-import { ExportMenu, ExportRequest } from './export-menu';
+import type { ExportRequest } from './export-menu';
+import { ExportMenu } from './export-menu';
 import { TemplateMenu } from './template-menu';
 import { PresentMenu } from './present-menu';
 import { TimerMenu } from './timer-menu';
@@ -88,38 +89,38 @@ export class TopBar {
 
   /** The user confirmed a new name (trimmed, different from the current one). */
   readonly renameRequested = output<string>();
-  readonly themeToggle = output<void>();
-  readonly favoriteToggle = output<void>();
-  readonly libraryToggle = output<void>();
+  readonly themeToggle = output();
+  readonly favoriteToggle = output();
+  readonly libraryToggle = output();
   readonly exportRequested = output<ExportRequest>();
   /** The user chose a template to add to the board. */
   readonly templateChosen = output<TemplateInfo>();
   /** The user wants to save the board, or the selection, as a template. */
   readonly saveTemplateRequested = output<{ selectionOnly: boolean }>();
   /** The user pressed Share. */
-  readonly shareRequested = output<void>();
+  readonly shareRequested = output();
   /** The user chose Log out in the user menu. */
-  readonly logoutRequested = output<void>();
+  readonly logoutRequested = output();
   /** A file was picked for import; the page confirms before anything is replaced. */
   readonly importChosen = output<File>();
   /** The shared timer, asked for by those who may write: the board page calls the canvas. */
   readonly timerStart = output<number>();
-  readonly timerPause = output<void>();
-  readonly timerResume = output<void>();
+  readonly timerPause = output();
+  readonly timerResume = output();
   readonly timerExtend = output<number>();
-  readonly timerStop = output<void>();
+  readonly timerStop = output();
   /** The dot voting, asked for by those who may write; the board page calls the canvas. */
   readonly votingStart = output<VotingRequest>();
-  readonly votingEnd = output<void>();
-  readonly votingClear = output<void>();
+  readonly votingEnd = output();
+  readonly votingClear = output();
   /** A result was clicked: scroll the canvas to the element. */
   readonly votingFocus = output<string>();
   /** The user clicked a person's avatar: follow their view (the id of the `presence` entry). */
   readonly followRequested = output<string>();
   /** Presenting, asked for by those who may write; the board page calls the canvas (#848). */
-  readonly presentStart = output<void>();
-  readonly presentStop = output<void>();
-  readonly presentSummon = output<void>();
+  readonly presentStart = output();
+  readonly presentStop = output();
+  readonly presentSummon = output();
 
   /** Stop presenting is offered to the presenter and to an owner, who may end anybody's presentation (#848). */
   protected readonly canStopPresenting = computed(() => {
@@ -226,6 +227,8 @@ export class TopBar {
         .split(/\s+/)
         .filter(Boolean)
         .slice(0, 2)
+        // The first code point is the initial; only names that start with a composed emoji would need graphemes.
+        // oxlint-disable-next-line typescript/no-misused-spread
         .map((word) => [...word][0].toUpperCase())
         .join('') || '?'
     );

@@ -195,8 +195,8 @@ export class FakeBusinessBackend {
     const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString()) : undefined;
     this.lastWebhookRequest = { method: req.method ?? '', path: req.url ?? '', body };
     const [, boardId, webhookId, action, deliveryId] = route;
-    if (!this.boards.has(boardId!)) return send(404);
-    const role = this.roles.get(boardId!);
+    if (!this.boards.has(boardId)) return send(404);
+    const role = this.roles.get(boardId);
     if (role !== undefined && role !== 'Owner') return send(403);
     const shown = ({ secret: _secret, ...webhook }: FakeWebhook) => webhook;
     const notFound = () => send(404, { status: 404, detail: 'There is no such webhook.' });
@@ -213,7 +213,7 @@ export class FakeBusinessBackend {
       const secret = `whsec_${'s'.repeat(43)}`;
       const webhook: FakeWebhook = {
         id: randomUUID(),
-        boardId: boardId!,
+        boardId: boardId,
         url: body.url,
         events: body.events ?? [],
         enabled: true,
@@ -344,8 +344,8 @@ export class FakeBusinessBackend {
     if (webhookRoute) return this.#handleWebhooks(req, webhookRoute, send);
     const documentRoute = /^\/boards\/([^/]+)\/document$/.exec(req.url ?? '');
     if (documentRoute && req.method === 'GET') {
-      if (!this.boards.has(documentRoute[1]!)) return send(404);
-      const state = this.documents.get(documentRoute[1]!);
+      if (!this.boards.has(documentRoute[1])) return send(404);
+      const state = this.documents.get(documentRoute[1]);
       if (state === undefined) return send(204);
       res.writeHead(200, { 'content-type': 'application/octet-stream', etag: '"1"' });
       return void res.end(Buffer.from(state));
@@ -435,7 +435,7 @@ export class FakeBusinessBackend {
     const stateRoute = /^\/boards\/([^/?]+)\/(open|favorite)$/.exec(req.url ?? '');
     if (stateRoute) {
       this.lastStateRequest = { method: req.method ?? '', path: req.url ?? '' };
-      return this.boards.has(stateRoute[1]!) ? send(204) : send(404);
+      return this.boards.has(stateRoute[1]) ? send(204) : send(404);
     }
     if ((req.url ?? '').startsWith('/boards?')) {
       this.lastStateRequest = { method: req.method ?? '', path: req.url ?? '' };
@@ -495,7 +495,7 @@ export class FakeBusinessBackend {
     }
     const thumbnailRoute = /^\/boards\/([^/]+)\/thumbnail$/.exec(req.url ?? '');
     if (thumbnailRoute) {
-      const id = thumbnailRoute[1]!;
+      const id = thumbnailRoute[1];
       if (req.method === 'PUT') {
         const parts: Buffer[] = [];
         for await (const chunk of req) parts.push(chunk as Buffer);
@@ -592,7 +592,7 @@ export class FakeBusinessBackend {
       return send(200, board);
     }
     if (req.method === 'DELETE') {
-      this.boards.delete(id!);
+      this.boards.delete(id);
       return send(204);
     }
     return send(405);
@@ -627,8 +627,8 @@ export class FakeBusinessBackend {
         [...this.groups.values()].filter((g) => this.myGroups.has(g.id)),
       );
     }
-    const roles = this.roomGroups.get(roomId!);
-    if (!this.rooms.has(roomId!)) return send(404);
+    const roles = this.roomGroups.get(roomId);
+    if (!this.rooms.has(roomId)) return send(404);
     if (req.method === 'GET' && !groupId) {
       return send(
         200,
@@ -639,13 +639,13 @@ export class FakeBusinessBackend {
         })),
       );
     }
-    const group = this.groups.get(groupId!);
+    const group = this.groups.get(groupId);
     if (!group) return send(404);
     if (req.method === 'PUT') {
       if (!['Owner', 'Editor', 'Viewer'].includes(body?.role)) return send(400);
       const map = roles ?? new Map<string, string>();
       map.set(group.id, body.role);
-      this.roomGroups.set(roomId!, map);
+      this.roomGroups.set(roomId, map);
       return send(200, { groupId: group.id, name: group.name, role: body.role });
     }
     if (req.method === 'DELETE') {

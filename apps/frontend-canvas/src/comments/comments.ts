@@ -295,11 +295,11 @@ export function deleteMessage(doc: Y.Doc, threadId: string, messageId: string): 
   doc.transact(() => {
     const comments = commentsMap(doc);
     const thread = comments?.get(threadId);
-    if (!(thread instanceof Y.Map)) return;
+    if (!comments || !(thread instanceof Y.Map)) return;
     const replies = thread.get('replies') as Y.Array<Y.Map<unknown>>;
     const index = replies.toArray().findIndex((reply) => reply.get('id') === messageId);
     if (index < 0) return;
-    if (replies.length === 1) comments!.delete(threadId);
+    if (replies.length === 1) comments.delete(threadId);
     else replies.delete(index, 1);
     done = true;
   });

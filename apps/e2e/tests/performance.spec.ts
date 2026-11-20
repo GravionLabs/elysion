@@ -33,7 +33,7 @@ test('the board list paints on Fast 3G without loading the canvas bundle', async
       new Promise<number>((resolve) => {
         new PerformanceObserver((list) => {
           const entries = list.getEntries();
-          resolve(entries[entries.length - 1]!.startTime);
+          resolve(entries[entries.length - 1].startTime);
         }).observe({ type: 'largest-contentful-paint', buffered: true });
       }),
   );

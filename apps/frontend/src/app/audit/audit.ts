@@ -12,7 +12,8 @@ export interface AuditEntry {
   id: string;
   at: string;
   action: string;
-  subjectType: 'board' | 'room' | 'group' | 'user' | string;
+  /** One of the known kinds, or a newer one the backend added (`string & {}` keeps the known ones as suggestions). */
+  subjectType: 'board' | 'room' | 'group' | 'user' | (string & {});
   subjectId: string | null;
   subjectName: string | null;
   actor: AuditPerson | null;

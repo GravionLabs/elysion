@@ -1,4 +1,6 @@
+<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- a click on the backdrop closes the dialog for the mouse; the keyboard closes it with Escape -->
 <div class="backdrop" (click)="close()">
+  <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- only stops a click inside from reaching the backdrop -->
   <div
     class="dialog"
     role="dialog"
@@ -38,7 +40,7 @@
         [options]="options()"
         [busy]="searching()"
         [disabled]="busy()"
-        (search)="searchPeople($event)"
+        (searchFor)="searchPeople($event)"
         (pick)="pickPerson($event)"
       />
       <label class="field role-field">

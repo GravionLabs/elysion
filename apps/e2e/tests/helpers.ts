@@ -140,9 +140,9 @@ export async function boardElements(page: Page, timeout = 10_000): Promise<Board
   for (;;) {
     const text = await page
       .evaluate(async () => {
-        const canvas = document.querySelector('elysion-canvas') as
-          | (HTMLElement & { exportBoard?(format: string): Promise<Blob | null> })
-          | null;
+        const canvas = document.querySelector<
+          HTMLElement & { exportBoard?(format: string): Promise<Blob | null> }
+        >('elysion-canvas');
         if (!canvas?.exportBoard) return null;
         const blob = await canvas.exportBoard('excalidraw');
         return blob ? await blob.text() : '{"elements":[]}'; // the canvas exports nothing for an empty board

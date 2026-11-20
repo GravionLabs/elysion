@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { AbstractSecurityStorage } from 'angular-auth-oidc-client';
+import type { AbstractSecurityStorage } from 'angular-auth-oidc-client';
 
 /**
  * Fields of the library's state that hold a token or are derived from one. The library keeps everything of a

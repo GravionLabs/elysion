@@ -19,7 +19,7 @@ const isOnSite = (absolutePath: string) =>
   !EXCLUDED.some(
     (folder) =>
       absolutePath === resolve(docsRoot, folder) ||
-      absolutePath.startsWith(resolve(docsRoot, folder) + '/'),
+      absolutePath.startsWith(`${resolve(docsRoot, folder)}/`),
   ) && existsSync(absolutePath);
 
 // On GitHub Pages the site is at https://<owner>.github.io/<repository>/, so every address needs that prefix.

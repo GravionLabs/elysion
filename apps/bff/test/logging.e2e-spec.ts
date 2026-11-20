@@ -10,7 +10,12 @@ import { LOG_STREAM } from '../src/logging/logging.module.js';
 import { FakeBusinessBackend } from './fake-business-backend.js';
 import { bearer, signToken, testVerifier } from './test-auth.js';
 
-type Line = Record<string, any>;
+/** A parsed log line: the fields the tests read are typed, the rest is checked by value. */
+interface Line {
+  [field: string]: unknown;
+  http: { route?: string; durationMs?: number; [field: string]: unknown };
+  err: { type?: string; [field: string]: unknown };
+}
 
 describe('Logging (e2e, ADR 0025)', () => {
   let upstream: FakeBusinessBackend;

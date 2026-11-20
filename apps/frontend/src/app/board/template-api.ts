@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 
 /** The key of the history state with which the board list hands a new board's template to the board page. */
 export const TEMPLATE_STATE_KEY = 'templateId';

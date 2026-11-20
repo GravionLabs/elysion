@@ -1,6 +1,6 @@
+import type { ElementRef } from '@angular/core';
 import {
   Component,
-  ElementRef,
   effect,
   inject,
   input,
@@ -10,7 +10,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MAX_ROOM_NAME_LENGTH, RoomApi, RoomInfo, canWriteInRoom } from '../board/room-api';
+import type { RoomInfo } from '../board/room-api';
+import { MAX_ROOM_NAME_LENGTH, RoomApi, canWriteInRoom } from '../board/room-api';
 import { describeError } from '../share/share-dialog';
 
 /** What the sidebar says about the rooms list: it loads on its own, apart from the boards. */
@@ -45,7 +46,7 @@ export class RoomSidebar {
   readonly roomAdded = output<RoomInfo>();
   /** A board was dropped on a room, or on `null` (take it out of its room). */
   readonly boardDropped = output<string | null>();
-  readonly retry = output<void>();
+  readonly retry = output();
 
   protected readonly maxNameLength = MAX_ROOM_NAME_LENGTH;
   protected readonly adding = signal(false);

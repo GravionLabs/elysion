@@ -40,7 +40,7 @@ function createInputFrom(body: unknown): CreateAccessTokenInput {
   if (typeof expiresInDays !== 'number' || !Number.isInteger(expiresInDays)) {
     throw new BadRequestException('expiresInDays must be a whole number.');
   }
-  return { name, scopes: scopes as string[], expiresInDays };
+  return { name, scopes: scopes, expiresInDays };
 }
 
 /**

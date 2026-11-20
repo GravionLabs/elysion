@@ -44,7 +44,10 @@ export function dropLegacyVoting(doc: Y.Doc): LegacyOpenVoting | null {
         }
       }
       const top = [...counts.entries()]
-        .map(([id, count]) => ({ label: elementLabel(alive.get(id)!, elements), count }))
+        .flatMap(([id, count]) => {
+          const element = alive.get(id);
+          return element ? [{ label: elementLabel(element, elements), count }] : [];
+        })
         .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
         .slice(0, TOP);
       result = { name: typeof open.name === 'string' ? open.name : '', top };

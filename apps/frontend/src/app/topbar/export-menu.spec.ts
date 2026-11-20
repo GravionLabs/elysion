@@ -1,5 +1,7 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ExportMenu, ExportRequest } from './export-menu';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
+import type { ExportRequest } from './export-menu';
+import { ExportMenu } from './export-menu';
 import { DEFAULT_EXPORT_SETTINGS } from './export-settings';
 
 describe('ExportMenu', () => {

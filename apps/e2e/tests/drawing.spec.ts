@@ -90,10 +90,10 @@ test('a rectangle drawn by one person shows for the other, in the same place', a
 
   const [mine] = await ofType(a, 'rectangle');
   const [theirs] = await ofType(b, 'rectangle');
-  expect(theirs!.id).toBe(mine!.id);
-  expect(theirs!.x).toBe(mine!.x);
-  expect(theirs!.y).toBe(mine!.y);
-  expect(mine!.width).toBeGreaterThan(100);
+  expect(theirs.id).toBe(mine.id);
+  expect(theirs.x).toBe(mine.x);
+  expect(theirs.y).toBe(mine.y);
+  expect(mine.width).toBeGreaterThan(100);
 });
 
 test('text typed by one person is read by the other', async () => {
@@ -119,8 +119,8 @@ test('a sticky note takes the color chosen for it', async () => {
   await bothSee(6);
 
   const notes = (await ofType(b, 'rectangle')).slice(-2);
-  expect(notes[1]!.id).not.toBe(first!.id);
-  expect(notes[1]!.backgroundColor).not.toBe(first!.backgroundColor);
+  expect(notes[1].id).not.toBe(first.id);
+  expect(notes[1].backgroundColor).not.toBe(first.backgroundColor);
 });
 
 test('an arrow is drawn', async () => {
@@ -128,7 +128,7 @@ test('an arrow is drawn', async () => {
   await drag(a, await onCanvas(a, 320, 330), await onCanvas(a, 520, 330));
   await bothSee(7);
   const [arrow] = await ofType(b, 'arrow');
-  expect(arrow!.points!.at(-1)![0]).toBeGreaterThan(100);
+  expect(arrow.points!.at(-1)![0]).toBeGreaterThan(100);
 });
 
 test('a connector made from a connection point follows the shape that is moved', async () => {

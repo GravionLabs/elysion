@@ -204,9 +204,7 @@ describe('HistoryPanel', () => {
       target: { value: '  ' },
     });
 
-    expect((screen.getByRole('button', { name: 'Rename' }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Rename' }).disabled).toBe(true);
     expect(api.rename).not.toHaveBeenCalled();
   });
 

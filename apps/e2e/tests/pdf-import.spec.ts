@@ -73,7 +73,9 @@ test('the pages of a PDF are shown to choose from, and each chosen page becomes 
   await expect(dialog).toHaveCount(0, { timeout: 30_000 });
   await expect.poll(async () => (await frames(a)).length).toBe(2);
   expect((await images(a)).length).toBe(2);
-  const names = (await frames(a)).map((frame) => (frame as { name?: string }).name).sort();
+  const names = (await frames(a))
+    .map((frame) => (frame as { name?: string }).name ?? '')
+    .sort((x, y) => x.localeCompare(y));
   expect(names).toEqual(['Page 1', 'Page 2']);
   for (const image of await images(a)) {
     expect((image as { frameId?: string }).frameId).toBeTruthy();

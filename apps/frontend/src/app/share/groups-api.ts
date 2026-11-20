@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 import type { MemberRole } from './members-api';
 
 /** A group as the BFF returns it (ADR 0027): no members; `Local` ones are made in Elysion, `IdentityProvider` ones are owned by the sign-in provider. */

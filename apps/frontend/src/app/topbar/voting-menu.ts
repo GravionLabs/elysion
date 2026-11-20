@@ -53,8 +53,8 @@ export class VotingMenu {
   readonly canControl = input(false);
 
   readonly startRequested = output<VotingRequest>();
-  readonly endRequested = output<void>();
-  readonly clearRequested = output<void>();
+  readonly endRequested = output();
+  readonly clearRequested = output();
   /** The user clicked a result: scroll the canvas to that element. */
   readonly elementRequested = output<string>();
 

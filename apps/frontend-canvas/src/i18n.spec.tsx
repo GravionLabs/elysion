@@ -102,7 +102,9 @@ describe('translated components', () => {
       </I18nProvider>,
     );
     screen.getByRole('button', { name: 'Farbe der Haftnotiz' }).click();
-    return waitFor(() => expect(screen.getByRole('menuitemradio', { name: 'Haftnotiz (Gelb)' })));
+    return waitFor(() =>
+      expect(screen.getByRole('menuitemradio', { name: 'Haftnotiz (Gelb)' })).toBeTruthy(),
+    );
   });
 
   it('shows the minimap in German', () => {

@@ -23,7 +23,7 @@ function rect(id: string, x = 0, y = 0, size = 10): ExcalidrawElement {
   const [element] = convertToExcalidrawElements([
     { type: 'rectangle', x, y, width: size, height: size },
   ]);
-  return { ...element, id } as unknown as ExcalidrawElement;
+  return { ...element, id };
 }
 
 /** A shape with a text bound to it, like a sticky note. */
@@ -294,7 +294,7 @@ describe('exportBoard', () => {
           { type: 'frame', x, y, width: 200, height: 150, name, children: [] },
         ]);
         const inside = { ...rect(`${id}-shape`, x + 20, y + 20, 40), frameId: id };
-        return [{ ...frame, id } as unknown as ExcalidrawElement, inside as ExcalidrawElement];
+        return [{ ...frame, id }, inside];
       }
 
       const framed = [

@@ -97,7 +97,9 @@ describe('YjsRoomRegistry awareness ownership', () => {
 
     awarenessProtocol.applyAwarenessUpdate(room.awareness, encodeRemoteState(5, { a: 1 }), socket);
     awarenessProtocol.applyAwarenessUpdate(room.awareness, encodeRemoteState(6, { a: 2 }), socket);
-    expect([...(room.awarenessIdsBySocket.get(socket) ?? [])].sort()).toEqual([5, 6]);
+    expect([...(room.awarenessIdsBySocket.get(socket) ?? [])].sort((a, b) => a - b)).toEqual([
+      5, 6,
+    ]);
 
     awarenessProtocol.removeAwarenessStates(room.awareness, [5], socket);
     expect([...(room.awarenessIdsBySocket.get(socket) ?? [])]).toEqual([6]);

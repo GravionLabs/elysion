@@ -324,6 +324,7 @@ export class PublicBoardWebhooksController {
   ): Promise<CreatedWebhook> {
     const created = await this.backend.createWebhook(token, id, webhookInput(body));
     response.setHeader('Location', `${PUBLIC_PREFIX}/boards/${id}/webhooks/${created.id}`);
+    // oxlint-disable-next-line typescript/no-misused-spread -- `toWebhook` returns a plain object of the DTO class's shape
     return { ...toWebhook(created), secret: created.secret };
   }
 
@@ -432,6 +433,7 @@ export class PublicInstanceWebhooksController {
   ): Promise<CreatedWebhook> {
     const created = await this.backend.createWebhook(token, null, webhookInput(body));
     response.setHeader('Location', `${PUBLIC_PREFIX}/webhooks/${created.id}`);
+    // oxlint-disable-next-line typescript/no-misused-spread -- `toWebhook` returns a plain object of the DTO class's shape
     return { ...toWebhook(created), secret: created.secret };
   }
 

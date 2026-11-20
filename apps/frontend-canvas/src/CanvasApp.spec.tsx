@@ -96,10 +96,14 @@ describe('CanvasApp', () => {
     const { toggleLibrary } = onControls.mock.calls[0][0];
     expect(onLibraryChange).not.toHaveBeenCalled();
 
-    act(() => toggleLibrary());
+    act(() => {
+      toggleLibrary();
+    });
     await waitFor(() => expect(onLibraryChange).toHaveBeenLastCalledWith(true));
 
-    act(() => toggleLibrary());
+    act(() => {
+      toggleLibrary();
+    });
     await waitFor(() => expect(onLibraryChange).toHaveBeenLastCalledWith(false));
     expect(onLibraryChange).toHaveBeenCalledTimes(2);
   });

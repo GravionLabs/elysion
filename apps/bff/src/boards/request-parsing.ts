@@ -30,13 +30,13 @@ export function memberTarget(body: unknown): MemberTarget {
   if (email === undefined && userId === undefined) {
     throw new BadRequestException('A member needs an email or a userId.');
   }
-  if (userId !== undefined && !UUID.test(userId as string)) {
+  if (userId !== undefined && !UUID.test(userId)) {
     throw new BadRequestException('The userId is not an id.');
   }
   return {
     ...(email === undefined ? {} : { email }),
     ...(userId === undefined ? {} : { userId }),
-  } as MemberTarget;
+  };
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -57,7 +57,7 @@ function webhookEvents(value: unknown): string[] {
   ) {
     throw new BadRequestException('events must be a list of texts.');
   }
-  return value as string[];
+  return value;
 }
 
 /** A new webhook by shape (#853): a text URL and a list of event names (none or left out: all). The backend owns the rules (400). */

@@ -1,5 +1,6 @@
 // Excalidraw has no PDF export: the board's SVG export is converted with jsPDF and svg2pdf.js (ADR 0013).
 // Both libraries are loaded when a PDF is made, so they are not part of the initial bundle.
+import type { jsPDF as JsPdf } from 'jspdf';
 
 /** jsPDF's `px_scaling` hotfix makes one CSS pixel 0.75 points, the unit of a PDF page. */
 const POINTS_PER_PIXEL = 0.75;
@@ -198,7 +199,7 @@ export async function svgsToPdf(
   return new Blob([document.output('arraybuffer')], { type: 'application/pdf' });
 }
 
-type PdfDocument = InstanceType<(typeof import('jspdf'))['jsPDF']>;
+type PdfDocument = JsPdf;
 
 /**
  * Writes the appendix on A4 pages in Helvetica: the title, a heading per section, and per thread the place it hangs on and its

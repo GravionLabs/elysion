@@ -8,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { ExportFormat } from '../board/download';
+import type { ExportFormat } from '../board/download';
 import {
   DEFAULT_EXPORT_SETTINGS,
   type ExportColors,

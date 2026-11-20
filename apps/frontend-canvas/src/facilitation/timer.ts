@@ -156,7 +156,9 @@ export function startTimer(
   startedBy: TimerStarter,
   now: number = Date.now(),
 ): TimerState {
-  return write(doc, () => started(durationMs, startedBy, now))!;
+  const state = started(durationMs, startedBy, now);
+  write(doc, () => state);
+  return state;
 }
 
 /** Pauses the timer; `null` when there is none. */

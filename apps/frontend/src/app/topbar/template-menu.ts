@@ -1,5 +1,6 @@
 import { Component, ElementRef, HostListener, inject, input, output, signal } from '@angular/core';
-import { TemplateApi, TemplateInfo } from '../board/template-api';
+import type { TemplateInfo } from '../board/template-api';
+import { TemplateApi } from '../board/template-api';
 
 type MenuState = 'loading' | 'ready' | 'error';
 

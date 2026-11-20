@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { AdminOverview } from './admin-overview';
 
 const STATS = { users: 12, usersSeenLast30Days: 9, groups: 3, rooms: 4, boards: 57 };
@@ -46,7 +47,7 @@ describe('AdminOverview', () => {
       .flush({ authority: 'https://idp.example/realms/elysion', idpHint: 'microsoft' });
     await fixture.whenStable();
 
-    const facts = el().querySelector('.facts')!.textContent!;
+    const facts = el().querySelector('.facts')!.textContent;
     expect(facts).toContain('https://idp.example/realms/elysion');
     expect(facts).toContain('microsoft');
   });

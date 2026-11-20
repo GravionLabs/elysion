@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { provideFakeSession } from '../auth/testing';
@@ -27,9 +28,7 @@ describe('AccessTokens', () => {
   const rows = () => [...el().querySelectorAll('tbody tr')];
   const settle = () => fixture.whenStable();
   const button = (text: string) =>
-    [...el().querySelectorAll('button')].find((b) => b.textContent?.trim() === text) as
-      | HTMLButtonElement
-      | undefined;
+    [...el().querySelectorAll('button')].find((b) => b.textContent?.trim() === text);
   const type = (selector: string, value: string) => {
     const input = el().querySelector(selector) as HTMLInputElement;
     input.value = value;

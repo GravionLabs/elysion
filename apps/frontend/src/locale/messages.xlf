@@ -213,7 +213,7 @@
     </unit>
     <unit id="admin.dialog.close">
       <notes>
-        <note category="location">src/app/admin/admin-dialog.ts:40</note>
+        <note category="location">src/app/admin/admin-dialog.html:19</note>
       </notes>
       <segment>
         <source>Close</source>
@@ -674,7 +674,7 @@
     </unit>
     <unit id="admin.groups.pageTitle">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:83</note>
+        <note category="location">src/app/admin/admin-groups.ts:86</note>
       </notes>
       <segment>
         <source>Groups · Administration · Elysion</source>
@@ -682,7 +682,7 @@
     </unit>
     <unit id="admin.groups.source.local">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:121</note>
+        <note category="location">src/app/admin/admin-groups.ts:124</note>
       </notes>
       <segment>
         <source>Local</source>
@@ -690,7 +690,7 @@
     </unit>
     <unit id="admin.groups.source.provider">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:122</note>
+        <note category="location">src/app/admin/admin-groups.ts:125</note>
       </notes>
       <segment>
         <source>Identity provider</source>
@@ -698,8 +698,8 @@
     </unit>
     <unit id="admin.groups.nameRule">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:145</note>
-        <note category="location">src/app/admin/admin-groups.ts:191</note>
+        <note category="location">src/app/admin/admin-groups.ts:148</note>
+        <note category="location">src/app/admin/admin-groups.ts:194</note>
       </notes>
       <segment>
         <source>A group needs a name of 1 to <ph id="0" equiv="max" disp="MAX_GROUP_NAME_LENGTH"/> characters.</source>
@@ -707,7 +707,7 @@
     </unit>
     <unit id="admin.groups.createError">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:161</note>
+        <note category="location">src/app/admin/admin-groups.ts:164</note>
       </notes>
       <segment>
         <source>The group could not be made.</source>
@@ -715,7 +715,7 @@
     </unit>
     <unit id="admin.groups.renameError">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:207</note>
+        <note category="location">src/app/admin/admin-groups.ts:210</note>
       </notes>
       <segment>
         <source>The group could not be renamed.</source>
@@ -723,7 +723,7 @@
     </unit>
     <unit id="admin.groups.link.rule">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:251</note>
+        <note category="location">src/app/admin/admin-groups.ts:254</note>
       </notes>
       <segment>
         <source>Enter the id of the group at the identity provider (up to <ph id="0" equiv="max" disp="MAX_EXTERNAL_ID_LENGTH"/> characters).</source>
@@ -731,7 +731,7 @@
     </unit>
     <unit id="admin.groups.link.error">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:258</note>
+        <note category="location">src/app/admin/admin-groups.ts:261</note>
       </notes>
       <segment>
         <source>The group could not be linked.</source>
@@ -739,7 +739,7 @@
     </unit>
     <unit id="admin.groups.unlink.error">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:268</note>
+        <note category="location">src/app/admin/admin-groups.ts:271</note>
       </notes>
       <segment>
         <source>The group could not be unlinked.</source>
@@ -747,7 +747,7 @@
     </unit>
     <unit id="admin.groups.delete.error">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:308</note>
+        <note category="location">src/app/admin/admin-groups.ts:311</note>
       </notes>
       <segment>
         <source>The group could not be deleted.</source>
@@ -755,7 +755,7 @@
     </unit>
     <unit id="admin.groups.addError">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:354</note>
+        <note category="location">src/app/admin/admin-groups.ts:357</note>
       </notes>
       <segment>
         <source>The person could not be added.</source>
@@ -763,7 +763,7 @@
     </unit>
     <unit id="admin.groups.removeError">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:377</note>
+        <note category="location">src/app/admin/admin-groups.ts:380</note>
       </notes>
       <segment>
         <source>The person could not be removed.</source>
@@ -771,7 +771,7 @@
     </unit>
     <unit id="admin.groups.rename.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:386</note>
+        <note category="location">src/app/admin/admin-groups.ts:389</note>
       </notes>
       <segment>
         <source>Rename the group <ph id="0" equiv="name" disp="group.name"/></source>
@@ -779,7 +779,7 @@
     </unit>
     <unit id="admin.groups.link.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:390</note>
+        <note category="location">src/app/admin/admin-groups.ts:393</note>
       </notes>
       <segment>
         <source>Link the group <ph id="0" equiv="name" disp="group.name"/> to a group of the identity provider</source>
@@ -787,7 +787,7 @@
     </unit>
     <unit id="admin.groups.unlink.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:394</note>
+        <note category="location">src/app/admin/admin-groups.ts:397</note>
       </notes>
       <segment>
         <source>Unlink the group <ph id="0" equiv="name" disp="group.name"/></source>
@@ -795,7 +795,7 @@
     </unit>
     <unit id="admin.groups.delete.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:398</note>
+        <note category="location">src/app/admin/admin-groups.ts:401</note>
       </notes>
       <segment>
         <source>Delete the group <ph id="0" equiv="name" disp="group.name"/></source>
@@ -803,7 +803,7 @@
     </unit>
     <unit id="admin.groups.open">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:402</note>
+        <note category="location">src/app/admin/admin-groups.ts:405</note>
       </notes>
       <segment>
         <source>Show the members of <ph id="0" equiv="name" disp="group.name"/></source>
@@ -811,7 +811,7 @@
     </unit>
     <unit id="admin.groups.removeMember.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:406</note>
+        <note category="location">src/app/admin/admin-groups.ts:409</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="name" disp="member.displayName"/> from the group</source>
@@ -819,7 +819,7 @@
     </unit>
     <unit id="admin.groups.addMember.aria">
       <notes>
-        <note category="location">src/app/admin/admin-groups.ts:410</note>
+        <note category="location">src/app/admin/admin-groups.ts:413</note>
       </notes>
       <segment>
         <source>Add <ph id="0" equiv="name" disp="user.displayName"/> to the group</source>
@@ -1060,7 +1060,7 @@
     </unit>
     <unit id="admin.pager.label">
       <notes>
-        <note category="location">src/app/admin/admin-pager.ts:8</note>
+        <note category="location">src/app/admin/admin-pager.html:1</note>
       </notes>
       <segment>
         <source>Pages</source>
@@ -1068,7 +1068,7 @@
     </unit>
     <unit id="admin.pager.previous">
       <notes>
-        <note category="location">src/app/admin/admin-pager.ts:16,18</note>
+        <note category="location">src/app/admin/admin-pager.html:9,11</note>
       </notes>
       <segment>
         <source> Previous </source>
@@ -1076,7 +1076,7 @@
     </unit>
     <unit id="admin.pager.position">
       <notes>
-        <note category="location">src/app/admin/admin-pager.ts:19,21</note>
+        <note category="location">src/app/admin/admin-pager.html:12,14</note>
       </notes>
       <segment>
         <source> Page <ph id="0" equiv="INTERPOLATION" disp="{{ page() }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ pages() }}"/>, <ph id="2" equiv="INTERPOLATION_2" disp="{{ total() }}"/> in all </source>
@@ -1084,7 +1084,7 @@
     </unit>
     <unit id="admin.pager.next">
       <notes>
-        <note category="location">src/app/admin/admin-pager.ts:28,30</note>
+        <note category="location">src/app/admin/admin-pager.html:21,24</note>
       </notes>
       <segment>
         <source> Next </source>
@@ -1810,7 +1810,7 @@
     </unit>
     <unit id="admin.webhooks.title">
       <notes>
-        <note category="location">src/app/admin/admin-webhooks.ts:15,16</note>
+        <note category="location">src/app/admin/admin-webhooks.html:1,2</note>
       </notes>
       <segment>
         <source>Webhooks</source>
@@ -1818,15 +1818,16 @@
     </unit>
     <unit id="admin.webhooks.lead">
       <notes>
-        <note category="location">src/app/admin/admin-webhooks.ts:17,20</note>
+        <note category="location">src/app/admin/admin-webhooks.html:3,6</note>
       </notes>
       <segment>
-        <source> These webhooks receive the events of every board of this instance. Board owners add webhooks for their own boards in the board&apos;s Share dialog. </source>
+        <source> These webhooks receive the events of every board of this instance. Board owners add webhooks for their own boards in the board&apos;s Share dialog.
+</source>
       </segment>
     </unit>
     <unit id="admin.webhooks.pageTitle">
       <notes>
-        <note category="location">src/app/admin/admin-webhooks.ts:28</note>
+        <note category="location">src/app/admin/admin-webhooks.ts:21</note>
       </notes>
       <segment>
         <source>Webhooks · Administration · Elysion</source>
@@ -1842,7 +1843,7 @@
     </unit>
     <unit id="audit.somebody">
       <notes>
-        <note category="location">src/app/audit/audit.ts:32</note>
+        <note category="location">src/app/audit/audit.ts:33</note>
       </notes>
       <segment>
         <source>Somebody</source>
@@ -1850,7 +1851,7 @@
     </unit>
     <unit id="audit.aPerson">
       <notes>
-        <note category="location">src/app/audit/audit.ts:33</note>
+        <note category="location">src/app/audit/audit.ts:34</note>
       </notes>
       <segment>
         <source>a person</source>
@@ -1858,7 +1859,7 @@
     </unit>
     <unit id="audit.member.added">
       <notes>
-        <note category="location">src/app/audit/audit.ts:37</note>
+        <note category="location">src/app/audit/audit.ts:38</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> gave <ph id="1" equiv="target" disp="target"/> the role <ph id="2" equiv="role" disp="role"/></source>
@@ -1866,7 +1867,7 @@
     </unit>
     <unit id="audit.member.changed">
       <notes>
-        <note category="location">src/app/audit/audit.ts:39</note>
+        <note category="location">src/app/audit/audit.ts:40</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> changed the role of <ph id="1" equiv="target" disp="target"/> from <ph id="2" equiv="from" disp="text(entry, &apos;from&apos;)"/> to <ph id="3" equiv="to" disp="text(entry, &apos;to&apos;)"/></source>
@@ -1874,7 +1875,7 @@
     </unit>
     <unit id="audit.member.removed">
       <notes>
-        <note category="location">src/app/audit/audit.ts:41</note>
+        <note category="location">src/app/audit/audit.ts:42</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> removed <ph id="1" equiv="target" disp="target"/></source>
@@ -1882,7 +1883,7 @@
     </unit>
     <unit id="audit.room.groupSet">
       <notes>
-        <note category="location">src/app/audit/audit.ts:43</note>
+        <note category="location">src/app/audit/audit.ts:44</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> gave the group <ph id="1" equiv="group" disp="text(entry, &apos;groupName&apos;)"/> the role <ph id="2" equiv="role" disp="role"/></source>
@@ -1890,7 +1891,7 @@
     </unit>
     <unit id="audit.room.groupRemoved">
       <notes>
-        <note category="location">src/app/audit/audit.ts:45</note>
+        <note category="location">src/app/audit/audit.ts:46</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> took a group out of the room</source>
@@ -1898,7 +1899,7 @@
     </unit>
     <unit id="audit.group.created">
       <notes>
-        <note category="location">src/app/audit/audit.ts:47</note>
+        <note category="location">src/app/audit/audit.ts:48</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> created the group <ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/></source>
@@ -1906,7 +1907,7 @@
     </unit>
     <unit id="audit.group.renamed">
       <notes>
-        <note category="location">src/app/audit/audit.ts:49</note>
+        <note category="location">src/app/audit/audit.ts:50</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> renamed the group from <ph id="1" equiv="from" disp="text(entry, &apos;from&apos;)"/> to <ph id="2" equiv="to" disp="text(entry, &apos;to&apos;)"/></source>
@@ -1914,7 +1915,7 @@
     </unit>
     <unit id="audit.group.linked">
       <notes>
-        <note category="location">src/app/audit/audit.ts:51</note>
+        <note category="location">src/app/audit/audit.ts:52</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> linked the group to the identity provider</source>
@@ -1922,7 +1923,7 @@
     </unit>
     <unit id="audit.group.unlinked">
       <notes>
-        <note category="location">src/app/audit/audit.ts:53</note>
+        <note category="location">src/app/audit/audit.ts:54</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> unlinked the group from the identity provider</source>
@@ -1930,7 +1931,7 @@
     </unit>
     <unit id="audit.group.deleted">
       <notes>
-        <note category="location">src/app/audit/audit.ts:55</note>
+        <note category="location">src/app/audit/audit.ts:56</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> deleted the group <ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/></source>
@@ -1938,7 +1939,7 @@
     </unit>
     <unit id="audit.group.memberAdded">
       <notes>
-        <note category="location">src/app/audit/audit.ts:57</note>
+        <note category="location">src/app/audit/audit.ts:58</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> added <ph id="1" equiv="target" disp="target"/> to the group</source>
@@ -1946,7 +1947,7 @@
     </unit>
     <unit id="audit.group.memberRemoved">
       <notes>
-        <note category="location">src/app/audit/audit.ts:59</note>
+        <note category="location">src/app/audit/audit.ts:60</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> took <ph id="1" equiv="target" disp="target"/> out of the group</source>
@@ -1954,7 +1955,7 @@
     </unit>
     <unit id="audit.groups.synced">
       <notes>
-        <note category="location">src/app/audit/audit.ts:61</note>
+        <note category="location">src/app/audit/audit.ts:62</note>
       </notes>
       <segment>
         <source>The groups of <ph id="0" equiv="actor" disp="actor"/> from the identity provider changed: <ph id="1" equiv="added" disp="text(entry, &apos;added&apos;)"/> added, <ph id="2" equiv="removed" disp="text(entry, &apos;removed&apos;)"/> removed</source>
@@ -1962,7 +1963,7 @@
     </unit>
     <unit id="audit.user.deactivated">
       <notes>
-        <note category="location">src/app/audit/audit.ts:63</note>
+        <note category="location">src/app/audit/audit.ts:64</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> deactivated <ph id="1" equiv="person" disp="entry.subjectName ?? target"/></source>
@@ -1970,7 +1971,7 @@
     </unit>
     <unit id="audit.user.reactivated">
       <notes>
-        <note category="location">src/app/audit/audit.ts:65</note>
+        <note category="location">src/app/audit/audit.ts:66</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> reactivated <ph id="1" equiv="person" disp="entry.subjectName ?? target"/></source>
@@ -1978,7 +1979,7 @@
     </unit>
     <unit id="audit.owner.transferred">
       <notes>
-        <note category="location">src/app/audit/audit.ts:67</note>
+        <note category="location">src/app/audit/audit.ts:68</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> handed the ownership over to <ph id="1" equiv="target" disp="target"/></source>
@@ -1986,7 +1987,7 @@
     </unit>
     <unit id="audit.token.created">
       <notes>
-        <note category="location">src/app/audit/audit.ts:69</note>
+        <note category="location">src/app/audit/audit.ts:70</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> made the access token “<ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/>”</source>
@@ -1994,7 +1995,7 @@
     </unit>
     <unit id="audit.token.revoked">
       <notes>
-        <note category="location">src/app/audit/audit.ts:71</note>
+        <note category="location">src/app/audit/audit.ts:72</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> revoked the access token “<ph id="1" equiv="name" disp="text(entry, &apos;name&apos;)"/>” of <ph id="2" equiv="person" disp="entry.subjectName ?? target"/></source>
@@ -2002,7 +2003,7 @@
     </unit>
     <unit id="audit.webhook.created">
       <notes>
-        <note category="location">src/app/audit/audit.ts:73</note>
+        <note category="location">src/app/audit/audit.ts:74</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> added a webhook to <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/></source>
@@ -2010,7 +2011,7 @@
     </unit>
     <unit id="audit.webhook.deleted">
       <notes>
-        <note category="location">src/app/audit/audit.ts:75</note>
+        <note category="location">src/app/audit/audit.ts:76</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> deleted the webhook to <ph id="1" equiv="host" disp="text(entry, &apos;host&apos;)"/></source>
@@ -2018,7 +2019,7 @@
     </unit>
     <unit id="audit.invitation.created">
       <notes>
-        <note category="location">src/app/audit/audit.ts:77</note>
+        <note category="location">src/app/audit/audit.ts:78</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> made an invitation link for the role <ph id="1" equiv="role" disp="role"/></source>
@@ -2026,7 +2027,7 @@
     </unit>
     <unit id="audit.invitation.revoked">
       <notes>
-        <note category="location">src/app/audit/audit.ts:79</note>
+        <note category="location">src/app/audit/audit.ts:80</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> revoked an invitation link</source>
@@ -2034,7 +2035,7 @@
     </unit>
     <unit id="audit.invitation.accepted">
       <notes>
-        <note category="location">src/app/audit/audit.ts:81</note>
+        <note category="location">src/app/audit/audit.ts:82</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> joined with an invitation link as <ph id="1" equiv="role" disp="role"/></source>
@@ -2042,7 +2043,7 @@
     </unit>
     <unit id="audit.snapshot.deleted">
       <notes>
-        <note category="location">src/app/audit/audit.ts:83</note>
+        <note category="location">src/app/audit/audit.ts:84</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> deleted a saved version of the board</source>
@@ -2050,7 +2051,7 @@
     </unit>
     <unit id="audit.snapshot.restored">
       <notes>
-        <note category="location">src/app/audit/audit.ts:85</note>
+        <note category="location">src/app/audit/audit.ts:86</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="actor" disp="actor"/> restored a version of the board</source>
@@ -2297,7 +2298,7 @@
       <notes>
         <note category="location">src/app/board-list/board-list.html:261,262</note>
         <note category="location">src/app/board-list/board-list.html:354,355</note>
-        <note category="location">src/app/board-list/board-list.html:405,406</note>
+        <note category="location">src/app/board-list/board-list.html:406,407</note>
         <note category="location">src/app/board-list/room-sidebar.html:124,126</note>
       </notes>
       <segment>
@@ -2362,7 +2363,7 @@
     </unit>
     <unit id="boards.create.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:370,371</note>
+        <note category="location">src/app/board-list/board-list.html:371,372</note>
       </notes>
       <segment>
         <source>New board</source>
@@ -2370,7 +2371,7 @@
     </unit>
     <unit id="boards.create.room">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:372,373</note>
+        <note category="location">src/app/board-list/board-list.html:373,374</note>
       </notes>
       <segment>
         <source>In the room “<ph id="0" equiv="INTERPOLATION" disp="{{ room.name }}"/>”</source>
@@ -2378,7 +2379,7 @@
     </unit>
     <unit id="boards.create.name">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:374,375</note>
+        <note category="location">src/app/board-list/board-list.html:375,376</note>
       </notes>
       <segment>
         <source>Board name</source>
@@ -2386,7 +2387,7 @@
     </unit>
     <unit id="boards.creating">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:393,394</note>
+        <note category="location">src/app/board-list/board-list.html:394,395</note>
         <note category="location">src/app/board-list/room-sidebar.html:112,113</note>
       </notes>
       <segment>
@@ -2395,7 +2396,7 @@
     </unit>
     <unit id="boards.create.submit">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:395,397</note>
+        <note category="location">src/app/board-list/board-list.html:396,398</note>
         <note category="location">src/app/board-list/room-sidebar.html:114,116</note>
       </notes>
       <segment>
@@ -2404,8 +2405,8 @@
     </unit>
     <unit id="boards.create.template">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:409,411</note>
-        <note category="location">src/app/board-list/board-list.html:413,414</note>
+        <note category="location">src/app/board-list/board-list.html:410,412</note>
+        <note category="location">src/app/board-list/board-list.html:414,415</note>
       </notes>
       <segment>
         <source>Start from</source>
@@ -2413,7 +2414,7 @@
     </unit>
     <unit id="boards.create.blank.name">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:423,424</note>
+        <note category="location">src/app/board-list/board-list.html:424,425</note>
       </notes>
       <segment>
         <source>Blank</source>
@@ -2421,7 +2422,7 @@
     </unit>
     <unit id="boards.create.blank.description">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:425,427</note>
+        <note category="location">src/app/board-list/board-list.html:426,428</note>
       </notes>
       <segment>
         <source>An empty board.</source>
@@ -2429,7 +2430,7 @@
     </unit>
     <unit id="boards.loading">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:455,457</note>
+        <note category="location">src/app/board-list/board-list.html:456,458</note>
       </notes>
       <segment>
         <source>Loading boards…</source>
@@ -2437,7 +2438,7 @@
     </unit>
     <unit id="boards.loadError">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:459,460</note>
+        <note category="location">src/app/board-list/board-list.html:460,461</note>
       </notes>
       <segment>
         <source>The boards could not be loaded.</source>
@@ -2445,7 +2446,7 @@
     </unit>
     <unit id="boards.retry">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:461,462</note>
+        <note category="location">src/app/board-list/board-list.html:462,463</note>
         <note category="location">src/app/board-list/room-sidebar.html:54,55</note>
       </notes>
       <segment>
@@ -2454,8 +2455,8 @@
     </unit>
     <unit id="boards.roomMissing.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:468,469</note>
-        <note category="location">src/app/board-list/board-list.ts:204</note>
+        <note category="location">src/app/board-list/board-list.html:469,470</note>
+        <note category="location">src/app/board-list/board-list.ts:208</note>
       </notes>
       <segment>
         <source>Room not found</source>
@@ -2463,7 +2464,7 @@
     </unit>
     <unit id="boards.roomMissing.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:470,472</note>
+        <note category="location">src/app/board-list/board-list.html:471,473</note>
       </notes>
       <segment>
         <source> This room does not exist, or you have no access to it. </source>
@@ -2471,7 +2472,7 @@
     </unit>
     <unit id="boards.roomMissing.all">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:472,474</note>
+        <note category="location">src/app/board-list/board-list.html:473,475</note>
       </notes>
       <segment>
         <source>All boards</source>
@@ -2479,7 +2480,7 @@
     </unit>
     <unit id="boards.empty.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:476,477</note>
+        <note category="location">src/app/board-list/board-list.html:477,478</note>
       </notes>
       <segment>
         <source>No boards yet</source>
@@ -2487,7 +2488,7 @@
     </unit>
     <unit id="boards.empty.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:478,480</note>
+        <note category="location">src/app/board-list/board-list.html:479,481</note>
       </notes>
       <segment>
         <source> Create a board to start drawing and collaborating. </source>
@@ -2495,7 +2496,7 @@
     </unit>
     <unit id="boards.empty.create">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:487,488</note>
+        <note category="location">src/app/board-list/board-list.html:488,489</note>
       </notes>
       <segment>
         <source> Create your first board </source>
@@ -2503,7 +2504,7 @@
     </unit>
     <unit id="boards.searchEmpty.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:494,495</note>
+        <note category="location">src/app/board-list/board-list.html:495,496</note>
       </notes>
       <segment>
         <source>No board found</source>
@@ -2511,7 +2512,7 @@
     </unit>
     <unit id="boards.searchEmpty.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:496,497</note>
+        <note category="location">src/app/board-list/board-list.html:497,498</note>
       </notes>
       <segment>
         <source> No board here has “<ph id="0" equiv="INTERPOLATION" disp="{{ search().trim() }}"/>” in its name. </source>
@@ -2519,7 +2520,7 @@
     </unit>
     <unit id="boards.searchEmpty.clear">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:504,505</note>
+        <note category="location">src/app/board-list/board-list.html:505,506</note>
       </notes>
       <segment>
         <source> Clear the search </source>
@@ -2527,7 +2528,7 @@
     </unit>
     <unit id="boards.favoritesEmpty.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:507,508</note>
+        <note category="location">src/app/board-list/board-list.html:508,509</note>
       </notes>
       <segment>
         <source>No favorites yet</source>
@@ -2535,7 +2536,7 @@
     </unit>
     <unit id="boards.favoritesEmpty.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:509,511</note>
+        <note category="location">src/app/board-list/board-list.html:510,512</note>
       </notes>
       <segment>
         <source> Star a board on its card or in its top bar and it shows up here. </source>
@@ -2543,7 +2544,7 @@
     </unit>
     <unit id="boards.roomEmpty.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:512,513</note>
+        <note category="location">src/app/board-list/board-list.html:513,514</note>
       </notes>
       <segment>
         <source>No boards in this room yet</source>
@@ -2551,7 +2552,7 @@
     </unit>
     <unit id="boards.roomEmpty.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:514,516</note>
+        <note category="location">src/app/board-list/board-list.html:515,517</note>
       </notes>
       <segment>
         <source> Create a board here, or move one in from the board&apos;s menu. </source>
@@ -2559,7 +2560,7 @@
     </unit>
     <unit id="boards.roomEmpty.create">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:523,524</note>
+        <note category="location">src/app/board-list/board-list.html:524,525</note>
       </notes>
       <segment>
         <source> Create the first board in this room </source>
@@ -2567,7 +2568,7 @@
     </unit>
     <unit id="boards.unassignedEmpty.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:527,528</note>
+        <note category="location">src/app/board-list/board-list.html:528,529</note>
       </notes>
       <segment>
         <source>Every board is in a room</source>
@@ -2575,7 +2576,7 @@
     </unit>
     <unit id="boards.unassignedEmpty.message">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:529,531</note>
+        <note category="location">src/app/board-list/board-list.html:530,532</note>
       </notes>
       <segment>
         <source> Boards that are in no room show up here. </source>
@@ -2583,7 +2584,7 @@
     </unit>
     <unit id="boards.card.opened">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:574,575</note>
+        <note category="location">src/app/board-list/board-list.html:575,576</note>
       </notes>
       <segment>
         <source>Opened <ph id="0" equiv="INTERPOLATION" disp="{{ board.lastOpenedAt | date: &apos;medium&apos; }}"/></source>
@@ -2591,7 +2592,7 @@
     </unit>
     <unit id="boards.card.created">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:578,579</note>
+        <note category="location">src/app/board-list/board-list.html:579,580</note>
       </notes>
       <segment>
         <source>Created <ph id="0" equiv="INTERPOLATION" disp="{{ board.createdAt | date: &apos;mediumDate&apos; }}"/></source>
@@ -2599,7 +2600,7 @@
     </unit>
     <unit id="boards.card.move.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:595,596</note>
+        <note category="location">src/app/board-list/board-list.html:596,597</note>
       </notes>
       <segment>
         <source>Move to a room</source>
@@ -2607,7 +2608,7 @@
     </unit>
     <unit id="boards.card.delete.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.html:637,638</note>
+        <note category="location">src/app/board-list/board-list.html:639,640</note>
       </notes>
       <segment>
         <source>Delete this board</source>
@@ -2615,7 +2616,7 @@
     </unit>
     <unit id="boards.defaultName">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:86</note>
+        <note category="location">src/app/board-list/board-list.ts:90</note>
       </notes>
       <segment>
         <source>Untitled board</source>
@@ -2623,7 +2624,7 @@
     </unit>
     <unit id="boards.title.all">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:195</note>
+        <note category="location">src/app/board-list/board-list.ts:199</note>
       </notes>
       <segment>
         <source>Boards</source>
@@ -2631,7 +2632,7 @@
     </unit>
     <unit id="boards.sidebar.none">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:197</note>
+        <note category="location">src/app/board-list/board-list.ts:201</note>
         <note category="location">src/app/board-list/room-sidebar.html:37,38</note>
       </notes>
       <segment>
@@ -2640,7 +2641,7 @@
     </unit>
     <unit id="boards.sidebar.favorites">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:199</note>
+        <note category="location">src/app/board-list/board-list.ts:203</note>
         <note category="location">src/app/board-list/room-sidebar.html:21,22</note>
       </notes>
       <segment>
@@ -2649,7 +2650,7 @@
     </unit>
     <unit id="boards.title.room">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:205</note>
+        <note category="location">src/app/board-list/board-list.ts:209</note>
       </notes>
       <segment>
         <source>Room</source>
@@ -2657,7 +2658,7 @@
     </unit>
     <unit id="boards.pageTitle">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:292</note>
+        <note category="location">src/app/board-list/board-list.ts:296</note>
       </notes>
       <segment>
         <source>Boards · Elysion</source>
@@ -2665,7 +2666,7 @@
     </unit>
     <unit id="boards.sort.name">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:367</note>
+        <note category="location">src/app/board-list/board-list.ts:371</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -2673,7 +2674,7 @@
     </unit>
     <unit id="boards.sort.opened">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:369</note>
+        <note category="location">src/app/board-list/board-list.ts:373</note>
       </notes>
       <segment>
         <source>Last opened</source>
@@ -2681,7 +2682,7 @@
     </unit>
     <unit id="boards.sort.newest">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:371</note>
+        <note category="location">src/app/board-list/board-list.ts:375</note>
       </notes>
       <segment>
         <source>Newest</source>
@@ -2689,7 +2690,7 @@
     </unit>
     <unit id="boards.error.favorite">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:406</note>
+        <note category="location">src/app/board-list/board-list.ts:410</note>
       </notes>
       <segment>
         <source>The star of the board “<ph id="0" equiv="board" disp="board.name"/>” could not be saved. Try again.</source>
@@ -2697,7 +2698,7 @@
     </unit>
     <unit id="boards.card.unfavorite.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:414</note>
+        <note category="location">src/app/board-list/board-list.ts:418</note>
       </notes>
       <segment>
         <source>Remove the board <ph id="0" equiv="board" disp="board.name"/> from the favorites</source>
@@ -2705,7 +2706,7 @@
     </unit>
     <unit id="boards.card.favorite.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:415</note>
+        <note category="location">src/app/board-list/board-list.ts:419</note>
       </notes>
       <segment>
         <source>Add the board <ph id="0" equiv="board" disp="board.name"/> to the favorites</source>
@@ -2713,7 +2714,7 @@
     </unit>
     <unit id="boards.error.nameRequired">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:491</note>
+        <note category="location">src/app/board-list/board-list.ts:495</note>
       </notes>
       <segment>
         <source>Give the board a name.</source>
@@ -2721,7 +2722,7 @@
     </unit>
     <unit id="boards.error.nameLength">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:496</note>
+        <note category="location">src/app/board-list/board-list.ts:500</note>
       </notes>
       <segment>
         <source>The name can have up to <ph id="0" equiv="max" disp="MAX_BOARD_NAME_LENGTH"/> characters.</source>
@@ -2729,7 +2730,7 @@
     </unit>
     <unit id="boards.error.created">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:515</note>
+        <note category="location">src/app/board-list/board-list.ts:519</note>
       </notes>
       <segment>
         <source>The board “<ph id="0" equiv="board" disp="board.name"/>” was created, but could not be put in the room “<ph id="1" equiv="room" disp="room.name"/>”.</source>
@@ -2737,7 +2738,7 @@
     </unit>
     <unit id="boards.error.createdFallback">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:519</note>
+        <note category="location">src/app/board-list/board-list.ts:521</note>
       </notes>
       <segment>
         <source>Move it from its card.</source>
@@ -2745,7 +2746,7 @@
     </unit>
     <unit id="boards.error.create">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:530</note>
+        <note category="location">src/app/board-list/board-list.ts:532</note>
       </notes>
       <segment>
         <source>The board could not be created. Try again.</source>
@@ -2753,7 +2754,7 @@
     </unit>
     <unit id="boards.error.duplicate">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:560</note>
+        <note category="location">src/app/board-list/board-list.ts:562</note>
       </notes>
       <segment>
         <source>The board “<ph id="0" equiv="board" disp="board.name"/>” could not be duplicated. Try again.</source>
@@ -2761,7 +2762,7 @@
     </unit>
     <unit id="boards.error.delete">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:592</note>
+        <note category="location">src/app/board-list/board-list.ts:594</note>
       </notes>
       <segment>
         <source>The board could not be deleted. Try again.</source>
@@ -2769,7 +2770,7 @@
     </unit>
     <unit id="boards.error.roomName">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:642</note>
+        <note category="location">src/app/board-list/board-list.ts:644</note>
       </notes>
       <segment>
         <source>A room needs a name.</source>
@@ -2777,7 +2778,7 @@
     </unit>
     <unit id="boards.error.rename">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:662</note>
+        <note category="location">src/app/board-list/board-list.ts:664</note>
       </notes>
       <segment>
         <source>The room could not be renamed.</source>
@@ -2785,7 +2786,7 @@
     </unit>
     <unit id="boards.error.roomDelete">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:703</note>
+        <note category="location">src/app/board-list/board-list.ts:705</note>
       </notes>
       <segment>
         <source>The room could not be deleted. Try again.</source>
@@ -2793,7 +2794,7 @@
     </unit>
     <unit id="boards.card.room.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:712</note>
+        <note category="location">src/app/board-list/board-list.ts:714</note>
       </notes>
       <segment>
         <source>In the room <ph id="0" equiv="room" disp="label"/></source>
@@ -2801,7 +2802,7 @@
     </unit>
     <unit id="boards.card.move.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:716</note>
+        <note category="location">src/app/board-list/board-list.ts:718</note>
       </notes>
       <segment>
         <source>Move the board <ph id="0" equiv="board" disp="board.name"/> to a room</source>
@@ -2809,7 +2810,7 @@
     </unit>
     <unit id="boards.card.duplicate.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:720</note>
+        <note category="location">src/app/board-list/board-list.ts:722</note>
       </notes>
       <segment>
         <source>Duplicate the board <ph id="0" equiv="board" disp="board.name"/></source>
@@ -2817,7 +2818,7 @@
     </unit>
     <unit id="boards.card.duplicating">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:725</note>
+        <note category="location">src/app/board-list/board-list.ts:727</note>
       </notes>
       <segment>
         <source>Duplicating…</source>
@@ -2825,7 +2826,7 @@
     </unit>
     <unit id="boards.card.duplicate.title">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:726</note>
+        <note category="location">src/app/board-list/board-list.ts:728</note>
       </notes>
       <segment>
         <source>Duplicate this board</source>
@@ -2833,7 +2834,7 @@
     </unit>
     <unit id="boards.card.delete.aria">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:730</note>
+        <note category="location">src/app/board-list/board-list.ts:732</note>
       </notes>
       <segment>
         <source>Delete the board <ph id="0" equiv="board" disp="board.name"/></source>
@@ -2841,7 +2842,7 @@
     </unit>
     <unit id="boards.move.to">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:739</note>
+        <note category="location">src/app/board-list/board-list.ts:741</note>
       </notes>
       <segment>
         <source>Move to <ph id="0" equiv="room" disp="room.name"/></source>
@@ -2849,7 +2850,7 @@
     </unit>
     <unit id="boards.move.remove">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:742</note>
+        <note category="location">src/app/board-list/board-list.ts:744</note>
       </notes>
       <segment>
         <source>Remove from room</source>
@@ -2857,7 +2858,7 @@
     </unit>
     <unit id="boards.error.move">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:780</note>
+        <note category="location">src/app/board-list/board-list.ts:782</note>
       </notes>
       <segment>
         <source>The board “<ph id="0" equiv="board" disp="board.name"/>” could not be moved.</source>
@@ -2865,7 +2866,7 @@
     </unit>
     <unit id="boards.error.moveFallback">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:782</note>
+        <note category="location">src/app/board-list/board-list.ts:784</note>
       </notes>
       <segment>
         <source>Try again.</source>
@@ -2873,7 +2874,7 @@
     </unit>
     <unit id="boards.roomExport.board">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:841</note>
+        <note category="location">src/app/board-list/board-list.ts:845</note>
       </notes>
       <segment>
         <source>Board <ph id="0" equiv="index" disp="index"/> of <ph id="1" equiv="total" disp="total"/></source>
@@ -2881,7 +2882,7 @@
     </unit>
     <unit id="boards.roomExport.unreadable">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:842</note>
+        <note category="location">src/app/board-list/board-list.ts:846</note>
       </notes>
       <segment>
         <source>This board could not be loaded and is not in the PDF.</source>
@@ -2889,7 +2890,7 @@
     </unit>
     <unit id="boards.roomExport.empty">
       <notes>
-        <note category="location">src/app/board-list/board-list.ts:843</note>
+        <note category="location">src/app/board-list/board-list.ts:847</note>
       </notes>
       <segment>
         <source>This board is empty.</source>
@@ -2962,7 +2963,7 @@
     </unit>
     <unit id="boards.sidebar.error.nameRequired">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.ts:92</note>
+        <note category="location">src/app/board-list/room-sidebar.ts:93</note>
       </notes>
       <segment>
         <source>Give the room a name.</source>
@@ -2970,7 +2971,7 @@
     </unit>
     <unit id="boards.sidebar.error.nameLength">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.ts:97</note>
+        <note category="location">src/app/board-list/room-sidebar.ts:98</note>
       </notes>
       <segment>
         <source>The name can have up to <ph id="0" equiv="max" disp="MAX_ROOM_NAME_LENGTH"/> characters.</source>
@@ -2978,7 +2979,7 @@
     </unit>
     <unit id="boards.sidebar.error.create">
       <notes>
-        <note category="location">src/app/board-list/room-sidebar.ts:113</note>
+        <note category="location">src/app/board-list/room-sidebar.ts:114</note>
       </notes>
       <segment>
         <source>The room could not be created. Try again.</source>
@@ -3130,7 +3131,7 @@
     </unit>
     <unit id="board.error.canvasNotReady">
       <notes>
-        <note category="location">src/app/board/board.ts:58</note>
+        <note category="location">src/app/board/board.ts:61</note>
       </notes>
       <segment>
         <source>The canvas is not ready yet.</source>
@@ -3138,7 +3139,7 @@
     </unit>
     <unit id="board.error.favoriteFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:172</note>
+        <note category="location">src/app/board/board.ts:175</note>
       </notes>
       <segment>
         <source>The star could not be saved.</source>
@@ -3146,7 +3147,7 @@
     </unit>
     <unit id="board.pageTitle.notFound">
       <notes>
-        <note category="location">src/app/board/board.ts:281</note>
+        <note category="location">src/app/board/board.ts:284</note>
       </notes>
       <segment>
         <source>Board not found · Elysion</source>
@@ -3154,7 +3155,7 @@
     </unit>
     <unit id="board.pageTitle.named">
       <notes>
-        <note category="location">src/app/board/board.ts:283</note>
+        <note category="location">src/app/board/board.ts:286</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> · Elysion</source>
@@ -3162,7 +3163,7 @@
     </unit>
     <unit id="board.error.templateNotApplied">
       <notes>
-        <note category="location">src/app/board/board.ts:314</note>
+        <note category="location">src/app/board/board.ts:317</note>
       </notes>
       <segment>
         <source>The template could not be applied. The board is blank.</source>
@@ -3170,7 +3171,7 @@
     </unit>
     <unit id="board.error.renameFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:327</note>
+        <note category="location">src/app/board/board.ts:330</note>
       </notes>
       <segment>
         <source>The board could not be renamed.</source>
@@ -3178,7 +3179,7 @@
     </unit>
     <unit id="board.error.accessLost">
       <notes>
-        <note category="location">src/app/board/board.ts:344</note>
+        <note category="location">src/app/board/board.ts:347</note>
       </notes>
       <segment>
         <source>You no longer have access to this board.</source>
@@ -3186,7 +3187,7 @@
     </unit>
     <unit id="board.error.timerFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:534</note>
+        <note category="location">src/app/board/board.ts:537</note>
       </notes>
       <segment>
         <source>The timer could not be changed.</source>
@@ -3194,8 +3195,8 @@
     </unit>
     <unit id="board.error.nothingSelected">
       <notes>
-        <note category="location">src/app/board/board.ts:567</note>
-        <note category="location">src/app/board/board.ts:714</note>
+        <note category="location">src/app/board/board.ts:570</note>
+        <note category="location">src/app/board/board.ts:717</note>
       </notes>
       <segment>
         <source>Nothing is selected.</source>
@@ -3203,7 +3204,7 @@
     </unit>
     <unit id="board.error.exportEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:568</note>
+        <note category="location">src/app/board/board.ts:571</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to export.</source>
@@ -3211,7 +3212,7 @@
     </unit>
     <unit id="board.error.exportFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:578</note>
+        <note category="location">src/app/board/board.ts:581</note>
       </notes>
       <segment>
         <source>The export failed.</source>
@@ -3219,8 +3220,8 @@
     </unit>
     <unit id="board.error.importFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:609</note>
-        <note category="location">src/app/board/board.ts:637</note>
+        <note category="location">src/app/board/board.ts:612</note>
+        <note category="location">src/app/board/board.ts:640</note>
       </notes>
       <segment>
         <source>The import failed.</source>
@@ -3228,7 +3229,7 @@
     </unit>
     <unit id="board.notice.imported.one">
       <notes>
-        <note category="location">src/app/board/board.ts:630</note>
+        <note category="location">src/app/board/board.ts:633</note>
       </notes>
       <segment>
         <source>Imported 1 element from <ph id="0" equiv="file" disp="file.name"/>.</source>
@@ -3236,7 +3237,7 @@
     </unit>
     <unit id="board.notice.imported.many">
       <notes>
-        <note category="location">src/app/board/board.ts:631</note>
+        <note category="location">src/app/board/board.ts:634</note>
       </notes>
       <segment>
         <source>Imported <ph id="0" equiv="count" disp="count"/> elements from <ph id="1" equiv="file" disp="file.name"/>.</source>
@@ -3244,7 +3245,7 @@
     </unit>
     <unit id="board.error.templateAddFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:657</note>
+        <note category="location">src/app/board/board.ts:660</note>
       </notes>
       <segment>
         <source>The template could not be added.</source>
@@ -3252,7 +3253,7 @@
     </unit>
     <unit id="board.template.defaultSelectionName">
       <notes>
-        <note category="location">src/app/board/board.ts:668</note>
+        <note category="location">src/app/board/board.ts:671</note>
       </notes>
       <segment>
         <source>Selection</source>
@@ -3260,7 +3261,7 @@
     </unit>
     <unit id="board.template.defaultBoardName">
       <notes>
-        <note category="location">src/app/board/board.ts:669</note>
+        <note category="location">src/app/board/board.ts:672</note>
       </notes>
       <segment>
         <source>Board</source>
@@ -3268,7 +3269,7 @@
     </unit>
     <unit id="board.template.nameRequired">
       <notes>
-        <note category="location">src/app/board/board.ts:698</note>
+        <note category="location">src/app/board/board.ts:701</note>
       </notes>
       <segment>
         <source>Give the template a name.</source>
@@ -3276,7 +3277,7 @@
     </unit>
     <unit id="board.error.templateEmpty">
       <notes>
-        <note category="location">src/app/board/board.ts:715</note>
+        <note category="location">src/app/board/board.ts:718</note>
       </notes>
       <segment>
         <source>The board is empty: there is nothing to save as a template.</source>
@@ -3284,7 +3285,7 @@
     </unit>
     <unit id="board.notice.templateSaved">
       <notes>
-        <note category="location">src/app/board/board.ts:726</note>
+        <note category="location">src/app/board/board.ts:729</note>
       </notes>
       <segment>
         <source>Saved the template “<ph id="0" equiv="name" disp="name"/>”.</source>
@@ -3292,7 +3293,7 @@
     </unit>
     <unit id="board.error.templateSaveFailed">
       <notes>
-        <note category="location">src/app/board/board.ts:737</note>
+        <note category="location">src/app/board/board.ts:740</note>
       </notes>
       <segment>
         <source>The template could not be saved.</source>
@@ -3959,7 +3960,7 @@
         <note category="location">src/app/share/history.html:23,24</note>
         <note category="location">src/app/share/room-access.html:10,12</note>
         <note category="location">src/app/share/room-groups.html:47,49</note>
-        <note category="location">src/app/share/share-dialog.html:71,72</note>
+        <note category="location">src/app/share/share-dialog.html:73,74</note>
       </notes>
       <segment>
         <source> Try again </source>
@@ -4342,7 +4343,7 @@
     <unit id="share.role">
       <notes>
         <note category="location">src/app/share/room-groups.html:22,24</note>
-        <note category="location">src/app/share/share-dialog.html:45,47</note>
+        <note category="location">src/app/share/share-dialog.html:47,49</note>
       </notes>
       <segment>
         <source>Role</source>
@@ -4359,7 +4360,7 @@
     <unit id="share.add">
       <notes>
         <note category="location">src/app/share/room-groups.html:34,36</note>
-        <note category="location">src/app/share/share-dialog.html:57,60</note>
+        <note category="location">src/app/share/share-dialog.html:59,62</note>
       </notes>
       <segment>
         <source>Add</source>
@@ -4384,7 +4385,7 @@
     <unit id="share.remove">
       <notes>
         <note category="location">src/app/share/room-groups.html:77,78</note>
-        <note category="location">src/app/share/share-dialog.html:105,106</note>
+        <note category="location">src/app/share/share-dialog.html:107,108</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -4481,7 +4482,7 @@
     </unit>
     <unit id="share.title.room">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:12,13</note>
+        <note category="location">src/app/share/share-dialog.html:14,15</note>
       </notes>
       <segment>
         <source>Share this room</source>
@@ -4489,7 +4490,7 @@
     </unit>
     <unit id="share.title.board">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:14,16</note>
+        <note category="location">src/app/share/share-dialog.html:16,18</note>
       </notes>
       <segment>
         <source>Share this board</source>
@@ -4497,7 +4498,7 @@
     </unit>
     <unit id="share.close">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:21</note>
+        <note category="location">src/app/share/share-dialog.html:23</note>
       </notes>
       <segment>
         <source>Close</source>
@@ -4505,7 +4506,7 @@
     </unit>
     <unit id="share.person">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:31</note>
+        <note category="location">src/app/share/share-dialog.html:33</note>
       </notes>
       <segment>
         <source>Person</source>
@@ -4513,7 +4514,7 @@
     </unit>
     <unit id="share.person.placeholder">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:32,33</note>
+        <note category="location">src/app/share/share-dialog.html:34,35</note>
       </notes>
       <segment>
         <source>Name or name@example.com</source>
@@ -4521,7 +4522,7 @@
     </unit>
     <unit id="share.person.empty">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:34,35</note>
+        <note category="location">src/app/share/share-dialog.html:36,37</note>
       </notes>
       <segment>
         <source>Nobody found. A full email address still works.</source>
@@ -4529,7 +4530,7 @@
     </unit>
     <unit id="share.newRole.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:47,48</note>
+        <note category="location">src/app/share/share-dialog.html:49,50</note>
       </notes>
       <segment>
         <source>Role of the new member</source>
@@ -4537,7 +4538,7 @@
     </unit>
     <unit id="share.members.label">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:64</note>
+        <note category="location">src/app/share/share-dialog.html:66</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -4545,7 +4546,7 @@
     </unit>
     <unit id="share.loading">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:66,67</note>
+        <note category="location">src/app/share/share-dialog.html:68,69</note>
       </notes>
       <segment>
         <source>Loading members…</source>
@@ -4553,7 +4554,7 @@
     </unit>
     <unit id="share.member.deactivated">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:81,83</note>
+        <note category="location">src/app/share/share-dialog.html:83,85</note>
       </notes>
       <segment>
         <source>deactivated</source>
@@ -4561,7 +4562,7 @@
     </unit>
     <unit id="share.hint.login">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:129,131</note>
+        <note category="location">src/app/share/share-dialog.html:131,133</note>
       </notes>
       <segment>
         <source>Someone has to log in to Elysion once before they can be added.</source>
@@ -4569,7 +4570,7 @@
     </unit>
     <unit id="share.hint.room">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:133,135</note>
+        <note category="location">src/app/share/share-dialog.html:135,137</note>
       </notes>
       <segment>
         <source>A member gets this role on every board in the room. Viewers can look at them but not change them.</source>
@@ -4577,7 +4578,7 @@
     </unit>
     <unit id="share.hint.board">
       <notes>
-        <note category="location">src/app/share/share-dialog.html:138,140</note>
+        <note category="location">src/app/share/share-dialog.html:140,142</note>
       </notes>
       <segment>
         <source>Viewers can look at the board but not change it.</source>
@@ -5122,7 +5123,7 @@
     </unit>
     <unit id="app.brand.label">
       <notes>
-        <note category="location">src/app/shared/app-brand.ts:47,48</note>
+        <note category="location">src/app/shared/app-brand.html:4,5</note>
       </notes>
       <segment>
         <source>Elysion: all boards</source>
@@ -5154,7 +5155,7 @@
     </unit>
     <unit id="topbar.export.selection-only">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:43,46</note>
+        <note category="location">src/app/topbar/export-menu.html:44,47</note>
       </notes>
       <segment>
         <source>Selection only</source>
@@ -5162,7 +5163,7 @@
     </unit>
     <unit id="topbar.export.options">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:47,49</note>
+        <note category="location">src/app/topbar/export-menu.html:48,50</note>
       </notes>
       <segment>
         <source>Options</source>
@@ -5170,7 +5171,7 @@
     </unit>
     <unit id="topbar.export.pdf-pages">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:49,50</note>
+        <note category="location">src/app/topbar/export-menu.html:50,51</note>
       </notes>
       <segment>
         <source>PDF pages</source>
@@ -5178,7 +5179,7 @@
     </unit>
     <unit id="topbar.export.page-size">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:59,60</note>
+        <note category="location">src/app/topbar/export-menu.html:60,61</note>
       </notes>
       <segment>
         <source>Page size</source>
@@ -5186,7 +5187,7 @@
     </unit>
     <unit id="topbar.export.orientation">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:69,70</note>
+        <note category="location">src/app/topbar/export-menu.html:70,71</note>
       </notes>
       <segment>
         <source>Orientation</source>
@@ -5194,7 +5195,7 @@
     </unit>
     <unit id="topbar.export.colors">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:79,80</note>
+        <note category="location">src/app/topbar/export-menu.html:80,81</note>
       </notes>
       <segment>
         <source>Colors</source>
@@ -5202,7 +5203,7 @@
     </unit>
     <unit id="topbar.export.scale">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:89,90</note>
+        <note category="location">src/app/topbar/export-menu.html:90,91</note>
       </notes>
       <segment>
         <source>PNG scale</source>
@@ -5210,7 +5211,7 @@
     </unit>
     <unit id="topbar.export.background">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:104,106</note>
+        <note category="location">src/app/topbar/export-menu.html:105,107</note>
       </notes>
       <segment>
         <source>Background</source>
@@ -5218,7 +5219,7 @@
     </unit>
     <unit id="topbar.export.comments">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:112,114</note>
+        <note category="location">src/app/topbar/export-menu.html:113,115</note>
       </notes>
       <segment>
         <source>Comments in a PDF</source>
@@ -5226,7 +5227,7 @@
     </unit>
     <unit id="topbar.export.agenda">
       <notes>
-        <note category="location">src/app/topbar/export-menu.html:120,122</note>
+        <note category="location">src/app/topbar/export-menu.html:121,123</note>
       </notes>
       <segment>
         <source>Agenda as the first page of a PDF</source>
@@ -5490,7 +5491,7 @@
     </unit>
     <unit id="topbar.templates.delete-error">
       <notes>
-        <note category="location">src/app/topbar/template-menu.ts:76</note>
+        <note category="location">src/app/topbar/template-menu.ts:77</note>
       </notes>
       <segment>
         <source>The template “<ph id="0" equiv="name" disp="template.name"/>” could not be deleted.</source>
@@ -5498,7 +5499,7 @@
     </unit>
     <unit id="topbar.templates.delete-aria">
       <notes>
-        <note category="location">src/app/topbar/template-menu.ts:88</note>
+        <note category="location">src/app/topbar/template-menu.ts:89</note>
       </notes>
       <segment>
         <source>Delete the template <ph id="0" equiv="name" disp="name"/></source>
@@ -5668,7 +5669,7 @@
     </unit>
     <unit id="topbar.timer.error">
       <notes>
-        <note category="location">src/app/topbar/timer-menu.ts:176</note>
+        <note category="location">src/app/topbar/timer-menu.ts:177</note>
       </notes>
       <segment>
         <source>Enter a number of minutes between 1 and <ph id="0" equiv="max" disp="MAX_MINUTES"/>.</source>
@@ -5772,7 +5773,7 @@
     </unit>
     <unit id="topbar.status.connecting">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:34</note>
+        <note category="location">src/app/topbar/top-bar.ts:35</note>
       </notes>
       <segment>
         <source>Connecting…</source>
@@ -5780,7 +5781,7 @@
     </unit>
     <unit id="topbar.status.connected">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:35</note>
+        <note category="location">src/app/topbar/top-bar.ts:36</note>
       </notes>
       <segment>
         <source>Connected</source>
@@ -5788,7 +5789,7 @@
     </unit>
     <unit id="topbar.status.offline">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:36</note>
+        <note category="location">src/app/topbar/top-bar.ts:37</note>
       </notes>
       <segment>
         <source>Offline</source>
@@ -5796,7 +5797,7 @@
     </unit>
     <unit id="topbar.favorite-on">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:130</note>
+        <note category="location">src/app/topbar/top-bar.ts:131</note>
       </notes>
       <segment>
         <source>Add to favorites</source>
@@ -5804,7 +5805,7 @@
     </unit>
     <unit id="topbar.favorite-off">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:131</note>
+        <note category="location">src/app/topbar/top-bar.ts:132</note>
       </notes>
       <segment>
         <source>Remove from favorites</source>
@@ -5812,7 +5813,7 @@
     </unit>
     <unit id="topbar.rename.blank">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:184</note>
+        <note category="location">src/app/topbar/top-bar.ts:185</note>
       </notes>
       <segment>
         <source>A board needs a name.</source>
@@ -5820,7 +5821,7 @@
     </unit>
     <unit id="topbar.presence.one">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:211</note>
+        <note category="location">src/app/topbar/top-bar.ts:212</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="names[0]"/> is on this board</source>
@@ -5828,7 +5829,7 @@
     </unit>
     <unit id="topbar.presence.many">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:212</note>
+        <note category="location">src/app/topbar/top-bar.ts:213</note>
       </notes>
       <segment>
         <source>On this board: <ph id="0" equiv="names" disp="names.join(&apos;, &apos;)"/></source>
@@ -5836,7 +5837,7 @@
     </unit>
     <unit id="topbar.presence.follow">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:216</note>
+        <note category="location">src/app/topbar/top-bar.ts:217</note>
       </notes>
       <segment>
         <source>Follow <ph id="0" equiv="name" disp="name"/></source>
@@ -5844,7 +5845,7 @@
     </unit>
     <unit id="topbar.rename-aria">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:236</note>
+        <note category="location">src/app/topbar/top-bar.ts:239</note>
       </notes>
       <segment>
         <source>Rename the board <ph id="0" equiv="title" disp="this.title()"/></source>
@@ -5852,7 +5853,7 @@
     </unit>
     <unit id="topbar.status.connected.hint">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:245</note>
+        <note category="location">src/app/topbar/top-bar.ts:248</note>
       </notes>
       <segment>
         <source>Connected to the board server: changes reach everyone at once.</source>
@@ -5860,7 +5861,7 @@
     </unit>
     <unit id="topbar.status.offline.hint">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:248</note>
+        <note category="location">src/app/topbar/top-bar.ts:251</note>
       </notes>
       <segment>
         <source>No connection. Your changes are kept on this device and sent when it is back.</source>
@@ -5868,7 +5869,7 @@
     </unit>
     <unit id="topbar.status.connecting.hint">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:249</note>
+        <note category="location">src/app/topbar/top-bar.ts:252</note>
       </notes>
       <segment>
         <source>Connecting to the board server.</source>
@@ -5876,7 +5877,7 @@
     </unit>
     <unit id="topbar.theme.to-light">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:253</note>
+        <note category="location">src/app/topbar/top-bar.ts:256</note>
       </notes>
       <segment>
         <source>Switch to the light theme</source>
@@ -5884,7 +5885,7 @@
     </unit>
     <unit id="topbar.theme.to-dark">
       <notes>
-        <note category="location">src/app/topbar/top-bar.ts:254</note>
+        <note category="location">src/app/topbar/top-bar.ts:257</note>
       </notes>
       <segment>
         <source>Switch to the dark theme</source>
@@ -5924,7 +5925,7 @@
     </unit>
     <unit id="topbar.user.signed-in">
       <notes>
-        <note category="location">src/app/topbar/user-menu.ts:46</note>
+        <note category="location">src/app/topbar/user-menu.ts:48</note>
       </notes>
       <segment>
         <source>Signed in as <ph id="0" equiv="name" disp="this.user().name"/></source>

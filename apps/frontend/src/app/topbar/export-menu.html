@@ -36,6 +36,7 @@
         <input
           type="checkbox"
           role="menuitemcheckbox"
+          [attr.aria-checked]="selectionOnly() && hasSelection()"
           [disabled]="!hasSelection()"
           [checked]="selectionOnly() && hasSelection()"
           (change)="setSelectionOnly($event)"

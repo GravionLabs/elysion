@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RoomAccess } from './room-access';
 
@@ -56,7 +57,7 @@ describe('RoomAccess', () => {
       ],
     });
 
-    const text = el().textContent!.replace(/\s+/g, ' ');
+    const text = el().textContent.replace(/\s+/g, ' ');
     expect(text).toContain('in the room “Sprint”');
     expect(text).toContain('2 people in the room');
     expect(text).toContain('Groups: Design (Editor), Sales (Viewer)');
@@ -73,7 +74,7 @@ describe('RoomAccess', () => {
     await open({ role: 'Editor', members: 'forbidden' });
 
     expect(el().querySelector('a')).toBeNull();
-    const text = el().textContent!;
+    const text = el().textContent;
     expect(text).toContain('only its owners can list them');
     expect(text).toContain('No groups');
   });

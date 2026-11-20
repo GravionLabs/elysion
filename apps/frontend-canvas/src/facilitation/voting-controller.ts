@@ -169,7 +169,7 @@ export class VotingController {
       ...incoming,
       myVotes: known?.myVotes ?? 0,
       myElementVotes: known?.myElementVotes ?? {},
-    } as ApiVoting;
+    };
     this.check();
     // A voting that is open and was not known: this client may have votes in it already (it joined late).
     if (!known && incoming.status === 'open') void this.refresh();

@@ -214,7 +214,9 @@ describe('AgendaPanel', () => {
       setup({ now: () => clock }, startItem(plan(), 'a', T0));
       expect(screen.getByText('1:00 spent')).toBeTruthy();
       clock += 5000;
-      act(() => vi.advanceTimersByTime(1000));
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
       expect(screen.getByText('1:05 spent')).toBeTruthy();
     } finally {
       vi.useRealTimers();

@@ -260,7 +260,7 @@ describe('Administration (e2e, against a fake business backend)', () => {
 
   describe('what the BFF checks before it asks the backend', () => {
     it.each([
-      ['/api/admin/users?query=' + 'x'.repeat(101)],
+      [`/api/admin/users?query=${'x'.repeat(101)}`],
       ['/api/admin/users?page=abc'],
       ['/api/admin/users?page=-1'],
       ['/api/admin/users?pageSize=1.5'],

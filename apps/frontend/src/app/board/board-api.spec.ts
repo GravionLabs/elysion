@@ -2,7 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
-import { BoardApi, BoardInfo } from './board-api';
+import type { BoardInfo } from './board-api';
+import { BoardApi } from './board-api';
 
 const id = '0197a8d2-1c3e-7a10-8000-000000000001';
 const board: BoardInfo = {

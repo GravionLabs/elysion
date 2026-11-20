@@ -73,10 +73,10 @@ export class TimerMenu {
   readonly userId = input<string | null>(null);
 
   readonly startRequested = output<number>();
-  readonly pauseRequested = output<void>();
-  readonly resumeRequested = output<void>();
+  readonly pauseRequested = output();
+  readonly resumeRequested = output();
   readonly extendRequested = output<number>();
-  readonly stopRequested = output<void>();
+  readonly stopRequested = output();
 
   protected readonly presets = TIMER_PRESETS;
   protected readonly open = signal(false);
@@ -137,7 +137,8 @@ export class TimerMenu {
       const key = this.#endedKey();
       if (key === null) return;
       untracked(() => {
-        const timer = this.timer()!;
+        const timer = this.timer();
+        if (!timer) return;
         const endedAt = timer.startedAt + timer.durationMs;
         if (!this.muted() && Date.now() - endedAt < FRESH_END_MS) {
           this.#chime.play();
