@@ -11,7 +11,7 @@
   ],
   // `chore(deps): …` keeps dependency updates out of the release notes (cliff.toml leaves `chore` out).
   // Issue titles start with their level (AGENTS.md): the dashboard is a PBI.
-  dependencyDashboardTitle: '[PBI] chore: Dependency Dashboard',
+  dependencyDashboard: { title: '[PBI] chore: Dependency Dashboard' },
   semanticCommitType: 'chore',
   semanticCommitScope: 'deps',
   timezone: 'Europe/Zurich',
