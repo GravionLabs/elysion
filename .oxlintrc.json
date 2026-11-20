@@ -1,0 +1,99 @@
+// The lint standard of every TypeScript project in the repository (ADR 0006 of GravionLabs/skills, #918). Each
+// project's own `.oxlintrc.json` extends this file and adds its plugins, environment and exceptions; `pnpm lint` runs
+// oxlint in every project (with `--deny-warnings`, as the pre-commit hook does).
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  "categories": { "correctness": "error", "suspicious": "warn" },
+  "options": { "typeAware": true },
+  "ignorePatterns": [
+    "**/dist",
+    "**/dist-element",
+    "**/coverage",
+    "**/node_modules",
+    ".agents/**",
+    ".claude/**"
+  ],
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "warn",
+    "typescript/consistent-type-imports": "warn",
+    "unicorn/prefer-node-protocol": "error",
+    "prefer-template": "warn",
+    "no-template-curly-in-string": "warn",
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+
+    // Type-aware (oxlint-tsgolint); these fire only when listed.
+    "typescript/no-floating-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-misused-promises": "error",
+
+    // Off: the code narrows parsed input (JSON bodies, Yjs maps, DOM queries) with assertions after checking it, about
+    // 1,300 places; TypeScript itself still rejects an assertion between unrelated types.
+    "typescript/no-unsafe-type-assertion": "off",
+    // Angular modules and NestJS modules are empty classes that carry a decorator.
+    "typescript/no-extraneous-class": ["warn", { "allowWithDecorator": true }],
+    // Off: `sort()` and `reverse()` run on arrays the code has just built (`map`, `filter`, spread, `Object.keys`), so
+    // sorting in place changes nothing anyone else holds; `toSorted()` also needs the ES2023 library, which the Angular
+    // app does not target.
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-array-reverse": "off",
+    // Off: a helper that is used by one function stays next to it; moving it to module scope would separate the two.
+    "unicorn/consistent-function-scoping": "off",
+    // Off: the `on…` properties are set once on short-lived objects the code creates itself (FileReader, Image,
+    // IDBRequest, a script element), where they behave as one `addEventListener` call.
+    "unicorn/prefer-add-event-listener": "off",
+
+    "vitest/no-focused-tests": "error",
+    // The tests also assert with supertest's `.expect(status)`, Angular's `HttpTestingController.expectOne/expectNone`
+    // (each fails the test when no request matches) and the `rejects` and `waitUntil` helpers that fail on their own.
+    "vitest/expect-expect": [
+      "error",
+      {
+        "assertFunctionNames": [
+          "expect",
+          "expectTypeOf",
+          "**.expect",
+          "**.expectOne",
+          "**.expectNone",
+          "rejects",
+          "waitUntil"
+        ]
+      }
+    ],
+    // Vitest's `expect(value, message)` takes a message as its second argument; the rule's default of one argument
+    // comes from Jest.
+    "vitest/valid-expect": ["error", { "maxArgs": 2 }],
+    // Off: `vi.fn(impl)` takes its type from the implementation, so the rule mostly asks for type parameters that
+    // repeat it; the bare `vi.fn()` spies are only checked for calls.
+    "vitest/require-mock-type-parameters": "off",
+    // Off: table-driven tests over generated data (the OpenAPI operations, the translation keys, the error cases)
+    // assert what applies to each entry's kind.
+    "vitest/no-conditional-expect": "off",
+    // Off: these tests check that a call fails; the message comes from a library (jose, fetch, jsPDF) and is not part
+    // of the contract under test.
+    "vitest/require-to-throw-message": "off",
+    // A `describe` inside a loop takes its title from the loop variable.
+    "vitest/valid-title": ["error", { "ignoreTypeOfDescribeName": true }]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "**/*.test.ts",
+        "**/*.e2e-spec.ts",
+        "**/test/**",
+        "**/tests/**"
+      ],
+      "rules": {
+        // A test fails at once on a missing element or value; the non-null assertion is the check there.
+        "typescript/no-non-null-assertion": "off",
+        // Helpers inside a `describe` block sit next to the tests that use them.
+        "unicorn/consistent-function-scoping": "off",
+        // `expect(mock.method).toHaveBeenCalled()` passes a spy, it never calls the method unbound.
+        "typescript/unbound-method": "off"
+      }
+    }
+  ]
+}

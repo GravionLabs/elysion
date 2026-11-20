@@ -1,0 +1,7 @@
+// Type information for the type-aware rules of the lint probe (the probe is outside `src/` and its tsconfigs).
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "noEmit": true, "types": [] },
+  "files": [],
+  "include": ["*.ts"]
+}

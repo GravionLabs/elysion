@@ -1,0 +1,44 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../.oxlintrc.json"],
+  "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  "jsPlugins": ["@angular-eslint/eslint-plugin"],
+  "env": { "browser": true, "es2022": true },
+  "ignorePatterns": ["dist", ".angular", "public/canvas", "lint-probe/**"],
+  "rules": {
+    "@angular-eslint/contextual-lifecycle": "error",
+    "@angular-eslint/no-empty-lifecycle-method": "error",
+    "@angular-eslint/no-input-rename": "error",
+    "@angular-eslint/no-inputs-metadata-property": "error",
+    "@angular-eslint/no-output-native": "error",
+    "@angular-eslint/no-output-on-prefix": "error",
+    "@angular-eslint/no-output-rename": "error",
+    "@angular-eslint/no-outputs-metadata-property": "error",
+    "@angular-eslint/prefer-inject": "error",
+    "@angular-eslint/prefer-on-push-component-change-detection": "error",
+    "@angular-eslint/prefer-standalone": "error",
+    "@angular-eslint/use-pipe-transform-interface": "error",
+    "@angular-eslint/use-lifecycle-interface": "warn",
+    "@angular-eslint/component-selector": [
+      "error",
+      { "type": "element", "prefix": "app", "style": "kebab-case" }
+    ],
+    "@angular-eslint/directive-selector": [
+      "error",
+      { "type": "attribute", "prefix": "app", "style": "camelCase" }
+    ],
+    // Templates live in .html files, so ESLint sees every one of them. Inline styles stay allowed: the rule's defaults
+    // (3 and 15 lines) would otherwise apply to styles and animations.
+    "@angular-eslint/component-max-inline-declarations": [
+      "error",
+      { "template": 0, "styles": 100000, "animations": 100000 }
+    ]
+  },
+  "overrides": [
+    {
+      // Test hosts in specs keep their inline templates.
+      "files": ["**/*.spec.ts"],
+      "rules": { "@angular-eslint/component-max-inline-declarations": "off" }
+    }
+  ]
+}

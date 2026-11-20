@@ -53,6 +53,22 @@
       ],
     },
     {
+      // The linters and the formatter move together and only after a week (ADR 0006 of GravionLabs/skills): oxlint,
+      // oxfmt, oxlint-tsgolint and the Angular plugin of oxlint are pinned to exact versions, because JS plugins are
+      // alpha, and an update must keep the lint probe of apps/frontend green (`pnpm lint`).
+      groupName: 'lint and format',
+      matchPackageNames: [
+        'oxlint',
+        'oxfmt',
+        'oxlint-tsgolint',
+        '@angular-eslint/{/,}**',
+        'angular-eslint',
+        'eslint',
+        'typescript-eslint',
+      ],
+      minimumReleaseAge: '7 days',
+    },
+    {
       groupName: 'build and test tooling',
       matchPackageNames: [
         'vitest',
@@ -61,8 +77,6 @@
         '@vitejs/{/,}**',
         'vite-tsconfig-paths',
         'jsdom',
-        'oxlint',
-        'prettier',
         'simple-git-hooks',
         'lint-staged',
         'playwright',

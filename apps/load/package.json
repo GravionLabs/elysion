@@ -7,7 +7,7 @@
   "description": "Load test of the realtime service with several replicas (ADR-free, see AGENTS.md). Not part of `pnpm test`: it needs the stack.",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "lint": "oxlint -c oxlint.json src/",
+    "lint": "oxlint --deny-warnings src/",
     "test:load": "pnpm run build && node dist/run.js"
   },
   "dependencies": {

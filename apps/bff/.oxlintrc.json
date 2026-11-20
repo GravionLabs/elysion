@@ -1,0 +1,10 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../.oxlintrc.json"],
+  "plugins": ["typescript", "unicorn", "oxc", "vitest", "node"],
+  "env": { "node": true, "es2022": true },
+  "rules": {
+    // Off: NestJS injects by the constructor parameter types (`emitDecoratorMetadata`), which an `import type` erases.
+    "typescript/consistent-type-imports": "off"
+  }
+}

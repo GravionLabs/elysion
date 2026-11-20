@@ -1,0 +1,16 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../.oxlintrc.json"],
+  "plugins": ["typescript", "unicorn", "oxc", "vitest", "react"],
+  "env": { "browser": true, "es2022": true },
+  "ignorePatterns": ["dist", "dist-element"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    // The automatic JSX runtime (Vite, React 19) needs no React import.
+    "react/react-in-jsx-scope": "off",
+    // Off: an effect returns its cleanup on the paths that set something up and nothing on the others, which React
+    // treats as "no cleanup"; the rule asks for an explicit `return undefined` there.
+    "typescript/consistent-return": "off"
+  }
+}
