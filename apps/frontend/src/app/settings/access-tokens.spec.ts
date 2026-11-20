@@ -28,7 +28,8 @@ describe('AccessTokens', () => {
   const settle = () => fixture.whenStable();
   const button = (text: string) =>
     [...el().querySelectorAll('button')].find((b) => b.textContent?.trim() === text) as
-      HTMLButtonElement | undefined;
+      | HTMLButtonElement
+      | undefined;
   const type = (selector: string, value: string) => {
     const input = el().querySelector(selector) as HTMLInputElement;
     input.value = value;

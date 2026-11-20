@@ -155,7 +155,7 @@ personal access tokens and integration tokens there only.
   every public route calls the backend with the token, so a revoke the guard's 30-second cache has not seen yet is refused by the
   backend's own lookup on that call (`test/public-api-v1.e2e-spec.ts`, "every route"). A new public route must keep it.
 - **Shapes.** A board is `{ id, name, createdAt, roomId }` (not the caller's favorite or last opened), a room `{ id, name, createdAt,
-role }`, a member `{ userId, displayName, email, role }`, a version the backend's fields. `GET /rooms/:id` and
+  role }`, a member `{ userId, displayName, email, role }`, a version the backend's fields. `GET /rooms/:id` and
   `GET /boards/:id/snapshots/:snapshotId` find the item in the caller's list (a missing one is `404`).
 - **Elements** (`scene.ts`): `GET /boards/:id/elements` reads the stored Yjs state from the backend (`GET /boards/{id}/document`,
   `204` for a board never saved: an empty scene) and decodes it with `yjs`: the live elements of the `elements` map in Excalidraw's

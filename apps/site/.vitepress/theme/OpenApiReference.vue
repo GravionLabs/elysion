@@ -19,9 +19,7 @@ const groups = referenceOf(document as OpenApiDocument);
         </h3>
         <p>
           <code class="method">{{ operation.method }}</code> <code>{{ operation.path }}</code>
-          <span v-if="operation.scope">
-            · scope <code>{{ operation.scope }}</code></span
-          >
+          <span v-if="operation.scope"> · scope <code>{{ operation.scope }}</code></span>
         </p>
         <p
           v-for="(paragraph, index) in operation.description.split('\n\n')"
@@ -45,8 +43,7 @@ const groups = referenceOf(document as OpenApiDocument);
               :key="`${parameter.in}-${parameter.name}`"
             >
               <td>
-                <code>{{ parameter.name }}</code
-                ><span v-if="parameter.required"> (required)</span>
+                <code>{{ parameter.name }}</code><span v-if="parameter.required"> (required)</span>
               </td>
               <td>{{ parameter.in }}</td>
               <td>{{ parameter.type }}</td>
@@ -59,9 +56,7 @@ const groups = referenceOf(document as OpenApiDocument);
         </table>
 
         <div v-for="body in operation.requestBody" :key="body.mediaType">
-          <p>
-            <strong>Body</strong> <code>{{ body.mediaType }}</code> {{ body.schema }}
-          </p>
+          <p><strong>Body</strong> <code>{{ body.mediaType }}</code> {{ body.schema }}</p>
           <div v-if="body.example" class="language-json">
             <pre><code>{{ body.example }}</code></pre>
           </div>
@@ -77,9 +72,7 @@ const groups = referenceOf(document as OpenApiDocument);
             <span v-html="inlineCode(response.description)"></span>
           </summary>
           <div v-for="body in response.bodies" :key="body.mediaType">
-            <p>
-              <code>{{ body.mediaType }}</code> {{ body.schema }}
-            </p>
+            <p><code>{{ body.mediaType }}</code> {{ body.schema }}</p>
             <div v-if="body.example" class="language-json">
               <pre><code>{{ body.example }}</code></pre>
             </div>

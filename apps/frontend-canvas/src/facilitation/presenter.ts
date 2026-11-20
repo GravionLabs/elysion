@@ -46,7 +46,9 @@ export function parsePresenter(value: unknown): PresenterState | null {
 /** A stored value as a summon, or `null`. */
 export function parseSummon(value: unknown): SummonState | null {
   const raw = value as
-    { id?: unknown; userId?: unknown; viewport?: unknown; at?: unknown } | null | undefined;
+    | { id?: unknown; userId?: unknown; viewport?: unknown; at?: unknown }
+    | null
+    | undefined;
   if (typeof raw !== 'object' || raw === null) return null;
   const viewport = parseViewport(raw.viewport);
   if (

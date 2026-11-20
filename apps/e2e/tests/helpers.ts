@@ -141,7 +141,8 @@ export async function boardElements(page: Page, timeout = 10_000): Promise<Board
     const text = await page
       .evaluate(async () => {
         const canvas = document.querySelector('elysion-canvas') as
-          (HTMLElement & { exportBoard?(format: string): Promise<Blob | null> }) | null;
+          | (HTMLElement & { exportBoard?(format: string): Promise<Blob | null> })
+          | null;
         if (!canvas?.exportBoard) return null;
         const blob = await canvas.exportBoard('excalidraw');
         return blob ? await blob.text() : '{"elements":[]}'; // the canvas exports nothing for an empty board
@@ -215,7 +216,8 @@ export async function expectAccessible(page: Page, where: string): Promise<void>
         .slice(0, 4)
         .map((node) => {
           const data = node.any[0]?.data as
-            { fgColor?: string; bgColor?: string; contrastRatio?: number } | undefined;
+            | { fgColor?: string; bgColor?: string; contrastRatio?: number }
+            | undefined;
           const colors = data?.fgColor
             ? ` (${data.fgColor} on ${data.bgColor}, ${data.contrastRatio})`
             : '';
