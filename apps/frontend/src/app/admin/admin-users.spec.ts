@@ -183,7 +183,8 @@ describe('AdminUsers', () => {
     const dialogs = () => [...el().querySelectorAll('[role="dialog"]')];
     const button = (root: Element, text: RegExp) =>
       [...root.querySelectorAll('button')].find((b) => text.test((b.textContent ?? '').trim())) as
-        HTMLButtonElement | undefined;
+        | HTMLButtonElement
+        | undefined;
 
     it('marks a deactivated person in the list', async () => {
       listRequest().flush(page([{ ...user(1), deactivatedAt: '2026-10-10T10:00:00Z' }, user(2)]));

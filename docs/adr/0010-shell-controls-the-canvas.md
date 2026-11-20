@@ -27,7 +27,7 @@ theme, and later the Library sidebar, export and import.
      only zooms and no import; the realtime service refuses a viewer's changes anyway, this is what the viewer
      sees instead of tools that would silently do nothing.
    - _Out_, as events: `ready` and `error` (existing), `status` (`{ status: 'connecting' | 'connected' |
-'disconnected' }`, the Yjs connection), `themechange` (`{ theme }`, only when the user switches
+     'disconnected' }`, the Yjs connection), `themechange` (`{ theme }`, only when the user switches
      the theme inside the canvas, not when the host sets it), `presence` (`{ users: [{ id, name, color }] }`,
      the other people on the board, only when that list changes, #110). `error` (`{ message }`) is sent
      when the connection to the board server fails, once per outage; the canvas keeps retrying.

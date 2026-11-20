@@ -104,7 +104,7 @@ the attempts by `outcome` (`succeeded`, `retry`, `failed`). See [webhooks.md](we
 2. Is one receiver slow or down? The log has a line per failed attempt (`Webhook <id> to <host>: <event> failed`), with the host and never the
    path. A dead receiver's deliveries wait between retries (up to an hour apart) and are given up after 24 hours, when its webhook is
    switched off: the outbox then shrinks by itself. In SQL: `SELECT "EndpointId", count(*) FROM "WebhookDeliveries" WHERE "Status" = 'Pending'
-GROUP BY 1 ORDER BY 2 DESC;`.
+   GROUP BY 1 ORDER BY 2 DESC;`.
 3. Is it real traffic? Every change of a board with webhooks is an event per webhook (content changes at most once a minute per board). A
    busy instance with many webhooks may need a higher threshold: change it here and in `alerts.test.yml`.
 4. To stop a receiver at once, switch its webhook off in the board's Share dialog or the administration (or delete it): what waits for it is

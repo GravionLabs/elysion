@@ -91,8 +91,8 @@ Other commands (each runs across the whole workspace):
 pnpm build           # build every app, including the .NET solution
 pnpm test            # unit tests: Vitest, NUnit, and the repo scripts' node tests
 pnpm lint            # oxlint, and the JetBrains formatter check (`jb cleanupcode`) for the backend's C#
-pnpm format:dotnet  # formats the backend's C# with the JetBrains tools (Prettier does the rest: `pnpm format`)
-pnpm format:check    # Prettier (pnpm format fixes)
+pnpm format:dotnet  # formats the backend's C# with the JetBrains tools (oxfmt does the rest: `pnpm format`)
+pnpm format:check    # oxfmt (pnpm format fixes)
 ```
 
 The browser tests (`apps/e2e`) need the running stack: `pnpm demo`, then `pnpm test:browser` (see its `AGENTS.md`). To verify a change as a whole, run `pnpm format:check && pnpm lint && pnpm test && pnpm build` (CI runs the same commands). CI (`.github/workflows/ci.yml`) has three jobs: that command chain; the .NET tests with a coverage report; and the BFF and realtime end-to-end tests against a Valkey service container, plus their coverage. Coverage reports are uploaded as workflow artifacts; there is no threshold yet. The .NET parts need the .NET 10 SDK; the realtime end-to-end tests need a Valkey: `pnpm dev:infra` starts the stack's on `localhost:6380`, so run them with `REDIS_URL=redis://:dev-only-valkey-password@localhost:6380 pnpm --filter @elysion/realtime test:e2e` (CI uses a service container on 6379).
@@ -160,7 +160,7 @@ The agent skills (.NET, Angular, TypeScript plus the `core` preset) come from [G
 
 ## Pre-commit hook
 
-`pnpm install` installs a git pre-commit hook (`simple-git-hooks`, configured in the root `package.json`) that runs [lint-staged](lint-staged.config.mjs) on the staged files only: Prettier rewrites them, and oxlint with the app's own `oxlint.json` checks staged TypeScript files and blocks the commit on any finding. It takes a second or two. C# files are not checked in the hook, because the JetBrains formatter needs about 40 seconds for the solution; `pnpm lint` and CI cover them.
+`pnpm install` installs a git pre-commit hook (`simple-git-hooks`, configured in the root `package.json`) that runs [lint-staged](lint-staged.config.mjs) on the staged files only: oxfmt rewrites them, and oxlint with the app's own `oxlint.json` checks staged TypeScript files and blocks the commit on any finding. It takes a second or two. C# files are not checked in the hook, because the JetBrains formatter needs about 40 seconds for the solution; `pnpm lint` and CI cover them.
 
 In an emergency, skip the hook with `git commit --no-verify`; CI runs the same checks, so the problem will show up there.
 

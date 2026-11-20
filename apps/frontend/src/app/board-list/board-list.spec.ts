@@ -658,7 +658,8 @@ describe('BoardList', () => {
     };
     const button = (label: string) =>
       [...el().querySelectorAll('button')].find((b) => b.textContent?.trim() === label) as
-        HTMLButtonElement | undefined;
+        | HTMLButtonElement
+        | undefined;
     const clickButton = async (label: string) => {
       button(label)!.click();
       await fixture.whenStable();

@@ -44,7 +44,8 @@ describe('Webhooks', () => {
   const items = () => [...el().querySelectorAll('.webhook')];
   const button = (text: string, root: Element = el()) =>
     [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === text) as
-      HTMLButtonElement | undefined;
+      | HTMLButtonElement
+      | undefined;
 
   const create = async (collapsible: boolean) => {
     fixture = TestBed.createComponent(Webhooks);
