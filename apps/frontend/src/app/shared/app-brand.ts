@@ -4,7 +4,8 @@ import { RouterLink } from '@angular/router';
 /**
  * The Elysion mark and name; it links to the board list from every page. The mark is the project icon
  * (`public/icon.svg`, the source of the favicon and the app icons) as inline SVG: its colors are fixed and
- * read on the light and the dark theme alike, because the gradient square carries it.
+ * read on the light and the dark theme alike, because the yellow note carries it (on the dark theme the ink
+ * square around it nearly merges with the page).
  */
 @Component({
   imports: [RouterLink],
