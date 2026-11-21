@@ -1,6 +1,17 @@
 # Elysion brand
 
-## Project icon: candidate B, two sticky notes
+## Project icon in use: a sticky note with voting dots
+
+Since #922 (2026-11-21) the project icon is one sticky note with a folded corner and three voting dots, in sticky
+yellow (`#fcd34d`) on dark ink (`#2c2757` to `#110f26`); the dots are indigo and pink. The owner picked it from a new
+round of drafts (draft `E3d`), mainly to move the icon off the violet gradient that several other GravionLabs apps
+use. The source is `apps/frontend/public/icon.svg`, still on the 64 x 64 grid with one gradient and a `<g id="mark">`;
+`pnpm make:icons` makes the rasters from it, and the mark in the app (`app-brand`) is an inline copy. At 16 px the
+note and its dots hold; the fold is no longer visible.
+
+The sections below are the record of the earlier choice.
+
+## Earlier icon: candidate B, two sticky notes
 
 Issue #556 (PBI #555). **The owner picked candidate B (two sticky notes) on 2026-10-07**, against the recommendation below; the chosen icon becomes the favicon, the app icon and the mark in the app
 (#557, #558). All three are hand-drawn SVGs on a 64 x 64 grid (plain `rect`, `path` and one gradient, no fonts,
