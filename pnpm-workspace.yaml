@@ -50,3 +50,6 @@ auditConfig:
     # braces, stack exhaustion on deeply nested patterns, no patched release. Reached as @excalidraw/excalidraw > sass >
     # chokidar > braces: Sass's file watcher, which the built bundle does not run and no service loads.
     - GHSA-vfj7-8cjw-p6xm
+minimumReleaseAgeExclude:
+  # Renovate security update: vite@8.3.3
+  - vite@8.3.3
