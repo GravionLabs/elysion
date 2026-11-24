@@ -19,6 +19,7 @@ Generate a Model Context Protocol (MCP) server in C#: a console application usin
    dotnet add package ModelContextProtocol
    dotnet add package Microsoft.Extensions.Hosting
    ```
+
 3. Copy `templates/Program.cs`, `templates/Tools.cs`, `templates/Prompts.cs` and adapt them to the requested tools and prompts
 4. Add `appsettings.json` with a `Logging` section routing all logs to stderr
 5. Build and verify: `dotnet build`

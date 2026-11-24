@@ -37,6 +37,10 @@ The official `dotnet` plugin skills (dependency `dotnet/skills`) cover general C
 
 Runner, layout, naming, structure and mocking live in `dotnet-test`.
 
+## Gate
+
+Run `just check-changed` once when the work is done (the gate of this stack; `implementation` runs it through `Invoke-Gate.ps1`): `../../shared/implementation/references/gate.md`.
+
 ## Review rules
 
 - 🔴 Lint run (`Format-Changed.ps1 -Lint -Language dotnet`, analyzer) exits non-zero: error-level findings; 🟡 warning-level findings

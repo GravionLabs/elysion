@@ -23,6 +23,7 @@ Scaffold a new .NET solution with the standard project structure. Paths to `scri
    ```
 
    It creates the directory structure and `.slnx`, generates source and test projects, strips redundant properties from the `.csproj` files, copies all templates (including the matching CI workflow), optionally updates `Directory.Packages.props` to the latest versions, and runs `dotnet build`.
+
 3. Add any additional packages to `Directory.Packages.props` and reference them without `Version` in the `.csproj`
 4. Run `dotnet build` to verify
 

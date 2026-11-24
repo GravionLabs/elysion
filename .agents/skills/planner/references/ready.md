@@ -4,6 +4,17 @@
 
 with `governance`: also `references/governance.md`
 
+## Objective
+
+`refine <owner/repo#nr>` of an `[Objective]` (`github-issue` `references/objectives.md`); the children are read across the affected repositories.
+
+- Outcome present (`## Outcome`).
+- Every repository of `## Affected repos` has at least one child (Feature or Epic) as sub-issue.
+- Acceptance criteria present as a checklist a human verifies.
+- No implementation details in the body.
+- Every child issue that pulls in a pin (`SOURCE.txt`, a tag in a dependency) has a `Requires: <owner>/<repo>@<milestone> released|rc` edge, in the child or in the Objective's `## Requires` (a code dependency stays a native `blocked-by` link). A pin without an edge is a gap.
+- No milestone on the Objective.
+
 ## Epic
 
 - Outcome: what is true when the Epic is done.
@@ -33,4 +44,4 @@ All PBI points (milestone included), plus repro steps or a failing test to write
 
 ## Milestone
 
-`refine M<n>`: read the open PBIs and Bugs of the milestone (`github-milestone` `Get-Milestones.ps1 -Mode issues`). Per item without a `Tier:` line add `Tier: <tier> — <reason>` (size table of `plan-schema.md`), then report `#<nr> Tier: <tier> — <reason>` for each changed item and `unchanged` for the rest.
+`refine M<nnn>`: read the open PBIs and Bugs of the milestone (`github-milestone` `Get-Milestones.ps1 -Mode issues`). Per item without a `Tier:` line add `Tier: <tier> — <reason>` (size table of `plan-schema.md`), then report `#<nr> Tier: <tier> — <reason>` for each changed item and `unchanged` for the rest.

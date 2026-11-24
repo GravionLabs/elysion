@@ -13,8 +13,10 @@ Read-only: report findings, never edit.
 4. Lint: per language of the report run `pwsh <implementation-skill-dir>/scripts/Format-Changed.ps1 -Lint -Language <lang> -Base <base>` (read-only; `skipped: ...` is no finding, a tool "not configured" is a note). Non-zero exit: its output lists the findings; each follows the severity rule of the language's `## Review rules` (error-level blocking, warning-level note); `jb inspectcode` SARIF: `error` is blocking, `warning` and below notes. `lint: false` in `.agents/config.json` skips this step
 5. Review the diff against the acceptance criteria (when given), those rules, correctness, security and test coverage; apply the `-test` rules to the test files of the diff. A rule's severity prefix maps as for implementation rules: red is blocking, yellow and green are notes
 6. `.agents/config.json` has `governance`: load `references/governance.md` (ADR and spec rules) and add its findings
-7. Sort each finding: **blocking** or **note**
-8. Do not recommend patterns or abstractions that add complexity without a concrete need
+7. Rule proposal: `ast-grep-rules` installed and a blocking finding repeats (matches an approved lesson, or the same class in two reviews): add the note `propose ast-grep rule` per `references/rule-proposal.md`; never write the rule. Not installed: as before
+8. UI diff: the diff has a UI file (`.html`, `.css`, `.scss`, `.tsx`, `.jsx`, `.vue`, `.svelte`, `*.component.ts`): load `references/ux-review.md`; no UI file: do not load it
+9. Sort each finding: **blocking** or **note**
+10. Do not recommend patterns or abstractions that add complexity without a concrete need
 
 ## Blocking
 
@@ -23,6 +25,10 @@ Blocking = breaks an acceptance criterion, or is a correctness or security defec
 ## Security
 
 Check every diff for injection, unvalidated input, secrets in code or logs, broken authorization, unsafe deserialization and path traversal. Confirmed defect → blocking; doubt → note.
+
+## Background persistence
+
+A diff that adds a mechanism forbidden by `implementation` `references/no-background-persistence.md` is blocking, unless the exception there applies; then check the conditions that reference lists for it.
 
 ## Output
 
