@@ -15,4 +15,5 @@ Goal: improve the agent **environment**, not the code under review. Rank candida
 
 ## Metric reading
 
+- Escaped findings above the changes the loop review requested (`loop review: <x> changes requested, <y> escaped`, `y > x`): the loop review is not strict enough (category 3). Evidence: the escaped items as links; name what they share that a review rule or check would catch.
 - Fix rounds above 1 per PBI: review rules or issue bodies were too thin (categories 2, 3).

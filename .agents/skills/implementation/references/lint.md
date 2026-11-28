@@ -5,10 +5,10 @@
 ```powershell
 pwsh scripts/Format-Changed.ps1 -Lint                  # detect the languages from the changed files
 pwsh scripts/Format-Changed.ps1 -Lint -Language py
-pwsh scripts/Format-Changed.ps1 -Lint -Language ts -Base origin/release/next
+pwsh scripts/Format-Changed.ps1 -Lint -Language ts -Base origin/main
 ```
 
-Defaults (no `lint` key): ts eslint (`npx biome lint --no-errors-on-unmatched {files}` in a Biome project), ng eslint, py `uv run ruff check {files}`, dotnet `dotnet format analyzers --verify-no-changes --include {files}`, rust `cargo clippy --all-targets -- -D warnings` (whole crate, no `{files}`), go `golangci-lint run {files}`. A tool that is missing or whose probe fails is `skipped: <tool> not configured`.
+Defaults (no `lint` key): ts eslint (`npx biome lint --no-errors-on-unmatched {files}` in a Biome project), ng eslint; with `.oxlintrc.json` at the git toplevel ts `npx --no-install oxlint --no-error-on-unmatched-pattern {files}`, ng the same plus `npx --no-install eslint {files}` on `.html` only; py `uv run ruff check {files}`, dotnet `dotnet format analyzers --verify-no-changes --include {files}`, rust `cargo clippy --all-targets -- -D warnings` (whole crate, no `{files}`), go `golangci-lint run {files}`. Once `stylelint.config.*` (or `.stylelintrc*`) is at the git toplevel, ts and ng also lint changed `.css`/`.scss` with `npx --no-install stylelint {files}` (ADR 0008). A tool that is missing or whose probe fails is `skipped: <tool> not configured`.
 
 Override (`.agents/config.json`, key `lint`, schema `schema/config.schema.json`):
 

@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/GravionLabs/skills/main/skills/delivery/deliver/schema/deliver-profile.schema.json",
+  "title": "deliver profile v2 (deliver@2) of agent-events",
+  "description": "Applied in addition to the agent-events core schema (GravionLabs/agent-events, schema/v0/core.schema.json) to every line of a run that declares deliver@2. Owner: the skill deliver; writer: scripts/deliver-loop.mts. Profile types: deliver.merged (an issue is merged), deliver.handover (a pull request is handed to a person), deliver.aside (an issue is set aside), deliver.milestone.done (the end of a milestone run). Their fields sit under `deliver`; deliver.handover and deliver.aside also carry the core fields reason and text. Every reason of the run is prefixed deliver.. Tone: deliver.merged success; deliver.handover and deliver.aside warning; deliver.milestone.done success for a clean run, else warning.",
+  "type": "object",
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "if": { "pattern": "^deliver\\." },
+      "then": {
+        "enum": ["deliver.merged", "deliver.handover", "deliver.aside", "deliver.milestone.done"]
+      }
+    },
+    "reason": { "type": "string", "pattern": "^deliver\\.[a-z0-9.-]+$" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "run.started" } } },
+      "then": {
+        "required": ["profiles"],
+        "properties": { "profiles": { "contains": { "const": "deliver@2" } } }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "attention" } } },
+      "then": { "required": ["reason"] }
+    },
+    {
+      "if": { "properties": { "type": { "const": "deliver.merged" } } },
+      "then": {
+        "required": ["deliver"],
+        "properties": {
+          "tone": { "const": "success" },
+          "deliver": { "$ref": "#/$defs/merged" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "enum": ["deliver.handover", "deliver.aside"] } } },
+      "then": {
+        "required": ["reason", "text", "deliver"],
+        "properties": {
+          "tone": { "const": "warning" },
+          "text": { "type": "string", "minLength": 1 },
+          "deliver": { "$ref": "#/$defs/setAside" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "deliver.milestone.done" } } },
+      "then": {
+        "required": ["deliver"],
+        "properties": {
+          "tone": { "enum": ["success", "warning"] },
+          "deliver": { "$ref": "#/$defs/milestoneDone" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "repo": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+    "issue": { "type": "integer", "minimum": 1 },
+    "count": { "type": "integer", "minimum": 0 },
+    "url": { "type": "string", "pattern": "^https?://" },
+    "merged": {
+      "type": "object",
+      "required": ["repo", "issue"],
+      "properties": {
+        "repo": { "$ref": "#/$defs/repo" },
+        "issue": { "$ref": "#/$defs/issue" },
+        "pr": { "$ref": "#/$defs/url" },
+        "risk": { "enum": ["low", "medium", "high"] }
+      }
+    },
+    "setAside": {
+      "type": "object",
+      "required": ["repo", "issue"],
+      "properties": {
+        "repo": { "$ref": "#/$defs/repo" },
+        "issue": { "$ref": "#/$defs/issue" },
+        "pr": { "$ref": "#/$defs/url" },
+        "hold": { "const": "needs-decision" }
+      }
+    },
+    "milestoneDone": {
+      "type": "object",
+      "required": ["repo", "milestone", "merged", "aside"],
+      "properties": {
+        "repo": { "$ref": "#/$defs/repo" },
+        "milestone": { "type": "string", "minLength": 1 },
+        "merged": { "$ref": "#/$defs/count" },
+        "aside": { "$ref": "#/$defs/count" },
+        "pr": { "$ref": "#/$defs/url" }
+      }
+    }
+  }
+}

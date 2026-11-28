@@ -18,14 +18,14 @@ Issues labelled `merged` from the old label lifecycle are still open. Run the wo
 
 ## Rollout to existing repos
 
-One PR per repo: copy `templates/release-branch.yml` to `.github/workflows/release-branch.yml` (replace an inline copy of the workflow; set the input project-url) and open the PR with `github-pull-request`. `cut` offers this when no workflow in `.github/workflows/` calls `release-branch.yml` of GravionLabs/ci.
+One PR per repo: copy `templates/release-branch.yml` to `.github/workflows/release-branch.yml` (replace an inline copy of the workflow; set the input project-url) and open the PR with `github-pull-request`. `cut` offers this when no workflow in `.github/workflows/` calls `release-branch.yml` of GravionLabs/ci (`GravionLabs/ci/.github/workflows/release-branch.yml@v1`, or `./.github/workflows/release-branch.yml` inside ci itself).
 
 ## Permissions
 
-- Token requirements are in the README of GravionLabs/ci (`release-branch.yml`): a classic PAT with scopes `repo` and `workflow` (and `project`).
+- Token requirements are in the README of GravionLabs/ci (`release-branch.yml`): the GitHub App `gravionlabs-ci` (secrets `CI_APP_ID` and `CI_APP_PRIVATE_KEY`); the `GH_PAT` fallback was removed in v1.
 - The workflow needs `contents: read`, `issues: write`, `pull-requests: write` (the calling job grants them to the reusable workflow, `permissions: {}` at the top).
-- Secrets are passed explicitly (`GH_PAT` required, `PROJECT_TOKEN` optional), not `secrets: inherit`. Without `GH_PAT` the workflow falls back to `github.token`: a PAT is needed so PRs created by CI trigger the required checks; closing works with `github.token`.
-- The project Needs sync needs a classic PAT with scope `project` in secret `PROJECT_TOKEN`, else `GH_PAT`. A fine-grained token does not work for a user-owned project (only an organization-owned project accepts one). Failures per issue are warnings and never fail the job.
+- Secrets are passed explicitly (`CI_APP_ID` and `CI_APP_PRIVATE_KEY` required, `PROJECT_TOKEN` optional), not `secrets: inherit`. Without the app secrets the workflow fails; the app token makes PRs created by CI trigger the required checks.
+- The project Needs sync needs a classic PAT with scope `project` in secret `PROJECT_TOKEN`. A fine-grained token does not work for a user-owned project (only an organization-owned project accepts one). Failures per issue are warnings and never fail the job.
 
 ## Known limit
 

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/GravionLabs/skills/main/skills/github/github-release/schema/ci-profile.schema.json",
+  "title": "ci profile v1 (ci@1) of agent-events",
+  "description": "Applied in addition to the agent-events core schema (GravionLabs/agent-events, schema/v0/core.schema.json) to every line of a run that declares ci@1. Owner: the skill github-release; writer: scripts/Get-PublishState.ps1. Profile types: ci.run.completed (a workflow run on the merge commit ended), ci.publish.ok (tag and GitHub Release exist after green runs), ci.publish.failed. Their fields sit under `ci`. Every reason of the run is prefixed ci.. Tone: ci.run.completed success for a green conclusion, else danger; ci.publish.ok success; ci.publish.failed danger.",
+  "type": "object",
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "if": { "pattern": "^ci\\." },
+      "then": { "enum": ["ci.run.completed", "ci.publish.ok", "ci.publish.failed"] }
+    },
+    "reason": { "type": "string", "pattern": "^ci\\.[a-z0-9.-]+$" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "run.started" } } },
+      "then": {
+        "required": ["profiles"],
+        "properties": { "profiles": { "contains": { "const": "ci@1" } } }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "ci.run.completed" } } },
+      "then": {
+        "required": ["ci"],
+        "properties": {
+          "tone": { "enum": ["success", "danger"] },
+          "ci": {
+            "type": "object",
+            "required": ["name", "conclusion", "url"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "conclusion": { "type": ["string", "null"] },
+              "url": { "$ref": "#/$defs/url" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "ci.publish.ok" } } },
+      "then": {
+        "required": ["ci"],
+        "properties": {
+          "tone": { "const": "success" },
+          "ci": {
+            "type": "object",
+            "required": ["tag", "release"],
+            "properties": {
+              "tag": { "type": "string", "minLength": 1 },
+              "release": { "$ref": "#/$defs/url" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "ci.publish.failed" } } },
+      "then": {
+        "required": ["ci"],
+        "properties": {
+          "tone": { "const": "danger" },
+          "ci": {
+            "type": "object",
+            "required": ["url", "text"],
+            "properties": {
+              "job": { "type": ["string", "null"] },
+              "url": { "$ref": "#/$defs/url" },
+              "text": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "url": { "type": "string", "pattern": "^https?://" }
+  }
+}

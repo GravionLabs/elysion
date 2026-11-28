@@ -32,7 +32,7 @@ created: <today, YYYY-MM-DD>
 
 - `scope`: `repo`, `lang:<x>` or `role:<r>` per the contract; pick the narrowest scope the evidence supports (a review finding → `role:review`, a finding in one language's files → `lang:<x>`).
 - `evidence`: the evidence of the candidate (turn, review finding, metric) as PR, issue, commit or retro reference; never a transcript quote or a secret.
-- `status` is always `proposed`; `retro` never writes `approved`.
+- `status` of a draft is always `proposed`; only `retro file` writes `approved`, for a ticked draft.
 
 ## Check before showing
 
@@ -68,7 +68,7 @@ Only the drafts the user approved, and only after that approval:
 2. Write the drafts into `.agents/lessons/` with `status: proposed`, run `Get-Lessons.ps1 -Check` in the repository (exit 0, or only lines of existing lessons, which go into the PR body as known errors), commit `docs(lessons): <summary>` (`Refs #<issue>` when there is one).
 3. Open a normal pull request with `github-pull-request`, one line per lesson with its evidence in the body.
 
-The lesson is approved in that pull request: a reviewer sets `status: approved` (a commit in the PR) before the merge. A lesson merged as `proposed` is not loaded. `retro` never sets `approved` itself and never merges the PR.
+The lesson is approved in that pull request: a reviewer sets `status: approved` (a commit in the PR) before the merge. A lesson merged as `proposed` is not loaded. `retro` never sets `approved` itself and never merges the PR. The one exception is `retro file` (`references/file.md`): a lesson a person ticked in a retro comment goes into the PR with `status: approved`.
 
 ## Retire ineffective lessons
 

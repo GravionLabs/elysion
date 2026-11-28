@@ -7,7 +7,7 @@ nothing validates it, and a missed edit is invisible. Native sub-issues drive th
 bar and completion % automatically, so **closing a child is the only action needed** — there is no
 checklist to tick.
 
-Keep a human-readable parent line as the **first line of the child's body** (`Parent Epic: #12`,
+Keep a human-readable parent line as the **first line of the child's body** (`Parent Objective: #3`, `Parent Epic: #12`,
 `Parent Feature: #34`) so the relationship is legible in plain text and in
 search. That line is documentation; the native link is the mechanism. Both must agree.
 
@@ -17,7 +17,17 @@ PBIs and Bugs have no sub-issues. `[Task]` issues (label `task`, first line `Par
 
 ```powershell
 gh api repos/{owner}/{repo}/issues/<pbi>/sub_issues --jq '.[] | select(.state == "open") | select(any(.labels[]; .name == "task")) | .number' |
-  ForEach-Object { gh issue close $_ --comment "Closed with #<pbi>." }
+  ForEach-Object { gh issue comment $_ --body "Closed with #<pbi>."; gh issue close $_ }
+```
+
+## gh 2.94+ short forms
+
+When `gh --version` is 2.94 or newer, prefer the short forms; older `gh` uses the REST calls below (the scripts keep REST):
+
+```powershell
+gh issue create --parent <parent-nr> --blocked-by <a>,<b> ...   # at creation
+gh issue edit <parent-nr> --add-sub-issue <child-nr>
+gh issue edit <child-nr> --add-blocked-by <blocker-nr>
 ```
 
 ## Read the children of an issue
@@ -65,25 +75,33 @@ $blockerId = gh api repos/{owner}/{repo}/issues/<blocker-nr> --jq .id
 
 # add
 gh api -X POST repos/{owner}/{repo}/issues/<nr>/dependencies/blocked_by -F issue_id=$blockerId
-# read
-gh api repos/{owner}/{repo}/issues/<nr>/dependencies/blocked_by --jq '.[] | "\(.number) \(.state)"'
+# read: always with the repository, a blocker may live in another repo with the same number
+gh api repos/{owner}/{repo}/issues/<nr>/dependencies/blocked_by --jq '.[] | "\(.repository_url | sub(".*/repos/"; ""))#\(.number) \(.state)"'
 # remove
 gh api -X DELETE repos/{owner}/{repo}/issues/<nr>/dependencies/blocked_by/$blockerId
 ```
 
+Open blockers as one number (`0` = startable):
+
+```powershell
+gh api repos/{owner}/{repo}/issues/<nr> --jq .issue_dependencies_summary.blocked_by
+```
+
 `-F` (capital) sends `issue_id` as the integer the API expects. Adding an existing link
 fails with HTTP 422 "Target issue has already been taken": read the links first or treat that error
-as done, so a resumed run stays safe. The `Depends on` / `Blocked by #N` body line documents the link.
+as done, so a resumed run stays safe. A blocker from another repository: `$blockerId = gh api repos/<owner>/<repo>/issues/<blocker-nr> --jq .id`
+(the database id of the foreign issue), then the same POST. A read without `repository_url` confuses `#<n>` of
+another repo with a local number; `Get-Milestones.ps1` keeps `owner/repo` in `blockedBy[].repository`. The `Depends on` / `Blocked by #N` body line documents the link.
 
 ## Verify
 
 After any batch that creates or moves issues, confirm the two sources agree — the native link and
-the body line — and that every non-Epic issue has exactly one parent:
+the body line — and that every issue except an Objective or a top-level Epic has exactly one parent:
 
 ```powershell
 gh api repos/{owner}/{repo}/issues/<parent-nr>/sub_issues --jq 'length'
 gh api repos/{owner}/{repo}/issues/<child-nr> --jq '.body | split("\n")[0]'
-gh api repos/{owner}/{repo}/issues/<child-nr>/dependencies/blocked_by --jq '[.[].number]'
+gh api repos/{owner}/{repo}/issues/<child-nr>/dependencies/blocked_by --jq '[.[] | "\(.repository_url | sub(".*/repos/"; ""))#\(.number)"]'
 ```
 
 An issue that was created but never linked looks completely normal in `gh issue list`. Silent
