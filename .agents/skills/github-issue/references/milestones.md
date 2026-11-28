@@ -1,20 +1,22 @@
 # Milestones and the issue levels
 
-A milestone is a release and holds the work items that are delivered. The rule is written here once; `planner`, `roadmap`, `deliver` and `github-milestone` follow and check it. Its title is `M<nnn>` (three digits, `M001` to `M999`; the lookup accepts `M11` for `M011`), see `github-milestone`.
+A milestone is a roadmap entry of Features and the record of what a release shipped ([ADR 0010](https://github.com/GravionLabs/skills/blob/main/docs/adr/0010-milestones-hold-features-as-a-roadmap-and-record-what-a-release-shipped.md)). The rule is written here once; `planner`, `roadmap`, `deliver` and `github-milestone` follow and check it. Its title is `M<nnn>` (three digits, `M001` to `M999`; the lookup accepts `M11` for `M011`), see `github-milestone`. How milestones fit the path from Objective to release: [delivery model](https://gravionlabs.github.io/skills/delivery/model).
 
-| Level     | Milestone                                                          |
-| :-------- | :----------------------------------------------------------------- |
-| PBI       | Always: the milestone it is delivered in.                          |
-| Bug       | Always: the milestone it is delivered in.                          |
-| Feature   | Only when all its PBIs are in that same milestone, otherwise none. |
-| Epic      | Never.                                                             |
-| Objective | Never (it spans repos and releases).                               |
+| Level     | Milestone                                                                                                        |
+| :-------- | :--------------------------------------------------------------------------------------------------------------- |
+| Objective | Never (it spans repos and releases).                                                                             |
+| Epic      | Never.                                                                                                           |
+| Feature   | Planned: the release it is meant to ship in (rough roadmap), or none. Moves when its last PBI ships later.       |
+| PBI       | Not planned. Set at merge into `release/next` by GravionLabs/ci `release-branch.yml`: the milestone it ships in. |
+| Bug       | Not planned, also without a parent Feature (urgency is a label). Set at merge, like a PBI.                       |
 
-Why: `deliver --milestone` takes the open PBIs and Bugs of the milestone plus the work items below the Features in it. A Feature in the milestone with PBIs outside of it pulls those in, and they then do not count in the milestone progress. `deliver` therefore skips such an item (`#<nr> select: outside M<nnn>, skipped`); `/deliver <feature>` without `--milestone` delivers all its PBIs as before.
+A `release-test` is the exception: it is created in its milestone and stays there.
+
+Why: planning the work is the job of Objectives and Features, and what a release ships is decided by what is merged into `release/next`. So a milestone grows only by merges, planning a follow-up needs no new milestone, and its closed PBIs and Bugs are what shipped. The open work of a release is shown by the Features of the milestone: `deliver --milestone` takes the open PBIs and Bugs below those Features, plus the open PBIs and Bugs still in the milestone from before the migration.
 
 ## Setting a milestone
 
-Only `github-milestone assign M<nnn>|none #<nr> …` sets or clears the milestone of issues (`scripts/Get-Milestones.ps1 -Mode assign`; `-DryRun` writes nothing). Never set one by hand: the milestone flags of the `gh` issue-edit call (`--milestone`, `--remove-milestone`) are not used in any skill, because they skip the checks below and the report. `assign` takes an open milestone only (a missing `M<nnn>` is not created: `create` first), refuses an Epic or an Objective (except `none`) and a Feature whose open sub-issues would not all be in the milestone afterwards, and reports each change as `set` or `unchanged`. A PBI or Bug created by `github-issue` `references/create-from-plan.md` gets its milestone this way.
+Only `github-milestone assign M<nnn>|none #<nr> …` sets or clears the milestone of issues (`scripts/Get-Milestones.ps1 -Mode assign`; `-DryRun` writes nothing). Never set one by hand: the milestone flags of the `gh` issue-edit call (`--milestone`, `--remove-milestone`) are not used in any skill, because they skip the checks below and the report. `assign` takes an open milestone only (a missing `M<nnn>` is not created: `create` first), refuses an Epic or an Objective, and a PBI or Bug that is no `release-test` (except `none`; `-Force` sets a PBI or Bug for repairs), and reports each change as `set`, `forced` or `unchanged`. A Feature created by `github-issue` `references/create-from-plan.md` gets its milestone this way; a PBI or Bug created there gets none.
 
 ## Release test
 
@@ -28,8 +30,7 @@ An issue closes when its PR is merged into `release/next` (comment "ships with <
 
 ## Checks
 
-- `github-milestone assign` refuses an Epic (except `none`) and a Feature whose open sub-issues would not all be in the milestone, before the first write; `warnings` names a PBI or Bug left without a milestone (`no-milestone`).
-- `github-milestone` `current` and `<name>` list a `warnings` group: an Epic in the milestone; a Feature in it with open sub-issues outside of it (with their milestone or `none`).
-- `roadmap` (`Set-IssueMilestones.ps1`) refuses an Epic and a Feature whose open PBIs would not all be in its milestone; nothing is written then.
+- An Epic or an Objective in a milestone breaks the rule: `github-milestone assign` refuses both (except `none`), `roadmap` (`Set-IssueMilestones.ps1`) assigns through it. Fix it by clearing the milestone.
+- A Feature whose PBIs sit in other milestones or in none is the normal case, no warning. A PBI or Bug without a milestone is normal until it is merged.
+- An open PBI or Bug still in a milestone from before the migration is allowed; it stays workable until the migration (`github-milestone migrate`) clears it.
 - GravionLabs/ci: `project-needs.yml` (nightly, mode `project`) and `issue-events.yml` (on milestoned and demilestoned events) run `Sync-ProjectNeeds.ps1`, which checks the Current and Milestones fields of the project against the issues' milestones; it does not check the milestone rule itself.
-- Fix a warning by moving the PBIs into the milestone or clearing the milestone of the Feature or Epic.

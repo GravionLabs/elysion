@@ -17,7 +17,17 @@ PBIs and Bugs have no sub-issues. `[Task]` issues (label `task`, first line `Par
 
 ```powershell
 gh api repos/{owner}/{repo}/issues/<pbi>/sub_issues --jq '.[] | select(.state == "open") | select(any(.labels[]; .name == "task")) | .number' |
-  ForEach-Object { gh issue close $_ --comment "Closed with #<pbi>." }
+  ForEach-Object { gh issue comment $_ --body "Closed with #<pbi>."; gh issue close $_ }
+```
+
+## gh 2.94+ short forms
+
+When `gh --version` is 2.94 or newer, prefer the short forms; older `gh` uses the REST calls below (the scripts keep REST):
+
+```powershell
+gh issue create --parent <parent-nr> --blocked-by <a>,<b> ...   # at creation
+gh issue edit <parent-nr> --add-sub-issue <child-nr>
+gh issue edit <child-nr> --add-blocked-by <blocker-nr>
 ```
 
 ## Read the children of an issue
@@ -69,6 +79,12 @@ gh api -X POST repos/{owner}/{repo}/issues/<nr>/dependencies/blocked_by -F issue
 gh api repos/{owner}/{repo}/issues/<nr>/dependencies/blocked_by --jq '.[] | "\(.repository_url | sub(".*/repos/"; ""))#\(.number) \(.state)"'
 # remove
 gh api -X DELETE repos/{owner}/{repo}/issues/<nr>/dependencies/blocked_by/$blockerId
+```
+
+Open blockers as one number (`0` = startable):
+
+```powershell
+gh api repos/{owner}/{repo}/issues/<nr> --jq .issue_dependencies_summary.blocked_by
 ```
 
 `-F` (capital) sends `issue_id` as the integer the API expects. Adding an existing link

@@ -166,6 +166,20 @@ if (Test-Tool 'npm') {
     $results.missing += 'npm'
 }
 
+# ===== gh: never required, 2.94+ recommended (short forms for sub-issues and blockers) =====
+$ghRecommended = [version]'2.94.0'
+$ghFound = Test-Tool 'gh'
+if ($ghFound) {
+    $ghLine = Get-ToolVersion 'gh'
+    $ghMatch = [regex]::Match("$ghLine", '\d+\.\d+(\.\d+)?')
+    $ghNote = ''
+    if ($ghMatch.Success -and [version]$ghMatch.Value -lt $ghRecommended) {
+        $ghNote = ' (2.94+ recommended, not required: the github-issue short forms need it, the REST calls work without)'
+    }
+    $results.runtime['gh'] = "✓ $ghLine$ghNote"
+    Write-Host "  ✓ gh: $ghLine$ghNote" -ForegroundColor Green
+}
+
 # ===== ast-grep: required where sgconfig.yml exists =====
 $astGrepRequired = $false
 $repoRoot = $null
@@ -238,6 +252,7 @@ if ($Full) {
     foreach ($tool in $optionalTools) {
         if ($astGrepRequired -and $tool -eq 'ast-grep') { continue }
         if ($gitleaksRequired -and $tool -eq 'gitleaks') { continue }
+        if ($ghFound -and $tool -eq 'gh') { continue }
         if (Test-Tool $tool) {
             $version = if ($tool -eq 'gitleaks') { Get-ToolVersion $tool @('version') } else { Get-ToolVersion $tool }
             $results.optional[$tool] = "✓ $version"

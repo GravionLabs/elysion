@@ -11,6 +11,7 @@ blocked-by links. Link calls and their gotchas: `sub-issues.md`.
   user and wait for the answers. Fold the answers into the affected item bodies; create nothing
   before that.
 - Show the items (id, title, size, `blocked_by`, `repo`) for approval.
+- Protected paths: run the check of the `planner` skill (its `references/ready.md`, "Protected paths") on the plan; exit 1 → create nothing until the errors are fixed.
 - Repositories: an item without `repo` goes to the current repository. Every `repo`, `parent_repo` and repository of `blocked_by` and `requires[]` has the owner of the plan; another owner → stop, create nothing.
 
 ## 2. Create each item, in plan order
@@ -23,6 +24,8 @@ blocked-by links. Link calls and their gotchas: `sub-issues.md`.
 There is no `task` level: no `[Task]` issue is created.
 
 Each entry of `items[].labels` is added with one more `--label` (`interactive`: create the label with `gh label create` when the repository lacks it).
+
+A `pbi` body (and a `bug` split) carries `## Current behavior`, `## Desired behavior` and `## Out of scope` (templates `pbi.md`, `bug_report.md`); symbols and interfaces are named, never line numbers. A body without them is not created: add them first.
 
 The body is used as given; its first line is already `Parent …: #N` (none for a split of an issue without parent).
 
@@ -41,7 +44,7 @@ Link every created issue to `parent_issue` (`sub-issues.md`, "Link a child to a
 parent"); with `parent_repo` (the Objective) the child's database id comes from its own repository and the POST goes to the foreign parent: `gh api -X POST repos/<parent_repo>/issues/<parent_issue>/sub_issues -F sub_issue_id=$childId`; in a split, to the Feature of the body's first line (no line: no link). A plan from a
 description creates no issues.
 
-Milestone: a created PBI or Bug gets the milestone of the plan with `github-milestone assign M<nnn> #<nr> …` (`milestones.md`, "Setting a milestone"), never `gh issue edit --milestone`; a Feature only when all its PBIs are in it. A Feature of an `objective` plan gets one only when the user names a milestone of its target repository: `github-milestone assign` there (`Get-Milestones.ps1 -Mode assign -Repo <repo> -Name M<nnn> -Issues <nr>`); never the Objective.
+Milestone ([ADR 0010](https://github.com/GravionLabs/skills/blob/main/docs/adr/0010-milestones-hold-features-as-a-roadmap-and-record-what-a-release-shipped.md)): a created Feature gets the milestone of the plan, when it has one, with `github-milestone assign M<nnn> #<nr> …` (`milestones.md`, "Setting a milestone"), never `gh issue edit --milestone`; created PBIs and Bugs get none (set at merge). A Feature of an `objective` plan gets one only when the user names a milestone of its target repository: `github-milestone assign` there (`Get-Milestones.ps1 -Mode assign -Repo <repo> -Name M<nnn> -Issues <nr>`); never the Objective.
 
 ## 4. Blocked-by links
 

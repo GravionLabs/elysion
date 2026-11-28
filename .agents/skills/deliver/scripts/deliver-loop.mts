@@ -1,13 +1,16 @@
 #!/usr/bin/env node
-// deliver loop: a fresh agent session per issue, merge its pull request, then the next issue.
+// deliver loop: a fresh agent session per issue, a review session for its pull request, merge, then the next issue.
 // The state is read from the tracker before every issue. The run only remembers what it set aside.
-// Tracker: tracker.mts. Progress events: events.mts. Everything else is in this file.
+// Tracker: tracker.mts. Progress events: events.mts. Review settings and verdict: review.mts. Issue stage: stage.mts.
+// Model of each session: session-models.mts.
+// Comments on the issue: handover.mts.
 import { execFileSync } from 'node:child_process';
 import {
   appendFileSync,
   createWriteStream,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -18,12 +21,34 @@ import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 import { appSettings, tokenSource as makeSource } from './app-token.mts';
-import { type Emit, openEvents } from './events.mts';
-import { finishReport, programStatus } from './program-status.mts';
-import { HARNESSES } from './harness.mts';
+import { eventsDirectory, pruneRuns, runOrigin } from './event-dir.mts';
+import { type Emit, openEvents, reasonCode, uuid7 } from './events.mts';
+import { type Note, handoverNote, reviewNote } from './handover.mts';
+import { type BlockedReason, finishReport, programStatus } from './program-status.mts';
+import { cargoTomlKeys } from './cargo-toml.mts';
+import { directoryPackagesPropsKeys } from './directory-packages-props.mts';
+import { goModKeys } from './go-mod.mts';
+import { pyprojectTomlKeys } from './pyproject-toml.mts';
+import { pnpmWorkspaceKeys } from './pnpm-workspace.mts';
+import { HARNESSES, type Harness } from './harness.mts';
 import { adoptLegacyEnv, unknownConfigKeys } from './legacy.mts';
 import { killTree, launch, promptPath } from './process.mts';
 import { progressLine } from './progress-bar.mts';
+import { MANIFESTS, exceptedManifest, protectedHits, protectedList } from './protected-paths.mts';
+import {
+  RISK_LEVELS,
+  type ReviewMark,
+  type ReviewSettings,
+  type Verdict,
+  findingsLine,
+  featureText,
+  parseVerdict,
+  retroSettings,
+  reviewSettings,
+} from './review.mts';
+import { type HarnessName, type Tier, readLayers } from './resolve-model.mts';
+import { type Pick, sessionModels } from './session-models.mts';
+import { type StageEvent, stageAfter, stageOf } from './stage.mts';
 import { type BaseState, type Gate, type Item, type Pull, loadTracker } from './tracker.mts';
 
 // before anything reads the environment; the warnings are printed once the log exists
@@ -34,25 +59,30 @@ const parsed = (() => {
     return parseArgs({
       options: {
         milestone: { type: 'string' },
+        feature: { type: 'string' },
         issues: { type: 'string' },
         base: { type: 'string' },
         tracker: { type: 'string' },
         harness: { type: 'string' },
         max: { type: 'string', default: '0' },
         model: { type: 'string' },
+        'review-model': { type: 'string' },
+        'review-harness': { type: 'string' },
         'session-minutes': { type: 'string', default: '90' },
         'merge-minutes': { type: 'string', default: '30' },
         'handover-minutes': { type: 'string' },
+        'merge-risk': { type: 'string' },
         'dry-run': { type: 'boolean', default: false },
         'allow-no-required-checks': { type: 'boolean', default: false },
         'trust-authors': { type: 'boolean', default: false },
+        'no-retro': { type: 'boolean', default: false },
       },
     });
   } catch (error) {
     // an unknown option or a missing value: one line, no stack trace
     const message = (error as Error).message.split('\n')[0];
     console.error(
-      `deliver-loop: ${message}. Options: --milestone, --issues, --base, --tracker, --harness, --max, --model, --session-minutes, --merge-minutes, --handover-minutes, --dry-run, --allow-no-required-checks, --trust-authors.`,
+      `deliver-loop: ${message}. Options: --milestone, --feature, --issues, --base, --tracker, --harness, --max, --model, --review-model, --review-harness, --session-minutes, --merge-minutes, --handover-minutes, --merge-risk, --dry-run, --allow-no-required-checks, --trust-authors, --no-retro.`,
     );
     process.exit(1);
   }
@@ -68,7 +98,12 @@ type Session = {
   timedOut?: boolean;
   /** The reason of a final `result: blocked <reason>` line of the session. */
   blocked?: string;
+  /** Set for a review session. */
+  role?: 'review';
+  model: string;
+  tier: Tier;
 };
+type Retro = { url?: string; failed?: string };
 type Tone = 'ok' | 'bad' | 'warn' | 'info' | 'dim' | 'bold';
 
 const run = (cmd: string, args: string[], cwd?: string): string =>
@@ -119,8 +154,11 @@ const fail = (message: string, code: number): never => {
   process.exit(code);
 };
 
-if (!opt.milestone === !opt.issues)
-  fail('give exactly one of --milestone <M…> or --issues <nr,…>', 64);
+if ([opt.milestone, opt.feature, opt.issues].filter((value) => value !== undefined).length !== 1)
+  fail('give exactly one of --milestone <M…>, --feature <nr> or --issues <nr,…>', 64);
+if (opt.milestone === '' || opt.issues === '') fail('--milestone and --issues need a value', 64);
+if (opt.feature !== undefined && !/^[1-9]\d*$/.test(opt.feature))
+  fail('--feature needs the number of an issue', 64);
 const whole = (name: 'max' | 'session-minutes' | 'merge-minutes', least: number): number => {
   const value = Number(opt[name]);
   if (!Number.isInteger(value) || value < least)
@@ -151,6 +189,9 @@ let config: {
     tracker?: string;
     protectedPaths?: string[];
     handoverMinutes?: number;
+    mergeRisk?: unknown;
+    review?: unknown;
+    retro?: unknown;
   };
 } = {};
 try {
@@ -162,14 +203,21 @@ try {
 const HANDOVER_MINUTES = Number(opt['handover-minutes'] ?? config.deliver?.handoverMinutes ?? 120);
 if (!Number.isInteger(HANDOVER_MINUTES) || HANDOVER_MINUTES < 0)
   fail('--handover-minutes (deliver.handoverMinutes) needs a whole number from 0', 64);
+// The highest risk level the loop merges: the flag, then the config, else medium. A level above it is handed over.
+const MERGE_RISK = String(opt['merge-risk'] ?? config.deliver?.mergeRisk ?? 'medium');
+if (!RISK_LEVELS.includes(MERGE_RISK))
+  fail(
+    `--merge-risk (deliver.mergeRisk) is one of ${RISK_LEVELS.join(', ')}, not "${MERGE_RISK}"`,
+    2,
+  );
 for (const warning of legacyWarnings) log(warning, 'warn');
 const configWarning = unknownConfigKeys(config.deliver);
 if (configWarning) log(configWarning, 'warn');
-// The base: the flag, then the project config; else release/next for a milestone and the default branch otherwise.
+// The base: the flag, then the project config; else release/next for a milestone or a Feature and the default branch otherwise.
 const BASE: string =
   opt.base ??
   config.deliver?.base ??
-  (opt.milestone
+  (opt.milestone || opt.feature
     ? 'release/next'
     : (attempt('git', ['ls-remote', '--symref', 'origin', 'HEAD'], root)?.match(
         /^ref: refs\/heads\/(\S+)\s+HEAD/m,
@@ -180,7 +228,59 @@ const harnessName = String(opt.harness ?? config.deliver?.harness ?? 'claude');
 const harness =
   HARNESSES[harnessName] ??
   fail(`unknown harness "${harnessName}": one of ${Object.keys(HARNESSES).join(', ')}`, 64);
-const MODEL = opt.model ?? harness.defaultModel;
+const REVIEW: ReviewSettings = (() => {
+  try {
+    return reviewSettings({
+      flags: { model: opt['review-model'], harness: opt['review-harness'] },
+      config: config.deliver?.review,
+      implementer: { harnessName },
+    });
+  } catch (error) {
+    return fail((error as Error).message, 64);
+  }
+})();
+// --model, --review-model and deliver.review.model win; else the top-level key `models` decides per role
+const MODELS = (() => {
+  try {
+    return sessionModels({
+      layers: readLayers(root),
+      harness: harnessName as HarnessName,
+      reviewHarness: REVIEW.harnessName as HarnessName,
+      model: opt.model,
+      reviewModel: REVIEW.model,
+    });
+  } catch (error) {
+    return fail(`models: ${(error as Error).message}`, 64);
+  }
+})();
+for (const warning of MODELS.warnings) log(warning, 'warn');
+// what a run starts with: an issue of tier standard; the tier of each issue decides its own sessions
+const STANDARD = { implement: MODELS.implement(''), review: MODELS.review('') };
+const RETRO = (() => {
+  try {
+    return retroSettings({
+      disabled: opt['no-retro'],
+      config: config.deliver?.retro,
+      defaultModel: MODELS.retro.model,
+    });
+  } catch (error) {
+    return fail((error as Error).message, 64);
+  }
+})();
+const MODEL_LINE = `implement ${opt.model ?? `by the issue's tier (standard ${STANDARD.implement.model})`}, review ${STANDARD.review.model}, retro ${RETRO.enabled ? RETRO.model : 'off'}`;
+// the retro session reads and writes one comment (through its script): it never pushes or changes issues and pull requests
+const RETRO_DENY = [
+  'git push',
+  'gh issue create',
+  'gh issue edit',
+  'gh issue close',
+  'gh pr create',
+  'gh pr edit',
+  'gh pr merge',
+  'gh pr close',
+];
+// A fix round per `changes` verdict, at most this many per issue and run; the next `changes` sets the issue aside.
+const FIX_ROUNDS = 2;
 // Tests only: a command from the environment of the user (JSON array, the prompt is appended).
 const HARNESS_OVERRIDE: string[] | undefined = process.env.DELIVER_HARNESS
   ? JSON.parse(process.env.DELIVER_HARNESS)
@@ -208,29 +308,9 @@ if (HARNESS_OVERRIDE?.some((part) => path.isAbsolute(part) && inside(part))) {
 if (process.env.DELIVER_TRACKER_DIR && inside(process.env.DELIVER_TRACKER_DIR)) {
   fail('DELIVER_TRACKER_DIR must not be inside the repository', 64);
 }
-// A pull request that changes one of these is never merged by the loop: a person looks at it first.
-// `dir/` is a directory at the root, anything else a file name anywhere. deliver.protectedPaths replaces the list.
-// The default list is `protected-paths.json` next to the skill (`planner` reads the same file).
-const PROTECTED: string[] =
-  config.deliver?.protectedPaths ??
-  JSON.parse(
-    readFileSync(
-      path.join(path.dirname(fileURLToPath(import.meta.url)), '../protected-paths.json'),
-      'utf8',
-    ),
-  );
-// Without regard to case (a checkout on macOS or Windows writes `.Claude/` into `.claude/`), and a file named
-// like a protected directory counts too (a symlink `.claude`).
-const protectedHits = (files: string[]): string[] =>
-  files.filter((file) => {
-    const name = file.toLowerCase();
-    return PROTECTED.some((entry) => {
-      const guarded = entry.toLowerCase();
-      return guarded.endsWith('/')
-        ? name.startsWith(guarded) || name === guarded.slice(0, -1)
-        : name === guarded || path.posix.basename(name) === guarded;
-    });
-  });
+// A pull request that changes one of these is never merged by the loop: a person looks at it first
+// (the matching rules: protected-paths.mts, which `planner` uses too).
+const PROTECTED: string[] = protectedList(config.deliver?.protectedPaths);
 // A `package.json` whose difference is only in these keys is no hit. A fixed list: a repository cannot widen it.
 const DEPENDENCY_KEYS = [
   'dependencies',
@@ -275,10 +355,103 @@ function packageJsonKeys(file: string, refs: { base: string; head: string }): st
     .filter((key) => !DEPENDENCY_KEYS.includes(key) && !sameJson(a[key], b[key]))
     .sort();
 }
-/** The protected hits, a `package.json` that differs only in its dependency maps dropped, the others named with their keys. */
+/**
+ * The parts outside the dependency entries in which `Cargo.toml` differs between the merge base and `head`;
+ * `undefined` when unknown (added, deleted, a file the parser does not understand), then the file is a plain hit.
+ */
+function cargoTomlParts(file: string, refs: { base: string; head: string }): string[] | undefined {
+  const before = tracker.fileAt(refs.base, file);
+  const after = tracker.fileAt(refs.head, file);
+  if (before === undefined || after === undefined) return undefined;
+  try {
+    return cargoTomlKeys(before, after);
+  } catch {
+    return undefined;
+  }
+}
+/**
+ * The top-level parts outside the catalog entries in which `pnpm-workspace.yaml` differs between the merge base and
+ * `head`; `undefined` when unknown (added, deleted, a file the strict parser does not understand).
+ */
+function pnpmWorkspaceParts(
+  file: string,
+  refs: { base: string; head: string },
+): string[] | undefined {
+  const before = tracker.fileAt(refs.base, file);
+  const after = tracker.fileAt(refs.head, file);
+  if (before === undefined || after === undefined) return undefined;
+  try {
+    return pnpmWorkspaceKeys(before, after);
+  } catch {
+    return undefined;
+  }
+}
+/**
+ * The parts outside the requirement lists in which `pyproject.toml` differs between the merge base and `head`;
+ * `undefined` when unknown (added, deleted, a file the strict parser does not understand).
+ */
+function pyprojectTomlParts(
+  file: string,
+  refs: { base: string; head: string },
+): string[] | undefined {
+  const before = tracker.fileAt(refs.base, file);
+  const after = tracker.fileAt(refs.head, file);
+  if (before === undefined || after === undefined) return undefined;
+  try {
+    return pyprojectTomlKeys(before, after);
+  } catch {
+    return undefined;
+  }
+}
+/**
+ * The directives other than `require` in which `go.mod` differs between the merge base and `head`;
+ * `undefined` when unknown (added, deleted, a line the strict parser does not understand).
+ */
+function goModParts(file: string, refs: { base: string; head: string }): string[] | undefined {
+  const before = tracker.fileAt(refs.base, file);
+  const after = tracker.fileAt(refs.head, file);
+  if (before === undefined || after === undefined) return undefined;
+  try {
+    return goModKeys(before, after);
+  } catch {
+    return undefined;
+  }
+}
+/**
+ * The parts outside the `PackageVersion` items in which `Directory.Packages.props` differs between the merge base and
+ * `head`; `undefined` when unknown (added, deleted, markup the strict parser does not understand).
+ */
+function directoryPackagesPropsParts(
+  file: string,
+  refs: { base: string; head: string },
+): string[] | undefined {
+  const before = tracker.fileAt(refs.base, file);
+  const after = tracker.fileAt(refs.head, file);
+  if (before === undefined || after === undefined) return undefined;
+  try {
+    return directoryPackagesPropsKeys(before, after);
+  } catch {
+    return undefined;
+  }
+}
+/** The files with a comparator, by lower-case name: what differs outside the allowed parts, `undefined` when unknown. */
+const COMPARATORS: Record<(typeof MANIFESTS)[number], typeof packageJsonKeys> = {
+  'package.json': packageJsonKeys,
+  'cargo.toml': cargoTomlParts,
+  'pnpm-workspace.yaml': pnpmWorkspaceParts,
+  'pyproject.toml': pyprojectTomlParts,
+  'go.mod': goModParts,
+  'directory.packages.props': directoryPackagesPropsParts,
+};
+/** The protected hits, a `package.json`, `Cargo.toml`, `pnpm-workspace.yaml`, `pyproject.toml`, `go.mod` or `Directory.Packages.props` that differs only in its dependencies dropped, the others named with their parts. */
 function judgeHits(pull: Pull, files: string[], head?: string): string[] {
-  const hits = protectedHits(files);
-  if (!hits.some((file) => path.posix.basename(file.toLowerCase()) === 'package.json')) return hits;
+  const hits = protectedHits(files, PROTECTED);
+  if (
+    !hits.some((file) =>
+      (MANIFESTS as readonly string[]).includes(path.posix.basename(file.toLowerCase())),
+    )
+  )
+    return hits;
   let refs: { base: string; head: string } | undefined;
   try {
     refs = tracker.compareRefs(pull, head);
@@ -287,18 +460,16 @@ function judgeHits(pull: Pull, files: string[], head?: string): string[] {
   }
   const out: string[] = [];
   for (const file of hits) {
-    // the case-folded name matches `package.json`; the file itself is read under its own name
-    const lower = file.toLowerCase();
-    const inDirectory = PROTECTED.some(
-      (entry) => entry.endsWith('/') && lower.startsWith(entry.toLowerCase()),
-    );
-    if (inDirectory || path.posix.basename(lower) !== 'package.json') {
+    // the case-folded name matches the manifest; the file itself is read under its own name
+    const manifest = exceptedManifest(file, PROTECTED);
+    if (!manifest) {
       out.push(file);
       continue;
     }
+    const compare = COMPARATORS[manifest];
     let keys: string[] | undefined;
     try {
-      keys = packageJsonKeys(file, refs);
+      keys = compare(file, refs);
     } catch {
       keys = undefined;
     }
@@ -358,7 +529,11 @@ const runDir = path.join(commonDir, 'deliver', runId);
 const tracker = await loadTracker(opt.tracker ?? config.deliver?.tracker ?? 'github', {
   cwd: root,
   base: BASE,
-  selection: { milestone: opt.milestone, issues: opt.issues?.split(',').map((nr) => nr.trim()) },
+  selection: {
+    milestone: opt.milestone,
+    feature: opt.feature,
+    issues: opt.issues?.split(',').map((nr) => nr.trim()),
+  },
   trustAuthors: opt['trust-authors'],
   stopFile: path.join(runDir, 'stop'),
   onStop: requestStop,
@@ -401,7 +576,9 @@ function finishedResult(line: string): boolean {
     if (event?.type !== 'result' || event.is_error || typeof event.result !== 'string')
       return false;
     const last = event.result.trimEnd().split('\n').pop() ?? '';
-    return /^result: (pr \S+|needs-decision|blocked\b.*)$/.test(last.trim());
+    return /^result: (pr \S+|needs-decision|reviewed (approve|changes)|retro \S+|blocked\b.*)$/.test(
+      last.trim(),
+    );
   } catch {
     return false;
   }
@@ -451,27 +628,184 @@ function render(line: string, session: Session): void {
   }
 }
 
-const RISK_LEVELS = ['low', 'medium', 'high'];
+/** Writes the stage of the issue after the event. A failing call is logged: the label never decides about the run. */
+function mark(item: Item, event: StageEvent): void {
+  try {
+    tracker.setStage(item, stageAfter(event));
+  } catch (error) {
+    log(`#${item.id} stage label not written: ${firstLine(error)}`, 'warn');
+  }
+}
+
+/** Comments on the issue, once per marker. A failing call is logged, as for the label. */
+function note(item: Item, { marker, body }: Note): void {
+  try {
+    tracker.commentOnce(item, marker, body);
+  } catch (error) {
+    log(`#${item.id} issue comment not written: ${firstLine(error)}`, 'warn');
+  }
+}
+
+/** Tells the person on the issue why it is theirs now, once per reason and head of the pull request. */
+function tell(item: Item, pull: Pull | undefined, reason: string, planned: boolean): void {
+  let head = 'none';
+  if (pull) {
+    try {
+      head = tracker.compareRefs(pull).head;
+    } catch {
+      head = 'unknown';
+    }
+  }
+  const urls = pull ? [pull.url, ...(pull.others ?? [])] : [];
+  note(item, handoverNote({ reason, planned, head, urls, risk: risks.get(item.id) }));
+}
+
+/**
+ * The next step of an issue; `merge` names the approved commit, `reviewFile` holds the findings the implementer
+ * fixes.
+ */
+type Step =
+  | { step: 'implement'; reviewFile?: string }
+  | { step: 'review' }
+  | { step: 'merge'; head: string };
+
+/**
+ * Where the label of an earlier run lets the loop go on with an open pull request. `approved` counts only with the
+ * approving verdict the loop recorded for the current head, else the pull request is reviewed. The marks of the
+ * earlier run also give back its risk level and, for `changes`, the findings of the last review.
+ */
+function resumeAt(item: Item, pull: Pull): Step {
+  const stage = stageOf(item.labels);
+  let marks: ReviewMark[] | undefined;
+  try {
+    marks = tracker.recordedVerdicts(pull);
+  } catch (error) {
+    log(`#${item.id} review marks unreadable: ${firstLine(error)}`, 'warn');
+  }
+  for (const { risk } of marks ?? []) noteRisk(item.id, risk);
+  // a run that ended before the verdict left the level only in its result file
+  for (const level of earlierRisks(item)) noteRisk(item.id, level);
+  // handed over for its risk: still approved, so it goes to the merge gate again and no session is paid for
+  const heldForRisk = stage === 'handover' && riskHold(item.id) !== undefined;
+  if (stage === 'approved' || heldForRisk) {
+    if (marks) {
+      try {
+        const { head } = tracker.compareRefs(pull);
+        const latest = [...marks].reverse().find((m) => m.head === head);
+        if (latest?.verdict === 'approve') return { step: 'merge', head };
+        if (!heldForRisk)
+          log(
+            `#${item.id} agent:approved without an approving review of ${head}: reviews it`,
+            'warn',
+          );
+      } catch (error) {
+        log(`#${item.id} review verdict unreadable: ${firstLine(error)}, reviews it`, 'warn');
+      }
+    }
+    if (!heldForRisk) return { step: 'review' };
+  }
+  if (stage === 'review') return { step: 'review' };
+  const last = marks?.at(-1);
+  if (stage === 'changes' && last?.review) {
+    const reviewFile = path.join(runDir, `${item.id}.review-recorded.json`);
+    writeFileSync(reviewFile, `${JSON.stringify(last.review, null, 2)}\n`);
+    return { step: 'implement', reviewFile };
+  }
+  if (stage === 'changes')
+    log(`#${item.id} no recorded findings: the implementer starts without them`, 'warn');
+  return { step: 'implement' };
+}
+
 const risks = new Map<number, string>();
 /** The implementer result the session writes (`risk.level`); the session never reports anything else to the loop. */
 const resultFile = (item: Item) => path.join(runDir, `${item.id}.result.json`);
-function riskOf(item: Item): string | undefined {
+function riskOf(file: string): string | undefined {
   try {
-    const level = JSON.parse(readFileSync(resultFile(item), 'utf8'))?.risk?.level;
+    const level = JSON.parse(readFileSync(file, 'utf8'))?.risk?.level;
     return RISK_LEVELS.includes(level) ? level : undefined;
   } catch {
     return undefined;
   }
 }
+/** The levels the result files of earlier runs hold for the issue. */
+function earlierRisks(item: Item): (string | undefined)[] {
+  const runs = path.dirname(runDir);
+  return readdirSync(runs).map((name) => riskOf(path.join(runs, name, `${item.id}.result.json`)));
+}
+/** The highest level seen wins: a later fix or repair session never lowers the risk of the pull request. */
+function noteRisk(id: number, level: string | undefined): void {
+  if (level && RISK_LEVELS.indexOf(level) > RISK_LEVELS.indexOf(risks.get(id) ?? ''))
+    risks.set(id, level);
+}
+/** Why the loop does not merge the pull request of the issue for its risk; a missing level counts as medium. */
+function riskHold(id: number): string | undefined {
+  const level = risks.get(id) ?? 'medium';
+  return RISK_LEVELS.indexOf(level) > RISK_LEVELS.indexOf(MERGE_RISK)
+    ? `risk ${level}${HANDS_OFF}`
+    : undefined;
+}
 
-async function startSession(item: Item, cwd: string, file: string): Promise<Session> {
-  // the session works from this text, not from what the tracker shows when it runs
-  const issueFile = path.join(runDir, `${item.id}.issue.md`);
-  writeFileSync(issueFile, `# ${item.title}\n\n${item.url}\n\n${item.body}\n`);
-  const prompt = `/deliver ${item.id} --base ${BASE} --issue-file ${promptPath(issueFile)}`;
+/** What one session is for: the implementer of the issue, the review of its pull request, or the retro of the run. */
+type Task = {
+  /** The slash command; the loop appends the issue file. */
+  prompt: string;
+  harness: Harness;
+  model: string;
+  /** The tier of the role for this session, also when a flag or setting names the model. */
+  tier: Tier;
+  effort?: string;
+  /** Commands the session may not run (`HarnessInput.deny`). */
+  deny?: string[];
+  /** The file the session writes its answer to, and the variable that names it. */
+  output: {
+    name: 'DELIVER_RESULT_FILE' | 'DELIVER_REVIEW_FILE' | 'DELIVER_RETRO_FILE';
+    file: string;
+  };
+  /** A failed session that left its work behind is no harness failure. */
+  delivered(): boolean;
+  role?: 'review';
+};
+
+// a note about the model of an issue is logged once per run
+const modelNotes = new Set<string>();
+function picked(item: Item, { model, tier, note }: Pick): { model: string; tier: Tier } {
+  const line = note && `#${item.id} ${note}`;
+  if (line && !modelNotes.has(line)) {
+    modelNotes.add(line);
+    log(line, 'warn');
+  }
+  return { model, tier };
+}
+
+/** The implementer session; `reviewFile` is the verdict whose findings it fixes. */
+const implementer = (item: Item, reviewFile?: string): Task => ({
+  prompt: `/deliver ${item.id} --base ${BASE}${reviewFile ? ` --review-file ${promptPath(reviewFile)}` : ''}`,
+  harness,
+  ...picked(item, MODELS.implement(item.body)),
+  output: { name: 'DELIVER_RESULT_FILE', file: resultFile(item) },
+  // a pull request means the session did its work: the normal rules for a failed session apply
+  delivered: () => Boolean(tracker.pullOf(item)),
+});
+
+/** `item`: the issue of the session; undefined for a session of the whole run (the retro). */
+async function startSession(
+  item: Item | undefined,
+  cwd: string,
+  file: string,
+  task: Task,
+): Promise<Session> {
+  const label = item ? `#${item.id}` : 'retro';
+  let prompt = task.prompt;
+  if (item) {
+    // the session works from this text, not from what the tracker shows when it runs
+    const issueFile = path.join(runDir, `${item.id}.issue.md`);
+    writeFileSync(issueFile, `# ${item.title}\n\n${item.url}\n\n${item.body}\n`);
+    prompt += ` --issue-file ${promptPath(issueFile)}`;
+  }
+  const { model, effort, deny } = task;
   const argv = HARNESS_OVERRIDE
     ? [...HARNESS_OVERRIDE, prompt]
-    : harness.command({ prompt, model: opt.model });
+    : task.harness.command({ prompt, model, effort, deny });
   // an app token is renewed when less than the session timeout is left; the merge keeps the login of the user
   const sessionToken = tokenSource ? await tokenSource.current() : undefined;
   if (sessionToken?.renewed) log('app token minted for this session', 'dim');
@@ -481,7 +815,6 @@ async function startSession(item: Item, cwd: string, file: string): Promise<Sess
     CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: '0',
     ...process.env,
     DELIVER_RUN: runId,
-    DELIVER_RESULT_FILE: resultFile(item),
     ...(token ? tracker.sessionEnv(token) : {}),
   };
   // the session gets the token, never the way to mint one
@@ -491,11 +824,24 @@ async function startSession(item: Item, cwd: string, file: string): Promise<Sess
     'DELIVER_APP_KEY_FILE',
     'DELIVER_APP_KEY_COMMAND',
     'DELIVER_APP_API_URL',
+    // a session gets only the file it writes
+    'DELIVER_RESULT_FILE',
+    'DELIVER_REVIEW_FILE',
+    'DELIVER_RETRO_FILE',
   ])
     delete env[name];
-  // a result of an earlier session is not the result of this one
-  rmSync(resultFile(item), { force: true });
-  const session: Session = { exit: null, turns: 0, costUsd: 0, peakContext: 0 };
+  env[task.output.name] = task.output.file;
+  // the answer of an earlier session is not the answer of this one
+  rmSync(task.output.file, { force: true });
+  const session: Session = {
+    exit: null,
+    turns: 0,
+    costUsd: 0,
+    peakContext: 0,
+    ...(task.role && { role: task.role }),
+    model,
+    tier: task.tier,
+  };
   const out = createWriteStream(file);
   return new Promise((done) => {
     const child = launch(argv, {
@@ -522,11 +868,11 @@ async function startSession(item: Item, cwd: string, file: string): Promise<Sess
       if (finishedResult(line)) {
         grace = setTimeout(() => {
           finished = true;
-          log(`#${item.id} session printed its result and stays alive: ended by the loop`, 'dim');
+          log(`${label} session printed its result and stays alive: ended by the loop`, 'dim');
           killTree(child);
         }, RESULT_GRACE_MS);
       }
-      if (harness.claudeStream) render(line, session);
+      if (task.harness.claudeStream) render(line, session);
       else {
         // no stream format: the plain lines of the harness, without color codes and empty lines
         const plain = line.replace(/\u001b\[[0-9;]*[A-Za-z]/g, '').trimEnd();
@@ -536,7 +882,7 @@ async function startSession(item: Item, cwd: string, file: string): Promise<Sess
         }
       }
     });
-    child.on('error', (error) => log(`#${item.id} session: ${error.message}`, 'bad'));
+    child.on('error', (error) => log(`${label} session: ${error.message}`, 'bad'));
     child.on('close', (code) => {
       clearTimeout(timer);
       clearTimeout(grace);
@@ -563,12 +909,14 @@ async function runSession(
   item: Item,
   worktree: string,
   sessions: Session[],
+  task: Task = implementer(item),
 ): Promise<{ session: Session; reason?: string }> {
   for (;;) {
     const session = await startSession(
       item,
       worktree,
       path.join(runDir, `${item.id}-${sessions.length + 1}.jsonl`),
+      task,
     );
     sessions.push(session);
     if (stopped) return { session };
@@ -583,8 +931,7 @@ async function runSession(
       harnessFailures = 0;
       return { session };
     }
-    // a pull request means the session did its work: the normal rules for a failed session apply
-    if (tracker.pullOf(item)) return { session };
+    if (task.delivered()) return { session };
     harnessFailures += 1;
     if (harnessFailures >= HARNESS_WAITS_MINUTES.length) {
       harnessDead = { count: harnessFailures, exit: session.exit };
@@ -598,6 +945,69 @@ async function runSession(
     for (let half = 0; half < minutes * 2 && !stopped; half++) await sleep(30);
     if (stopped) return { session };
   }
+}
+
+// A review without a valid verdict gets one more session, then the issue is set aside.
+const REVIEW_ATTEMPTS = 2;
+
+type Review = { round: number; verdict: Verdict['verdict'] | 'failed' };
+type Reviewed = { verdict: Verdict; file: string; head: string } | { reason: string };
+
+/**
+ * One review round: a session of its own in a fresh worktree at the head of the pull request, which writes its
+ * verdict to a file. `head` is the commit that was reviewed: the only one the loop may merge.
+ */
+async function review(
+  item: Item,
+  pull: Pull,
+  round: number,
+  sessions: Session[],
+): Promise<Reviewed> {
+  const worktree = path.join(path.dirname(root), `${path.basename(root)}-wt-${item.id}-review`);
+  const drop = () => attempt('git', ['worktree', 'remove', '--force', worktree], root);
+  let problem = 'no valid verdict';
+  for (let tries = 1; tries <= REVIEW_ATTEMPTS; tries++) {
+    const file = path.join(runDir, `${item.id}.review-${round}-${tries}.json`);
+    try {
+      const { head } = tracker.compareRefs(pull);
+      // a failed fetch shows in the checkout: the commit is then missing
+      attempt('git', ['fetch', '--quiet', 'origin', pull.branch], root);
+      drop();
+      run('git', ['worktree', 'add', '--quiet', '--detach', worktree, head], root);
+      // the parent Feature as context of the review; the session never reads it from the tracker
+      let prompt = `/deliver-review ${item.id} --base ${BASE} --pr ${pull.url}`;
+      const feature = tracker.parentFeature(item);
+      if (feature) {
+        const featureFile = path.join(runDir, `${item.id}.feature.md`);
+        writeFileSync(featureFile, featureText(feature));
+        prompt += ` --feature-file ${promptPath(featureFile)}`;
+      }
+      const ran = await runSession(item, worktree, sessions, {
+        prompt,
+        harness: REVIEW.harness,
+        ...picked(item, MODELS.review(item.body)),
+        effort: REVIEW.effort,
+        output: { name: 'DELIVER_REVIEW_FILE', file },
+        delivered: () => existsSync(file),
+        role: 'review',
+      });
+      if (stopped) return { reason: 'stopped' };
+      if (ran.reason) return { reason: ran.reason };
+      if (ran.session.exit !== 0) problem = `session failed (exit ${ran.session.exit})`;
+      else {
+        const verdict = existsSync(file) ? parseVerdict(readFileSync(file, 'utf8')) : undefined;
+        if (verdict) return { verdict, file, head };
+        problem = existsSync(file) ? 'invalid verdict' : 'no verdict';
+      }
+    } catch (error) {
+      problem = firstLine(error);
+    } finally {
+      drop();
+    }
+    if (stopped) return { reason: 'stopped' };
+    if (tries < REVIEW_ATTEMPTS) log(`#${item.id} review: ${problem}, one retry`, 'warn');
+  }
+  return { reason: `review failed: ${problem}` };
 }
 
 /**
@@ -634,6 +1044,7 @@ async function repairConflict(
   if (read()?.state !== 'conflict') return undefined;
   conflictTried.add(item.id);
   log(`#${item.id} ${pull.url} has a conflict, one repair session`, 'warn');
+  mark(item, 'session-started');
   const ran = await runSession(item, worktree, sessions);
   if (stopped) return undefined;
   if (ran.reason) return `conflict not repaired: ${ran.reason}`;
@@ -644,8 +1055,52 @@ async function repairConflict(
   return 'conflict repaired';
 }
 
-/** Waits for the gate and merges. Returns nothing when merged, else the reason. */
-async function merge(pull: Pull): Promise<string | undefined> {
+/**
+ * The retro of the delivered milestone, one session in a worktree of its own: it posts its report as one comment
+ * (on the Feature, else on `release`) and writes the URL to its output file. Never throws: a retro that fails is
+ * reported and changes nothing else.
+ */
+async function retro(milestone: string, release: Pull | undefined): Promise<Retro> {
+  const worktree = path.join(path.dirname(root), `${path.basename(root)}-wt-retro`);
+  const drop = () => attempt('git', ['worktree', 'remove', '--force', worktree], root);
+  const file = path.join(runDir, 'retro.result.json');
+  const name = /\s/.test(milestone) ? JSON.stringify(milestone) : milestone;
+  try {
+    run('git', ['fetch', '--quiet', 'origin', BASE], root);
+    drop();
+    run('git', ['worktree', 'add', '--quiet', '--detach', worktree, `origin/${BASE}`], root);
+    log(`retro of ${milestone} (${REVIEW.harnessName}, ${RETRO.model})`, 'info');
+    const session = await startSession(undefined, worktree, path.join(runDir, 'retro.jsonl'), {
+      prompt: `/retro --milestone ${name} --post${release ? ` --release-pr ${release.url}` : ''}`,
+      harness: REVIEW.harness,
+      model: RETRO.model,
+      tier: MODELS.retro.tier,
+      effort: REVIEW.effort,
+      deny: RETRO_DENY,
+      output: { name: 'DELIVER_RETRO_FILE', file },
+      delivered: () => existsSync(file),
+    });
+    if (stopped) return {};
+    if (session.timedOut) return { failed: 'session timeout' };
+    if (session.exit !== 0) return { failed: `session failed (exit ${session.exit})` };
+    const url = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8'))?.url : undefined;
+    // as the script writes it: the name without the version of a released milestone
+    const marker = `<!-- retro: ${milestone.replace(/ \(\d+\.\d+\.\d+\)$/, '')} -->`;
+    if (typeof url !== 'string' || !tracker.isRetroComment(url, marker))
+      return { failed: 'no retro comment' };
+    return { url };
+  } catch (error) {
+    return { failed: firstLine(error) };
+  } finally {
+    drop();
+  }
+}
+
+/**
+ * Waits for the gate and merges the reviewed commit. Returns nothing when merged, else the reason. `held`: why a
+ * pull request that passes the gate is handed over instead.
+ */
+async function merge(pull: Pull, reviewed: string, held?: string): Promise<string | undefined> {
   const start = Date.now();
   let problem = '';
   while (!stopped) {
@@ -665,10 +1120,13 @@ async function merge(pull: Pull): Promise<string | undefined> {
     if (gate.state === 'ready' && (gate.reported || Date.now() - start > 90_000)) {
       await seeStop();
       if (stopped) break;
+      // only the approved commit is merged: what was pushed after the review was seen by nobody
+      if (gate.head !== reviewed) return `pushed after the review${HANDS_OFF}`;
       // the files of the commit that is merged, not of the one the session left: a later push is checked too.
       // The merge names gate.head, so a push after this read is refused by the tracker.
       const handsOff = await guard(pull, gate.head);
       if (handsOff) return handsOff;
+      if (held) return held;
       // the read of the files blocks too: a stop request that came in during it must be seen before the merge
       await seeStop();
       if (stopped) break;
@@ -752,53 +1210,127 @@ async function deliver(item: Item): Promise<{ reason?: string; pull?: Pull }> {
     }
     if (stopped) return { reason: 'stopped', pull: earlier };
   }
-  for (let round = 1; round <= 2; round++) {
-    const ran = await runSession(item, worktree, sessions);
-    const session = ran.session;
-    reason = undefined;
-    pull = tracker.pullOf(item);
+  const reviews: Review[] = [];
+  let fixes = 0;
+  let reviewFile: string | undefined;
+  let repaired = false;
+  let announced = false;
+  // a pull request of an earlier run: the label says whether it is built, reviewed or merged next
+  let next: Step = earlier ? resumeAt(item, earlier) : { step: 'implement' };
+  if (next.step !== 'implement') log(`#${item.id} resumes at the ${next.step}`, 'info');
+  else if (next.reviewFile) {
+    log(`#${item.id} resumes with the recorded findings`, 'info');
+    reviewFile = next.reviewFile;
+  }
+  for (;;) {
+    const from = next;
+    next = { step: 'implement' };
+    let session: Session | undefined;
     const settle = () => {
-      if (reason) reason = withBlocked(reason, session);
+      if (reason && session) reason = withBlocked(reason, session);
     };
-    // a stopped or failed session never leads to a merge, also when a pull request is open
-    if (stopped) reason = 'stopped';
-    else if (ran.reason) reason = ran.reason;
-    else if (session.exit !== 0) reason = `session failed (exit ${session.exit})`;
-    // the session asked a question: a pull request of an earlier run is not its answer
-    else if (tracker.needsDecision(item)) reason = 'needs-decision';
-    else if (!pull) {
-      // merged by hand while the session ran: delivered, not set aside
-      const byOther = tracker.mergedPullOf(item);
-      if (byOther) {
-        log(`#${item.id} merged by someone else: ${byOther.url}`, 'info');
-        pull = byOther;
-        break;
+    reason = undefined;
+    if (from.step === 'implement') {
+      mark(item, 'session-started');
+      const ran = await runSession(item, worktree, sessions, implementer(item, reviewFile));
+      reviewFile = undefined;
+      // read after every implementer session: the next one (a fix round) starts without this file
+      noteRisk(item.id, riskOf(resultFile(item)));
+      session = ran.session;
+      pull = tracker.pullOf(item);
+      // a stopped or failed session never leads to a merge, also when a pull request is open
+      if (stopped) reason = 'stopped';
+      else if (ran.reason) reason = ran.reason;
+      else if (session.exit !== 0) reason = `session failed (exit ${session.exit})`;
+      // the session asked a question: a pull request of an earlier run is not its answer
+      else if (tracker.needsDecision(item)) reason = 'needs-decision';
+      else if (!pull) {
+        // merged by hand while the session ran: delivered, not set aside
+        const byOther = tracker.mergedPullOf(item);
+        if (byOther) {
+          log(`#${item.id} merged by someone else: ${byOther.url}`, 'info');
+          pull = byOther;
+          break;
+        }
+        reason = 'session ended without a pull request';
       }
-      reason = 'session ended without a pull request';
+    } else {
+      pull = tracker.pullOf(item);
+      if (stopped) reason = 'stopped';
+      // closed or merged since the labels were read: the implementer looks at it
+      else if (!pull) continue;
     }
     if (reason || !pull) {
       settle();
       break;
     }
+    // before the review: a session never runs on a pull request the guard hands over, because a checkout of
+    // protected paths (agent settings, hooks) would run with the rights of the loop
     reason = morePulls(pull) ?? (await guard(pull));
     if (reason) {
       settle();
       break;
     }
-    if (round === 1) {
+    if (!announced) {
+      announced = true;
       emit('step.finished', {
         task,
-        step: { name: 'pr', text: 'pull request opened, waits for checks' },
+        step: { name: 'pr', text: 'pull request opened' },
         links: [{ rel: 'pull-request', url: pull.url, title: pull.title }],
       });
     }
-    log(`#${item.id} pr: ${pull.url}, waits for checks`, 'info');
-    reason = await merge(pull);
+    let head: string;
+    if (from.step === 'merge') head = from.head;
+    else {
+      const round = reviews.length + 1;
+      log(`#${item.id} pr: ${pull.url}, review round ${round}`, 'info');
+      mark(item, 'pull-opened');
+      const reviewed = await review(item, pull, round, sessions);
+      if ('reason' in reviewed) {
+        reason = reviewed.reason;
+        if (reason === 'stopped') break;
+      }
+      const verdict = 'reason' in reviewed ? 'failed' : reviewed.verdict.verdict;
+      reviews.push({ round, verdict });
+      emit(
+        'step.finished',
+        { task, step: { name: `review-${round}`, text: `review round ${round}: ${verdict}` } },
+        verdict === 'approve' ? 'success' : 'warning',
+      );
+      log(`#${item.id} review round ${round}: ${verdict}`, verdict === 'approve' ? 'ok' : 'warn');
+      if ('reason' in reviewed) {
+        settle();
+        break;
+      }
+      // the mark first: a run that dies in between reviews again
+      try {
+        tracker.recordVerdict(pull, reviewed.verdict, reviewed.head, risks.get(item.id));
+      } catch (error) {
+        log(`#${item.id} review verdict not recorded: ${firstLine(error)}`, 'warn');
+      }
+      mark(item, `verdict-${reviewed.verdict.verdict}`);
+      note(item, reviewNote(round, reviewed.verdict, reviewed.head, pull.url));
+      if (reviewed.verdict.verdict === 'changes') {
+        if (fixes >= FIX_ROUNDS) {
+          // the findings are text of an agent: it never ends the reason, whose ending decides about a hand-over
+          reason = `needs-decision: review still asks for changes after ${FIX_ROUNDS} fix rounds (${findingsLine(reviewed.verdict)})`;
+          settle();
+          break;
+        }
+        fixes += 1;
+        reviewFile = reviewed.file;
+        continue;
+      }
+      head = reviewed.head;
+    }
+    log(`#${item.id} approved, waits for checks`, 'info');
+    reason = await merge(pull, head, riskHold(item.id));
     // a person closed it or has to look at it: no repair session
     if (!reason || reason === 'stopped' || reason === CLOSED || reason.endsWith(HANDS_OFF)) break;
-    log(`#${item.id} ${reason}${round === 1 ? ', one repair session' : ''}`, 'warn');
-    if (round === 1)
-      emit('step.finished', { task, step: { name: 'repair', text: reason } }, 'warning');
+    log(`#${item.id} ${reason}${repaired ? '' : ', one repair session'}`, 'warn');
+    if (repaired) break;
+    repaired = true;
+    emit('step.finished', { task, step: { name: 'repair', text: reason } }, 'warning');
   }
   if (pull && !reason) {
     // merged: the worktree and the branches can go
@@ -807,8 +1339,7 @@ async function deliver(item: Item): Promise<{ reason?: string; pull?: Pull }> {
     // not merged: the worktree may hold work that is not pushed
     log(`#${item.id} worktree kept: ${worktree}`, 'warn');
   }
-  const risk = riskOf(item);
-  if (risk) risks.set(item.id, risk);
+  const risk = risks.get(item.id);
   appendFileSync(
     path.join(runDir, 'results.jsonl'),
     `${JSON.stringify({
@@ -819,6 +1350,7 @@ async function deliver(item: Item): Promise<{ reason?: string; pull?: Pull }> {
       reason,
       pr: pull?.url,
       minutes: Math.round((Date.now() - started) / 60_000),
+      reviews,
       sessions,
     })}\n`,
   );
@@ -852,12 +1384,17 @@ async function repairHandedOver(nr: number): Promise<void> {
   if (!existsSync(worktree))
     run('git', ['worktree', 'add', '--detach', worktree, `origin/${BASE}`], root);
   const sessions: Session[] = [];
-  const note = await repairConflict(item, pull, worktree, sessions).catch(
+  const repaired = await repairConflict(item, pull, worktree, sessions).catch(
     (error) => `conflict not repaired: ${firstLine(error)}`,
   );
-  if (!note) return;
-  log(`#${nr} ${note}, handed over`, note.startsWith('conflict repaired') ? 'info' : 'warn');
-  handedOver.set(nr, `${note}, ${reason}`);
+  if (!repaired) return;
+  mark(item, 'handed-over');
+  log(
+    `#${nr} ${repaired}, handed over`,
+    repaired.startsWith('conflict repaired') ? 'info' : 'warn',
+  );
+  handedOver.set(nr, `${repaired}, ${reason}`);
+  tell(item, pull, `${repaired}, ${reason}`, true);
   // the line of the issue in results.jsonl says it too
   const file = path.join(runDir, 'results.jsonl');
   const rows = readFileSync(file, 'utf8')
@@ -867,7 +1404,7 @@ async function repairHandedOver(nr: number): Promise<void> {
       const row = JSON.parse(line) as Record<string, unknown>;
       if (row.issue !== nr || typeof row.reason !== 'string') return line;
       const all = [...((row.sessions as Session[]) ?? []), ...sessions];
-      return JSON.stringify({ ...row, reason: `${note}, ${row.reason}`, sessions: all });
+      return JSON.stringify({ ...row, reason: `${repaired}, ${row.reason}`, sessions: all });
     });
   writeFileSync(file, `${rows.join('\n')}\n`);
 }
@@ -887,7 +1424,7 @@ async function awaitHandovers(): Promise<boolean> {
     'attention',
     {
       id: 'handover-wait',
-      reason: 'handed-over',
+      reason: 'deliver.handed-over',
       text: `waiting for you to merge: ${names()}`,
       needsYou: true,
       links: [...handedPulls.values()].map(({ pull }) => ({
@@ -913,10 +1450,13 @@ async function awaitHandovers(): Promise<boolean> {
       if (gate?.state === 'merged') {
         handedOver.delete(nr);
         handedPulls.delete(nr);
+        mergedByPerson.add(nr);
         merged.push(`#${nr} ${pull.url}`);
         log(`#${nr} merged by a person: ${pull.url}`, 'ok');
+        mark(item, 'merged');
         appendFileSync(file, `${JSON.stringify({ ...row, outcome: 'merged' })}\n`);
         cleanup(item, pull);
+        emitMerged(nr, pull.url);
         emit('progress', { done: merged.length, total, label: 'PBIs' });
         await untilClosed(nr);
         changed = true;
@@ -925,6 +1465,8 @@ async function awaitHandovers(): Promise<boolean> {
         handedPulls.delete(nr);
         aside.set(nr, `closed by a person, ${pull.url}`);
         log(`#${nr} set aside: closed by a person, ${pull.url}`, 'bad');
+        tell(item, pull, CLOSED, false);
+        emitSetAside('aside', nr, pull.url, CLOSED);
         appendFileSync(
           file,
           `${JSON.stringify({ ...row, outcome: 'aside', reason: 'closed by a person' })}\n`,
@@ -971,14 +1513,26 @@ if (required.length === 0 && !opt['allow-no-required-checks']) {
 if (opt['dry-run']) {
   try {
     for (const item of tracker.items()) {
-      console.log(`#${item.id} ${tracker.waitReason(item) ?? 'ready'}: ${item.title}`);
+      // where a milestone or a Feature selection took the item from
+      const from = item.feature
+        ? ` (Feature #${item.feature})`
+        : opt.milestone
+          ? ' (milestone)'
+          : '';
+      console.log(`#${item.id} ${tracker.waitReason(item) ?? 'ready'}${from}: ${item.title}`);
     }
   } catch (error) {
     fail(`tracker: ${firstLine(error)}`, 64);
   }
   console.log(
-    `harness: ${harnessName} (${harness.command({ prompt: '/deliver <nr> …', model: opt.model }).join(' ')})`,
+    `harness: ${harnessName} (${harness.command({ prompt: '/deliver <nr> …', model: STANDARD.implement.model }).join(' ')})`,
   );
+  console.log(
+    `review: ${REVIEW.harnessName} (${REVIEW.harness.command({ prompt: '/deliver-review <nr> …', model: STANDARD.review.model, effort: REVIEW.effort }).join(' ')})`,
+  );
+  console.log(`models: ${MODEL_LINE}`);
+  if (opt.milestone)
+    console.log(`retro: ${RETRO.enabled ? `after the last merge, model ${RETRO.model}` : 'off'}`);
   console.log(`tracker: ${tracker.name}, base: ${BASE}`);
   console.log(`required checks: ${required.join(', ') || 'none'}`);
   console.log(`session token: ${TOKEN_SOURCE ?? 'none, the session uses your login'}`);
@@ -988,13 +1542,16 @@ if (opt['dry-run']) {
 
 mkdirSync(runDir, { recursive: true });
 logFile = path.join(path.dirname(runDir), 'loop.log');
-const writeEvent = openEvents(
-  process.env.AGENT_EVENTS_DIR ?? path.join(commonDir, '.agents', 'events'),
-  runId,
-);
+// the run id of the events is a UUIDv7 (agent-events contract); the run folder keeps `runId`
+const eventRun = uuid7();
+const eventDir = eventsDirectory();
+const origin = runOrigin();
+if (eventDir) pruneRuns(eventDir, origin.repo);
+const writeEvent = openEvents(eventDir, eventRun);
 // OSC 7501 to the controlling terminal (ADR 0007): the events stay the source for displays
 const report = programStatus();
-const statusTitle = opt.milestone ?? `issues ${opt.issues}`;
+const statusTitle =
+  opt.milestone ?? (opt.feature ? `feature #${opt.feature}` : `issues ${opt.issues}`);
 let blockedShown = false;
 emit = (type, body, tone) => {
   writeEvent(type, body, tone);
@@ -1005,8 +1562,19 @@ emit = (type, body, tone) => {
     report({
       state: 'blocked',
       kind: 'question',
+      reason: blockedReason(String(body.id)),
       title: statusTitle,
       msg: String(body.text ?? ''),
+    });
+  } else if (type === 'deliver.merged' && mergedFields(body).risk === 'high') {
+    blockedShown = true;
+    const { issue, pr } = mergedFields(body);
+    report({
+      state: 'blocked',
+      kind: 'question',
+      reason: 'risk-high',
+      title: statusTitle,
+      msg: `#${issue} merged at risk high: ${String(pr)}`,
     });
   } else if (type === 'task.started' && blockedShown) {
     blockedShown = false;
@@ -1015,7 +1583,14 @@ emit = (type, body, tone) => {
     report(finishReport(body, statusTitle, needsYou.length));
   }
 };
-log(`run ${runId} in ${tracker.repo}, results: ${path.join(runDir, 'results.jsonl')}`, 'dim');
+log(
+  `run ${runId} in ${tracker.repo}, models: ${MODEL_LINE}, results: ${path.join(runDir, 'results.jsonl')}`,
+  'dim',
+);
+log(
+  `events: run ${eventRun}${eventDir ? ` in ${eventDir}` : ', not written: no directory'}`,
+  'dim',
+);
 if (cutNote) log(cutNote, 'info');
 if (!TOKEN_SOURCE) {
   log(
@@ -1024,14 +1599,15 @@ if (!TOKEN_SOURCE) {
   );
 }
 emit('run.started', {
-  profiles: [],
+  profiles: ['deliver@2'],
+  origin,
   host: {
     'jsonl-file.pid': String(process.pid),
     ...(process.env.POIMEN_TERMINAL_ID
       ? { 'poimen.terminal': process.env.POIMEN_TERMINAL_ID }
       : {}),
   },
-  agent: { harness: harnessName, model: MODEL },
+  agent: { harness: harnessName, model: STANDARD.implement.model },
   subject: tracker.subject(),
 });
 
@@ -1039,9 +1615,59 @@ const aside = new Map<number, string>();
 // handed over by rule (the guard): a person merges the pull request, it is no failure
 const handedOver = new Map<number, string>();
 const handedPulls = new Map<number, { item: Item; pull: Pull }>();
+// handed-over pull requests a person merged during the wait: nothing is left to look at
+const mergedByPerson = new Set<number>();
 const merged: string[] = [];
 let waiting: string[] = [];
 let total = 0;
+
+/** Why an attention blocks the run, as far as OSC 7501 names it. */
+function blockedReason(attention: string): BlockedReason | undefined {
+  if (attention === 'handover-wait') return 'handover';
+  const nr = Number(/^aside-(\d+)$/.exec(attention)?.[1]);
+  if (handedOver.has(nr)) return 'handover';
+  return aside.get(nr)?.startsWith('needs-decision') ? 'decision' : undefined;
+}
+/** The fields of `deliver.merged`, under `deliver` as the profile rule wants them. */
+type MergedFields = { repo: string; issue: number; pr?: string; risk?: string };
+/** The `deliver` object of the body of a `deliver.merged` event. */
+function mergedFields(body: Record<string, unknown> | undefined): MergedFields {
+  return body?.deliver as MergedFields;
+}
+/** The events an orchestrator reacts to (contract: SKILL.md of `deliver`). */
+function emitMerged(issue: number, pr: string | undefined): void {
+  const deliver: MergedFields = { repo: tracker.repo, issue, pr, risk: risks.get(issue) };
+  emit('deliver.merged', { deliver }, 'success');
+}
+function emitSetAside(
+  type: 'handover' | 'aside',
+  issue: number,
+  pr: string | undefined,
+  why: string,
+) {
+  const reason = reasonCode(why);
+  emit(
+    `deliver.${type}`,
+    {
+      reason,
+      // a line of an event is limited, and findings can be long
+      text: why.slice(0, 1000),
+      deliver: {
+        repo: tracker.repo,
+        issue,
+        pr,
+        ...(reason === 'deliver.needs-decision' && { hold: 'needs-decision' }),
+      },
+    },
+    'warning',
+  );
+}
+try {
+  const created = tracker.syncStageLabels();
+  if (created.length) log(`labels created: ${created.join(', ')}`, 'info');
+} catch (error) {
+  log(`agent:* labels not synced: ${firstLine(error)}`, 'warn');
+}
 process.on('SIGINT', requestStop);
 process.on('SIGBREAK', requestStop);
 setInterval(() => {
@@ -1164,11 +1790,14 @@ try {
         `#${next.id} ${pull?.url}${risks.has(next.id) ? ` (risk ${risks.get(next.id)})` : ''}`,
       );
       log(`#${next.id} merged: ${pull?.url}`, 'ok');
+      mark(next, 'merged');
+      if (risks.get(next.id) === 'high') tell(next, pull, 'high risk: merged', false);
       emit(
         'task.finished',
         { task: `issue-${next.id}`, outcome: 'succeeded', text: 'merged' },
         'success',
       );
+      emitMerged(next.id, pull?.url);
       await untilClosed(next.id);
     } else if (reason === 'stopped') {
       log(`#${next.id} stopped: not merged${pull ? `, ${pull.url}` : ''}`, 'warn');
@@ -1178,6 +1807,8 @@ try {
       const why = planned ? reason.slice(0, -HANDS_OFF.length) : reason;
       (planned ? handedOver : aside).set(next.id, `${why}${pull ? `, ${pull.url}` : ''}`);
       if (planned && pull) handedPulls.set(next.id, { item: next, pull });
+      mark(next, planned ? 'handed-over' : 'set-aside');
+      tell(next, pull, why, planned);
       log(
         planned
           ? `#${next.id} handed over: ${why}, merge it yourself`
@@ -1189,12 +1820,13 @@ try {
         { task: `issue-${next.id}`, outcome: 'skipped', text: reason },
         'warning',
       );
+      emitSetAside(planned ? 'handover' : 'aside', next.id, pull?.url, why);
       // after the task: an attention of a finished task would close with it
       emit(
         'attention',
         {
           id: `aside-${next.id}`,
-          reason: 'set-aside',
+          reason: 'deliver.set-aside',
           text: `#${next.id} set aside: ${reason}`,
           needsYou: true,
           links: [{ rel: pull ? 'pull-request' : 'issue', url: pull?.url ?? next.url }],
@@ -1217,9 +1849,15 @@ if (!stopped && !harnessDead && !baseBlocked) {
   for (const nr of handedPulls.keys()) await repairHandedOver(nr);
 }
 
-// A fully delivered milestone ends with the release pull request, which a person merges.
+// A fully delivered milestone ends with the retro and the release pull request, which a person merges.
+let retroResult: Retro = {};
+const retroFailed = (why: string) => {
+  retroResult = { failed: why };
+  log(`retro failed: ${why}`, 'warn');
+};
 let needsYou: string[] = [];
 let releaseError = '';
+let releaseUrl: string | undefined;
 const complete =
   Boolean(opt.milestone) &&
   !stopped &&
@@ -1235,7 +1873,30 @@ if (complete) {
         'info',
       );
     } else if (tracker.items().length === 0) {
-      const release = tracker.ensureReleasePull();
+      let release: Pull | undefined;
+      if (RETRO.enabled) {
+        try {
+          // without a Feature the retro comments on the release pull request: that one has to exist first
+          if (!tracker.hasRetroFeature()) release = tracker.ensureReleasePull();
+          retroResult = await retro(opt.milestone as string, release);
+          if (retroResult.failed) retroFailed(retroResult.failed);
+          else if (retroResult.url) log(`retro: ${retroResult.url}`, 'info');
+        } catch (error) {
+          retroFailed(firstLine(error));
+        }
+        await seeStop();
+      }
+      // a stop request during the retro ends the run: the next run opens the release pull request
+      if (stopped && !release) throw new Error('stopped');
+      release ??= tracker.ensureReleasePull();
+      if (retroResult.url) {
+        try {
+          tracker.linkRetro(release, retroResult.url);
+        } catch (error) {
+          retroFailed(`release pull request body not updated: ${firstLine(error)}`);
+        }
+      }
+      releaseUrl = release.url;
       log(`release pull request: ${release.url} (never merged by the loop)`, 'info');
       emit('step.finished', {
         task: 'release',
@@ -1248,7 +1909,7 @@ if (complete) {
           'attention',
           {
             id: `release-test-${test.id}`,
-            reason: 'release-test',
+            reason: 'deliver.release-test',
             text: `#${test.id} release test is open: a person tests the release candidate`,
             needsYou: true,
             links: [{ rel: 'issue', url: test.url }],
@@ -1259,16 +1920,23 @@ if (complete) {
     }
   } catch (error) {
     needsYou = [];
-    log(`release pull request: ${firstLine(error)}`, 'bad');
-    releaseError = firstLine(error);
+    if (!stopped) {
+      log(`release pull request: ${firstLine(error)}`, 'bad');
+      releaseError = firstLine(error);
+    }
   }
 }
 
-// an issue of level high is listed first: a person looks at it before the rest
-const highRisk = [...risks]
-  .filter(([, level]) => level === 'high')
-  .map(([nr]) => `#${nr} risk high`);
-needsYou = [...highRisk, ...[...handedOver].map(([nr, why]) => `#${nr} ${why}`), ...needsYou];
+// an issue of level high is listed first: a person looks at it before the rest. A handed-over one has its own
+// line, and one a person merged was looked at.
+const isHigh = (nr: number) => risks.get(nr) === 'high';
+const highRisk = [...risks.keys()]
+  .filter((nr) => isHigh(nr) && !handedOver.has(nr) && !mergedByPerson.has(nr))
+  .map((nr) => `#${nr} risk high`);
+const handedLines = [...handedOver]
+  .sort(([a], [b]) => Number(isHigh(b)) - Number(isHigh(a)))
+  .map(([nr, why]) => `#${nr} ${why}`);
+needsYou = [...highRisk, ...handedLines, ...needsYou];
 // the open PBIs that wait for a handed-over pull request: their blockers name its issue
 const waitingFor = new Map<number, string[]>();
 for (const nr of handedOver.keys()) {
@@ -1292,6 +1960,7 @@ say(
   waiting.length ? 'warn' : undefined,
 );
 if (releaseError) say(`release pull request failed: ${releaseError}`, 'bad');
+if (retroResult.failed) say(`retro failed: ${retroResult.failed}`, 'warn');
 say(
   `needs you (${needsYou.length}):${needsYou.map((line) => `\n  ${line}`).join('')}`,
   needsYou.length ? 'warn' : undefined,
@@ -1302,7 +1971,7 @@ if (baseBlocked) {
     'attention',
     {
       id: 'base-red',
-      reason: 'base-red',
+      reason: 'deliver.base-red',
       text: `blocked: ${baseBlocked}`,
       needsYou: true,
       links: repairBug ? [{ rel: 'issue', url: repairBug.url }] : [],
@@ -1355,16 +2024,35 @@ appendFileSync(
     status,
     handedOver: [...handedOver.keys()],
     waitingFor: Object.fromEntries(waitingFor),
+    ...(retroResult.url && { retro: retroResult.url }),
+    ...(retroResult.failed && { retroFailed: retroResult.failed }),
   })}\n`,
 );
+if (opt.milestone && !stopped) {
+  emit(
+    'deliver.milestone.done',
+    {
+      deliver: {
+        repo: tracker.repo,
+        milestone: opt.milestone,
+        merged: merged.length,
+        aside: aside.size,
+        pr: releaseUrl,
+      },
+    },
+    clean && !releaseError ? 'success' : 'warning',
+  );
+}
 // An incomplete run (issues set aside or waiting) is no success: the agent-events format has no
 // other outcome for it than `failed`; the counts are in the text. OSC 7501 shows it as `done` with
-// `tone=warning`; only `reason: 'harness'` (the harness failed) is an `error`.
+// `tone=warning`; only `reason: 'deliver.harness'` (the harness failed) is an `error`.
 emit(
   'run.finished',
   {
     outcome: stopped ? 'cancelled' : clean ? 'succeeded' : 'failed',
-    ...(stopped || clean ? {} : { reason: status === 'failed' ? 'harness' : 'incomplete' }),
+    ...(stopped || clean
+      ? {}
+      : { reason: status === 'failed' ? 'deliver.harness' : 'deliver.incomplete' }),
     text: `${status}: merged ${merged.length}, set aside ${aside.size}, waiting ${waiting.length}${needsYou.length ? `, needs you ${needsYou.length}` : ''}`,
   },
   stopped ? 'neutral' : clean ? 'success' : 'warning',

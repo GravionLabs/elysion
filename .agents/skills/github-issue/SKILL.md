@@ -34,7 +34,7 @@ An `[Objective]` sits above the Epic; body, and `Requires:` in `references/objec
 Parent/child links are **native GitHub sub-issues** — see `references/sub-issues.md` for how to
 read, create, move and verify them. Markdown checklists are not used.
 
-Milestones: a PBI and a Bug always have one; a Feature only when all its PBIs are in that milestone; an Epic and an Objective never (`references/milestones.md`). Set them only with `github-milestone assign M<nnn>|none #<nr>`, never `gh issue edit --milestone`.
+Milestones: a Feature is planned into one or none; a PBI and a Bug get theirs at merge into `release/next`; an Epic and an Objective never (`references/milestones.md`, [ADR 0010](https://github.com/GravionLabs/skills/blob/main/docs/adr/0010-milestones-hold-features-as-a-roadmap-and-record-what-a-release-shipped.md)). Set them only with `github-milestone assign M<nnn>|none #<nr>`, never `gh issue edit --milestone`.
 
 ## Routing
 
@@ -51,5 +51,6 @@ Milestones: a PBI and a Bug always have one; a Feature only when all its PBIs ar
 - Commit and PR titles reference the issue: `<type>: <description> (#<nr>)`; the PR body contains `Closes #<nr>` for every issue it completes (only partly delivered: `Refs #<nr>` and `## Not delivered`, see `github-pull-request`).
 - Verify per `implementation` (targeted tests per commit, one full run before the pull request); never commit or move on with a red run.
 - Never merge a PR with failing checks.
+- `gh issue close --comment` on an already closed issue drops the comment and still exits 0: comment first (`gh issue comment`), then close.
 - `.agents/config.json` has `governance`: an issue whose outcome is a decision follows `references/decisions.md`.
 - Closing a child is all that's needed — the native sub-issue link updates the parent's progress automatically. There is no checklist to tick. If a child turns out not to be linked to its parent, link it (`references/sub-issues.md`) instead of adding a checklist.

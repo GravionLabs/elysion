@@ -20,6 +20,20 @@
         }
       }
     },
-    "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+    "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "spec": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "criterion", "file", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "enum": ["missing", "unrequested", "wrong"] },
+          "criterion": { "type": "string", "minLength": 1 },
+          "file": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
   }
 }

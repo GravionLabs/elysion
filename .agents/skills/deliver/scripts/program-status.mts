@@ -7,11 +7,14 @@ import { openSync, writeSync } from 'node:fs';
 export type State = 'idle' | 'working' | 'blocked' | 'done' | 'error' | 'clear';
 export type Kind = 'permission' | 'question' | 'auth';
 export type Tone = 'warning';
+/** Why a `blocked` run needs the owner; no key when none of these fits. */
+export type BlockedReason = 'handover' | 'decision' | 'risk-high';
 export type Report = {
   state: State;
   title?: string;
   msg?: string;
   kind?: Kind;
+  reason?: BlockedReason;
   progress?: number;
   tone?: Tone;
 };
@@ -44,7 +47,7 @@ function limit(text: string, max: number): string {
 const b64 = (text: string, max: number): string =>
   Buffer.from(limit(clean(text), max), 'utf8').toString('base64');
 
-/** The escape sequence of one report; `kind` is only kept with `blocked`, `tone` with `done`. */
+/** The escape sequence of one report; `kind` and `reason` are only kept with `blocked`, `tone` with `done`. */
 export function encodeStatus(report: Report): string {
   const pairs = [`state=${report.state}`, `app=${APP}`];
   if (report.title) pairs.push(`title=${b64(report.title, MAX_TITLE)}`);
@@ -53,12 +56,13 @@ export function encodeStatus(report: Report): string {
     pairs.push(`progress=${Math.min(100, Math.max(0, report.progress))}`);
   }
   if (report.state === 'blocked' && report.kind) pairs.push(`kind=${report.kind}`);
+  if (report.state === 'blocked' && report.reason) pairs.push(`reason=${report.reason}`);
   if (report.state === 'done' && report.tone) pairs.push(`tone=${report.tone}`);
   return `\x1b]7501;${pairs.join(':')}\x1b\\`;
 }
 
 /**
- * The report of the end of a run (ADR 0007): `error` only when the run failed (`reason: 'harness'`), a
+ * The report of the end of a run (ADR 0007): `error` only when the run failed (`reason: 'deliver.harness'`), a
  * run that is incomplete (blocked, waiting for a handed-over PR) or leaves issues for the owner (`needsYou` > 0) is `done` with `tone=warning`,
  * a stopped run `idle`, a clean run plain `done`.
  */
@@ -74,7 +78,7 @@ export function finishReport(
       ? { state: 'done', tone: 'warning', title, msg }
       : { state: 'done', title, msg };
   }
-  if (body?.reason === 'incomplete') return { state: 'done', tone: 'warning', title, msg };
+  if (body?.reason === 'deliver.incomplete') return { state: 'done', tone: 'warning', title, msg };
   return { state: 'error', title, msg };
 }
 

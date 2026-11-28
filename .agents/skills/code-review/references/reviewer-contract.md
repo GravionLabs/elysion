@@ -31,6 +31,20 @@ Print one JSON object that validates against `schema/review.schema.json`, nothin
 | `why`      | which criterion or defect class it breaks, and the fix direction                            |
 | `rule`     | optional on a blocking item: `adr-missing` or `spec-drift`, from `references/governance.md` |
 | `notes`    | non-blocking observations, one string each                                                  |
+| `spec`     | optional; the spec findings, see below; an old result without it stays valid                |
+
+## Spec findings
+
+`spec` holds one item per finding against the acceptance criteria (given criteria only):
+
+| Property    | Meaning                                                                                                                                 |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `kind`      | `missing` (not or partly implemented), `unrequested` (behavior no criterion asks for), `wrong` (looks implemented, behaves differently) |
+| `criterion` | the criterion quoted; for `unrequested` the nearest one, or `none`                                                                      |
+| `file`      | path relative to the repository root                                                                                                    |
+| `detail`    | what is missing, extra or wrong                                                                                                         |
+
+A `missing` or `wrong` item is also a `blocking` item (or, without a location, `unmet`); an `unrequested` item is also a note. `spec` repeats them by axis, it does not replace them.
 
 ```json
 {

@@ -5,12 +5,22 @@
 
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import type { Stage } from './stage.mts';
+import type { ReviewMark, Verdict } from './review.mts';
 
 /** What a reader of the run sees: a milestone, an issue, a repository. */
 export type Subject = { kind: string; id: string; title: string; url?: string };
 
 /** `body` is the text the session works from: the loop hands it over, the session does not fetch it. */
-export type Item = { id: number; title: string; url: string; labels: string[]; body: string };
+/** `feature`: the Feature the selection took the item from (`items()` of a milestone or a Feature). */
+export type Item = {
+  id: number;
+  title: string;
+  url: string;
+  labels: string[];
+  body: string;
+  feature?: number;
+};
 
 /** `others`: the URLs of further open pull requests of the same item (`pullOf` only); the loop merges none of them. */
 export type Pull = { id: number; title: string; url: string; branch: string; others?: string[] };
@@ -34,7 +44,8 @@ export type BaseState = {
   failed: { name: string; url: string }[];
 };
 
-export type Selection = { milestone?: string; issues?: string[] };
+/** Exactly one is set. `feature`: the number of a Feature. */
+export type Selection = { milestone?: string; feature?: string; issues?: string[] };
 
 export type TrackerContext = {
   /** The checkout the loop runs in. */
@@ -59,11 +70,30 @@ export interface Tracker {
   readonly name: string;
   /** The repository as the tracker names it, for example `GravionLabs/poimen`. */
   readonly repo: string;
-  /** What the whole run delivers: the milestone, or the repository for a list of issues. */
+  /** What the whole run delivers: the milestone, the Feature, or the repository for a list of issues. */
   subject(): Subject;
-  /** The open work items of the selection in delivery order. */
+  /**
+   * The open work items of the selection in delivery order. Milestone: the open PBIs and Bugs in it and those below
+   * its open Features (same repository, each once, with `feature`). Feature: its open PBI and Bug sub-issues. Both
+   * also list the Bug of a red base this run got from `reportBaseRed`, while it is open.
+   */
   items(): Item[];
   itemSubject(item: Item): Subject;
+  /**
+   * The parent Feature of the item in this repository, whose scope and criteria the review reads; `undefined`
+   * without one, or when its author has no write access (`trustAuthors` lifts that). A failed read throws.
+   */
+  parentFeature(item: Item): Item | undefined;
+  /** Sets the `agent:*` label of the stage and removes every other `agent:*` label; `undefined` removes all. */
+  setStage(item: Item, stage: Stage | undefined): void;
+  /** Creates the missing `agent:*` labels and returns their names. */
+  syncStageLabels(): string[];
+  /** Comments `body` on the item unless a comment of the login of the loop already starts with `marker`. */
+  commentOnce(item: Item, marker: string, body: string): void;
+  /** Marks on the pull request the verdict the loop accepted for the commit `head` (`markBody`), with the risk level. */
+  recordVerdict(pull: Pull, review: Verdict, head: string, risk?: string): void;
+  /** The marks the login of the loop recorded on the pull request, oldest first (`parseMark`); anyone else's are ignored. */
+  recordedVerdicts(pull: Pull): ReviewMark[];
   /** Why the item cannot start now (a hold label, an open blocker, an author without write access), else nothing. */
   waitReason(item: Item): string | undefined;
   /** The session asked a question instead of delivering. */
@@ -87,7 +117,7 @@ export interface Tracker {
   baseState(): BaseState;
   /** Reruns the failed jobs of the last red `baseState()`. `env` is the environment of the session token. */
   rerunFailed(env: Record<string, string>): void;
-  /** The open Bug about a red base (marker `<!-- deliver-base-red -->`), reused, else filed in the milestone of the run. */
+  /** The open Bug about a red base (marker `<!-- deliver-base-red -->`), reused, else filed without a milestone. */
   reportBaseRed(failed: BaseState['failed'], env: Record<string, string>): Item;
   /** The paths the pull request changes, a rename with both names. */
   changedFiles(pull: Pull): string[];
@@ -103,6 +133,12 @@ export interface Tracker {
   releaseCommits(): number;
   /** The open release pull request from the base branch into the default branch; opens it when missing. Never merges it. */
   ensureReleasePull(): Pull;
+  /** An item of the milestone (open or closed) has a Feature of this repository as parent: the retro comments there. */
+  hasRetroFeature(): boolean;
+  /** `url` is a comment of this repository whose body starts with `marker`. The URL comes from a session. */
+  isRetroComment(url: string, marker: string): boolean;
+  /** Puts the line `Retro: <url>` into the body of the release pull request, replacing an earlier one. */
+  linkRetro(pull: Pull, url: string): void;
   /** The environment that makes a session act with `token` instead of the login of the user. */
   sessionEnv(token: string): Record<string, string>;
 }

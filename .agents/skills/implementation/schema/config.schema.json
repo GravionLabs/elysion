@@ -167,6 +167,36 @@
         }
       }
     },
+    "models": {
+      "description": "Which model each role of a delivery run uses, also read from ~/.agents/config.json; read by resolve-model.mts of deliver.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tiers": {
+          "description": "The model of each tier per harness.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "claude": { "$ref": "#/$defs/tierModels" },
+            "copilot": { "$ref": "#/$defs/tierModels" }
+          }
+        },
+        "roles": {
+          "description": "The tier of each role; tier = the tier of the issue.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "orchestrator": { "$ref": "#/$defs/roleTier" },
+            "triage": { "$ref": "#/$defs/roleTier" },
+            "planner": { "$ref": "#/$defs/roleTier" },
+            "implement": { "$ref": "#/$defs/roleTier" },
+            "review": { "$ref": "#/$defs/roleTier" },
+            "retro": { "$ref": "#/$defs/roleTier" },
+            "release": { "$ref": "#/$defs/roleTier" }
+          }
+        }
+      }
+    },
     "deliver": {
       "description": "Settings of deliver. Other keys of the old loop (roles, loopThreshold, parallel, sessionTimeoutMinutes) are ignored with a warning.",
       "type": "object",
@@ -186,10 +216,50 @@
           "description": "The agent CLI: claude (default) or copilot.",
           "enum": ["claude", "copilot"]
         },
+        "retro": {
+          "description": "The retro session of deliver-loop after the last merge of a milestone.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "description": "Run it (default true); --no-retro turns it off.",
+              "type": "boolean"
+            },
+            "model": {
+              "description": "Model of the retro session (default the model of the role retro).",
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "review": {
+          "description": "The review session of deliver-loop (deliver-review). Default: the implementer's harness and the model of the role review.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "model": {
+              "description": "Model of the review session; --review-model wins.",
+              "type": "string",
+              "minLength": 1
+            },
+            "harness": {
+              "description": "The agent CLI of the review session; --review-harness wins.",
+              "enum": ["claude", "copilot"]
+            },
+            "effort": {
+              "description": "Reasoning effort of the review session (none and minimal: copilot only).",
+              "enum": ["none", "minimal", "low", "medium", "high", "xhigh", "max"]
+            }
+          }
+        },
         "handoverMinutes": {
           "description": "How long the loop waits for handed-over pull requests when nothing else can start (default 120); 0 ends the run at once with exit 3.",
           "type": "integer",
           "minimum": 0
+        },
+        "mergeRisk": {
+          "description": "The highest risk level of the implementer result the loop merges (default medium); a pull request above it is handed over. --merge-risk wins.",
+          "enum": ["low", "medium", "high"]
         },
         "protectedPaths": {
           "description": "A pull request that changes one of these paths is not merged by the loop; replaces the default list.",
@@ -203,6 +273,22 @@
     }
   },
   "$defs": {
+    "modelName": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*(\\[[A-Za-z0-9]+\\])?$"
+    },
+    "roleTier": {
+      "enum": ["fast", "standard", "strong", "tier"]
+    },
+    "tierModels": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fast": { "$ref": "#/$defs/modelName" },
+        "standard": { "$ref": "#/$defs/modelName" },
+        "strong": { "$ref": "#/$defs/modelName" }
+      }
+    },
     "commands": {
       "oneOf": [
         {

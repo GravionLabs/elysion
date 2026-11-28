@@ -1,6 +1,9 @@
 // GitHub tracker: issues, sub-issue dependencies, pull requests and checks through the gh CLI.
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { LABEL_PREFIX, labelOf } from '../stage.mts';
+import { type ReviewMark, type Verdict, markBody, parseMark } from '../review.mts';
+import { syncLabels } from '../sync-labels.mts';
 import type { BaseState, Gate, Item, Pull, Subject, Tracker, TrackerContext } from '../tracker.mts';
 
 const HOLD = ['needs-decision', 'needs-refinement', 'interactive', 'release-test'];
@@ -85,6 +88,24 @@ export function baseVerdict(required: string[], runs: CheckRun[]): BaseState {
   return { state: 'red', failed };
 }
 
+type Comment = {
+  body: string | null;
+  created_at: string;
+  updated_at: string;
+  user: { login: string } | null;
+};
+
+/**
+ * The marks (`<!-- deliver-review: approve <sha> risk=high -->`) of the comments, oldest first. Only a comment of
+ * `login` that starts with the mark and was never edited counts: anyone can write a comment.
+ */
+export function reviewMarks(comments: Comment[], login: string): ReviewMark[] {
+  return comments.flatMap((comment) => {
+    if (comment.user?.login !== login || comment.created_at !== comment.updated_at) return [];
+    return parseMark(comment.body ?? '') ?? [];
+  });
+}
+
 /** The body of a pull request closes issue `id` with a closing keyword (`Closes #12`, `fixes #12`, `Resolved #12`). */
 export function closesIssue(body: string | null | undefined, id: number): boolean {
   return new RegExp(
@@ -128,6 +149,21 @@ export function openPullsOf(records: PullRecord[], repo: string, id: number): Pu
 /** The default branch takes merge commits (its ruleset allows only those, and the Conventional Commits stay visible); every other base takes squash. */
 export function mergeMethodFor(base: string, defaultBranch: string): 'merge' | 'squash' {
   return base === defaultBranch ? 'merge' : 'squash';
+}
+
+const isFeature = (issue: Issue): boolean =>
+  issue.labels.some((l) => l.name === 'feature') || issue.title.startsWith('[Feature]');
+
+/** An issue the loop delivers: a PBI or a Bug, not a pull request. */
+const isWork = (issue: Issue): boolean =>
+  !issue.pull_request && issue.labels.some((l) => l.name === 'pbi' || l.name === 'bug');
+
+/** The body with exactly one line `Retro: <url>`: an earlier one is replaced, else it is appended. */
+export function withRetroLine(body: string | null | undefined, url: string): string {
+  const line = `Retro: ${url}`;
+  const text = (body ?? '').trimEnd();
+  if (/^Retro: .*$/m.test(text)) return text.replace(/^Retro: [^\r\n]*/m, () => line);
+  return text ? `${text}\n\n${line}` : line;
 }
 
 /** At most this many rate-limit waits in a row (primary and secondary together); the next error is thrown. */
@@ -256,6 +292,58 @@ export function create({
     };
   };
 
+  /** The open PBI and Bug sub-issues of the Feature that belong to this repository. */
+  const workBelow = (feature: number): Issue[] =>
+    list<Issue & { repository_url: string }>(
+      `repos/${repo}/issues/${feature}/sub_issues?per_page=100`,
+    ).filter((i) => i.state === 'open' && i.repository_url.endsWith(`/repos/${repo}`) && isWork(i));
+
+  /** The items of a milestone or a Feature selection, by number; an issue below a Feature names it. */
+  const selected = (): Item[] => {
+    const found = new Map<number, Item>();
+    const add = (issue: Issue, feature?: number) => {
+      if (!found.get(issue.number)?.feature)
+        found.set(issue.number, { ...toItem(issue), ...(feature && { feature }) });
+    };
+    if (selection.feature) {
+      const feature = Number(selection.feature);
+      for (const issue of workBelow(feature)) add(issue, feature);
+    } else {
+      const open = list<Issue>(
+        `repos/${repo}/issues?milestone=${milestone().number}&state=open&per_page=100`,
+      );
+      for (const issue of open.filter(isWork)) add(issue);
+      for (const feature of open.filter((i) => !i.pull_request && isFeature(i)))
+        for (const issue of workBelow(feature.number)) add(issue, feature.number);
+    }
+    return [...found.values()].sort((a, b) => a.id - b.id);
+  };
+
+  // the Bugs about a red base of this run: part of its items, although no milestone or Feature holds them
+  const baseBugs = new Set<number>();
+  const withBaseBugs = (items: Item[]): Item[] => {
+    const missing = [...baseBugs].filter((nr) => !items.some((item) => item.id === nr));
+    const bugs = missing
+      .map((nr) => api<Issue>(`repos/${repo}/issues/${nr}`))
+      .filter((issue) => issue.state === 'open')
+      .map(toItem);
+    return [...items, ...bugs];
+  };
+
+  /** The parent issue of `id` when it is a Feature of this repository. */
+  const featureAbove = (id: number): Issue | undefined => {
+    try {
+      const parent = api<Issue & { repository_url: string }>(`repos/${repo}/issues/${id}/parent`);
+      return parent.repository_url.endsWith(`/repos/${repo}`) && isFeature(parent)
+        ? parent
+        : undefined;
+    } catch (error) {
+      // no parent
+      if (/HTTP 404/.test((error as { stderr?: string }).stderr ?? '')) return undefined;
+      throw error;
+    }
+  };
+
   const checksOf = (id: number): Check[] => {
     try {
       return JSON.parse(gh('pr', 'checks', String(id), '--repo', repo, '--json', 'name,bucket'));
@@ -308,6 +396,15 @@ export function create({
         const m = milestone();
         return { kind: 'github.milestone', id: m.title, title: m.title, url: m.html_url };
       }
+      if (selection.feature) {
+        const feature = api<Issue>(`repos/${repo}/issues/${selection.feature}`);
+        return {
+          kind: 'github.issue',
+          id: `${repo}#${feature.number}`,
+          title: `#${feature.number} ${feature.title}`,
+          url: feature.html_url,
+        };
+      }
       return {
         kind: 'github.repository',
         id: repo,
@@ -318,18 +415,14 @@ export function create({
 
     items(): Item[] {
       if (selection.issues) {
-        return selection.issues
-          .map((nr) => api<Issue>(`repos/${repo}/issues/${nr.trim()}`))
-          .filter((issue) => issue.state === 'open' && !issue.pull_request)
-          .map(toItem);
+        return withBaseBugs(
+          selection.issues
+            .map((nr) => api<Issue>(`repos/${repo}/issues/${nr.trim()}`))
+            .filter((issue) => issue.state === 'open' && !issue.pull_request)
+            .map(toItem),
+        );
       }
-      const number = milestone().number;
-      return list<Issue>(`repos/${repo}/issues?milestone=${number}&state=open&per_page=100`)
-        .filter(
-          (i) => !i.pull_request && i.labels.some((l) => l.name === 'pbi' || l.name === 'bug'),
-        )
-        .sort((a, b) => a.number - b.number)
-        .map(toItem);
+      return withBaseBugs(selected());
     },
 
     itemSubject(item: Item): Subject {
@@ -339,6 +432,62 @@ export function create({
         title: `#${item.id} ${item.title}`,
         url: item.url,
       };
+    },
+
+    parentFeature(item: Item): Item | undefined {
+      const parent = featureAbove(item.id);
+      if (!parent) return undefined;
+      if (!trustAuthors && !TRUSTED.includes(parent.author_association)) {
+        log?.(`#${item.id} parent #${parent.number} ignored: its author has no write access`);
+        return undefined;
+      }
+      return toItem(parent);
+    },
+
+    setStage(item: Item, stage: Parameters<Tracker['setStage']>[1]): void {
+      const route = `repos/${repo}/issues/${item.id}/labels`;
+      const names = list<{ name: string }>(`${route}?per_page=100`).map((l) =>
+        l.name.toLowerCase(),
+      );
+      const target = stage && labelOf(stage);
+      for (const name of names) {
+        if (!name.startsWith(LABEL_PREFIX) || name === target) continue;
+        try {
+          gh('api', '-X', 'DELETE', `${route}/${encodeURIComponent(name)}`);
+        } catch (error) {
+          // removed meanwhile
+          if (!/HTTP 404/.test((error as { stderr?: string }).stderr ?? '')) throw error;
+        }
+      }
+      if (target && !names.includes(target))
+        gh('api', '-X', 'POST', route, '-f', `labels[]=${target}`);
+    },
+
+    syncStageLabels(): string[] {
+      return syncLabels((...args) => gh(...args), repo);
+    },
+
+    commentOnce(item: Item, marker: string, body: string): void {
+      const route = `repos/${repo}/issues/${item.id}/comments`;
+      const login = gh('api', 'user', '--jq', '.login');
+      // anyone can write the marker: only the comment of the loop itself counts as posted
+      const posted = list<Comment>(`${route}?per_page=100`).some(
+        (c) => c.user?.login === login && (c.body ?? '').startsWith(marker),
+      );
+      if (!posted) gh('api', '-X', 'POST', route, '-f', `body=${body}`);
+    },
+
+    recordVerdict(pull: Pull, review: Verdict, head: string, risk?: string): void {
+      const body = markBody(review, head, risk);
+      gh('api', '-X', 'POST', `repos/${repo}/issues/${pull.id}/comments`, '-f', `body=${body}`);
+    },
+
+    recordedVerdicts(pull: Pull): ReviewMark[] {
+      const login = gh('api', 'user', '--jq', '.login');
+      return reviewMarks(
+        list<Comment>(`repos/${repo}/issues/${pull.id}/comments?per_page=100`),
+        login,
+      );
     },
 
     waitReason(item: Item): string | undefined {
@@ -502,7 +651,10 @@ export function create({
           (i.body ?? '').includes(BASE_RED_MARKER) &&
           (trustAuthors || TRUSTED.includes(i.author_association) || i.user?.type === 'Bot'),
       );
-      if (open) return toItem(open);
+      if (open) {
+        baseBugs.add(open.number);
+        return toItem(open);
+      }
       const checks = [...new Set(failed.map((f) => f.name))].join(', ');
       const body = [
         BASE_RED_MARKER,
@@ -519,10 +671,6 @@ export function create({
         '',
         'Filed by the deliver loop.',
       ].join('\n');
-      const number = selection.milestone
-        ? milestone().number
-        : api<Issue>(`repos/${repo}/issues/${(selection.issues ?? [])[0]?.trim()}`).milestone
-            ?.number;
       const fields = [
         '-f',
         `title=[Bug] fix: ${base} is red (${checks})`,
@@ -530,9 +678,12 @@ export function create({
         `body=${body}`,
         '-f',
         'labels[]=bug',
-        ...(number ? ['-F', `milestone=${number}`] : []),
       ];
-      return toItem(JSON.parse(gh('api', '-X', 'POST', `repos/${repo}/issues`, ...fields, env)));
+      const filed: Issue = JSON.parse(
+        gh('api', '-X', 'POST', `repos/${repo}/issues`, ...fields, env),
+      );
+      baseBugs.add(filed.number);
+      return toItem(filed);
     },
 
     changedFiles(pull: Pull): string[] {
@@ -631,6 +782,31 @@ export function create({
         };
       }
       return { id: found.number, title: found.title, url: found.html_url, branch: found.head.ref };
+    },
+
+    hasRetroFeature(): boolean {
+      if (!selection.milestone) return false;
+      const issues = list<Issue>(
+        `repos/${repo}/issues?milestone=${milestone().number}&state=all&per_page=100`,
+      );
+      return issues.some((issue) => !issue.pull_request && !!featureAbove(issue.number));
+    },
+
+    isRetroComment(url: string, marker: string): boolean {
+      const id = /^https:\/\/[^/]+\/([^/]+\/[^/]+)\/(?:issues|pull)\/\d+#issuecomment-(\d+)$/.exec(
+        url,
+      );
+      if (!id || id[1] !== repo) return false;
+      const comment = api<{ body: string | null; html_url: string }>(
+        `repos/${repo}/issues/comments/${id[2]}`,
+      );
+      return comment.html_url === url && (comment.body ?? '').startsWith(marker);
+    },
+
+    linkRetro(pull: Pull, url: string): void {
+      const route = `repos/${repo}/pulls/${pull.id}`;
+      const body = withRetroLine(api<PullRecord>(route).body, url);
+      gh('api', '-X', 'PATCH', route, '-f', `body=${body}`);
     },
 
     sessionEnv(token: string): Record<string, string> {
